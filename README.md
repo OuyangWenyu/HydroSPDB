@@ -1,4 +1,4 @@
-# hydro-model-ai
+# hydro-water-ai
 
 这个项目内容主要是各种ai与水文结合的项目的idea分析，及draft构思。
 
