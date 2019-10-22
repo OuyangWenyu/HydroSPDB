@@ -1,67 +1,91 @@
-# hydro-water-ai
+# Example
+Two examples with sample data are wrapped up including
+ - [train a LSTM network to learn SMAP soil moisture](example/train-lstm.py)
+ - [estimate uncertainty of a LSTM network ](example/train-lstm-mca.py)
 
-这个项目内容主要是各种ai与水文结合的项目的idea分析，及draft构思。
+A demo for temporal test is [here](example/demo-temporal-test.ipynb)
 
-## 计算机视觉方式的水文模拟
 
-用ai方式改进水文模型，本来是针对单位线的特点做改进，后来发现坑有点大。就偏了。
-主要目标是使用数据的空间信息，针对的是洪水预报知识学习的“汇流过程偏差修正”这一点。
-主要参考文献[A computer vision-based approach to fusing spatiotemporal data for hydrological modeling](https://doi.org/10.1016/j.jhydrol.2018.09.064)
+# Database description
+## Database Structure
+```
+├── CONUS
+│   ├── 2000
+│   │   ├── [Variable-Name].csv
+│   │   ├── ...
+│   │   ├── timeStr.csv
+│   │   └── time.csv
+│   ├── ...
+│   ├── 2017
+│   │   └── ...
+│   ├── const
+│   │   ├── [Constant-Variable-Name].csv
+│   │   └── ...
+│   └── crd.csv
+├── CONUSv4f1
+│   └── ...
+├── Statistics
+│   ├── [Variable-Name]_stat.csv
+│   ├── ...
+│   ├── const_[Constant-Variable-Name]_stat.csv
+│   └── ...
+├── Subset
+│   ├── CONUS.csv
+│   └── CONUSv4f1.csv
+└── Variable
+    ├── varConstLst.csv
+    └── varLst.csv
+```
+### 1. Dataset folders (*CONUS* , *CONUSv4f1*)
+Data folder contains all data including both training and testing, time-dependent variables and constant variables. 
+In example data structure, there are two dataset folders - *CONUS* and *CONUSv4f1*. Those data are saved in:
 
-首先针对降雨数据，考虑如何同化降雨的空间属性，需要参照论文看看做的思路是什么样；
-再考虑CNN如何结合进来；
-然后雷达数据可能不够，考虑怎么利用雨量站数据插值先补充着；
-然后整体汇流阶段的处理就可以先有一套方法试着了。
+ - **year/[Variable-Name].csv**:
 
-然后是想着怎么率定模型的问题.
-首先要考虑模型率定的基本思路，产汇流是如何结合的？
-然后查一查模型率定的一般方法，不确定性是怎么考虑的？
-先用一种简单的方法处理着，后面再想想如何进行优化，具体的思路可以开辟另一个draft了。
+A csv file of size [#grid, #time], where each column is one grid and each row is one time step. This file saved data of a time-dependent variable of current year. For example, *CONUS/2010/SMAP_AM.csv* is SMAP data of 2002 on the CONUS. 
 
-### 数据
+Most time-dependent varibles comes from NLDAS, which included two forcing product (FORA, FORB) and three simulations product land surface models (NOAH, MOS, VIC). Variables are named as *[variable]\_[product]\_[layer]*, and reference of variable can be found in [NLDAS document](https://hydro1.gesdisc.eosdis.nasa.gov/data/NLDAS/README.NLDAS2.pdf). For example, *SOILM_NOAH_0-10* refers to soil moisture product simulated by NOAH model at 0-10 cm. 
 
-在a computer vision-based ... 论文里，用到的数据有：
-降雨，2000-2011每日数据，分辨率是0.05度×0.05度，nc文件；
-2m地表温度，2000-2011每日数据，分辨率是0.05度×0.05度，nc文件；
-LAI叶面积指数，2000-2011每8天数据，1km×1km，栅格数据；
-径流，2000-2011每日三个站点数据，csv数据；
-DEM，2009年的30m×30m栅格数据；
-土地类型，2011年，1km×1km的栅格数据；
-河网，2009年，1：100000 shape数据。
+Other than NLDAS, SMAP data are also saved in same format but always used as target. In level 3 database, there are two SMAP csv files which are only available after 2015: *SMAP_AM.csv* and *SMAP_PM.csv*. 
 
-所以第一个问题是需要什么数据，有什么数据，怎么用这些数据？
+-9999 refers to NaN. 
 
-对于上述数据，使用时需要进行尺度匹配，包括空间数据和时间数据，分辨率要一致，采用的方式，就是插值了，关于插值的方式，可以先从简单的开始，时间插值的话如果没有突变过程，可以采用线性插值，时不变的空间数据可以直接使用；空间插值可以采用克里金插值。
+- **year/time.csv** & **timeStr.csv**
 
-### 模型
+Dates csv file of current year folder, of size [#date]. *time.csv* recorded Matlab datenum and *timeStr.csv* recorded date in format of yyyy-mm-dd.
 
-如果使用CNN进行运算的话，首先需要确定底图的表达。对比单位线，单位线是使用一维卷积核去对净雨进行运算，以径流过程结果作为训练的目标，去识别卷积核。
-同样地，如果扩展到二维，底图上可以用整个流域及其周边地区，流域部分的取值可以根据降雨去取，把降雨值映射到0-255上，其余部分可以直接归为background，设为0。
+Notice that each year start from and end before April 1st. For example data in folder 2010 is actually data from 2010-04-01 to 2011-03-31. The reason is that SMAP launched at April 1st. 
 
-**存在的问题**是如何把地形等其他因素考虑进来，也就是说如果利用CNN的话，如何同时考虑一张图上的两种表达，卷积核又要怎么定义？这个问题和遥感图像里的多频谱图的识别之间有没有什么方法上的一致性？
+- **const/[Constant Variable Name].csv**
 
-首先，需要分析一下论文里的这个这个计算机视觉的方法。这部分是不是要找计算机学院的老师沟通下？所以我需要先把**新安江的内容重新完善**一下，看看怎么可以跟计算机学院的人讲清楚，然后是问问论文里这种特征提取的方式是什么样的，我要搞明白的是**提取的特征用来干什么的**；接着就可以问问这个特征提取的方式与CNN的方式之间谁可能会更好，或者有没有什么建议的方式。
+csv file for constant variables of size [#grid]. 
 
-关于新安江内容的完善可以参考[另一篇文档](https://github.com/OuyangWenyu/hydro-model-xaj/wiki/%E6%A8%A1%E5%9E%8B%E6%A0%B8%E5%BF%83%E7%AE%97%E6%B3%95)；
-提取的特征的作用：因为后面模型会输入到ANN中进行相关分析，挖掘后时段的径流与前时段径流，提取的降雨特征、温度特征、和LAI特征之间的相关关系。所以提取特征的目的也是显然的，即利用P/T/LAI等的空间属性来提高模型预测的能力。
+- **crd.csv**
 
-确定了模型之后，可以开展下一部分的工作，收集整理数据，主要是做一些处理工作，使数据更好地被模型运用。
-单纯用降雨数据，一个CNN，来提取降雨空间分布信息，想想怎么和新安江模型耦合，怎么率定。这样思考，做法的难点在于净雨计算出来的是没有空间性质的，产流模型是很难把净雨计算成二维的，即便是分布式的，到子流域也是采用概率模型，这个问题可能就是为什么卷积一直是一维的一个重要原因吧。所以这可能导致不得不全部使用CNN做运算，这样问题的难点又转换为如何一次性考虑多种空间数据？
+Coordinate of all grids. First Column is latitude and second column is longitude. Each row refers a grid.
 
-所以现在问题分化为了两种思路，一种是产流模型需要能计算出分布式的净雨，即有空间属性的降雨，或者看看地貌单位线是怎么用的，或者是机器学习模型计算产流，然后用集总式模型做约束率定；另一种是和论文类似，直接用CNN做卷积运算，但是需要把多个特征信息都包含进来应用。
+### 2. Statistics folder
 
-目前来看，第二种方法可能更容易实现一些，并且更简单一些。所以难点现在回归到在一片区域如何同时考虑多种属性的空间分布特征。然后可以进一步地分析，如何耦合物理模型，以减小误差。
+Stored statistics of variables in order to do data normalization during training. Named as:
+- Time dependent variables-> [variable name].csv
+- Constant variables-> const_[variable name].csv
 
-对于第一种方法，可以用分布式的模型做着，然后产流信息是有空间属性的，接下来再做的时候，可以做卷积运算，但是这个二维卷积之后，得到的结果还是二维的，问题的关键就是怎么变成一维的数据。所以可能还需要对地貌单位线再理解理解，然后查查相关的文献，并且把卷积运算和微分方程的关系搞清楚，还要把分布式模型了解了解。尤其是VIC到底是怎么和新安江模型联系起来的，其汇流运算又是什么样的，要了解VIC的话，首先要把碧流河流域的数据搞清楚，所以这个路有点长。因此最好的方法还是要结合CNN做着看一看，看看最后有个什么效果。
+Each file wrote four statistics of variable:
+- 90 percentile
+- 10 percentile
+- mean
+- std
 
-## 模型参数率定
+During training we normalize data by (data - mean) / std
 
-在利用多源信息和不确定性分析两方面，都有利用的可能。
-多源信息可能直接能降低不确定性；
-另一方面，关于模型反演，Bayesian和MCMC在不确定性方面的应用和机器学习算法在这方面的共通点会在哪？
+### 3. Subset folder
+Subset refers to a subset of grids from the complete dataset (CONUS or Global). For example, a subset only contains grids in Pennsylvania. All subsets (including the CONUS or Global dataset) will have a *[subset name].csv* file in the *Subset* folder. *[subset name].csv* is wrote as:
+- line 1 -> root dataset 
+- line 2 - end -> indexs of subset grids in rootset (start from 1)
 
-## 强化学习在调度中的应用
+If the index is -1 means all grid, from example CONUS dataset. 
 
-调度问题是一类经典的决策问题，现阶段在实际水库运行过程中，人为决策仍是最重要的影响因素，在模型中如果忽略处理，很容易造成优化决策不实用。另一方面，由于水文情形，工程形式的不断变化，调度策略本身具有非线性时变特点，稳定不变的决策不利于实际的运用。由于强化学习具有延迟优化，自主式学习等特点，比较适合机器自动学习调度人员经验，在调度中应该重点考虑强化学习的应用。
-
-首先，从最简单的开始，做供水决策和传统优化算法的结合。可以参考文献[A Multiagent Q-Learning-Based Optimal Allocation Approach for Urban Water Resource Management System](https://ieeexplore.ieee.org/document/6410370)，做一些相关的分析。
+### 4. Variable folder
+Stored csv files contains a list of variables. Used as input to training code. Time-dependent variables and constant variables should be stored seperately. For example:
+- varLst.csv -> a list of time-dependent variables used as training predictors.
+- varLst.csv -> a list of constant variables used as training predictors.
