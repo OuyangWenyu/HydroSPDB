@@ -177,6 +177,7 @@ def readAttr(usgsIdLst, varLst):
 
 def calStat(x):
     a = x.flatten()
+    print(~np.isnan(a))
     b = a[~np.isnan(a)]
     p10 = np.percentile(b, 10).astype(float)
     p90 = np.percentile(b, 90).astype(float)
@@ -209,11 +210,11 @@ def calStatAll():
 
 
 # module variable
-#statFile = os.path.join(dirDB, 'Statistics.json')
-#if not os.path.isfile(statFile):
-#    calStatAll()
-#with open(statFile, 'r') as fp:
-#    statDict = json.load(fp)
+statFile = os.path.join(dirDB, 'Statistics.json')
+if not os.path.isfile(statFile):
+   calStatAll()
+with open(statFile, 'r') as fp:
+   statDict = json.load(fp)
 
 
 def transNorm(x, varLst, *, toNorm):
