@@ -18,15 +18,15 @@ master.runTrain(masterDict, cudaID=cid % 3, screen='test')
 cid = cid + 1
 
 # train DA model
-nDayLst = [1, 7]
-for nDay in nDayLst:
-    out = os.path.join(pathCamels['Out'], 'All-90-95-DA' + str(nDay))
-    optData = default.update(default.optDataCamels, daObs=nDay)
-    optTrain = default.optTrainCamels
-    optLoss = default.optLossRMSE
-    masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
-    master.runTrain(masterDict, cudaID=cid % 3, screen='test-DA' + str(nDay))
-    cid = cid + 1
+# nDayLst = [1, 7]
+# for nDay in nDayLst:
+#     out = os.path.join(pathCamels['Out'], 'All-90-95-DA' + str(nDay))
+#     optData = default.update(default.optDataCamels, daObs=nDay)
+#     optTrain = default.optTrainCamels
+#     optLoss = default.optLossRMSE
+#     masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
+#     master.runTrain(masterDict, cudaID=cid % 3, screen='test-DA' + str(nDay))
+#     cid = cid + 1
 
 # test
 caseLst = ['All-90-95']

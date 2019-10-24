@@ -1,8 +1,9 @@
 import hydroDL
 from collections import OrderedDict
 from hydroDL.data import dbCsv, camels
-# SMAP default options
-optDataSMAP = OrderedDict(
+
+# Gages2 default options
+optDataGages2 = OrderedDict(
     name='hydroDL.data.dbCsv.DataframeCsv',
     rootDB=hydroDL.pathSMAP['DB_L3_Global'],
     subset='CONUSv4f1',
@@ -13,7 +14,7 @@ optDataSMAP = OrderedDict(
     doNorm=[True, True],
     rmNan=[True, False],
     daObs=0)
-optTrainSMAP = OrderedDict(miniBatch=[100, 30], nEpoch=500, saveEpoch=100)
+optTrainGages2 = OrderedDict(miniBatch=[100, 30], nEpoch=500, saveEpoch=100)
 # Streamflow default options
 optDataCamels = OrderedDict(
     name='hydroDL.data.camels.DataframeCamels',
@@ -24,7 +25,7 @@ optDataCamels = OrderedDict(
     doNorm=[True, True],
     rmNan=[True, False],
     daObs=0)
-optTrainCamels = OrderedDict(miniBatch=[100, 200], nEpoch=100, saveEpoch=100)
+optTrainCamels = OrderedDict(miniBatch=[100, 200], nEpoch=1, saveEpoch=1)
 """ model options """
 optLstm = OrderedDict(
     name='hydroDL.model.rnn.CudnnLstmModel',
@@ -40,6 +41,7 @@ optLstmClose = OrderedDict(
     doReLU=True)
 optLossRMSE = OrderedDict(name='hydroDL.model.crit.RmseLoss', prior='gauss')
 optLossSigma = OrderedDict(name='hydroDL.model.crit.SigmaLoss', prior='gauss')
+
 
 def update(opt, **kw):
     for key in kw:

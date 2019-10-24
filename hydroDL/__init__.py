@@ -1,41 +1,22 @@
 import os
-import socket
 import collections
 
 print('loading package hydroDL')
 
 
-def initPath():
-    """initial shortcut for some import paths
-    """
-    hostName = socket.gethostname()
-    if hostName == 'smallLinux':
-        dirDB = os.path.join(os.path.sep, 'mnt', 'sdc', 'rnnSMAP',
-                             'Database_SMAPgrid')
-        dirOut = os.path.join(os.path.sep, 'mnt', 'sdb', 'rnnSMAP',
-                              'Model_SMAPgrid')
-        dirResult = os.path.join(os.path.sep, 'mnt', 'sdb', 'rnnSMAP',
-                                 'Result_SMAPgrid')
-    else:
-        dirDB = '/'
-        dirOut = '/'
-        dirResult = '/'
+def init_path():
+    """配置数据源路径"""
+    path_gages2 = collections.OrderedDict(
+        DB=os.path.join('..', os.path.sep, '..', 'example', 'data', 'GAGES-II'),
+        Out=os.path.join('..', os.path.sep, '..', 'example', 'data', 'GAGES-II', 'rnnStreamflow'))
 
-    pathSMAP = collections.OrderedDict(
-        DB_L3_Global=os.path.join(dirDB, 'Daily_L3'),
-        DB_L3_NA=os.path.join(dirDB, 'Daily_L3_NA'),
-        Out_L3_Global=os.path.join(dirOut, 'L3_Global'),
-        Out_L3_NA=os.path.join(dirOut, 'L3_NA'),
-        outTest=os.path.join(dirOut, 'Test'),
-        dirResult=dirResult)
-
-    pathCamels = collections.OrderedDict(
-        DB=os.path.join('C:', os.path.sep, 'Users', 'hust2', 'Documents', 'Research', 'Camels'),
-        Out=os.path.join('C:', os.path.sep, 'Users', 'hust2', 'Documents', 'Research', 'Camels', 'rnnStreamflow'))
-    return pathSMAP, pathCamels
+    path_camels = collections.OrderedDict(
+        DB=os.path.join('..', os.path.sep, '..', 'example', 'data', 'Camels'),
+        Out=os.path.join('..', os.path.sep, '..', 'example', 'data', 'Camels', 'rnnStreamflow'))
+    return path_gages2, path_camels
 
 
-pathSMAP, pathCamels = initPath()
+pathGages2, pathCamels = init_path()
 
 from . import utils
 from . import data

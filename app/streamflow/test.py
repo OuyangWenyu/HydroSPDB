@@ -1,4 +1,13 @@
-import hydroDL
+"""利用GAGES-II数据训练LSTM，进行流域径流模拟，先针对671个CAMELS的reference sites进行训练。
+直接使用GAGES-II自己的attributes；
+forcing数据利用maurur的数据源通过matlab code进行basin average计算。然后就可以组成输入集；
+输出集直接使用GAGES-II的即可。
+先和dapeng用CAMELS计算的结果比较，看看结果是否合理，如果合理，直接使用GAGES-II的数据继续接下来的人类活动影响的研究即可。"""
+
+# 首先，配置GAGES-II原始数据文件的路径。在hydroDL的init文件里直接配置输入输出路径
+from hydroDL import pathGages2
+# 接下来是初始的默认模型配置，这部分直接在master文件夹下的default模块中配置
+from hydroDL import master
 from hydroDL.data import camels
 from hydroDL.model import rnn, crit, train
 from hydroDL.post import plot, stat
@@ -7,7 +16,6 @@ from hydroDL import utils
 import matplotlib.pyplot as plt
 from hydroDL.utils import interp
 
-outFolder = r'/mnt/sdb/Data/Camels/test/'
 nEpoch = 100
 doLst = list()
 doLst.append('train')

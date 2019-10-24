@@ -2,11 +2,11 @@
 import os
 import pandas as pd
 import numpy as np
-import datetime as dt
 from hydroDL import utils, pathCamels
 from pandas.api.types import is_numeric_dtype, is_string_dtype
 import time
 import json
+
 from . import Dataframe
 
 # module variable
@@ -24,25 +24,25 @@ attrLstSel = [
 ]
 
 
-def readGageInfo(dirDB):
-    gageFile = os.path.join(dirDB, 'basin_timeseries_v1p2_metForcing_obsFlow',
-                            'basin_dataset_public_v1p2', 'basin_metadata',
-                            'gauge_information.txt')
-
-    data = pd.read_csv(gageFile, sep='\t', header=None, skiprows=1)
+def read_gage_info(dir_db):
+    gage_file = os.path.join(dir_db, 'basin_timeseries_v1p2_metForcing_obsFlow',
+                             'basin_dataset_public_v1p2', 'basin_metadata',
+                             'gauge_information.txt')
+    # 为什么跳过第二行？
+    data = pd.read_csv(gage_file, sep='\t', header=None, skiprows=1)
     # header gives some troubles. Skip and hardcode
-    fieldLst = ['huc', 'id', 'name', 'lat', 'lon', 'area']
+    field_lst = ['huc', 'id', 'name', 'lat', 'lon', 'area']
     out = dict()
-    for s in fieldLst:
+    for s in field_lst:
         if s is 'name':
-            out[s] = data[fieldLst.index(s)].values.tolist()
+            out[s] = data[field_lst.index(s)].values.tolist()
         else:
-            out[s] = data[fieldLst.index(s)].values
+            out[s] = data[field_lst.index(s)].values
     return out
 
 
 # module variable
-gageDict = readGageInfo(dirDB)
+gageDict = read_gage_info(dirDB)
 
 
 def readUsgsGage(usgsId, *, readQc=False):
@@ -212,9 +212,9 @@ def calStatAll():
 # module variable
 statFile = os.path.join(dirDB, 'Statistics.json')
 if not os.path.isfile(statFile):
-   calStatAll()
+    calStatAll()
 with open(statFile, 'r') as fp:
-   statDict = json.load(fp)
+    statDict = json.load(fp)
 
 
 def transNorm(x, varLst, *, toNorm):
@@ -247,14 +247,14 @@ def createSubsetAll(opt, **kw):
 class DataframeCamels(Dataframe):
     def __init__(self, *, subset='All', tRange):
         self.rootDB = dirDB
-        self.subset = subset        
+        self.subset = subset
         if subset == 'All':  # change to read subset later
             self.usgsId = gageDict['id']
             crd = np.zeros([len(self.usgsId), 2])
             crd[:, 0] = gageDict['lat']
             crd[:, 1] = gageDict['lon']
             self.crd = crd
-        self.time = utils.time.tRange2Array(tRange)        
+        self.time = utils.time.tRange2Array(tRange)
 
     def getGeo(self):
         return self.crd
