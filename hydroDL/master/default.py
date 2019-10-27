@@ -1,20 +1,18 @@
 import hydroDL
 from collections import OrderedDict
-from hydroDL.data import dbCsv, camels
+from hydroDL.data import dbCsv, camels, gages2
 
 # Gages2 default options
 optDataGages2 = OrderedDict(
-    name='hydroDL.data.dbCsv.DataframeCsv',
-    rootDB=hydroDL.pathSMAP['DB_L3_Global'],
-    subset='CONUSv4f1',
-    varT=dbCsv.varForcing,
-    varC=dbCsv.varConst,
-    target=['SMAP_AM'],
-    tRange=[20150401, 20160401],
+    name='hydroDL.data.dbCsv.DataframeGages2',
+    subset='All',
+    varT=gages2.forcingLst,
+    varC=gages2.attrLstSel,
+    tRange=[19900101, 19950101],
     doNorm=[True, True],
     rmNan=[True, False],
     daObs=0)
-optTrainGages2 = OrderedDict(miniBatch=[100, 30], nEpoch=500, saveEpoch=100)
+optTrainGages2 = OrderedDict(miniBatch=[100, 200], nEpoch=5, saveEpoch=1)
 # Streamflow default options
 optDataCamels = OrderedDict(
     name='hydroDL.data.camels.DataframeCamels',
@@ -29,13 +27,13 @@ optTrainCamels = OrderedDict(miniBatch=[100, 200], nEpoch=1, saveEpoch=1)
 """ model options """
 optLstm = OrderedDict(
     name='hydroDL.model.rnn.CudnnLstmModel',
-    nx=len(optDataSMAP['varT']) + len(optDataSMAP['varC']),
+    nx=len(optDataGages2['varT']) + len(optDataGages2['varC']),
     ny=1,
     hiddenSize=256,
     doReLU=True)
 optLstmClose = OrderedDict(
     name='hydroDL.model.rnn.LstmCloseModel',
-    nx=len(optDataSMAP['varT']) + len(optDataSMAP['varC']),
+    nx=len(optDataGages2['varT']) + len(optDataGages2['varC']),
     ny=1,
     hiddenSize=256,
     doReLU=True)

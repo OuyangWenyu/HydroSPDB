@@ -1,4 +1,5 @@
 import hydroDL
+import hydroDL.utils.statistics
 from hydroDL.data import camels
 from hydroDL.model import rnn, crit, train
 from hydroDL.post import plot, stat
@@ -11,26 +12,26 @@ from mpl_toolkits import basemap
 outFolder = r'/mnt/sdb/Data/Camels/test/'
 df1 = camels.DataframeCsv(subset='all', tRange=[20050101, 20100101])
 x1 = df1.getDataTS(varLst=camels.forcingLst, doNorm=True, rmNan=True)
-y1 = df1.getDataObs(doNorm=True, rmNan=False)
-c1 = df1.getDataConst(varLst=camels.attrLstSel, doNorm=True, rmNan=True)
-yt1 = df1.getDataObs(doNorm=False, rmNan=False).squeeze()
+y1 = df1.get_data_obs(doNorm=True, rmNan=False)
+c1 = df1.get_data_const(varLst=camels.attrLstSel, doNorm=True, rmNan=True)
+yt1 = df1.get_data_obs(doNorm=False, rmNan=False).squeeze()
 
 dfz1 = camels.DataframeCsv(subset='all', tRange=[20141231, 20091231])
-z1 = dfz1.getDataObs(doNorm=True, rmNan=False)
+z1 = dfz1.get_data_obs(doNorm=True, rmNan=False)
 
 dfz2 = camels.DataframeCsv(subset='all', tRange=[20141227, 20091227])
-z2 = dfz2.getDataObs(doNorm=True, rmNan=False)
+z2 = dfz2.get_data_obs(doNorm=True, rmNan=False)
 
 df2 = camels.DataframeCsv(subset='all', tRange=[20100101, 20150101])
 x2 = df2.getDataTS(varLst=camels.forcingLst, doNorm=True, rmNan=True)
-c2 = df2.getDataConst(varLst=camels.attrLstSel, doNorm=True, rmNan=True)
-yt2 = df2.getDataObs(doNorm=False, rmNan=False).squeeze()
+c2 = df2.get_data_const(varLst=camels.attrLstSel, doNorm=True, rmNan=True)
+yt2 = df2.get_data_obs(doNorm=False, rmNan=False).squeeze()
 
 model = train.loadModel(outFolder, 100, modelName='test')
 yp1 = train.testModel(model, x1, c1)
-yp1 = camels.transNorm(yp1, 'usgsFlow', toNorm=False).squeeze()
+yp1 = hydroDL.utils.statistics.trans_norm(yp1, 'usgsFlow', toNorm=False).squeeze()
 yp2 = train.testModel(model, x2, c2)
-yp2 = camels.transNorm(yp2, 'usgsFlow', toNorm=False).squeeze()
+yp2 = hydroDL.utils.statistics.trans_norm(yp2, 'usgsFlow', toNorm=False).squeeze()
 
 statErr1 = stat.statError(yp1, yt2)
 statErr2 = stat.statError(yp2, yt2)

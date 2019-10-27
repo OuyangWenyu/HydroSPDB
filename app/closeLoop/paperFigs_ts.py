@@ -57,7 +57,7 @@ statF = stat.statError(utils.fillNan(yf, maskF), utils.fillNan(obs, maskF))
 import importlib
 importlib.reload(plot)
 dataGrid = [statP['RMSE'] - statF['RMSE'], statP['Corr'] - statF['Corr']]
-prcp = df.getDataTs('APCP_FORA').squeeze()
+prcp = df.get_data_ts('APCP_FORA').squeeze()
 dataTs = [obs, yp, yf]
 crd = df.getGeo()
 t = df.getT()

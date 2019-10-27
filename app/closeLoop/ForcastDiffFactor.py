@@ -69,7 +69,7 @@ dataGrid = [(statPLst[0]['RMSE'] - statFLst[0]['RMSE']) / statPLst[0]['RMSE'],
             (statPLst[1]['RMSE'] - statFLst[1]['RMSE']) / statPLst[1]['RMSE'],
             (statPLst[2]['RMSE'] - statFLst[2]['RMSE']) / statPLst[2]['RMSE'],            
             ]
-prcp = df.getDataTs('APCP_FORA').squeeze()
+prcp = df.get_data_ts('APCP_FORA').squeeze()
 dataTs = [[obs, ypLst[0], yfLst[0]], [obs, ypLst[1], yfLst[1]],
           [obs, ypLst[2], yfLst[2]], [prcp]]
 crd = df.getGeo()

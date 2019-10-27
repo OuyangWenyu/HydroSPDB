@@ -7,6 +7,7 @@ from pandas.api.types import is_numeric_dtype, is_string_dtype
 import time
 import json
 
+from hydroDL.utils.statistics import cal_stat, trans_norm
 from . import Dataframe
 
 # module variable
@@ -89,37 +90,38 @@ def readUsgs(usgsIdLst):
     return y
 
 
-def readForcingGage(usgsId, varLst=forcingLst, *, dataset='nldas'):
+def read_forcing_gage(usgs_id, var_lst=forcingLst, *, dataset='nldas'):
     # dataset = daymet or maurer or nldas
-    forcingLst = ['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp']
-    ind = np.argwhere(gageDict['id'] == usgsId)[0][0]
+    forcing_lst = ['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp']
+    ind = np.argwhere(gageDict['id'] == usgs_id)[0][0]
     huc = gageDict['huc'][ind]
 
-    dataFolder = os.path.join(
+    data_folder = os.path.join(
         dirDB, 'basin_timeseries_v1p2_metForcing_obsFlow',
         'basin_dataset_public_v1p2', 'basin_mean_forcing')
     if dataset is 'daymet':
-        tempS = 'cida'
+        temp_s = 'cida'
     else:
-        tempS = dataset
-    dataFile = os.path.join(dataFolder, dataset,
-                            str(huc).zfill(2),
-                            '%08d_lump_%s_forcing_leap.txt' % (usgsId, tempS))
-    dataTemp = pd.read_csv(dataFile, sep=r'\s+', header=None, skiprows=4)
-    nf = len(varLst)
+        temp_s = dataset
+    data_file = os.path.join(data_folder, dataset,
+                             str(huc).zfill(2),
+                             '%08d_lump_%s_forcing_leap.txt' % (usgs_id, temp_s))
+    data_temp = pd.read_csv(data_file, sep=r'\s+', header=None, skiprows=4)
+    nf = len(var_lst)
     out = np.empty([nt, nf])
     for k in range(nf):
         # assume all files are of same columns. May check later.
-        ind = forcingLst.index(varLst[k])
-        out[:, k] = dataTemp[ind + 4].values
+        ind = forcing_lst.index(var_lst[k])
+        out[:, k] = data_temp[ind + 4].values
     return out
 
 
-def readForcing(usgsIdLst, varLst):
+def read_forcing(usgs_id_lst, var_lst):
+    """读取camels文件夹下的nldas文件夹下的驱动数据"""
     t0 = time.time()
-    x = np.empty([len(usgsIdLst), nt, len(varLst)])
-    for k in range(len(usgsIdLst)):
-        data = readForcingGage(usgsIdLst[k], varLst)
+    x = np.empty([len(usgs_id_lst), nt, len(var_lst)])
+    for k in range(len(usgs_id_lst)):
+        data = read_forcing_gage(usgs_id_lst[k], var_lst)
         x[k, :, :] = data
     print("read usgs streamflow", time.time() - t0)
     return x
@@ -175,35 +177,22 @@ def readAttr(usgsIdLst, varLst):
     return out
 
 
-def calStat(x):
-    a = x.flatten()
-    print(~np.isnan(a))
-    b = a[~np.isnan(a)]
-    p10 = np.percentile(b, 10).astype(float)
-    p90 = np.percentile(b, 90).astype(float)
-    mean = np.mean(b).astype(float)
-    std = np.std(b).astype(float)
-    if std < 0.001:
-        std = 1
-    return [p10, p90, mean, std]
-
-
 def calStatAll():
     statDict = dict()
     idLst = gageDict['id']
     # usgs streamflow
     y = readUsgs(idLst)
-    statDict['usgsFlow'] = calStat(y)
+    statDict['usgsFlow'] = cal_stat(y)
     # forcing
-    x = readForcing(idLst, forcingLst)
+    x = read_forcing(idLst, forcingLst)
     for k in range(len(forcingLst)):
         var = forcingLst[k]
-        statDict[var] = calStat(x[:, :, k])
+        statDict[var] = cal_stat(x[:, :, k])
     # const attribute
     attrData, attrLst = readAttrAll()
     for k in range(len(attrLst)):
         var = attrLst[k]
-        statDict[var] = calStat(attrData[:, k])
+        statDict[var] = cal_stat(attrData[:, k])
     statFile = os.path.join(dirDB, 'Statistics.json')
     with open(statFile, 'w') as fp:
         json.dump(statDict, fp, indent=4)
@@ -215,26 +204,6 @@ if not os.path.isfile(statFile):
     calStatAll()
 with open(statFile, 'r') as fp:
     statDict = json.load(fp)
-
-
-def transNorm(x, varLst, *, toNorm):
-    if type(varLst) is str:
-        varLst = [varLst]
-    out = np.zeros(x.shape)
-    for k in range(len(varLst)):
-        var = varLst[k]
-        stat = statDict[var]
-        if toNorm is True:
-            if len(x.shape) == 3:
-                out[:, :, k] = (x[:, :, k] - stat[2]) / stat[3]
-            elif len(x.shape) == 2:
-                out[:, k] = (x[:, k] - stat[2]) / stat[3]
-        else:
-            if len(x.shape) == 3:
-                out[:, :, k] = x[:, :, k] * stat[3] + stat[2]
-            elif len(x.shape) == 2:
-                out[:, k] = x[:, k] * stat[3] + stat[2]
-    return out
 
 
 def createSubsetAll(opt, **kw):
@@ -268,7 +237,7 @@ class DataframeCamels(Dataframe):
         C, ind1, ind2 = np.intersect1d(self.time, tLst, return_indices=True)
         data = data[:, ind2, :]
         if doNorm is True:
-            data = transNorm(data, 'usgsFlow', toNorm=True)
+            data = trans_norm(data, 'usgsFlow', toNorm=True)
         if rmNan is True:
             data[np.where(np.isnan(data))] = 0
         return data
@@ -277,11 +246,11 @@ class DataframeCamels(Dataframe):
         if type(varLst) is str:
             varLst = [varLst]
         # read ts forcing
-        data = readForcing(self.usgsId, varLst)
+        data = read_forcing(self.usgsId, varLst)
         C, ind1, ind2 = np.intersect1d(self.time, tLst, return_indices=True)
         data = data[:, ind2, :]
         if doNorm is True:
-            data = transNorm(data, varLst, toNorm=True)
+            data = trans_norm(data, varLst, toNorm=True)
         if rmNan is True:
             data[np.where(np.isnan(data))] = 0
         return data
@@ -291,7 +260,7 @@ class DataframeCamels(Dataframe):
             varLst = [varLst]
         data = readAttr(self.usgsId, varLst)
         if doNorm is True:
-            data = transNorm(data, varLst, toNorm=True)
+            data = trans_norm(data, varLst, toNorm=True)
         if rmNan is True:
             data[np.where(np.isnan(data))] = 0
         return data

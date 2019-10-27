@@ -127,7 +127,7 @@ dataGrid = [
     statPtemp['RMSE'] / statFtemp['RMSE'],
     statPtemp['Corr'] / statFtemp['Corr']
 ]
-prcp = df.getDataTs('APCP_FORA')
+prcp = df.get_data_ts('APCP_FORA')
 dataTs = [obs, yp, yf]
 dataTs2 = [prcp]
 crd = df.getGeo()
@@ -153,7 +153,7 @@ dataGrid = [
     statPLst[2]['RMSE'] - statFLst[2]['RMSE'],
     # statPLst[3]['RMSE'] / statFLst[3]['RMSE'],
 ]
-prcp = df.getDataTs('APCP_FORA')
+prcp = df.get_data_ts('APCP_FORA')
 dataTs = [obs, yp, yf]
 dataTs2 = [prcp]
 crd = df.getGeo()
@@ -208,7 +208,7 @@ strLst = ['east Texas']
 tBar = [utils.time.t2dt(20160401)]
 t = df.getT()
 [lat, lon] = df.getGeo()
-prcp = df.getDataTs('APCP_FORA')
+prcp = df.get_data_ts('APCP_FORA')
 tsNameLst = ['obs', 'prj', 'fore']
 for k in range(len(indLst)):
     fig, axes = plt.subplots(2, 1, figsize=[16, 6])

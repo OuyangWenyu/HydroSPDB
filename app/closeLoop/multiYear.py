@@ -73,7 +73,7 @@ fig = plt.figure(figsize=[12, 6])
 plt.subplots_adjust(hspace=0)
 plt.subplots_adjust(vspace=0)
 t = df.getT()
-prcp = df.getDataTs('APCP_FORA').squeeze()
+prcp = df.get_data_ts('APCP_FORA').squeeze()
 tBarLst = [20160401, [20160401, 20170401], 20170401]
 for k in range(nts):
     ind = indLst[k]
@@ -167,7 +167,7 @@ dataGrid = [
     statPLst[1]['RMSE'] - statFLst[1]['RMSE'],
     statPLst[2]['RMSE'] - statFLst[2]['RMSE']
 ]
-prcp = df.getDataTs('APCP_FORA').squeeze()
+prcp = df.get_data_ts('APCP_FORA').squeeze()
 dataTs = [[obs, ypLst[0], yfLst[0]], [obs, ypLst[1], yfLst[1]],
           [obs, ypLst[2], yfLst[2]], [prcp]]
 crd = df.getGeo()

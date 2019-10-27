@@ -107,13 +107,13 @@ def loadData(optData):
     elif eval(optData['name']) is hydroDL.data.camels.DataframeCamels:
         df = hydroDL.data.camels.DataframeCamels(
             subset=optData['subset'], tRange=optData['tRange'])
-        x = df.getDataTs(
+        x = df.get_data_ts(
             varLst=optData['varT'],
             doNorm=optData['doNorm'][0],
             rmNan=optData['rmNan'][0])
-        y = df.getDataObs(
+        y = df.get_data_obs(
             doNorm=optData['doNorm'][1], rmNan=optData['rmNan'][1])
-        c = df.getDataConst(
+        c = df.get_data_const(
             varLst=optData['varC'],
             doNorm=optData['doNorm'][0],
             rmNan=optData['rmNan'][0])
@@ -125,7 +125,7 @@ def loadData(optData):
                 optData['tRange'][1]) - dt.timedelta(days=nday)
             df = hydroDL.data.camels.DataframeCamels(
                 subset=optData['subset'], tRange=[sd, ed])
-            obs = df.getDataObs(doNorm=optData['doNorm'][1], rmNan=True)
+            obs = df.get_data_obs(doNorm=optData['doNorm'][1], rmNan=True)
             x = np.concatenate([x, obs], axis=2)
     else:
         raise Exception('unknown database')
