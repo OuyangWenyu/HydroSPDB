@@ -12,6 +12,7 @@ from . import Dataframe
 
 # module variable
 dirDB = pathCamels['DB']
+gageFldLst = ['huc', 'id', 'name', 'lat', 'lon', 'area']
 tRange = [19800101, 20150101]
 tLst = utils.time.tRange2Array(tRange)
 nt = len(tLst)
@@ -29,16 +30,16 @@ def read_gage_info(dir_db):
     gage_file = os.path.join(dir_db, 'basin_timeseries_v1p2_metForcing_obsFlow',
                              'basin_dataset_public_v1p2', 'basin_metadata',
                              'gauge_information.txt')
-    # 为什么跳过第二行？
-    data = pd.read_csv(gage_file, sep='\t', header=None, skiprows=1)
+    # 指定第2列读取为字符串类型，否则作为数值类型，会自动把编号最前面的0省去，和实际编号不符
+    data = pd.read_csv(gage_file, sep='\t', header=None, skiprows=1, dtype={1: str})
     # header gives some troubles. Skip and hardcode
-    field_lst = ['huc', 'id', 'name', 'lat', 'lon', 'area']
+
     out = dict()
-    for s in field_lst:
+    for s in gageFldLst:
         if s is 'name':
-            out[s] = data[field_lst.index(s)].values.tolist()
+            out[s] = data[gageFldLst.index(s)].values.tolist()
         else:
-            out[s] = data[field_lst.index(s)].values
+            out[s] = data[gageFldLst.index(s)].values
     return out
 
 

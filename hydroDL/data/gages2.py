@@ -5,6 +5,7 @@
 import json
 import os
 import time
+from datetime import timedelta
 
 import numpy as np
 import pandas as pd
@@ -15,15 +16,18 @@ from hydroDL import pathGages2, pathCamels
 from hydroDL import utils
 from hydroDL.data import Dataframe, camels
 from hydroDL.utils.statistics import cal_stat, trans_norm
+from hydroDL.utils.time import t2dt
 
 dirDB = pathGages2['DB']
 # USGS所有站点
 gageFile = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format',
                         'conterm_basinid.txt')
-gageField = ['HUC02', 'STAID', 'STANAME', 'LAT_GAGE', 'LNG_GAGE', 'DRAIN_SQKM']
+# gageFldLst = ['HUC02', 'STAID', 'STANAME', 'LAT_GAGE', 'LNG_GAGE', 'DRAIN_SQKM']
+gageFldLst = camels.gageFldLst
 dirGageflow = os.path.join(dirDB, 'gages_streamflow')
 dirGageAttr = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format')
-streamflowUrl = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-01-01&end_date={}-12-31'
+streamflowUrl = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{}'
+# 左闭右开
 tRange = [19800101, 20150101]
 tLst = utils.time.tRange2Array(tRange)
 nt = len(tLst)
@@ -58,7 +62,7 @@ def read_gage_info(field_lst):
     data = pd.read_csv(gageFile, sep=',', header=0)
     out = dict()
     for s in field_lst:
-        if s is gageField[2]:
+        if s is gageFldLst[2]:
             out[s] = data[field_lst.index(s)].values.tolist()
         else:
             out[s] = data[field_lst.index(s)].values
@@ -80,13 +84,43 @@ statFile = os.path.join(dirDB, 'Statistics.json')
 def read_usgs_gage(usgs_id, *, read_qc=False):
     """读取各个径流站的径流数据"""
     # 首先找到要读取的那个txt
-    ind = np.argwhere(gageDict['id'] == usgs_id)[0][0]
-    huc = gageDict[gageField[0]][ind]
-    usgs_file = os.path.join(dirGageflow, str(huc).zfill(2), '%08d.txt' % (usgs_id))
-    data_temp = pd.read_csv(usgs_file, skiprows=29, sep='\t',
-                            names=['agency_cd', 'site_no', 'datetime', 'flow', 'mode'], index_col=0)
+    ind = np.argwhere(gageDict[gageFldLst[1]] == usgs_id)[0][0]
+    huc = gageDict[gageFldLst[0]][ind]
+    usgs_file = os.path.join(dirGageflow, str(huc), usgs_id + '.txt')
+    # 下载的数据文件，注释结束的行不一样
+    row_comment_end = 27  # 从0计数的行数
+    with open(usgs_file, 'r') as f:
+        ind_temp = 0
+        for line in f:
+            if line[0] is not '#':
+                row_comment_end = ind_temp
+                break
+            ind_temp += 1
+
+    # 下载的时候，没有指定统计类型，因此下下来的数据表有的还包括径流在一个时段内的最值，这里仅适用均值
+    skip_rows_index = list(range(0, row_comment_end))
+    skip_rows_index.append(row_comment_end + 1)
+    df_flow = pd.read_csv(usgs_file, skiprows=skip_rows_index, sep='\t', dtype={'site_no': str})
+
+    # 原数据的列名并不好用，这里修改
+    columns_names = df_flow.columns.tolist()
+    for column_name in columns_names:
+        # 00060表示径流值，00003表示均值
+        # 还有一种情况：#        126801       00060     00003     Discharge, cubic feet per second (Mean)和
+        # 126805       00060     00003     Discharge, cubic feet per second (Mean), PUBLISHED 都是均值，但有两套数据，这里暂时取第一套
+        if '_00060_00003' in column_name and '_00060_00003_cd' not in column_name:
+            df_flow.rename(columns={column_name: 'flow'}, inplace=True)
+            break
+    for column_name in columns_names:
+        if '_00060_00003_cd' in column_name:
+            df_flow.rename(columns={column_name: 'mode'}, inplace=True)
+            break
+
+    columns = ['agency_cd', 'site_no', 'datetime', 'flow', 'mode']
+    data_temp = df_flow.loc[:, columns]
+
     # 处理下负值
-    obs = data_temp[3].values
+    obs = data_temp['flow'].astype('float').values
     obs[obs < 0] = np.nan
     if read_qc is True:
         qc_dict = {'A': 1, 'A:e': 2, 'M': 3}
@@ -94,8 +128,8 @@ def read_usgs_gage(usgs_id, *, read_qc=False):
     # 如果时间序列长度和径流数据长度不一致，说明有missing值，先补充nan值
     if len(obs) != nt:
         out = np.full([nt], np.nan)
-        df_date = data_temp[[1, 2, 3]]
-        df_date.columns = ['year', 'month', 'day']
+        # df中的date是字符串，转换为datetime，方可与tLst求交集
+        df_date = data_temp['datetime']
         date = pd.to_datetime(df_date).values.astype('datetime64[D]')
         [C, ind1, ind2] = np.intersect1d(date, tLst, return_indices=True)
         out[ind2] = obs
@@ -129,21 +163,29 @@ def read_usgs(usgs_id_lst):
     for usgs_id in usgs_id_lst:
         # 首先判断站点属于哪个region
         ind = np.argwhere(idLst == usgs_id)[0][0]
-        huc_02 = gageDict[gageField[0]][ind]
+        # 先用camels的
+        huc_02 = gageDict[gageFldLst[0]][ind]
         dir_huc_02 = str(huc_02)
         if dir_huc_02 not in dir_list:
+            dir_huc_02 = os.path.join(dirGageflow, str(huc_02))
             os.mkdir(dir_huc_02)
-        file_usgs_id = str(usgs_id) + ".txt"
+            dir_list = os.listdir(dirGageflow)
+        dir_huc_02 = os.path.join(dirGageflow, str(huc_02))
         file_list = os.listdir(dir_huc_02)
+        file_usgs_id = str(usgs_id) + ".txt"
         if file_usgs_id not in file_list:
             # 通过直接读取网页的方式获取数据，然后存入txt文件
-            url = streamflowUrl.format(usgs_id, tRange[0], tRange[1])
+            start_time_str = t2dt(tRange[0])
+            #
+            end_time_str = t2dt(tRange[1]) - timedelta(days=1)
+            url = streamflowUrl.format(usgs_id, start_time_str.year, start_time_str.month, start_time_str.day,
+                                       end_time_str.year, end_time_str.month, end_time_str.day)
             r = requests.get(url)
             # 存放的位置是对应HUC02区域的文件夹下
-            temp_file = dirGageflow + dir_huc_02 + usgs_id + '.txt'
+            temp_file = os.path.join(dir_huc_02, str(usgs_id) + '.txt')
             with open(temp_file, 'w') as f:
                 f.write(r.text)
-            print("成功写入" + temp_file + "径流数据！")
+            print("成功写入 " + temp_file + " 径流数据！")
     t0 = time.time()
     y = np.empty([len(usgs_id_lst), nt])
     for k in range(len(usgs_id_lst)):
