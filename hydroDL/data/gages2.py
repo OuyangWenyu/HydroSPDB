@@ -1,6 +1,6 @@
-"""read gages-ii data"""
+"""read gages-ii data以计算统计值，为归一化备用"""
 
-# 读取GAGES-II数据，需要指定文件路径、时间范围、属性类型、需要计算配置的项是forcing data。
+# 读取GAGES-II数据需要指定文件路径、时间范围、属性类型、需要计算配置的项是forcing data。
 # module variable
 import json
 import os
@@ -11,13 +11,16 @@ import pandas as pd
 import requests
 from pandas.api.types import is_numeric_dtype, is_string_dtype
 
-from hydroDL import pathGages2
+from hydroDL import pathGages2, pathCamels
 from hydroDL import utils
-from hydroDL.data import Dataframe
-from hydroDL.data.camels import read_forcing
+from hydroDL.data import Dataframe, camels
 from hydroDL.utils.statistics import cal_stat, trans_norm
 
 dirDB = pathGages2['DB']
+# USGS所有站点
+gageFile = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format',
+                        'conterm_basinid.txt')
+gageField = ['HUC02', 'STAID', 'STANAME', 'LAT_GAGE', 'LNG_GAGE', 'DRAIN_SQKM']
 dirGageflow = os.path.join(dirDB, 'gages_streamflow')
 dirGageAttr = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format')
 streamflowUrl = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-01-01&end_date={}-12-31'
@@ -38,7 +41,6 @@ for attrLstAllTemp in attrLstAll:
 # land cover部分：forest_frac对应FORESTNLCD06；lai没有，这里暂时用所有forest的属性；land_cover暂时用除人为种植之外的其他所有属性。
 # soil：soil_depth相关的有：ROCKDEPAVE；soil_porosity类似的可能是：AWCAVE；soil_conductivity可能相关的：PERMAVE；max_water_content没有，暂时用RFACT
 # geology在GAGES-II中一共两类，来自两个数据源，用第一种，
-gageField = ['HUC02', 'STAID', 'STANAME', 'LAT_GAGE', 'LNG_GAGE', 'DRAIN_SQKM']
 attrBasin = ['ELEV_MEAN_M_BASIN', 'SLOPE_PCT', 'DRAIN_SQKM']
 attrLandcover = ['FORESTNLCD06', 'BARRENNLCD06', 'DECIDNLCD06', 'EVERGRNLCD06', 'MIXEDFORNLCD06', 'SHRUBNLCD06',
                  'GRASSNLCD06', 'WOODYWETNLCD06', 'EMERGWETNLCD06']
@@ -48,14 +50,12 @@ attrLstSel = attrBasin + attrLandcover + attrSoil + attrGeol
 
 
 # 然后根据配置读取所需的gages-ii站点信息
-def read_gage_info(dir_db, field_lst):
+def read_gage_info(field_lst):
     """读取gages-ii站点及流域基本location等信息。
     从中选出field_lst中属性名称对应的值，存入dic中。
     """
-    gage_file = os.path.join(dir_db, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format',
-                             'conterm_basinid.txt')
     # 数据从第二行开始，因此跳过第一行。
-    data = pd.read_csv(gage_file, sep=',', header=0)
+    data = pd.read_csv(gageFile, sep=',', header=0)
     out = dict()
     for s in field_lst:
         if s is gageField[2]:
@@ -66,7 +66,11 @@ def read_gage_info(dir_db, field_lst):
 
 
 # module variable
-gageDict = read_gage_info(dirDB, gageField)
+# GAGES-II的所有站点
+# gageDict = read_gage_info(gageField)
+# id_lst = gageDict['STAID']
+gageDict = camels.read_gage_info(pathCamels['DB'])
+idLst = gageDict['id']
 
 # 为了便于后续的归一化计算，这里需要计算流域attributes、forcings和streamflows统计值。
 # module variable
@@ -124,7 +128,7 @@ def read_usgs(usgs_id_lst):
     # 判断usgs_id_lst中没有对应径流文件的要从网上下载
     for usgs_id in usgs_id_lst:
         # 首先判断站点属于哪个region
-        ind = np.argwhere(gageDict['id'] == usgs_id)[0][0]
+        ind = np.argwhere(idLst == usgs_id)[0][0]
         huc_02 = gageDict[gageField[0]][ind]
         dir_huc_02 = str(huc_02)
         if dir_huc_02 not in dir_list:
@@ -174,7 +178,7 @@ def read_attr_all(save_dict=False):
         var_dict[key] = var_lst_temp
         var_lst.extend(var_lst_temp)
         k = 0
-        n_gage = len(gageDict['STAID'])
+        n_gage = len(idLst)
         out_temp = np.full([n_gage, len(var_lst_temp)], np.nan)
         for field in var_lst_temp:
             if is_string_dtype(data_temp[field]):
@@ -196,20 +200,19 @@ def read_attr_all(save_dict=False):
     return out, var_lst
 
 
-def cal_stat_all():
+def cal_stat_all(id_lst):
     """计算统计值，便于后面归一化处理。
     目前驱动数据暂时使用camels的驱动数据，因此forcing的统计计算可以直接使用camels的；
     这里仅针对GAGES-II属性值进行统计计算；
     USGS径流数据也使用GAGES-II的数据：先确定要
     """
     stat_dict = dict()
-    id_lst = gageDict['STAID']
     # usgs streamflow
     y = read_usgs(id_lst)
     # 计算统计值，可以和camels下的共用同一个函数
     stat_dict['usgsFlow'] = cal_stat(y)
     # forcing数据可以暂时使用camels下的，后续有了新数据，也可以组织成和camels一样的
-    x = read_forcing(id_lst, forcingLst)
+    x = camels.read_forcing(id_lst, forcingLst)
     for k in range(len(forcingLst)):
         var = forcingLst[k]
         stat_dict[var] = cal_stat(x[:, :, k])
@@ -225,7 +228,7 @@ def cal_stat_all():
 
 # 如果统计值已经计算过了，就没必要再重新计算了
 if not os.path.isfile(statFile):
-    cal_stat_all()
+    cal_stat_all(idLst)
 # 计算过了，就从存储的json文件中读取出统计结果
 with open(statFile, 'r') as fp:
     statDict = json.load(fp)
@@ -236,7 +239,7 @@ def read_attr(usgs_id_lst, var_lst):
     ind_var = list()
     for var in var_lst:
         ind_var.append(var_lst_all.index(var))
-    id_lst_all = gageDict['id']
+    id_lst_all = idLst
     c, ind_grid, ind2 = np.intersect1d(id_lst_all, usgs_id_lst, return_indices=True)
     temp = attr_all[ind_grid, :]
     out = temp[:, ind_var]
@@ -278,7 +281,7 @@ class DataframeGages2(Dataframe):
         if type(var_lst) is str:
             var_lst = [var_lst]
         # read ts forcing
-        data = read_forcing(self.usgsId, var_lst)
+        data = camels.read_forcing(self.usgsId, var_lst)
         C, ind1, ind2 = np.intersect1d(self.time, tLst, return_indices=True)
         data = data[:, ind2, :]
         if do_norm is True:

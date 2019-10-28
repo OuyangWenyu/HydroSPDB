@@ -1,7 +1,5 @@
 import numpy as np
 
-from hydroDL.data.camels import statDict
-
 
 def cal_stat(x):
     a = x.flatten()
@@ -16,14 +14,14 @@ def cal_stat(x):
     return [p10, p90, mean, std]
 
 
-def trans_norm(x, var_lst, *, to_norm):
+def trans_norm(x, var_lst, stat_dict, *, to_norm):
     """归一化计算方法"""
     if type(var_lst) is str:
         var_lst = [var_lst]
     out = np.zeros(x.shape)
     for k in range(len(var_lst)):
         var = var_lst[k]
-        stat = statDict[var]
+        stat = stat_dict[var]
         if to_norm is True:
             if len(x.shape) == 3:
                 out[:, :, k] = (x[:, :, k] - stat[2]) / stat[3]

@@ -14,6 +14,3 @@ class Dataframe(object):
 class DataModel():
     def getDataTrain(self):
         return self.x, self.y, self.c
-
-
-from .dbCsv import DataframeCsv, DataModelCsv

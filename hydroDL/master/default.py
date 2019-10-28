@@ -1,6 +1,5 @@
-import hydroDL
 from collections import OrderedDict
-from hydroDL.data import dbCsv, camels, gages2
+from hydroDL.data import camels, gages2
 
 # Gages2 default options
 optDataGages2 = OrderedDict(
