@@ -131,7 +131,7 @@ def read_usgs_gage(usgs_id, *, read_qc=False):
         # df中的date是字符串，转换为datetime，方可与tLst求交集
         df_date = data_temp['datetime']
         date = pd.to_datetime(df_date).values.astype('datetime64[D]')
-        [C, ind1, ind2] = np.intersect1d(date, tLst, return_indices=True)
+        c, ind1, ind2 = np.intersect1d(date, tLst, return_indices=True)
         out[ind2] = obs
         if read_qc is True:
             out_qc = np.full([nt], np.nan)
@@ -195,48 +195,63 @@ def read_usgs(usgs_id_lst):
     return y
 
 
-def read_attr_all(save_dict=False):
-    """读取GAGES-II下的属性数据"""
+def read_attr_all():
+    """读取GAGES-II下的属性数据，目前是将用到的几个属性所属的那个属性大类下的所有属性的统计值都计算一下"""
     data_folder = dirGageAttr
     f_dict = dict()  # factorize dict
+    # 每个key-value对是一个文件（str）下的所有属性（list）
     var_dict = dict()
+    # 所有属性放在一起
     var_lst = list()
     out_lst = list()
-    # 属性暂时只用一部分，判断来自哪个文件
-    key_lst = []
-    var_des = pd.read_csv(os.path.join(dirGageAttr, 'variable_description.txt'), sep=',')
-    var_des_map_keys = var_des['VARIABLE_NAME']
-    var_des_map_values = var_des['VARIABLE_TYPE']
-    var_des_map = {}
+    # 读取所有属性，直接按类型判断要读取的文件名
+    var_des = pd.read_csv(os.path.join(dirGageAttr, 'variable_descriptions.txt'), sep=',')
+    var_des_map_values = var_des['VARIABLE_TYPE'].tolist()
     for i in range(len(var_des)):
-        var_des_map[var_des_map_keys[i]] = var_des_map_values[i]
-    for attrLstSelTemp in attrLstSel:
-        key_lst.append(var_des_map[attrLstSelTemp].lower())
+        var_des_map_values[i] = var_des_map_values[i].lower()
+    # 按照读取的时候的顺序对type排序
+    key_lst = list(set(var_des_map_values))
+    key_lst.sort(key=var_des_map_values.index)
+    # x_region_names属性暂不需要读入
+    key_lst.remove('x_region_names')
 
     for key in key_lst:
+        if key == 'flow_record':
+            key = 'flowrec'
         data_file = os.path.join(data_folder, 'conterm_' + key + '.txt')
-        data_temp = pd.read_csv(data_file, sep=',')
+        # 各属性值的“参考来源”是不需读入的
+        if key == 'bas_classif':
+            data_temp = pd.read_csv(data_file, sep=',', dtype={'STAID': str}, usecols=range(0, 4))
+        else:
+            data_temp = pd.read_csv(data_file, sep=',', dtype={'STAID': str})
+        if key == 'flowrec':
+            # 最后一列为空，舍弃
+            data_temp = data_temp.iloc[:, range(0, data_temp.shape[1]-1)]
+        # 该文件下的所有属性
         var_lst_temp = list(data_temp.columns[1:])
         var_dict[key] = var_lst_temp
         var_lst.extend(var_lst_temp)
         k = 0
         n_gage = len(idLst)
-        out_temp = np.full([n_gage, len(var_lst_temp)], np.nan)
+        out_temp = np.full([n_gage, len(var_lst_temp)], np.nan)  # 所有站点是一维，当前data_file下所有属性是第二维
+        # 因为选择的站点可能是站点的一部分，所以需要求交集，ind2是所选站点在conterm_文件中所有站点里的index，把这些值放到out_temp中
+        range1 = gageDict[gageFldLst[1]].tolist()
+        range2 = data_temp.iloc[:, 0].astype(str).tolist()
+        c, ind1, ind2 = np.intersect1d(range1, range2, return_indices=True)
         for field in var_lst_temp:
-            if is_string_dtype(data_temp[field]):
-                value, ref = pd.factorize(data_temp[field], sort=True)
+            if is_string_dtype(data_temp[field]):  # 字符串值就当做是类别变量，赋值给变量类型value，以及类型说明ref
+                value, ref = pd.factorize(data_temp.loc[ind2, field], sort=True)
                 out_temp[:, k] = value
                 f_dict[field] = ref.tolist()
             elif is_numeric_dtype(data_temp[field]):
-                out_temp[:, k] = data_temp[field].values
+                out_temp[:, k] = data_temp.loc[ind2, field].values
             k = k + 1
         out_lst.append(out_temp)
     out = np.concatenate(out_lst, 1)
-    if save_dict is True:
-        file_name = os.path.join(data_folder, 'dictFactorize.json')
+    file_name = os.path.join(dirDB, 'dictFactorize.json')
     with open(file_name, 'w') as fp:
         json.dump(f_dict, fp, indent=4)
-    file_name = os.path.join(data_folder, 'dictAttribute.json')
+    file_name = os.path.join(dirDB, 'dictAttribute.json')
     with open(file_name, 'w') as fp:
         json.dump(var_dict, fp, indent=4)
     return out, var_lst
@@ -249,6 +264,14 @@ def cal_stat_all(id_lst):
     USGS径流数据也使用GAGES-II的数据：先确定要
     """
     stat_dict = dict()
+
+    # const attribute
+    attr_data, attr_lst = read_attr_all()
+    for k in range(len(attr_lst)):
+        var = attr_lst[k]
+        print(var)
+        stat_dict[var] = cal_stat(attr_data[:, k])
+
     # usgs streamflow
     y = read_usgs(id_lst)
     # 计算统计值，可以和camels下的共用同一个函数
@@ -258,11 +281,7 @@ def cal_stat_all(id_lst):
     for k in range(len(forcingLst)):
         var = forcingLst[k]
         stat_dict[var] = cal_stat(x[:, :, k])
-    # const attribute
-    attr_data, attr_lst = read_attr_all()
-    for k in range(len(attr_lst)):
-        var = attr_lst[k]
-        stat_dict[var] = cal_stat(attr_data[:, k])
+
     stat_file = os.path.join(dirDB, 'Statistics.json')
     with open(stat_file, 'w') as FP:
         json.dump(stat_dict, FP, indent=4)

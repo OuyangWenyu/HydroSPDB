@@ -104,6 +104,8 @@ def read_forcing_gage(usgs_id, var_lst=forcingLst, *, dataset='nldas'):
         temp_s = 'cida'
     else:
         temp_s = dataset
+    if type(usgs_id) is str:
+        usgs_id = int(usgs_id)
     data_file = os.path.join(data_folder, dataset,
                              str(huc).zfill(2),
                              '%08d_lump_%s_forcing_leap.txt' % (usgs_id, temp_s))
