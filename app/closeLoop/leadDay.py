@@ -30,7 +30,7 @@ if 'train' in doLst:
                            'CONUSv2f1_d' + str(nd))
         masterDict = master.wrapMaster(out, optData, optModel, optLoss,
                                        optTrain)
-        master.runTrain(masterDict, cudaID=cid % 3, screen='d' + str(nd))
+        master.run_train(masterDict, cudaID=cid % 3, screen='d' + str(nd))
         # master.train(masterDict)
         cid = cid + 1
     # vanila LSTM
@@ -44,7 +44,7 @@ if 'train' in doLst:
     optTrain = default.update(default.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA', 'CONUSv2f1')
     masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
-    master.runTrain(masterDict, cudaID=0, screen='LSTM')
+    master.run_train(masterDict, cudaID=0, screen='LSTM')
 
 # test
 if 'test' in doLst:

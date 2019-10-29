@@ -1,5 +1,5 @@
 from hydroDL import pathSMAP
-from hydroDL.master import default, wrapMaster, train, runTrain, test
+from hydroDL.master import default, wrapMaster, train, run_train, test
 from hydroDL.post import plot, stat
 
 import os

@@ -1,3 +1,3 @@
-from .master import readMasterFile, writeMasterFile, wrapMaster, train, test
+from .master import read_master_file, write_master_file, wrapMaster, train, test
 from . import default
-from .screen import runTrain
+from .screen import run_train

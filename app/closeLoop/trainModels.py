@@ -48,7 +48,7 @@ for k in range(len(tLst)):
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                         'CONUSv2f1_NN' + yrLst[k])
     masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
-    master.runTrain(masterDict, cudaID=k % 3, screen='NN' + yrLst[k])
+    master.run_train(masterDict, cudaID=k % 3, screen='NN' + yrLst[k])
     # master.train(masterDict)
 
     optData = default.update(
@@ -64,5 +64,5 @@ for k in range(len(tLst)):
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                        'CONUSv2f1_DANN' + yrLst[k])
     masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
-    master.runTrain(masterDict, cudaID=k % 3, screen='DANN' + yrLst[k])
+    master.run_train(masterDict, cudaID=k % 3, screen='DANN' + yrLst[k])
     # master.train(masterDict)

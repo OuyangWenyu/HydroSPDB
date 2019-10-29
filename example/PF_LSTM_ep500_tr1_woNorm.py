@@ -1,6 +1,6 @@
 from hydroDL import master, utils
 from hydroDL.data import dbCsv
-from hydroDL.master import default, wrapMaster, runTrain, test
+from hydroDL.master import default, wrapMaster, run_train, test
 from hydroDL.model import rnn, crit, train
 from hydroDL.post import plot, stat
 

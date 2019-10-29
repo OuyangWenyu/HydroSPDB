@@ -13,35 +13,36 @@ def wrapMaster(out, optData, optModel, optLoss, optTrain):
         out=out, data=optData, model=optModel, loss=optLoss, train=optTrain)
     return mDict
 
-def readMasterFile(out):
-    mFile = os.path.join(out, 'master.json')
-    with open(mFile, 'r') as fp:
-        mDict = json.load(fp, object_pairs_hook=OrderedDict)
-    print('read master file ' + mFile)
-    return mDict
+
+def read_master_file(out):
+    m_file = os.path.join(out, 'master.json')
+    with open(m_file, 'r') as fp:
+        m_dict = json.load(fp, object_pairs_hook=OrderedDict)
+    print('read master file ' + m_file)
+    return m_dict
 
 
-def writeMasterFile(mDict):
-    out = mDict['out']
+def write_master_file(m_dict):
+    out = m_dict['out']
     if not os.path.isdir(out):
         os.makedirs(out)
-    mFile = os.path.join(out, 'master.json')
-    with open(mFile, 'w') as fp:
-        json.dump(mDict, fp, indent=4)
-    print('write master file ' + mFile)
+    m_file = os.path.join(out, 'master.json')
+    with open(m_file, 'w') as fp:
+        json.dump(m_dict, fp, indent=4)
+    print('write master file ' + m_file)
     return out
 
 
 def loadModel(out, epoch=None):
     if epoch is None:
-        mDict = readMasterFile(out)
+        mDict = read_master_file(out)
         epoch = mDict['train']['nEpoch']
     model = hydroDL.model.train.loadModel(out, epoch)
     return model
 
 
 def namePred(out, tRange, subset, epoch=None, doMC=False, suffix=None):
-    mDict = readMasterFile(out)
+    mDict = read_master_file(out)
     target = mDict['data']['target']
     if type(target) is not list:
         target = [target]
@@ -71,131 +72,105 @@ def namePred(out, tRange, subset, epoch=None, doMC=False, suffix=None):
     return filePathLst
 
 
-def loadData(optData):
-    if eval(optData['name']) is hydroDL.data.dbCsv.DataframeCsv:
-        df = hydroDL.data.dbCsv.DataframeCsv(
-            rootDB=optData['rootDB'],
-            subset=optData['subset'],
-            tRange=optData['tRange'])
-        x = df.getDataTs(
-            varLst=optData['varT'],
-            doNorm=optData['doNorm'][0],
-            rmNan=optData['rmNan'][0])
-        y = df.getDataTs(
-            varLst=optData['target'],
-            doNorm=optData['doNorm'][1],
-            rmNan=optData['rmNan'][1])
-        c = df.getDataConst(
-            varLst=optData['varC'],
-            doNorm=optData['doNorm'][0],
-            rmNan=optData['rmNan'][0])
-        if optData['daObs'] > 0:
-            nday = optData['daObs']
-            sd = utils.time.t2dt(
-                optData['tRange'][0]) - dt.timedelta(days=nday)
-            ed = utils.time.t2dt(
-                optData['tRange'][1]) - dt.timedelta(days=nday)
-            df = hydroDL.data.dbCsv.DataframeCsv(
-                rootDB=optData['rootDB'],
-                subset=optData['subset'],
-                tRange=[sd, ed])
-            obs = df.getDataTs(
-                varLst=optData['target'],
-                doNorm=optData['doNorm'][1],
-                rmNan=optData['rmNan'][1])
-            x = (x, obs)
-    elif eval(optData['name']) is hydroDL.data.camels.DataframeCamels:
+def load_data(opt_data):
+    if eval(opt_data['name']) is hydroDL.data.gages2.DataframeGages2:
+        df = hydroDL.data.gages2.DataframeGages2(
+            subset=opt_data['subset'],
+            tRange=opt_data['tRange'])
+    elif eval(opt_data['name']) is hydroDL.data.camels.DataframeCamels:
         df = hydroDL.data.camels.DataframeCamels(
-            subset=optData['subset'], tRange=optData['tRange'])
-        x = df.get_data_ts(
-            varLst=optData['varT'],
-            doNorm=optData['doNorm'][0],
-            rmNan=optData['rmNan'][0])
-        y = df.get_data_obs(
-            doNorm=optData['doNorm'][1], rmNan=optData['rmNan'][1])
-        c = df.get_data_const(
-            varLst=optData['varC'],
-            doNorm=optData['doNorm'][0],
-            rmNan=optData['rmNan'][0])
-        if optData['daObs'] > 0:
-            nday = optData['daObs']
-            sd = utils.time.t2dt(
-                optData['tRange'][0]) - dt.timedelta(days=nday)
-            ed = utils.time.t2dt(
-                optData['tRange'][1]) - dt.timedelta(days=nday)
-            df = hydroDL.data.camels.DataframeCamels(
-                subset=optData['subset'], tRange=[sd, ed])
-            obs = df.get_data_obs(doNorm=optData['doNorm'][1], rmNan=True)
-            x = np.concatenate([x, obs], axis=2)
+            subset=opt_data['subset'], tRange=opt_data['tRange'])
     else:
         raise Exception('unknown database')
+    x = df.get_data_ts(
+        var_lst=opt_data['varT'],
+        do_norm=opt_data['doNorm'][0],
+        rm_nan=opt_data['rmNan'][0])
+    y = df.get_data_obs(
+        do_norm=opt_data['doNorm'][1], rm_nan=opt_data['rmNan'][1])
+    c = df.get_data_const(
+        var_lst=opt_data['varC'],
+        do_norm=opt_data['doNorm'][0],
+        rm_nan=opt_data['rmNan'][0])
+    if opt_data['daObs'] > 0:
+        nday = opt_data['daObs']
+        sd = utils.time.t2dt(
+            opt_data['tRange'][0]) - dt.timedelta(days=nday)
+        ed = utils.time.t2dt(
+            opt_data['tRange'][1]) - dt.timedelta(days=nday)
+        if eval(opt_data['name']) is hydroDL.data.gages2.DataframeGages2:
+            df = hydroDL.data.gages2.DataframeGages2(subset=opt_data['subset'], tRange=[sd, ed])
+        elif eval(opt_data['name']) is hydroDL.data.camels.DataframeCamels:
+            df = hydroDL.data.camels.DataframeCamels(subset=opt_data['subset'], tRange=[sd, ed])
+        obs = df.get_data_obs(do_norm=opt_data['doNorm'][1], rm_nan=True)
+        x = np.concatenate([x, obs], axis=2)
     return df, x, y, c
 
 
-def train(mDict):
-    if mDict is str:
-        mDict = readMasterFile(mDict)
-    out = mDict['out']
-    optData = mDict['data']
-    optModel = mDict['model']
-    optLoss = mDict['loss']
-    optTrain = mDict['train']
+def train(m_dict):
+    if m_dict is str:
+        m_dict = read_master_file(m_dict)
+    out = m_dict['out']
+    opt_data = m_dict['data']
+    opt_model = m_dict['model']
+    opt_loss = m_dict['loss']
+    opt_train = m_dict['train']
 
     # data
-    df, x, y, c = loadData(optData)
+    df, x, y, c = load_data(opt_data)
     nx = x.shape[-1] + c.shape[-1]
     ny = y.shape[-1]
 
     # loss
-    if eval(optLoss['name']) is hydroDL.model.crit.SigmaLoss:
-        lossFun = hydroDL.model.crit.SigmaLoss(prior=optLoss['prior'])
-        optModel['ny'] = ny * 2
-    elif eval(optLoss['name']) is hydroDL.model.crit.RmseLoss:
-        lossFun = hydroDL.model.crit.RmseLoss()
-        optModel['ny'] = ny
+    if eval(opt_loss['name']) is hydroDL.model.crit.SigmaLoss:
+        loss_fun = hydroDL.model.crit.SigmaLoss(prior=opt_loss['prior'])
+        opt_model['ny'] = ny * 2
+    elif eval(opt_loss['name']) is hydroDL.model.crit.RmseLoss:
+        loss_fun = hydroDL.model.crit.RmseLoss()
+        opt_model['ny'] = ny
 
     # model
-    if optModel['nx'] != nx:
+    if opt_model['nx'] != nx:
         print('updated nx by input data')
-        optModel['nx'] = nx
-    if eval(optModel['name']) is hydroDL.model.rnn.CudnnLstmModel:
+        opt_model['nx'] = nx
+    if eval(opt_model['name']) is hydroDL.model.rnn.CudnnLstmModel:
         model = hydroDL.model.rnn.CudnnLstmModel(
-            nx=optModel['nx'],
-            ny=optModel['ny'],
-            hiddenSize=optModel['hiddenSize'])
-    elif eval(optModel['name']) is hydroDL.model.rnn.LstmCloseModel:
+            nx=opt_model['nx'],
+            ny=opt_model['ny'],
+            hiddenSize=opt_model['hiddenSize'])
+    elif eval(opt_model['name']) is hydroDL.model.rnn.LstmCloseModel:
         model = hydroDL.model.rnn.LstmCloseModel(
-            nx=optModel['nx'],
-            ny=optModel['ny'],
-            hiddenSize=optModel['hiddenSize'],
+            nx=opt_model['nx'],
+            ny=opt_model['ny'],
+            hiddenSize=opt_model['hiddenSize'],
             fillObs=True)
-    elif eval(optModel['name']) is hydroDL.model.rnn.AnnModel:
+    elif eval(opt_model['name']) is hydroDL.model.rnn.AnnModel:
         model = hydroDL.model.rnn.AnnCloseModel(
-            nx=optModel['nx'],
-            ny=optModel['ny'],
-            hiddenSize=optModel['hiddenSize'])
-    elif eval(optModel['name']) is hydroDL.model.rnn.AnnCloseModel:
+            nx=opt_model['nx'],
+            ny=opt_model['ny'],
+            hiddenSize=opt_model['hiddenSize'])
+    elif eval(opt_model['name']) is hydroDL.model.rnn.AnnCloseModel:
         model = hydroDL.model.rnn.AnnCloseModel(
-            nx=optModel['nx'],
-            ny=optModel['ny'],
-            hiddenSize=optModel['hiddenSize'],
+            nx=opt_model['nx'],
+            ny=opt_model['ny'],
+            hiddenSize=opt_model['hiddenSize'],
             fillObs=True)
 
     # train
-    if optTrain['saveEpoch'] > optTrain['nEpoch']:
-        optTrain['saveEpoch'] = optTrain['nEpoch']
+    if opt_train['saveEpoch'] > opt_train['nEpoch']:
+        opt_train['saveEpoch'] = opt_train['nEpoch']
 
     # train model
-    writeMasterFile(mDict)
+    write_master_file(m_dict)
     model = hydroDL.model.train.trainModel(
         model,
         x,
         y,
         c,
-        lossFun,
-        nEpoch=optTrain['nEpoch'],
-        miniBatch=optTrain['miniBatch'],
-        saveEpoch=optTrain['saveEpoch'],
+        loss_fun,
+        nEpoch=opt_train['nEpoch'],
+        miniBatch=opt_train['miniBatch'],
+        saveEpoch=opt_train['saveEpoch'],
         saveFolder=out)
 
 
@@ -208,12 +183,12 @@ def test(out,
          batchSize=None,
          epoch=None,
          reTest=False):
-    mDict = readMasterFile(out)
+    mDict = read_master_file(out)
 
     optData = mDict['data']
     optData['subset'] = subset
     optData['tRange'] = tRange
-    df, x, obs, c = loadData(optData)
+    df, x, obs, c = load_data(optData)
 
     # generate file names and run model
     filePathLst = namePred(
@@ -231,7 +206,7 @@ def test(out,
         print('Loaded previous results')
 
     # load previous result
-    mDict = readMasterFile(out)
+    mDict = read_master_file(out)
     dataPred = np.ndarray([obs.shape[0], obs.shape[1], len(filePathLst)])
     for k in range(len(filePathLst)):
         filePath = filePathLst[k]

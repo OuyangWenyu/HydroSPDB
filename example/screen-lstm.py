@@ -18,4 +18,4 @@ optTrain = master.default.optTrain
 masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
 
 # train
-master.runTrain(masterDict, cudaID=0, screenName='sigmaTest')
+master.run_train(masterDict, cudaID=0, screenName='sigmaTest')

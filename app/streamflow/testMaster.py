@@ -14,7 +14,7 @@ optModel = default.optLstm
 optLoss = default.optLossRMSE
 optTrain = default.optTrainCamels
 masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
-master.runTrain(masterDict, cudaID=cid % 3, screen='test')
+master.run_train(masterDict, cudaID=cid % 3, screen='test')
 cid = cid + 1
 
 # train DA model

@@ -3,7 +3,7 @@ from hydroDL.data import camels, gages2
 
 # Gages2 default options
 optDataGages2 = OrderedDict(
-    name='hydroDL.data.dbCsv.DataframeGages2',
+    name='hydroDL.data.gages2.DataframeGages2',
     subset='All',
     varT=gages2.forcingLst,
     varC=gages2.attrLstSel,

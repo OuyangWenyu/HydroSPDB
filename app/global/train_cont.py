@@ -38,7 +38,7 @@ for k in range(len(subsetLst)):
 
         masterDict = master.wrapMaster(out, optData, optModel, optLoss,
                                        optTrain)
-        master.runTrain(masterDict, cudaID=cid % 3, screen=outLst[k])
+        master.run_train(masterDict, cudaID=cid % 3, screen=outLst[k])
         cid = cid + 1
         # master.train(masterDict)
 

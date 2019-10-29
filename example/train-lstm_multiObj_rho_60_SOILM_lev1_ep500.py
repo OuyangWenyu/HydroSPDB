@@ -1,5 +1,5 @@
 from hydroDL import pathSMAP
-from hydroDL.master import default, wrapMaster, train, runTrain
+from hydroDL.master import default, wrapMaster, train, run_train
 import os
 
 cDir = os.path.dirname(os.path.abspath(__file__))

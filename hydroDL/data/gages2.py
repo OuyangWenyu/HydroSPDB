@@ -226,7 +226,7 @@ def read_attr_all():
             data_temp = pd.read_csv(data_file, sep=',', dtype={'STAID': str})
         if key == 'flowrec':
             # 最后一列为空，舍弃
-            data_temp = data_temp.iloc[:, range(0, data_temp.shape[1]-1)]
+            data_temp = data_temp.iloc[:, range(0, data_temp.shape[1] - 1)]
         # 该文件下的所有属性
         var_lst_temp = list(data_temp.columns[1:])
         var_dict[key] = var_lst_temp
@@ -332,7 +332,7 @@ class DataframeGages2(Dataframe):
         C, ind1, ind2 = np.intersect1d(self.time, tLst, return_indices=True)
         data = data[:, ind2, :]
         if do_norm is True:
-            data = trans_norm(data, 'usgsFlow', toNorm=True)
+            data = trans_norm(data, 'usgsFlow', statDict, to_norm=True)
         if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data
@@ -346,7 +346,7 @@ class DataframeGages2(Dataframe):
         C, ind1, ind2 = np.intersect1d(self.time, tLst, return_indices=True)
         data = data[:, ind2, :]
         if do_norm is True:
-            data = trans_norm(data, var_lst, toNorm=True)
+            data = trans_norm(data, var_lst, statDict, to_norm=True)
         if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data
@@ -357,7 +357,7 @@ class DataframeGages2(Dataframe):
             var_lst = [var_lst]
         data = read_attr(self.usgsId, var_lst)
         if do_norm is True:
-            data = trans_norm(data, var_lst, toNorm=True)
+            data = trans_norm(data, var_lst, statDict, to_norm=True)
         if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data

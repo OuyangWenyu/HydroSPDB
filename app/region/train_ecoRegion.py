@@ -24,7 +24,7 @@ for case in caseLst:
     optTrain = master.default.optTrainSMAP
     out = os.path.join(pathSMAP['Out_L3_NA'], 'CONUSv2f1_' + case)
     masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
-    master.runTrain(masterDict, cudaID=cid % 3, screen=case)
+    master.run_train(masterDict, cudaID=cid % 3, screen=case)
     cid = cid + 1
 
 # train for each region
@@ -74,7 +74,7 @@ for kk in range(len(rtEcoLst)):
     out = os.path.join(pathSMAP['Out_L3_NA'], 'ecoRegion',
                        subsetLst[k] + '_' + case)
     masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
-    master.runTrain(masterDict, cudaID=cid % 3, screen=subsetLst[k])
+    master.run_train(masterDict, cudaID=cid % 3, screen=subsetLst[k])
     cid = cid + 1
     # master.train(masterDict)
 

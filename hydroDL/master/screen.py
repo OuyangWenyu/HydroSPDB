@@ -11,31 +11,31 @@ from hydroDL import master
 from hydroDL.utils import email
 
 
-def runTrain(masterDict, *, screen='test', cudaID):
-    if type(masterDict) is str:
-        mFile = masterDict
-        masterDict = master.readMasterFile(mFile)
+def run_train(master_dict, *, screen='test', cudaID):
+    if type(master_dict) is str:
+        m_file = master_dict
+        master_dict = master.read_master_file(m_file)
     else:
-        mFile = master.writeMasterFile(masterDict)
+        m_file = master.write_master_file(master_dict)
 
-    codePath = os.path.realpath(__file__)
+    code_path = os.path.realpath(__file__)
     if screen is None:
         cmd = 'CUDA_VISIBLE_DEVICES={} python {} -F {} -M {}'.format(
-            cudaID, codePath, 'train', mFile)
+            cudaID, code_path, 'train', m_file)
     else:
         cmd = 'CUDA_VISIBLE_DEVICES={} screen -dmS {} python {} -F {} -M {}'.format(
-            cudaID, screen, codePath, 'train', mFile)
+            cudaID, screen, code_path, 'train', m_file)
 
     print(cmd)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-F', dest='func', type=str, default='train')
-    parser.add_argument('-M', dest='mFile', type=str, default='C:\\Users\\hust2\\Documents\\Research\\Camels\\rnnStreamflow\\All-90-95')
+    parser.add_argument('-M', dest='m_file', type=str, default=m_file)
     args = parser.parse_args()
     if args.func == 'train':
-        mDict = master.readMasterFile(args.mFile)
-        master.train(mDict)
-        out = mDict['out']
+        m_dict = master.read_master_file(args.m_file)
+        master.train(m_dict)
+        out = m_dict['out']
         email.sendEmail(subject='Training Done', text=out)
     # os.system(cmd)
 
