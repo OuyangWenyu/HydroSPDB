@@ -70,7 +70,7 @@ lossFun = crit.RmseLoss()
 model, yp_2L, yt_2L = train.trainModel_2L(
     model, x, y, lossFun, nEpoch=epoch)
 modelName = 'test-2L'
-train.saveModel(outFolder, model, epoch, modelName=modelName)
+train.save_model(outFolder, model, epoch, modelName=modelName)
 
 # print(yp_2L)
 # print(yt_2L)

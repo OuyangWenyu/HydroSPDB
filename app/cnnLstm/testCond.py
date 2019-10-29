@@ -31,10 +31,10 @@ if 'trainLstm' in doLst:
     ny = 1
     model = rnn.CudnnLstmModel(nx=nx, ny=ny, hiddenSize=64)
     lossFun = crit.RmseLoss()
-    model = train.trainModel(
+    model = train.train_model(
         model, x, y, lossFun, nEpoch=nEpoch, miniBatch=[100, 30])
     modelName = 'lstm_y1'
-    train.saveModel(outFolder, model, nEpoch, modelName=modelName)
+    train.save_model(outFolder, model, nEpoch, modelName=modelName)
 
 if 'trainCnn' in doLst:
     dfc = hydroDL.data.dbCsv.DataframeCsv(
@@ -55,9 +55,9 @@ if 'trainCnn' in doLst:
         model = rnn.LstmCnnCond(
             nx=nx, ny=ny, ct=365, hiddenSize=64, cnnSize=32, opt=opt)
         lossFun = crit.RmseLoss()
-        model = train.trainModel(model, (x, c), y, lossFun, nEpoch=nEpoch, miniBatch=[100, 30])
+        model = train.train_model(model, (x, c), y, lossFun, nEpoch=nEpoch, miniBatch=[100, 30])
         modelName = 'cnn' + str(opt) + '_y1y1'
-        train.saveModel(outFolder, model, nEpoch, modelName=modelName)
+        train.save_model(outFolder, model, nEpoch, modelName=modelName)
 
 ypLst = list()
 df = hydroDL.data.dbCsv.DataframeCsv(
@@ -69,8 +69,8 @@ if 'testLstm' in doLst:
         rootDB=rootDB, subset='CONUSv4f1', tRange=ty2)
     x = df.getData(
         varT=dbCsv.varForcing, varC=dbCsv.varConst, doNorm=True, rmNan=True)
-    model = train.loadModel(outFolder, nEpoch, modelName='lstm_y1')
-    yP = train.testModel(model, x).squeeze()
+    model = train.load_model(outFolder, nEpoch, modelName='lstm_y1')
+    yP = train.test_model(model, x).squeeze()
     ypLst.append(
         dbCsv.transNorm(yP, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))
 if 'testCnn' in doLst:
@@ -87,8 +87,8 @@ if 'testCnn' in doLst:
         varT=dbCsv.varForcing, varC=dbCsv.varConst, doNorm=True, rmNan=True)
     for opt in range(1, 4):
         modelName = 'cnn' + str(opt) + '_y1y1'
-        model = train.loadModel(outFolder, nEpoch, modelName=modelName)
-        yP = train.testModel(model, x, z=z).squeeze()
+        model = train.load_model(outFolder, nEpoch, modelName=modelName)
+        yP = train.test_model(model, x, z=z).squeeze()
         ypLst.append(
             dbCsv.transNorm(
                 yP, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))

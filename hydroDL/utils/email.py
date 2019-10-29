@@ -1,19 +1,10 @@
 import smtplib, ssl
 
 
-# def sendEmail(subject, text, receiver='geofkwai@gmail.com'):
-#     sender = 'fkwai.public@gmail.com'
-#     password = 'fkwai0323'
-#     context = ssl.create_default_context()
-#     msg = 'Subject: {}\n\n{}'.format(subject, text)
-#     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-#         server.login(sender, password)
-#         server.sendmail(
-#             from_addr=sender, to_addrs=receiver, msg=msg)
-
 def sendEmail(subject, text, receiver='hust2014owen@gmail.com'):
+    """用于训练结束时发邮件提醒"""
     sender = 'hydro.wyouyang@gmail.com'
-    password = 'Psu!2019Owen'
+    password = 'D4VEFya3UQxGR3z'
     context = ssl.create_default_context()
     msg = 'Subject: {}\n\n{}'.format(subject, text)
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:

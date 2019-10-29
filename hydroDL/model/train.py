@@ -7,114 +7,114 @@ from hydroDL.model import rnn
 import pandas as pd
 
 
-def trainModel(model,
-               x,
-               y,
-               c,
-               lossFun,
-               *,
-               nEpoch=500,
-               miniBatch=[100, 30],
-               saveEpoch=100,
-               saveFolder=None,
-               mode='seq2seq'):
-    batchSize, rho = miniBatch
+def train_model(model,
+                x,
+                y,
+                c,
+                loss_fun,
+                *,
+                n_epoch=500,
+                mini_batch=[100, 30],
+                save_epoch=100,
+                save_folder=None,
+                mode='seq2seq'):
+    batch_size, rho = mini_batch
     # x- input; z - additional input; y - target; c - constant input
     if type(x) is tuple or type(x) is list:
         x, z = x
-    ngrid, nt, nx = x.shape 
+    ngrid, nt, nx = x.shape
     if c is not None:
         nx = nx + c.shape[-1]
-    nIterEp = int(
-        np.ceil(np.log(0.01) / np.log(1 - batchSize * rho / ngrid / nt)))
+    n_iter_ep = int(
+        np.ceil(np.log(0.01) / np.log(1 - batch_size * rho / ngrid / nt)))
     if hasattr(model, 'ctRm'):
         if model.ctRm is True:
-            nIterEp = int(
+            n_iter_ep = int(
                 np.ceil(
-                    np.log(0.01) / np.log(1 - batchSize *
+                    np.log(0.01) / np.log(1 - batch_size *
                                           (rho - model.ct) / ngrid / nt)))
 
     if torch.cuda.is_available():
-        lossFun = lossFun.cuda()
+        loss_fun = loss_fun.cuda()
         model = model.cuda()
 
     optim = torch.optim.Adadelta(model.parameters())
     model.zero_grad()
-    if saveFolder is not None:
-        runFile = os.path.join(saveFolder, 'run.csv')
-        rf = open(runFile, 'a+')
-    for iEpoch in range(1, nEpoch + 1):
-        lossEp = 0
+    if save_folder is not None:
+        run_file = os.path.join(save_folder, 'run.csv')
+        rf = open(run_file, 'a+')
+    for iEpoch in range(1, n_epoch + 1):
+        loss_ep = 0
         t0 = time.time()
-        for iIter in range(0, nIterEp):
+        for iIter in range(0, n_iter_ep):
             # training iterations
             if type(model) in [rnn.CudnnLstmModel, rnn.AnnModel]:
-                iGrid, iT = randomIndex(ngrid, nt, [batchSize, rho])
-                xTrain = selectSubset(x, iGrid, iT, rho, c=c)
-                yTrain = selectSubset(y, iGrid, iT, rho)
-                yP = model(xTrain)
+                i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
+                x_train = select_subset(x, i_grid, i_t, rho, c=c)
+                y_train = select_subset(y, i_grid, i_t, rho)
+                y_p = model(x_train)
             if type(model) in [rnn.LstmCloseModel, rnn.AnnCloseModel]:
-                iGrid, iT = randomIndex(ngrid, nt, [batchSize, rho])
-                xTrain = selectSubset(x, iGrid, iT, rho, c=c)
-                yTrain = selectSubset(y, iGrid, iT, rho)
-                zTrain = selectSubset(z, iGrid, iT, rho)
-                yP = model(xTrain, zTrain)
+                i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
+                x_train = select_subset(x, i_grid, i_t, rho, c=c)
+                y_train = select_subset(y, i_grid, i_t, rho)
+                z_train = select_subset(z, i_grid, i_t, rho)
+                y_p = model(x_train, z_train)
             if type(model) in [rnn.CudnnLstmModel_R2P]:
-                iGrid, iT = randomIndex(ngrid, nt, [batchSize, rho])
-                xTrain = selectSubset(x, iGrid, iT, rho, c=c, tupleOut=True)
-                yTrain = selectSubset(y, iGrid, iT, rho)
-                yP = model(xTrain)
+                i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
+                x_train = select_subset(x, i_grid, i_t, rho, c=c, tuple_out=True)
+                y_train = select_subset(y, i_grid, i_t, rho)
+                y_p = model(x_train)
 
             # if type(model) in [hydroDL.model.rnn.LstmCnnCond]:
-            #     iGrid, iT = randomIndex(ngrid, nt, [batchSize, rho])
-            #     xTrain = selectSubset(x, iGrid, iT, rho)
-            #     yTrain = selectSubset(y, iGrid, iT, rho)
-            #     zTrain = selectSubset(z, iGrid, None, None)
-            #     yP = model(xTrain, zTrain)
+            #     i_grid, i_t = randomIndex(ngrid, nt, [batch_size, rho])
+            #     x_train = selectSubset(x, i_grid, i_t, rho)
+            #     y_train = selectSubset(y, i_grid, i_t, rho)
+            #     z_train = selectSubset(z, i_grid, None, None)
+            #     y_p = model(x_train, z_train)
             # if type(model) in [hydroDL.model.rnn.LstmCnnForcast]:
-            #     iGrid, iT = randomIndex(ngrid, nt, [batchSize, rho])
-            #     xTrain = selectSubset(x, iGrid, iT, rho)
-            #     yTrain = selectSubset(y, iGrid, iT + model.ct, rho - model.ct)
-            #     zTrain = selectSubset(z, iGrid, iT, rho)
-            #     yP = model(xTrain, zTrain)
+            #     i_grid, i_t = randomIndex(ngrid, nt, [batch_size, rho])
+            #     x_train = selectSubset(x, i_grid, i_t, rho)
+            #     y_train = selectSubset(y, i_grid, i_t + model.ct, rho - model.ct)
+            #     z_train = selectSubset(z, i_grid, i_t, rho)
+            #     y_p = model(x_train, z_train)
             else:
                 Exception('unknown model')
-            loss = lossFun(yP, yTrain)
+            loss = loss_fun(y_p, y_train)
             loss.backward()
             optim.step()
             model.zero_grad()
-            lossEp = lossEp + loss.item()
+            loss_ep = loss_ep + loss.item()
         # print loss
-        lossEp = lossEp / nIterEp
-        logStr = 'Epoch {} Loss {:.3f} time {:.2f}'.format(
-            iEpoch, lossEp,
+        loss_ep = loss_ep / n_iter_ep
+        log_str = 'Epoch {} Loss {:.3f} time {:.2f}'.format(
+            iEpoch, loss_ep,
             time.time() - t0)
-        print(logStr)
+        print(log_str)
         # save model and loss
-        if saveFolder is not None:
-            rf.write(logStr + '\n')
-            if iEpoch % saveEpoch == 0:
+        if save_folder is not None:
+            rf.write(log_str + '\n')
+            if iEpoch % save_epoch == 0:
                 # save model
-                modelFile = os.path.join(saveFolder,
+                model_file = os.path.join(save_folder,
                                          'model_Ep' + str(iEpoch) + '.pt')
-                torch.save(model, modelFile)
-    if saveFolder is not None:
+                torch.save(model, model_file)
+    if save_folder is not None:
         rf.close()
     return model
 
 
-def saveModel(outFolder, model, epoch, modelName='model'):
-    modelFile = os.path.join(outFolder, modelName + '_Ep' + str(epoch) + '.pt')
-    torch.save(model, modelFile)
+def save_model(out_folder, model, epoch, model_name='model'):
+    model_file = os.path.join(out_folder, model_name + '_Ep' + str(epoch) + '.pt')
+    torch.save(model, model_file)
 
 
-def loadModel(outFolder, epoch, modelName='model'):
-    modelFile = os.path.join(outFolder, modelName + '_Ep' + str(epoch) + '.pt')
-    model = torch.load(modelFile)
+def load_model(out_folder, epoch, model_name='model'):
+    model_file = os.path.join(out_folder, model_name + '_Ep' + str(epoch) + '.pt')
+    model = torch.load(model_file)
     return model
 
 
-def testModel(model, x, c, *, batchSize=None, filePathLst=None):
+def test_model(model, x, c, *, batch_size=None, file_path_lst=None):
     if type(x) is tuple or type(x) is list:
         x, z = x
     else:
@@ -122,8 +122,8 @@ def testModel(model, x, c, *, batchSize=None, filePathLst=None):
     ngrid, nt, nx = x.shape
     nc = c.shape[-1]
     ny = model.ny
-    if batchSize is None:
-        batchSize = ngrid
+    if batch_size is None:
+        batch_size = ngrid
     if torch.cuda.is_available():
         model = model.cuda()
 
@@ -131,153 +131,149 @@ def testModel(model, x, c, *, batchSize=None, filePathLst=None):
     if hasattr(model, 'ctRm'):
         if model.ctRm is True:
             nt = nt - model.ct
-    # yP = torch.zeros([nt, ngrid, ny])
-    iS = np.arange(0, ngrid, batchSize)
-    iE = np.append(iS[1:], ngrid)
+    # y_p = torch.zeros([nt, ngrid, ny])
+    i_s = np.arange(0, ngrid, batch_size)
+    i_e = np.append(i_s[1:], ngrid)
 
     # deal with file name to save
-    if filePathLst is None:
-        filePathLst = ['out' + str(x) for x in range(ny)]
-    fLst = list()
-    for filePath in filePathLst:
+    if file_path_lst is None:
+        file_path_lst = ['out' + str(x) for x in range(ny)]
+    f_lst = list()
+    for filePath in file_path_lst:
         if os.path.exists(filePath):
             os.remove(filePath)
         f = open(filePath, 'a')
-        fLst.append(f)
+        f_lst.append(f)
 
     # forward for each batch
-    for i in range(0, len(iS)):
+    for i in range(0, len(i_s)):
         print('batch {}'.format(i))
-        xTemp = x[iS[i]:iE[i], :, :]
-        cTemp = np.repeat(
-            np.reshape(c[iS[i]:iE[i], :], [iE[i] - iS[i], 1, nc]), nt, axis=1)
-        xTest = torch.from_numpy(
-            np.swapaxes(np.concatenate([xTemp, cTemp], 2), 1, 0)).float()
+        x_temp = x[i_s[i]:i_e[i], :, :]
+        c_temp = np.repeat(
+            np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
+        x_test = torch.from_numpy(
+            np.swapaxes(np.concatenate([x_temp, c_temp], 2), 1, 0)).float()
         if torch.cuda.is_available():
-            xTest = xTest.cuda()
+            x_test = x_test.cuda()
         if z is not None:
-            zTemp = z[iS[i]:iE[i], :, :]
-            zTest = torch.from_numpy(np.swapaxes(zTemp, 1, 0)).float()
+            z_temp = z[i_s[i]:i_e[i], :, :]
+            z_test = torch.from_numpy(np.swapaxes(z_temp, 1, 0)).float()
             if torch.cuda.is_available():
-                zTest = zTest.cuda()
+                z_test = z_test.cuda()
         if type(model) in [rnn.CudnnLstmModel, rnn.AnnModel]:
-            yP = model(xTest)
+            y_p = model(x_test)
         if type(model) in [rnn.LstmCloseModel, rnn.AnnCloseModel]:
-            yP = model(xTest, zTest)
+            y_p = model(x_test, z_test)
         if type(model) in [hydroDL.model.rnn.LstmCnnForcast]:
-            yP = model(xTest, zTest)
-        yOut = yP.detach().cpu().numpy().swapaxes(0, 1)
-          
+            y_p = model(x_test, z_test)
+        y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
 
         # save output
         for k in range(ny):
-            f = fLst[k]
-            pd.DataFrame(yOut[:, :, k]).to_csv(f, header=False, index=False)
-        
+            f = f_lst[k]
+            pd.DataFrame(y_out[:, :, k]).to_csv(f, header=False, index=False)
 
         model.zero_grad()
         torch.cuda.empty_cache()
 
-    for f in fLst:
+    for f in f_lst:
         f.close()
-    
-    yOut = torch.from_numpy(yOut)
-    return yOut
-    
-    
 
-def testModelCnnCond(model, x, y, *, batchSize=None):
+    y_out = torch.from_numpy(y_out)
+    return y_out
+
+
+def test_model_cnn_cond(model, x, y, *, batch_size=None):
     ngrid, nt, nx = x.shape
     ct = model.ct
     ny = model.ny
-    if batchSize is None:
-        batchSize = ngrid
-    xTest = torch.from_numpy(np.swapaxes(x, 1, 0)).float()
-    # cTest = torch.from_numpy(np.swapaxes(y[:, 0:ct, :], 1, 0)).float()
-    cTest = torch.zeros([ct, ngrid, y.shape[-1]], requires_grad=False)
+    if batch_size is None:
+        batch_size = ngrid
+    x_test = torch.from_numpy(np.swapaxes(x, 1, 0)).float()
+    # c_test = torch.from_numpy(np.swapaxes(y[:, 0:ct, :], 1, 0)).float()
+    c_test = torch.zeros([ct, ngrid, y.shape[-1]], requires_grad=False)
     for k in range(ngrid):
         ctemp = y[k, 0:ct, 0]
         i0 = np.where(np.isnan(ctemp))[0]
         i1 = np.where(~np.isnan(ctemp))[0]
         if len(i1) > 0:
             ctemp[i0] = np.interp(i0, i1, ctemp[i1])
-            cTest[:, k, 0] = torch.from_numpy(ctemp)
+            c_test[:, k, 0] = torch.from_numpy(ctemp)
 
     if torch.cuda.is_available():
-        xTest = xTest.cuda()
-        cTest = cTest.cuda()
+        x_test = x_test.cuda()
+        c_test = c_test.cuda()
         model = model.cuda()
 
     model.train(mode=False)
 
-    yP = torch.zeros([nt - ct, ngrid, ny])
-    iS = np.arange(0, ngrid, batchSize)
-    iE = np.append(iS[1:], ngrid)
-    for i in range(0, len(iS)):
-        xTemp = xTest[:, iS[i]:iE[i], :]
-        cTemp = cTest[:, iS[i]:iE[i], :]
-        yP[:, iS[i]:iE[i], :] = model(xTemp, cTemp)
-    yOut = yP.detach().cpu().numpy().swapaxes(0, 1)
-    return yOut
+    y_p = torch.zeros([nt - ct, ngrid, ny])
+    i_s = np.arange(0, ngrid, batch_size)
+    i_e = np.append(i_s[1:], ngrid)
+    for i in range(0, len(i_s)):
+        x_temp = x_test[:, i_s[i]:i_e[i], :]
+        c_temp = c_test[:, i_s[i]:i_e[i], :]
+        y_p[:, i_s[i]:i_e[i], :] = model(x_temp, c_temp)
+    y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
+    return y_out
 
 
-def randomSubset(x, y, dimSubset):
+def random_subset(x, y, dim_subset):
     ngrid, nt, nx = x.shape
-    batchSize, rho = dimSubset
-    xTensor = torch.zeros([rho, batchSize, x.shape[-1]], requires_grad=False)
-    yTensor = torch.zeros([rho, batchSize, y.shape[-1]], requires_grad=False)
-    iGrid = np.random.randint(0, ngrid, [batchSize])
-    iT = np.random.randint(0, nt - rho, [batchSize])
-    for k in range(batchSize):
-        temp = x[iGrid[k]:iGrid[k] + 1, np.arange(iT[k], iT[k] + rho), :]
-        xTensor[:, k:k + 1, :] = torch.from_numpy(np.swapaxes(temp, 1, 0))
-        temp = y[iGrid[k]:iGrid[k] + 1, np.arange(iT[k], iT[k] + rho), :]
-        yTensor[:, k:k + 1, :] = torch.from_numpy(np.swapaxes(temp, 1, 0))
+    batch_size, rho = dim_subset
+    x_tensor = torch.zeros([rho, batch_size, x.shape[-1]], requires_grad=False)
+    y_tensor = torch.zeros([rho, batch_size, y.shape[-1]], requires_grad=False)
+    i_grid = np.random.randint(0, ngrid, [batch_size])
+    i_t = np.random.randint(0, nt - rho, [batch_size])
+    for k in range(batch_size):
+        temp = x[i_grid[k]:i_grid[k] + 1, np.arange(i_t[k], i_t[k] + rho), :]
+        x_tensor[:, k:k + 1, :] = torch.from_numpy(np.swapaxes(temp, 1, 0))
+        temp = y[i_grid[k]:i_grid[k] + 1, np.arange(i_t[k], i_t[k] + rho), :]
+        y_tensor[:, k:k + 1, :] = torch.from_numpy(np.swapaxes(temp, 1, 0))
     if torch.cuda.is_available():
-        xTensor = xTensor.cuda()
-        yTensor = yTensor.cuda()
-    return xTensor, yTensor
+        x_tensor = x_tensor.cuda()
+        y_tensor = y_tensor.cuda()
+    return x_tensor, y_tensor
 
 
-def randomIndex(ngrid, nt, dimSubset):
-    batchSize, rho = dimSubset
-    iGrid = np.random.randint(0, ngrid, [batchSize])
-    if (nt <= rho):
-       iT = np.random.randint(0, 1, [batchSize])
+def random_index(ngrid, nt, dim_subset):
+    batch_size, rho = dim_subset
+    i_grid = np.random.randint(0, ngrid, [batch_size])
+    if nt <= rho:
+        i_t = np.random.randint(0, 1, [batch_size])
     else:
-       iT = np.random.randint(0, nt - rho, [batchSize])
-    return iGrid, iT
+        i_t = np.random.randint(0, nt - rho, [batch_size])
+    return i_grid, i_t
 
 
-def selectSubset(x, iGrid, iT, rho, *, c=None, tupleOut=False):
+def select_subset(x, i_grid, i_t, rho, *, c=None, tuple_out=False):
     nx = x.shape[-1]
-    if x.shape[0] == len(iGrid):   #hack
-        iGrid = np.arange(0,len(iGrid))  # hack
-        iT.fill(0)
-    if iT is not None:
-        batchSize = iGrid.shape[0]
-        xTensor = torch.zeros([rho, batchSize, nx], requires_grad=False)
-        for k in range(batchSize):
-            temp = x[iGrid[k]:iGrid[k] + 1, np.arange(iT[k], iT[k] + rho), :]
-            xTensor[:, k:k + 1, :] = torch.from_numpy(np.swapaxes(temp, 1, 0))
+    if x.shape[0] == len(i_grid):  # hack
+        i_grid = np.arange(0, len(i_grid))  # hack
+        i_t.fill(0)
+    if i_t is not None:
+        batch_size = i_grid.shape[0]
+        x_tensor = torch.zeros([rho, batch_size, nx], requires_grad=False)
+        for k in range(batch_size):
+            temp = x[i_grid[k]:i_grid[k] + 1, np.arange(i_t[k], i_t[k] + rho), :]
+            x_tensor[:, k:k + 1, :] = torch.from_numpy(np.swapaxes(temp, 1, 0))
     else:
-        xTensor = torch.from_numpy(np.swapaxes(x[iGrid, :, :], 1, 0)).float()
-        rho = xTensor.shape[1]
+        x_tensor = torch.from_numpy(np.swapaxes(x[i_grid, :, :], 1, 0)).float()
+        rho = x_tensor.shape[1]
     if c is not None:
         nc = c.shape[-1]
         temp = np.repeat(
-            np.reshape(c[iGrid, :], [batchSize, 1, nc]), rho, axis=1)
-        cTensor = torch.from_numpy(np.swapaxes(temp, 1, 0)).float()
-        if (tupleOut):
+            np.reshape(c[i_grid, :], [batch_size, 1, nc]), rho, axis=1)
+        c_tensor = torch.from_numpy(np.swapaxes(temp, 1, 0)).float()
+        if tuple_out:
             if torch.cuda.is_available():
-                xTensor = xTensor.cuda()
-                cTensor = cTensor.cuda()
-            out = (xTensor, cTensor)
+                x_tensor = x_tensor.cuda()
+                c_tensor = c_tensor.cuda()
+            out = (x_tensor, c_tensor)
         else:
-            out = torch.cat((xTensor, cTensor), 2)
+            out = torch.cat((x_tensor, c_tensor), 2)
     else:
-        out = xTensor
+        out = x_tensor
     if torch.cuda.is_available() and type(out) is not tuple:
         out = out.cuda()
     return out
-

@@ -22,7 +22,7 @@ optModel = default.optLstm
 optLoss = default.optLossRMSE
 optTrain = default.optTrainGages2
 masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
-master.run_train(masterDict, cudaID=cid % 3, screen='test')
+master.run_train(masterDict, cuda_id=cid % 3, screen='test')
 cid = cid + 1
 
 # test
@@ -33,5 +33,5 @@ subset = 'All'
 tRange = [19950101, 20000101]
 predLst = list()
 for out in outLst:
-    df, pred, obs = master.test(out, tRange=tRange, subset=subset)
+    df, pred, obs = master.test(out, t_range=tRange, subset=subset)
     predLst.append(pred)

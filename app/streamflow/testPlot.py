@@ -27,10 +27,10 @@ x2 = df2.getDataTS(varLst=camels.forcingLst, doNorm=True, rmNan=True)
 c2 = df2.get_data_const(varLst=camels.attrLstSel, doNorm=True, rmNan=True)
 yt2 = df2.get_data_obs(doNorm=False, rmNan=False).squeeze()
 
-model = train.loadModel(outFolder, 100, modelName='test')
-yp1 = train.testModel(model, x1, c1)
+model = train.load_model(outFolder, 100, modelName='test')
+yp1 = train.test_model(model, x1, c1)
 yp1 = hydroDL.utils.statistics.trans_norm(yp1, 'usgsFlow', toNorm=False).squeeze()
-yp2 = train.testModel(model, x2, c2)
+yp2 = train.test_model(model, x2, c2)
 yp2 = hydroDL.utils.statistics.trans_norm(yp2, 'usgsFlow', toNorm=False).squeeze()
 
 statErr1 = stat.statError(yp1, yt2)

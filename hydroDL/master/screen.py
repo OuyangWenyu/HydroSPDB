@@ -11,7 +11,7 @@ from hydroDL import master
 from hydroDL.utils import email
 
 
-def run_train(master_dict, *, screen='test', cudaID):
+def run_train(master_dict, *, screen='test', cuda_id):
     if type(master_dict) is str:
         m_file = master_dict
         master_dict = master.read_master_file(m_file)
@@ -21,10 +21,10 @@ def run_train(master_dict, *, screen='test', cudaID):
     code_path = os.path.realpath(__file__)
     if screen is None:
         cmd = 'CUDA_VISIBLE_DEVICES={} python {} -F {} -M {}'.format(
-            cudaID, code_path, 'train', m_file)
+            cuda_id, code_path, 'train', m_file)
     else:
         cmd = 'CUDA_VISIBLE_DEVICES={} screen -dmS {} python {} -F {} -M {}'.format(
-            cudaID, screen, code_path, 'train', m_file)
+            cuda_id, screen, code_path, 'train', m_file)
 
     print(cmd)
 

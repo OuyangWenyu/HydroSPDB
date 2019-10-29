@@ -37,7 +37,7 @@ def loadModel(out, epoch=None):
     if epoch is None:
         mDict = read_master_file(out)
         epoch = mDict['train']['nEpoch']
-    model = hydroDL.model.train.loadModel(out, epoch)
+    model = hydroDL.model.train.load_model(out, epoch)
     return model
 
 
@@ -137,7 +137,7 @@ def train(m_dict):
         model = hydroDL.model.rnn.CudnnLstmModel(
             nx=opt_model['nx'],
             ny=opt_model['ny'],
-            hiddenSize=opt_model['hiddenSize'])
+            hidden_size=opt_model['hiddenSize'])
     elif eval(opt_model['name']) is hydroDL.model.rnn.LstmCloseModel:
         model = hydroDL.model.rnn.LstmCloseModel(
             nx=opt_model['nx'],
@@ -162,92 +162,76 @@ def train(m_dict):
 
     # train model
     write_master_file(m_dict)
-    model = hydroDL.model.train.trainModel(
+    model = hydroDL.model.train.train_model(
         model,
         x,
         y,
         c,
         loss_fun,
-        nEpoch=opt_train['nEpoch'],
-        miniBatch=opt_train['miniBatch'],
-        saveEpoch=opt_train['saveEpoch'],
-        saveFolder=out)
+        n_epoch=opt_train['nEpoch'],
+        mini_batch=opt_train['miniBatch'],
+        save_epoch=opt_train['saveEpoch'],
+        save_folder=out)
 
 
 def test(out,
          *,
-         tRange,
+         t_range,
          subset,
-         doMC=False,
+         do_mc=False,
          suffix=None,
-         batchSize=None,
+         batch_size=None,
          epoch=None,
-         reTest=False):
-    mDict = read_master_file(out)
+         re_test=False):
+    m_dict = read_master_file(out)
 
-    optData = mDict['data']
-    optData['subset'] = subset
-    optData['tRange'] = tRange
-    df, x, obs, c = load_data(optData)
+    opt_data = m_dict['data']
+    opt_data['subset'] = subset
+    opt_data['t_range'] = t_range
+    opt_train = m_dict['train']
+    batch_size, rho = opt_train['miniBatch']
+    df, x, obs, c = load_data(opt_data)
 
     # generate file names and run model
-    filePathLst = namePred(
-        out, tRange, subset, epoch=epoch, doMC=doMC, suffix=suffix)
-    print('output files:', filePathLst)
-    for filePath in filePathLst:
-        if not os.path.isfile(filePath):
-            reTest = True
-    if reTest is True:
+    file_path_lst = namePred(
+        out, t_range, subset, epoch=epoch, doMC=do_mc, suffix=suffix)
+    print('output files:', file_path_lst)
+    for file_path in file_path_lst:
+        if not os.path.isfile(file_path):
+            re_test = True
+    if re_test is True:
         print('Runing new results')
         model = loadModel(out, epoch=epoch)
-        hydroDL.model.train.testModel(
-            model, x, c, batchSize=batchSize, filePathLst=filePathLst)
+        hydroDL.model.train.test_model(
+            model, x, c, batch_size=batch_size, file_path_lst=file_path_lst)
     else:
         print('Loaded previous results')
 
     # load previous result
-    mDict = read_master_file(out)
-    dataPred = np.ndarray([obs.shape[0], obs.shape[1], len(filePathLst)])
-    for k in range(len(filePathLst)):
-        filePath = filePathLst[k]
-        dataPred[:, :, k] = pd.read_csv(
-            filePath, dtype=np.float, header=None).values
-    isSigmaX = False
-    if mDict['loss']['name'] == 'hydroDL.model.crit.SigmaLoss':
-        isSigmaX = True
-        pred = dataPred[:, :, ::2]
-        sigmaX = dataPred[:, :, 1::2]
+    m_dict = read_master_file(out)
+    data_pred = np.ndarray([obs.shape[0], obs.shape[1], len(file_path_lst)])
+    for k in range(len(file_path_lst)):
+        file_path = file_path_lst[k]
+        data_pred[:, :, k] = pd.read_csv(file_path, dtype=np.float, header=None).values
+    is_sigma_x = False
+    if m_dict['loss']['name'] == 'hydroDL.model.crit.SigmaLoss':
+        is_sigma_x = True
+        pred = data_pred[:, :, ::2]
+        sigma_x = data_pred[:, :, 1::2]
     else:
-        pred = dataPred
+        pred = data_pred
 
-    if optData['doNorm'][1] is True:
-        if eval(optData['name']) is hydroDL.data.dbCsv.DataframeCsv:
-            target = optData['target']
-            if type(target) is not list:
-                target = [target]
-            nTar = len(target)
-            for k in range(nTar):
-                pred[:, :, k] = hydroDL.data.dbCsv.transNorm(
-                    pred[:, :, k],
-                    rootDB=optData['rootDB'],
-                    fieldName=optData['target'][k],
-                    fromRaw=False)
-                obs[:, :, k] = hydroDL.data.dbCsv.transNorm(
-                    obs[:, :, k],
-                    rootDB=optData['rootDB'],
-                    fieldName=optData['target'][k],
-                    fromRaw=False)
-                if isSigmaX is True:
-                    sigmaX[:, :, k] = hydroDL.data.dbCsv.transNormSigma(
-                        sigmaX[:, :, k],
-                        rootDB=optData['rootDB'],
-                        fieldName=optData['target'][k],
-                        fromRaw=False)
-        elif eval(optData['name']) is hydroDL.data.camels.DataframeCamels:
-            pred = hydroDL.data.camels.transNorm(
-                pred, 'usgsFlow', toNorm=False)
-            obs = hydroDL.data.camels.transNorm(obs, 'usgsFlow', toNorm=False)
-    if isSigmaX is True:
-        return df, pred, obs, sigmaX
+    if opt_data['doNorm'][1] is True:
+        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
+        if eval(opt_data['name']) is hydroDL.data.gages2.DataframeGages2:
+            stat_dict = hydroDL.data.gages2.statDict
+            pred = hydroDL.utils.statistics.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+            obs = hydroDL.utils.statistics.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+        elif eval(opt_data['name']) is hydroDL.data.camels.DataframeCamels:
+            stat_dict = hydroDL.data.camels.statDict
+            pred = hydroDL.utils.statistics.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+            obs = hydroDL.utils.statistics.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+    if is_sigma_x is True:
+        return df, pred, obs, sigma_x
     else:
         return df, pred, obs

@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 import torch.nn.functional as F
-from .dropout import DropMask, createMask
+from .dropout import DropMask, create_mask
 from . import cnn
 
 
@@ -52,26 +52,26 @@ class LSTMcell_untied(torch.nn.Module):
             w.data.uniform_(-std, std)
 
     def init_mask(self, x, h, c):
-        self.maskX_i = createMask(x, self.dr)
-        self.maskX_f = createMask(x, self.dr)
-        self.maskX_c = createMask(x, self.dr)
-        self.maskX_o = createMask(x, self.dr)
+        self.maskX_i = create_mask(x, self.dr)
+        self.maskX_f = create_mask(x, self.dr)
+        self.maskX_c = create_mask(x, self.dr)
+        self.maskX_o = create_mask(x, self.dr)
 
-        self.maskH_i = createMask(h, self.dr)
-        self.maskH_f = createMask(h, self.dr)
-        self.maskH_c = createMask(h, self.dr)
-        self.maskH_o = createMask(h, self.dr)
+        self.maskH_i = create_mask(h, self.dr)
+        self.maskH_f = create_mask(h, self.dr)
+        self.maskH_c = create_mask(h, self.dr)
+        self.maskH_o = create_mask(h, self.dr)
 
-        self.maskC = createMask(c, self.dr)
+        self.maskC = create_mask(c, self.dr)
 
-        self.maskW_xi = createMask(self.w_xi, self.dr)
-        self.maskW_xf = createMask(self.w_xf, self.dr)
-        self.maskW_xc = createMask(self.w_xc, self.dr)
-        self.maskW_xo = createMask(self.w_xo, self.dr)
-        self.maskW_hi = createMask(self.w_hi, self.dr)
-        self.maskW_hf = createMask(self.w_hf, self.dr)
-        self.maskW_hc = createMask(self.w_hc, self.dr)
-        self.maskW_ho = createMask(self.w_ho, self.dr)
+        self.maskW_xi = create_mask(self.w_xi, self.dr)
+        self.maskW_xf = create_mask(self.w_xf, self.dr)
+        self.maskW_xc = create_mask(self.w_xc, self.dr)
+        self.maskW_xo = create_mask(self.w_xo, self.dr)
+        self.maskW_hi = create_mask(self.w_hi, self.dr)
+        self.maskW_hf = create_mask(self.w_hf, self.dr)
+        self.maskW_hc = create_mask(self.w_hc, self.dr)
+        self.maskW_ho = create_mask(self.w_ho, self.dr)
 
     def forward(self, x, hidden):
         h0, c0 = hidden
@@ -183,11 +183,11 @@ class LSTMcell_tied(torch.nn.Module):
             weight.data.uniform_(-stdv, stdv)
 
     def reset_mask(self, x, h, c):
-        self.maskX = createMask(x, self.dr)
-        self.maskH = createMask(h, self.dr)
-        self.maskC = createMask(c, self.dr)
-        self.maskW_ih = createMask(self.w_ih, self.dr)
-        self.maskW_hh = createMask(self.w_hh, self.dr)
+        self.maskX = create_mask(x, self.dr)
+        self.maskH = create_mask(h, self.dr)
+        self.maskC = create_mask(c, self.dr)
+        self.maskW_ih = create_mask(self.w_ih, self.dr)
+        self.maskW_hh = create_mask(self.w_hh, self.dr)
 
     def forward(self, x, hidden, *, resetMask=True, doDropMC=False):
         if self.dr > 0 and (doDropMC is True or self.training is True):
@@ -220,7 +220,7 @@ class LSTMcell_tied(torch.nn.Module):
             w_hh = self.w_hh
 
         gates = F.linear(x, w_ih, self.b_ih) + \
-            F.linear(h0, w_hh, self.b_hh)
+                F.linear(h0, w_hh, self.b_hh)
         gate_i, gate_f, gate_c, gate_o = gates.chunk(4, 1)
 
         gate_i = torch.sigmoid(gate_i)
@@ -238,16 +238,15 @@ class LSTMcell_tied(torch.nn.Module):
 
 
 class CudnnLstm(torch.nn.Module):
-    def __init__(self, *, inputSize, hiddenSize, dr=0.5, drMethod='drW',
-                 gpu=0):
+    def __init__(self, *, input_size, hidden_size, dr=0.5, dr_method='drW', gpu=0):
         super(CudnnLstm, self).__init__()
-        self.inputSize = inputSize
-        self.hiddenSize = hiddenSize
+        self.input_size = input_size
+        self.hidden_size = hidden_size
         self.dr = dr
-        self.w_ih = Parameter(torch.Tensor(hiddenSize * 4, inputSize))
-        self.w_hh = Parameter(torch.Tensor(hiddenSize * 4, hiddenSize))
-        self.b_ih = Parameter(torch.Tensor(hiddenSize * 4))
-        self.b_hh = Parameter(torch.Tensor(hiddenSize * 4))
+        self.w_ih = Parameter(torch.Tensor(hidden_size * 4, input_size))
+        self.w_hh = Parameter(torch.Tensor(hidden_size * 4, hidden_size))
+        self.b_ih = Parameter(torch.Tensor(hidden_size * 4))
+        self.b_hh = Parameter(torch.Tensor(hidden_size * 4))
         self._all_weights = [['w_ih', 'w_hh', 'b_ih', 'b_hh']]
         self.cuda()
 
@@ -258,7 +257,7 @@ class CudnnLstm(torch.nn.Module):
         ret = super(CudnnLstm, self)._apply(fn)
         return ret
 
-    def __setstate__(self, d):
+    def __setstate__(self, d):  # 读取模型的时候会调用该函数
         super(CudnnLstm, self).__setstate__(d)
         self.__dict__.setdefault('_data_ptrs', [])
         if 'all_weights' in d:
@@ -268,41 +267,39 @@ class CudnnLstm(torch.nn.Module):
         self._all_weights = [['w_ih', 'w_hh', 'b_ih', 'b_hh']]
 
     def reset_mask(self):
-        self.maskW_ih = createMask(self.w_ih, self.dr)
-        self.maskW_hh = createMask(self.w_hh, self.dr)
+        self.mask_w_ih = create_mask(self.w_ih, self.dr)
+        self.mask_w_hh = create_mask(self.w_hh, self.dr)
 
     def reset_parameters(self):
-        stdv = 1.0 / math.sqrt(self.hiddenSize)
+        stdv = 1.0 / math.sqrt(self.hidden_size)
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
 
-    def forward(self, input, hx=None, cx=None, doDropMC=False, dropoutFalse=False):
-        # dropoutFalse: it will ensure doDrop is false, unless doDropMC is true
-        if dropoutFalse and (not doDropMC):
-            doDrop = False
-        elif self.dr > 0 and (doDropMC is True or self.training is True):
-            doDrop = True
+    def forward(self, input, hx=None, cx=None, do_drop_mc=False, dropout_false=False):
+        # dropout_false: it will ensure do_drop is false, unless do_drop_mc is true
+        if dropout_false and (not do_drop_mc):
+            do_drop = False
+        elif self.dr > 0 and (do_drop_mc is True or self.training is True):
+            do_drop = True
         else:
-            doDrop = False
+            do_drop = False
 
-        batchSize = input.size(1)
+        batch_size = input.size(1)
 
         if hx is None:
-            hx = input.new_zeros(
-                1, batchSize, self.hiddenSize, requires_grad=False)
+            hx = input.new_zeros(1, batch_size, self.hidden_size, requires_grad=False)
         if cx is None:
-            cx = input.new_zeros(
-                1, batchSize, self.hiddenSize, requires_grad=False)
+            cx = input.new_zeros(1, batch_size, self.hidden_size, requires_grad=False)
 
         # cuDNN backend - disabled flat weight
-        freezeMask = False
+        freeze_mask = False
         handle = torch.backends.cudnn.get_handle()
-        if doDrop is True:
-            if (not freezeMask):
+        if do_drop is True:
+            if not freeze_mask:
                 self.reset_mask()
             weight = [
-                DropMask.apply(self.w_ih, self.maskW_ih, True),
-                DropMask.apply(self.w_hh, self.maskW_hh, True), self.b_ih,
+                DropMask.apply(self.w_ih, self.mask_w_ih, True),
+                DropMask.apply(self.w_hh, self.mask_w_hh, True), self.b_ih,
                 self.b_hh
             ]
         else:
@@ -310,7 +307,7 @@ class CudnnLstm(torch.nn.Module):
 
         output, hy, cy, reserve, new_weight_buf = torch._cudnn_rnn(
             input, weight, 4, None, hx, cx, torch.backends.cudnn.CUDNN_LSTM,
-            self.hiddenSize, 1, False, 0, self.training, False, (), None)
+            self.hidden_size, 1, False, 0, self.training, False, (), None)
         return output, (hy, cy)
 
     @property
@@ -320,67 +317,66 @@ class CudnnLstm(torch.nn.Module):
 
 
 class CudnnLstmModel(torch.nn.Module):
-    def __init__(self, *, nx, ny, hiddenSize, dr=0.5):
+    def __init__(self, *, nx, ny, hidden_size, dr=0.5):
         super(CudnnLstmModel, self).__init__()
         self.nx = nx
         self.ny = ny
-        self.hiddenSize = hiddenSize
+        self.hidden_size = hidden_size
         self.ct = 0
         self.nLayer = 1
-        self.linearIn = torch.nn.Linear(nx, hiddenSize)
-        self.lstm = CudnnLstm(
-            inputSize=hiddenSize, hiddenSize=hiddenSize, dr=dr)
-        self.linearOut = torch.nn.Linear(hiddenSize, ny)
+        self.linearIn = torch.nn.Linear(nx, hidden_size)
+        self.lstm = CudnnLstm(input_size=hidden_size, hidden_size=hidden_size, dr=dr)
+        self.linearOut = torch.nn.Linear(hidden_size, ny)
         self.gpu = 1
 
-    def forward(self, x, doDropMC=False,dropoutFalse=False):
+    def forward(self, x, do_drop_mc=False, dropout_false=False):
         x0 = F.relu(self.linearIn(x))
-        outLSTM, (hn, cn) = self.lstm(x0, doDropMC=doDropMC,dropoutFalse=dropoutFalse)
-        out = self.linearOut(outLSTM)
+        out_lstm, (hn, cn) = self.lstm(x0, do_drop_mc=do_drop_mc, dropout_false=dropout_false)
+        out = self.linearOut(out_lstm)
         return out
 
 
 class CudnnLstmModel_R2P(torch.nn.Module):
-    def __init__(self, *, nx, ny, hiddenSize, dr=0.5,filename):
+    def __init__(self, *, nx, ny, hiddenSize, dr=0.5, filename):
         super(CudnnLstmModel_R2P, self).__init__()
         self.nx = nx
         self.ny = ny
         self.hiddenSize = hiddenSize
         self.ct = 0
         self.nLayer = 1
-        #self.linearR2P = torch.nn.Linear(nx[1], nx[2])
+        # self.linearR2P = torch.nn.Linear(nx[1], nx[2])
         self.linearR2Pa = torch.nn.Linear(nx[1], hiddenSize)
         self.linearR2Pb = torch.nn.Linear(hiddenSize, nx[2])
         self.bn1 = torch.nn.BatchNorm1d(num_features=hiddenSize)
 
-        #self.lstm = CudnnLstmModel(
+        # self.lstm = CudnnLstmModel(
         #    nx=nx, ny=ny, hiddenSize=hiddenSize, dr=dr)
         self.lstm = torch.load(filename)
-        
+
         # self.lstm.eval()
 
         for param in self.lstm.parameters():
             param.requires_grad = False
 
-        #self.linearOut = torch.nn.Linear(hiddenSize, ny)
+        # self.linearOut = torch.nn.Linear(hiddenSize, ny)
         self.gpu = 1
 
     def forward(self, x, doDropMC=False):
         if type(x) is tuple or type(x) is list:
             Forcing, Raw = x
 
-        #Param = F.relu(self.linearR2P(Raw))
-        #Param = torch.atan(self.linearR2P(Raw))
+        # Param = F.relu(self.linearR2P(Raw))
+        # Param = torch.atan(self.linearR2P(Raw))
         Param_a = torch.relu(self.linearR2Pa(Raw))
-        #Param_a.permute(0,2,1)
-        #Param_bn = self.bn1(Param_a)
-        #Param_bn.permute(0,2,1)
+        # Param_a.permute(0,2,1)
+        # Param_bn = self.bn1(Param_a)
+        # Param_bn.permute(0,2,1)
         Param = torch.tanh(self.linearR2Pb(Param_a))
-        x0 = torch.cat((Forcing,Param),dim=len(Param.shape)-1) # by default cat along dim=0
-        #self.lstm.eval()
-        outLSTM = self.lstm(x0, doDropMC=doDropMC,dropoutFalse=True)
-        #self.lstm.train()
-        #out = self.linearOut(outLSTM)
+        x0 = torch.cat((Forcing, Param), dim=len(Param.shape) - 1)  # by default cat along dim=0
+        # self.lstm.eval()
+        outLSTM = self.lstm(x0, doDropMC=doDropMC, dropoutFalse=True)
+        # self.lstm.train()
+        # out = self.linearOut(outLSTM)
         return outLSTM
 
 
@@ -503,7 +499,7 @@ class LstmCnnCond(nn.Module):
         self.cnn = cnn.Cnn1d(nx=nx, nt=ct, cnnSize=cnnSize, cp1=cp1, cp2=cp2)
 
         self.lstm = CudnnLstm(
-            inputSize=hiddenSize, hiddenSize=hiddenSize, dr=dr)
+            input_size=hiddenSize, hidden_size=hiddenSize, dr=dr)
         if opt == 3:
             self.linearIn = torch.nn.Linear(nx + cnnSize, hiddenSize)
         else:
@@ -570,7 +566,7 @@ class LstmCnnForcast(nn.Module):
                 nx=1, nt=ct, cnnSize=cnnSize, cp1=cp1, cp2=cp2)
 
         self.lstm = CudnnLstm(
-            inputSize=hiddenSize, hiddenSize=hiddenSize, dr=dr)
+            input_size=hiddenSize, hidden_size=hiddenSize, dr=dr)
         self.linearIn = torch.nn.Linear(nx + cnnSize, hiddenSize)
         self.linearOut = torch.nn.Linear(hiddenSize, ny)
 
@@ -597,6 +593,7 @@ class LstmCnnForcast(nn.Module):
 
         return x2
 
+
 class MLPModel(nn.Module):
     def __init__(self, num_features, *, dropout=0.25, n_hid=6):
         super().__init__()
@@ -605,7 +602,7 @@ class MLPModel(nn.Module):
             nn.Linear(num_features, n_hid),
             nn.ReLU(),
             nn.BatchNorm1d(n_hid),
-            nn.Dropout(dropout),            
+            nn.Dropout(dropout),
             nn.Linear(n_hid, n_hid // 4),
             nn.ReLU(),
             nn.BatchNorm1d(n_hid // 4),
@@ -632,4 +629,3 @@ class mlpNet(torch.nn.Module):
         x = self.fc2(self.fc1(x))
         return x
 '''
-

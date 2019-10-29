@@ -15,7 +15,7 @@ def cal_stat(x):
 
 
 def trans_norm(x, var_lst, stat_dict, *, to_norm):
-    """归一化计算方法"""
+    """归一化计算方法，包括反向的计算过程，测试的时候需要还原数据"""
     if type(var_lst) is str:
         var_lst = [var_lst]
     out = np.zeros(x.shape)

@@ -33,17 +33,17 @@ if 'train' in doLst:
 
     model = rnn.CudnnLstmModel(nx=nx, ny=ny, hiddenSize=64)
     lossFun = crit.RmseLoss()
-    model = train.trainModel(
+    model = train.train_model(
         model, x, y, c, lossFun, nEpoch=nEpoch, miniBatch=[100, 30])
     modelName = 'LSTM'
-    train.saveModel(outFolder, model, nEpoch, modelName=modelName)
+    train.save_model(outFolder, model, nEpoch, modelName=modelName)
 
     model = rnn.AnnModel(nx=nx, ny=ny, hiddenSize=64)
     lossFun = crit.RmseLoss()
-    model = train.trainModel(
+    model = train.train_model(
         model, x, y, c, lossFun, nEpoch=nEpoch, miniBatch=[100, 30])
     modelName = 'ANN'
-    train.saveModel(outFolder, model, nEpoch, modelName=modelName)
+    train.save_model(outFolder, model, nEpoch, modelName=modelName)
 
     for k in dLst:
         sd = utils.time.t2dt(ty[0]) - dt.timedelta(days=k)
@@ -54,17 +54,17 @@ if 'train' in doLst:
 
         model = rnn.LstmCloseModel(nx=nx, ny=ny, hiddenSize=64)
         lossFun = crit.RmseLoss()
-        model = train.trainModel(
+        model = train.train_model(
             model, (x, obs), y, c, lossFun, nEpoch=nEpoch, miniBatch=[100, 30])
         modelName = 'LSTM-DA-' + str(k)
-        train.saveModel(outFolder, model, nEpoch, modelName=modelName)
+        train.save_model(outFolder, model, nEpoch, modelName=modelName)
 
         model = rnn.AnnCloseModel(nx=nx, ny=ny, hiddenSize=64)
         lossFun = crit.RmseLoss()
-        model = train.trainModel(
+        model = train.train_model(
             model, (x, obs), y, c, lossFun, nEpoch=nEpoch, miniBatch=[100, 30])
         modelName = 'ANN-DA-' + str(k)
-        train.saveModel(outFolder, model, nEpoch, modelName=modelName)
+        train.save_model(outFolder, model, nEpoch, modelName=modelName)
 
 if 'test' in doLst:
     # load data
@@ -81,13 +81,13 @@ if 'test' in doLst:
     ypLstmLst = list()
     ypAnnLst = list()
     modelName = 'LSTM'
-    model = train.loadModel(outFolder, 100, modelName=modelName)
-    yp = train.testModel(model, x, c, batchSize=100).squeeze()
+    model = train.load_model(outFolder, 100, modelName=modelName)
+    yp = train.test_model(model, x, c, batchSize=100).squeeze()
     ypLstmLst.append(
         dbCsv.transNorm(yp, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))
     modelName = 'ANN'
-    model = train.loadModel(outFolder, 100, modelName=modelName)
-    yp = train.testModel(model, x, c, batchSize=100).squeeze()
+    model = train.load_model(outFolder, 100, modelName=modelName)
+    yp = train.test_model(model, x, c, batchSize=100).squeeze()
     ypAnnLst.append(
         dbCsv.transNorm(yp, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))
     for k in dLst:
@@ -98,15 +98,15 @@ if 'test' in doLst:
         obs = df2.getDataTs('SMAP_AM', doNorm=True, rmNan=False)
 
         modelName = 'LSTM-DA-' + str(k)
-        model = train.loadModel(outFolder, nEpoch, modelName=modelName)
-        yP = train.testModel(model, (x, obs), c, batchSize=100).squeeze()
+        model = train.load_model(outFolder, nEpoch, modelName=modelName)
+        yP = train.test_model(model, (x, obs), c, batchSize=100).squeeze()
         ypLstmLst.append(
             dbCsv.transNorm(
                 yP, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))
 
         modelName = 'ANN-DA-' + str(k)
-        model = train.loadModel(outFolder, nEpoch, modelName=modelName)
-        yP = train.testModel(model, (x, obs), c, batchSize=100).squeeze()
+        model = train.load_model(outFolder, nEpoch, modelName=modelName)
+        yP = train.test_model(model, (x, obs), c, batchSize=100).squeeze()
         ypAnnLst.append(
             dbCsv.transNorm(
                 yP, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))

@@ -7,7 +7,7 @@ from pandas.api.types import is_numeric_dtype, is_string_dtype
 import time
 import json
 
-from hydroDL.utils.statistics import cal_stat
+from hydroDL.utils.statistics import cal_stat, trans_norm
 from . import Dataframe
 
 # module variable
@@ -50,10 +50,12 @@ gageDict = read_gage_info(dirDB)
 def readUsgsGage(usgsId, *, readQc=False):
     ind = np.argwhere(gageDict['id'] == usgsId)[0][0]
     huc = gageDict['huc'][ind]
+    if type(usgsId) is str:
+        usgsId = int(usgsId)
     usgsFile = os.path.join(dirDB, 'basin_timeseries_v1p2_metForcing_obsFlow',
                             'basin_dataset_public_v1p2', 'usgs_streamflow',
                             str(huc).zfill(2),
-                            '%08d_streamflow_qc.txt' % (usgsId))
+                            '%08d_streamflow_qc.txt' % usgsId)
     dataTemp = pd.read_csv(usgsFile, sep=r'\s+', header=None)
     obs = dataTemp[4].values
     obs[obs < 0] = np.nan
@@ -234,36 +236,36 @@ class DataframeCamels(Dataframe):
     def getT(self):
         return self.time
 
-    def getDataObs(self, *, doNorm=True, rmNan=True):
+    def get_data_obs(self, *, do_norm=True, rm_nan=True):
         data = readUsgs(self.usgsId)
         data = np.expand_dims(data, axis=2)
         C, ind1, ind2 = np.intersect1d(self.time, tLst, return_indices=True)
         data = data[:, ind2, :]
-        if doNorm is True:
-            data = trans_norm(data, 'usgsFlow', toNorm=True)
-        if rmNan is True:
+        if do_norm is True:
+            data = trans_norm(data, 'usgsFlow', statDict, to_norm=True)
+        if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data
 
-    def getDataTs(self, *, varLst=forcingLst, doNorm=True, rmNan=True):
-        if type(varLst) is str:
-            varLst = [varLst]
+    def get_data_ts(self, *, var_lst=forcingLst, do_norm=True, rm_nan=True):
+        if type(var_lst) is str:
+            var_lst = [var_lst]
         # read ts forcing
-        data = read_forcing(self.usgsId, varLst)
+        data = read_forcing(self.usgsId, var_lst)
         C, ind1, ind2 = np.intersect1d(self.time, tLst, return_indices=True)
         data = data[:, ind2, :]
-        if doNorm is True:
-            data = trans_norm(data, varLst, toNorm=True)
-        if rmNan is True:
+        if do_norm is True:
+            data = trans_norm(data, var_lst, statDict, to_norm=True)
+        if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data
 
-    def getDataConst(self, *, varLst=attrLstSel, doNorm=True, rmNan=True):
-        if type(varLst) is str:
-            varLst = [varLst]
-        data = readAttr(self.usgsId, varLst)
-        if doNorm is True:
-            data = trans_norm(data, varLst, toNorm=True)
-        if rmNan is True:
+    def get_data_const(self, *, var_lst=attrLstSel, do_norm=True, rm_nan=True):
+        if type(var_lst) is str:
+            var_lst = [var_lst]
+        data = readAttr(self.usgsId, var_lst)
+        if do_norm is True:
+            data = trans_norm(data, var_lst, statDict, to_norm=True)
+        if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data

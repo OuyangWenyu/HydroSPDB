@@ -32,10 +32,10 @@ ny = 1
 
 model = rnn.CnnCondLstm(nx=nx, ny=ny, ct=365, hiddenSize=64, cnnSize=32, opt=3)
 lossFun = crit.RmseLoss()
-model = train.trainModel(
+model = train.train_model(
     model, x, y, lossFun, xc=c, nEpoch=nEpoch, miniBatch=[100, 30])
 
-yOut = train.testModelCnnCond(model, x, y)
+yOut = train.test_model_cnn_cond(model, x, y)
 # yOut = train.testModel(model, x)
 yP = dbCsv.transNorm(
     yOut[:, :, 0], rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False)

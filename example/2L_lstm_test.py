@@ -142,10 +142,10 @@ lossFun_2L = crit.RmseLoss()
 # print(model_2L)
 # print(model_2L.parameters)
 
-model_2L = train.trainModel(
+model_2L = train.train_model(
     model_2L, x_2L, y_2L, C2, lossFun_2L, nEpoch=epoch)
 modelName = 'test-2L'
-train.saveModel(outFolder, model_2L, epoch, modelName=modelName)
+train.save_model(outFolder, model_2L, epoch, modelName=modelName)
 
 # print(yp_2L)
 # print(yt_2L)
