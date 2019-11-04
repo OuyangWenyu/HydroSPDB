@@ -9,9 +9,15 @@ from hydroDL import utils
 import string
 
 import os
-# os.environ[
-#     "PROJ_LIB"] = r"H:\Anaconda3\pkgs\proj4-5.2.0-ha925a31_1\Library\share"
-os.environ["PROJ_LIB"] = r"C:\Users\hust2\Anaconda3\Library\share"
+import sys
+
+proj_path = "/home/owen/anaconda3/pkgs/proj4-5.2.0-he6710b0_1/share/proj"
+if sys.platform == "windows":
+    proj_path = "C:/Users/hust2/Anaconda3/Library/share"
+print(proj_path)
+# os.environ["PROJ_LIB"] = r"H:\Anaconda3\pkgs\proj4-5.2.0-ha925a31_1\Library\share"
+# os.environ["PROJ_LIB"] = r"\Library\share"
+os.environ["PROJ_LIB"] = proj_path
 from mpl_toolkits import basemap
 
 
@@ -310,7 +316,7 @@ def plotTsMap(dataMap,
     def onclick(event):
         xClick = event.xdata
         yClick = event.ydata
-        d = np.sqrt((xClick - lon)**2 + (yClick - lat)**2)
+        d = np.sqrt((xClick - lon) ** 2 + (yClick - lat) ** 2)
         ind = np.argmin(d)
         titleStr = 'pixel %d, lat %.3f, lon %.3f' % (ind, lat[ind], lon[ind])
         for ix in range(nAx):
@@ -405,7 +411,7 @@ def plotCDF(xLst,
             yRef = yRank
         elif ref is 'norm':
             yRef = scipy.stats.norm.cdf(xSort, 0, 1)
-        rmse = np.sqrt(((xSort - yRef)**2).mean())
+        rmse = np.sqrt(((xSort - yRef) ** 2).mean())
         ksd = np.max(np.abs(xSort - yRef))
         rmseLst.append(rmse)
         ksdLst.append(ksd)
