@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats
 from hydroeval import evaluator, nse
 
-keyLst = ['Bias', 'RMSE', 'ubRMSE', 'Corr', 'NSE']
+keyLst = ['Bias', 'RMSE', 'Corr', 'NSE']
 
 
 def statError(pred, target):
@@ -11,12 +11,12 @@ def statError(pred, target):
     Bias = np.nanmean(pred - target, axis=1)
     # RMSE
     RMSE = np.sqrt(np.nanmean((pred - target) ** 2, axis=1))
-    # ubRMSE
-    predMean = np.tile(np.nanmean(pred, axis=1), (nt, 1)).transpose()
-    targetMean = np.tile(np.nanmean(target, axis=1), (nt, 1)).transpose()
-    predAnom = pred - predMean
-    targetAnom = target - targetMean
-    ubRMSE = np.sqrt(np.nanmean((predAnom - targetAnom) ** 2, axis=1))
+    # # ubRMSE
+    # predMean = np.tile(np.nanmean(pred, axis=1), (nt, 1)).transpose()
+    # targetMean = np.tile(np.nanmean(target, axis=1), (nt, 1)).transpose()
+    # predAnom = pred - predMean
+    # targetAnom = target - targetMean
+    # ubRMSE = np.sqrt(np.nanmean((predAnom - targetAnom) ** 2, axis=1))
     # rho
     Corr = np.full(ngrid, np.nan)
     for k in range(0, ngrid):
@@ -30,7 +30,7 @@ def statError(pred, target):
 
     # nse
     nse_ = np.array([evaluator(nse, pred[i], target[i]) for i in range(pred.shape[0])]).squeeze()
-    outDict = dict(Bias=Bias, RMSE=RMSE, ubRMSE=ubRMSE, Corr=Corr, NSE=nse_)
+    outDict = dict(Bias=Bias, RMSE=RMSE, Corr=Corr, NSE=nse_)
     return outDict
 
 
