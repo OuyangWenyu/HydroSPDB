@@ -10,15 +10,17 @@ import string
 
 import os
 import sys
+import mpl_toolkits
 
-proj_path = "/home/owen/anaconda3/pkgs/proj4-5.2.0-he6710b0_1/share/proj"
-if sys.platform == "windows":
-    proj_path = "C:/Users/hust2/Anaconda3/Library/share"
-print(proj_path)
+projectionPath = "/home/owen/anaconda3/pkgs/proj4-5.2.0-he6710b0_1/share/proj"
+print(sys.platform)
+if "win" in sys.platform:
+    projectionPath = "J:/Wenyu/Programs/anaconda3/Library/share"
+print(projectionPath)
 # os.environ["PROJ_LIB"] = r"H:\Anaconda3\pkgs\proj4-5.2.0-ha925a31_1\Library\share"
 # os.environ["PROJ_LIB"] = r"\Library\share"
-os.environ["PROJ_LIB"] = proj_path
-from mpl_toolkits import basemap
+os.environ["PROJ_LIB"] = projectionPath
+
 
 
 def plotBoxFig(data,

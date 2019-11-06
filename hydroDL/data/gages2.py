@@ -121,7 +121,7 @@ def read_usgs_gage(usgs_id, *, read_qc=False):
 
     # 处理下负值
     obs = data_temp['flow'].astype('float').values
-    print(usgs_id)  # 看看warning是哪个站点：01606500，时间索引为2828的站点为nan，不过不影响计算。
+    # 看看warning是哪个站点：01606500，时间索引为2828的站点为nan，不过不影响计算。
     if usgs_id == '01606500':
         print(obs)
         print(np.argwhere(np.isnan(obs)))

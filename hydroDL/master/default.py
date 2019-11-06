@@ -12,7 +12,7 @@ optDataGages2 = OrderedDict(
     doNorm=[True, True],
     rmNan=[True, False],
     daObs=0)
-optTrainGages2 = OrderedDict(miniBatch=[100, 200], nEpoch=5, saveEpoch=1)
+optTrainGages2 = OrderedDict(miniBatch=[100, 200], nEpoch=2, saveEpoch=1)
 # Streamflow default options
 optDataCamels = OrderedDict(
     name='hydroDL.data.camels.DataframeCamels',
@@ -24,7 +24,7 @@ optDataCamels = OrderedDict(
     doNorm=[True, True],
     rmNan=[True, False],
     daObs=0)
-optTrainCamels = OrderedDict(miniBatch=[100, 200], nEpoch=1, saveEpoch=1)
+optTrainCamels = OrderedDict(miniBatch=[100, 200], nEpoch=1000, saveEpoch=100)
 """ model options """
 optLstm = OrderedDict(
     name='hydroDL.model.rnn.CudnnLstmModel',
