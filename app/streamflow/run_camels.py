@@ -31,11 +31,51 @@ if not os.path.exists(resultPathLst[0]):
     cid = cid + 1
 # test
 for out in outLst:
-    df, pred, obs = master.test(out, t_range=tRangeTest, subset=subset)
+    df, pred, obs = master.test(out, t_range=tRangeTest, subset=subset, epoch=optTrain['nEpoch'])
     predLst.append(pred)
+
+# 30% bottom 数据的分析，每个站点的<30分位数的径流数据和同时间的预测径流数据比较，计算box的几个指标
+obs2d = obs.squeeze()
+pred2d = pred.squeeze()
+obs2d[np.where(np.isnan(obs2d))] = 0
+pred2d[np.where(np.isnan(pred2d))] = 0
+
+# 每个站点的分位数对应的数据量是不同的，因此不能直接调用二维的计算公式，得每个站点分别计算
+obsBotIndex = [np.where(obs2di < np.percentile(obs2di, 30)) for obs2di in obs2d]
+obsBot = np.array([obs2d[i][obsBotIndex[i]] for i in range(obs2d.shape[0])])
+predBot = np.array([pred2d[j][obsBotIndex[j]] for j in range(pred2d.shape[0])])
+
+statDictBot = np.array([stat.statError1d(predBot[i], obsBot[i]) for i in range(obsBot.shape[0])]).T
+statDictBot[np.where(np.isnan(statDictBot))] = 0
+keysBot = ["Bias", "RMSE", "NSE"]
+stateBotPercentile = {keysBot[i]: np.percentile(statDictBot[i], [0, 25, 50, 75, 100]) for i in
+                      range(statDictBot.shape[0])}
+print(stateBotPercentile)
+
+# top 10%的数据分析，同理
+obs2d = obs.squeeze()
+pred2d = pred.squeeze()
+obs2d[np.where(np.isnan(obs2d))] = 0
+pred2d[np.where(np.isnan(pred2d))] = 0
+
+# 每个站点的分位数对应的数据量是不同的，因此不能直接调用二维的计算公式，得每个站点分别计算
+obsBotIndex = [np.where(obs2di > np.percentile(obs2di, 90)) for obs2di in obs2d]
+obsBot = np.array([obs2d[i][obsBotIndex[i]] for i in range(obs2d.shape[0])])
+predBot = np.array([pred2d[j][obsBotIndex[j]] for j in range(pred2d.shape[0])])
+
+statDictBot = np.array([stat.statError1d(predBot[i], obsBot[i]) for i in range(obsBot.shape[0])]).T
+statDictBot[np.where(np.isnan(statDictBot))] = 0
+keysBot = ["Bias", "RMSE", "NSE"]
+stateBotPercentile = {keysBot[i]: np.percentile(statDictBot[i], [0, 25, 50, 75, 100]) for i in
+                      range(statDictBot.shape[0])}
+print(stateBotPercentile)
 
 # plot box
 statDictLst = [stat.statError(x.squeeze(), obs.squeeze()) for x in predLst]
+# 输出几组统计值的最值、中位数和四分位数
+statePercentile = {key: np.percentile(value, [0, 25, 50, 75, 100]) for key, value in statDictLst[0].items()}
+print(statePercentile)
+
 keyLst = list(statDictLst[0].keys())
 dataBox = list()
 for iS in range(len(keyLst)):

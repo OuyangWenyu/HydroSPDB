@@ -7,7 +7,7 @@ from pandas.api.types import is_numeric_dtype, is_string_dtype
 import time
 import json
 
-from hydroDL.utils.statistics import cal_stat, trans_norm
+from hydroDL.post.stat import cal_stat, trans_norm
 from . import Dataframe
 
 # module variable

@@ -225,12 +225,12 @@ def test(out,
         # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         if eval(opt_data['name']) is hydroDL.data.gages2.DataframeGages2:
             stat_dict = hydroDL.data.gages2.statDict
-            pred = hydroDL.utils.statistics.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
-            obs = hydroDL.utils.statistics.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+            pred = hydroDL.post.stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+            obs = hydroDL.post.stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
         elif eval(opt_data['name']) is hydroDL.data.camels.DataframeCamels:
             stat_dict = hydroDL.data.camels.statDict
-            pred = hydroDL.utils.statistics.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
-            obs = hydroDL.utils.statistics.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+            pred = hydroDL.post.stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+            obs = hydroDL.post.stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
     if is_sigma_x is True:
         return df, pred, obs, sigma_x
     else:

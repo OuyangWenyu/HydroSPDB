@@ -1,5 +1,5 @@
 import hydroDL
-import hydroDL.utils.statistics
+import hydroDL.post.stat
 from hydroDL.data import camels
 from hydroDL.model import rnn, crit, train
 from hydroDL.post import plot, stat
@@ -29,9 +29,9 @@ yt2 = df2.get_data_obs(doNorm=False, rmNan=False).squeeze()
 
 model = train.load_model(outFolder, 100, modelName='test')
 yp1 = train.test_model(model, x1, c1)
-yp1 = hydroDL.utils.statistics.trans_norm(yp1, 'usgsFlow', toNorm=False).squeeze()
+yp1 = hydroDL.post.stat.trans_norm(yp1, 'usgsFlow', toNorm=False).squeeze()
 yp2 = train.test_model(model, x2, c2)
-yp2 = hydroDL.utils.statistics.trans_norm(yp2, 'usgsFlow', toNorm=False).squeeze()
+yp2 = hydroDL.post.stat.trans_norm(yp2, 'usgsFlow', toNorm=False).squeeze()
 
 statErr1 = stat.statError(yp1, yt2)
 statErr2 = stat.statError(yp2, yt2)

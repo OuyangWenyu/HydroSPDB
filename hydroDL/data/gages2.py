@@ -15,7 +15,7 @@ from pandas.api.types import is_numeric_dtype, is_string_dtype
 from hydroDL import pathGages2, pathCamels
 from hydroDL import utils
 from hydroDL.data import Dataframe, camels
-from hydroDL.utils.statistics import cal_stat, trans_norm
+from hydroDL.post.stat import cal_stat, trans_norm
 from hydroDL.utils.time import t2dt
 
 dirDB = pathGages2['DB']
