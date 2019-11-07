@@ -23,7 +23,7 @@ cid = 0
 # train config
 out = os.path.join(pathGages2['Out'], 'All-90-95')
 optData = default.optDataGages2
-optModel = default.optLstm
+optModel = default.optLstmGages2
 optLoss = default.optLossRMSE
 optTrain = default.optTrainGages2
 masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)

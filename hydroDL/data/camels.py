@@ -219,7 +219,7 @@ def createSubsetAll(opt, **kw):
 
 
 class DataframeCamels(Dataframe):
-    def __init__(self, *, subset='All', tRange):
+    def __init__(self, *, subset='All', t_range):
         self.rootDB = dirDB
         self.subset = subset
         if subset == 'All':  # change to read subset later
@@ -228,7 +228,7 @@ class DataframeCamels(Dataframe):
             crd[:, 0] = gageDict['lat']
             crd[:, 1] = gageDict['lon']
             self.crd = crd
-        self.time = utils.time.tRange2Array(tRange)
+        self.time = utils.time.tRange2Array(t_range)
 
     def getGeo(self):
         return self.crd

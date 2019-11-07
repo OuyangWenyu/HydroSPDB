@@ -76,10 +76,10 @@ def load_data(opt_data):
     if eval(opt_data['name']) is hydroDL.data.gages2.DataframeGages2:
         df = hydroDL.data.gages2.DataframeGages2(
             subset=opt_data['subset'],
-            tRange=opt_data['tRange'])
+            t_range=opt_data['tRange'])
     elif eval(opt_data['name']) is hydroDL.data.camels.DataframeCamels:
         df = hydroDL.data.camels.DataframeCamels(
-            subset=opt_data['subset'], tRange=opt_data['tRange'])
+            subset=opt_data['subset'], t_range=opt_data['tRange'])
     else:
         raise Exception('unknown database')
     x = df.get_data_ts(
@@ -187,9 +187,10 @@ def test(out,
 
     opt_data = m_dict['data']
     opt_data['subset'] = subset
-    opt_data['t_range'] = t_range
+    opt_data['tRange'] = t_range
     opt_train = m_dict['train']
     batch_size, rho = opt_train['miniBatch']
+
     df, x, obs, c = load_data(opt_data)
 
     # generate file names and run model

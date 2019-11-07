@@ -53,13 +53,13 @@ def train_model(model,
                 x_train = select_subset(x, i_grid, i_t, rho, c=c)
                 y_train = select_subset(y, i_grid, i_t, rho)
                 y_p = model(x_train)
-            if type(model) in [rnn.LstmCloseModel, rnn.AnnCloseModel]:
+            elif type(model) in [rnn.LstmCloseModel, rnn.AnnCloseModel]:
                 i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
                 x_train = select_subset(x, i_grid, i_t, rho, c=c)
                 y_train = select_subset(y, i_grid, i_t, rho)
                 z_train = select_subset(z, i_grid, i_t, rho)
                 y_p = model(x_train, z_train)
-            if type(model) in [rnn.CudnnLstmModel_R2P]:
+            elif type(model) in [rnn.CudnnLstmModel_R2P]:
                 i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
                 x_train = select_subset(x, i_grid, i_t, rho, c=c, tuple_out=True)
                 y_train = select_subset(y, i_grid, i_t, rho)
@@ -96,7 +96,7 @@ def train_model(model,
             if iEpoch % save_epoch == 0:
                 # save model
                 model_file = os.path.join(save_folder,
-                                         'model_Ep' + str(iEpoch) + '.pt')
+                                          'model_Ep' + str(iEpoch) + '.pt')
                 torch.save(model, model_file)
     if save_folder is not None:
         rf.close()

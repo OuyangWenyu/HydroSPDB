@@ -312,7 +312,7 @@ def read_attr(usgs_id_lst, var_lst):
 
 
 class DataframeGages2(Dataframe):
-    def __init__(self, *, subset='All', tRange):
+    def __init__(self, *, subset='All', t_range):
         self.rootDB = dirDB
         self.subset = subset
         if subset == 'All':  # change to read subset later
@@ -321,7 +321,7 @@ class DataframeGages2(Dataframe):
             crd[:, 0] = gageDict['lat']
             crd[:, 1] = gageDict['lon']
             self.crd = crd
-        self.time = utils.time.tRange2Array(tRange)
+        self.time = utils.time.tRange2Array(t_range)
 
     def getGeo(self):
         return self.crd
@@ -342,7 +342,7 @@ class DataframeGages2(Dataframe):
         return data
 
     def get_data_ts(self, *, var_lst=forcingLst, do_norm=True, rm_nan=True):
-        """时间序列数据，主要是驱动数据读取及归一化处理"""
+        """时间序列数据，主要是驱动数据读取 and choose data in the given time interval 及归一化处理"""
         if type(var_lst) is str:
             var_lst = [var_lst]
         # read ts forcing

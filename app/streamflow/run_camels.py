@@ -11,7 +11,7 @@ cid = 0
 # train config
 out = os.path.join(pathCamels['Out'], 'All-90-95')
 optData = default.optDataCamels
-optModel = default.optLstm
+optModel = default.optLstmCamels
 optLoss = default.optLossRMSE
 optTrain = default.optTrainCamels
 masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
