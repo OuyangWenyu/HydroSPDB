@@ -22,8 +22,10 @@ dirDB = pathGages2['DB']
 # USGS所有站点
 gageFile = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format',
                         'conterm_basinid.txt')
-# gageFldLst = ['HUC02', 'STAID', 'STANAME', 'LAT_GAGE', 'LNG_GAGE', 'DRAIN_SQKM']
-gageFldLst = camels.gageFldLst
+gageChosen = []
+gageFldLst = ['STAID', 'STANAME', 'DRAIN_SQKM', 'HUC02', 'LAT_GAGE', 'LNG_GAGE', 'STATE', 'BOUND_SOURCE', 'HCDN-2009',
+              'HBN36', 'OLD_HCDN', 'NSIP_SENTINEL', 'FIPS_SITE', 'COUNTYNAME_SITE', 'NAWQA_SUID']
+# gageFldLst = camels.gageFldLst
 dirGageflow = os.path.join(dirDB, 'gages_streamflow')
 dirGageAttr = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format')
 streamflowUrl = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{}'
@@ -54,18 +56,18 @@ attrLstSel = attrBasin + attrLandcover + attrSoil + attrGeol
 
 
 # 然后根据配置读取所需的gages-ii站点信息
-def read_gage_info(field_lst):
+def read_gage_info(dir_db):
     """读取gages-ii站点及流域基本location等信息。
     从中选出field_lst中属性名称对应的值，存入dic中。
     """
     # 数据从第二行开始，因此跳过第一行。
-    data = pd.read_csv(gageFile, sep=',', header=0)
+    data = pd.read_csv(dir_db, sep=',', header=None, skiprows=1, dtype={0: str})
     out = dict()
-    for s in field_lst:
+    for s in gageFldLst:
         if s is gageFldLst[2]:
-            out[s] = data[field_lst.index(s)].values.tolist()
+            out[s] = data[gageFldLst.index(s)].values.tolist()
         else:
-            out[s] = data[field_lst.index(s)].values
+            out[s] = data[gageFldLst.index(s)].values
     return out
 
 
@@ -73,8 +75,9 @@ def read_gage_info(field_lst):
 # GAGES-II的所有站点
 # gageDict = read_gage_info(gageField)
 # id_lst = gageDict['STAID']
-gageDict = camels.read_gage_info(pathCamels['DB'])
-idLst = gageDict['id']
+# gageDict = camels.read_gage_info(pathCamels['DB'])
+gageDict = read_gage_info(gageFile)
+idLst = gageDict[gageFldLst[0]]
 
 # 为了便于后续的归一化计算，这里需要计算流域attributes、forcings和streamflows统计值。
 # module variable
@@ -84,8 +87,8 @@ statFile = os.path.join(dirDB, 'Statistics.json')
 def read_usgs_gage(usgs_id, *, read_qc=False):
     """读取各个径流站的径流数据"""
     # 首先找到要读取的那个txt
-    ind = np.argwhere(gageDict[gageFldLst[1]] == usgs_id)[0][0]
-    huc = gageDict[gageFldLst[0]][ind]
+    ind = np.argwhere(gageDict[gageFldLst[0]] == usgs_id)[0][0]
+    huc = gageDict[gageFldLst[3]][ind]
     usgs_file = os.path.join(dirGageflow, str(huc), usgs_id + '.txt')
     # 下载的数据文件，注释结束的行不一样
     row_comment_end = 27  # 从0计数的行数
@@ -167,8 +170,8 @@ def read_usgs(usgs_id_lst):
     for usgs_id in usgs_id_lst:
         # 首先判断站点属于哪个region
         ind = np.argwhere(idLst == usgs_id)[0][0]
-        # 先用camels的
-        huc_02 = gageDict[gageFldLst[0]][ind]
+        # different hucs different directories
+        huc_02 = gageDict[gageFldLst[3]][ind]
         dir_huc_02 = str(huc_02)
         if dir_huc_02 not in dir_list:
             dir_huc_02 = os.path.join(dirGageflow, str(huc_02))
@@ -199,7 +202,73 @@ def read_usgs(usgs_id_lst):
     return y
 
 
-def read_attr_all():
+def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
+    """according to the criteria and its ancillary condition--thresh, choose appropriate ones from all usgs sites
+        Parameters
+        ----------
+        usgs : pd.Dataframe -- all usgs sites' data, first dim is 'sites', second is 'day',
+                               if there is some missing value, usgs should already be filled by nan
+        usgs_ids: list -- chosen sites' ids
+        time_range: list -- chosen time range
+        kwargs: all criteria
+
+        Returns
+        -------
+        usgs_out : ndarray -- the ids of usgs sites which match the criteria
+
+        Examples
+        --------
+        usgs_screen(usgs, ["02349000","08168797"], [19950101,20150101],
+        {'missing_data_ratio':0.1,'zero_value_ratio':0.005,'basin_area_ceil':'HUC4'})
+    """
+    sites_chosen = np.zeros(usgs.shape[0])
+    # choose the given sites
+    usgs_all_sites = usgs.loc['ID']
+    sites_index = np.where(np.in1d(usgs_ids, usgs_all_sites))[0]
+    sites_chosen[sites_index] = 1
+    # choose data in given time range
+    # calculate the day length
+    t_lst = utils.time.tRange2Array(time_range)
+    # choose usgs data in these period
+    all_t_list = usgs.iloc[sites_index, 0].astype(str).tolist()
+    ts, ind1, ind2 = np.intersect1d(all_t_list, t_lst, return_indices=True)
+    usgs_values = usgs.iloc[sites_index, ind1]
+
+    for site_index in sites_index:
+        # loop for every site
+        runoff = usgs_values[site_index]
+        for criteria in kwargs:
+            # if any criteria is not matched, we can filter this site
+            if sites_chosen[site_index] == 0:
+                break
+            if criteria == 'missing_data_ratio':
+                nan_length = len(runoff[np.isnan(runoff)])
+                # then calculate the length of consecutive nan
+                thresh = kwargs[criteria]
+                if nan_length / runoff.size > thresh:
+                    sites_chosen[site_index] = 0
+                else:
+                    sites_chosen[site_index] = 1
+
+            elif kwargs[criteria] == 'zero_value_ratio':
+                sites_chosen[site_index] = 1
+            elif kwargs[criteria] == 'basin_area_ceil':
+                sites_chosen[site_index] = 1
+            else:
+                print("Oops!  That is not valid value.  Try again...")
+    # get discharge data of chosen sites
+    usgs_out = usgs_values.iloc[np.where(sites_chosen > 0)]
+
+    # just for test
+    for site_index in range(1, np.shape(usgs)[0]):
+        usgs[site_index].id = usgs[site_index].name
+    IDs = usgs.id
+    print(np.where(IDs == '08168797'))
+
+    return usgs_out, sites_chosen
+
+
+def read_attr_all(gages_ids):
     """读取GAGES-II下的属性数据，目前是将用到的几个属性所属的那个属性大类下的所有属性的统计值都计算一下"""
     data_folder = dirGageAttr
     f_dict = dict()  # factorize dict
@@ -239,7 +308,7 @@ def read_attr_all():
         n_gage = len(idLst)
         out_temp = np.full([n_gage, len(var_lst_temp)], np.nan)  # 所有站点是一维，当前data_file下所有属性是第二维
         # 因为选择的站点可能是站点的一部分，所以需要求交集，ind2是所选站点在conterm_文件中所有站点里的index，把这些值放到out_temp中
-        range1 = gageDict[gageFldLst[1]].tolist()
+        range1 = gages_ids
         range2 = data_temp.iloc[:, 0].astype(str).tolist()
         c, ind1, ind2 = np.intersect1d(range1, range2, return_indices=True)
         for field in var_lst_temp:
@@ -269,15 +338,10 @@ def cal_stat_all(id_lst):
     """
     stat_dict = dict()
 
-    # const attribute
-    attr_data, attr_lst = read_attr_all()
-    for k in range(len(attr_lst)):
-        var = attr_lst[k]
-        print(var)
-        stat_dict[var] = cal_stat(attr_data[:, k])
-
-    # usgs streamflow
-    y = read_usgs(id_lst)
+    # usgs streamflow and choose sites which match conditions
+    usgs = read_usgs(id_lst)
+    y, gageChosen = usgs_screen(usgs, time_range=tRange, missing_data_ratio=0.1, zero_value_ratio=0.005,
+                                basin_area_ceil='HUC4')
     # 计算统计值，可以和camels下的共用同一个函数
     stat_dict['usgsFlow'] = cal_stat(y)
     # forcing数据可以暂时使用camels下的，后续有了新数据，也可以组织成和camels一样的
@@ -285,6 +349,13 @@ def cal_stat_all(id_lst):
     for k in range(len(forcingLst)):
         var = forcingLst[k]
         stat_dict[var] = cal_stat(x[:, :, k])
+
+    # const attribute
+    attr_data, attr_lst = read_attr_all(gageChosen)
+    for k in range(len(attr_lst)):
+        var = attr_lst[k]
+        print(var)
+        stat_dict[var] = cal_stat(attr_data[:, k])
 
     stat_file = os.path.join(dirDB, 'Statistics.json')
     with open(stat_file, 'w') as FP:
@@ -300,7 +371,7 @@ with open(statFile, 'r') as fp:
 
 
 def read_attr(usgs_id_lst, var_lst):
-    attr_all, var_lst_all = read_attr_all()
+    attr_all, var_lst_all = read_attr_all(gageChosen)
     ind_var = list()
     for var in var_lst:
         ind_var.append(var_lst_all.index(var))
