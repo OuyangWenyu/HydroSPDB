@@ -56,15 +56,20 @@ attrLstSel = attrBasin + attrLandcover + attrSoil + attrGeol
 
 
 # 然后根据配置读取所需的gages-ii站点信息
-def read_gage_info(dir_db):
+def read_gage_info(dir_db, id4test=None):
     """读取gages-ii站点及流域基本location等信息。
     从中选出field_lst中属性名称对应的值，存入dic中。
+    it will take so much time to read all sites' data which make test inconvenient, so add 'id4test' param.
     """
     # 数据从第二行开始，因此跳过第一行。
     data = pd.read_csv(dir_db, sep=',', header=None, skiprows=1, dtype={0: str})
     out = dict()
+    if id4test:
+        df_id = data.iloc[:, 0].values
+        c, ind1, ind2 = np.intersect1d(df_id, id4test, return_indices=True)
+        data = data.iloc[ind1, :]
     for s in gageFldLst:
-        if s is gageFldLst[2]:
+        if s is gageFldLst[1]:
             out[s] = data[gageFldLst.index(s)].values.tolist()
         else:
             out[s] = data[gageFldLst.index(s)].values
@@ -76,7 +81,7 @@ def read_gage_info(dir_db):
 # gageDict = read_gage_info(gageField)
 # id_lst = gageDict['STAID']
 # gageDict = camels.read_gage_info(pathCamels['DB'])
-gageDict = read_gage_info(gageFile)
+gageDict = read_gage_info(gageFile, ['01606500', '07311600'])
 idLst = gageDict[gageFldLst[0]]
 
 # 为了便于后续的归一化计算，这里需要计算流域attributes、forcings和streamflows统计值。
@@ -86,6 +91,7 @@ statFile = os.path.join(dirDB, 'Statistics.json')
 
 def read_usgs_gage(usgs_id, *, read_qc=False):
     """读取各个径流站的径流数据"""
+    print(usgs_id)
     # 首先找到要读取的那个txt
     ind = np.argwhere(gageDict[gageFldLst[0]] == usgs_id)[0][0]
     huc = gageDict[gageFldLst[3]][ind]
@@ -104,7 +110,9 @@ def read_usgs_gage(usgs_id, *, read_qc=False):
     skip_rows_index = list(range(0, row_comment_end))
     skip_rows_index.append(row_comment_end + 1)
     df_flow = pd.read_csv(usgs_file, skiprows=skip_rows_index, sep='\t', dtype={'site_no': str})
-
+    if usgs_id == '07311600':
+        print(
+            "just for test, it only contains max and min flow of a day, but dont have a mean, there will be some warning, but it's fine. no impact for results.")
     # 原数据的列名并不好用，这里修改
     columns_names = df_flow.columns.tolist()
     for column_name in columns_names:
@@ -120,6 +128,9 @@ def read_usgs_gage(usgs_id, *, read_qc=False):
             break
 
     columns = ['agency_cd', 'site_no', 'datetime', 'flow', 'mode']
+    if df_flow.empty:
+        df_flow = pd.DataFrame(columns=columns)
+
     data_temp = df_flow.loc[:, columns]
 
     # 处理下负值
@@ -198,7 +209,7 @@ def read_usgs(usgs_id_lst):
     for k in range(len(usgs_id_lst)):
         dataObs = read_usgs_gage(usgs_id_lst[k])
         y[k, :] = dataObs
-    print("read usgs streamflow", time.time() - t0)
+    print("time of reading usgs streamflow: ", time.time() - t0)
     return y
 
 
@@ -206,7 +217,7 @@ def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
     """according to the criteria and its ancillary condition--thresh, choose appropriate ones from all usgs sites
         Parameters
         ----------
-        usgs : pd.Dataframe -- all usgs sites' data, first dim is 'sites', second is 'day',
+        usgs : pd.DataFrame -- all usgs sites' data, its index are 'sites', its columns are 'day',
                                if there is some missing value, usgs should already be filled by nan
         usgs_ids: list -- chosen sites' ids
         time_range: list -- chosen time range
@@ -223,20 +234,24 @@ def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
     """
     sites_chosen = np.zeros(usgs.shape[0])
     # choose the given sites
-    usgs_all_sites = usgs.loc['ID']
-    sites_index = np.where(np.in1d(usgs_ids, usgs_all_sites))[0]
-    sites_chosen[sites_index] = 1
+    usgs_all_sites = usgs.index.values
+    if usgs_ids:
+        sites_index = np.where(np.in1d(usgs_ids, usgs_all_sites))[0]
+        sites_chosen[sites_index] = 1
+    else:
+        sites_index = np.arange(usgs.shape[0])
+        sites_chosen = np.ones(usgs.shape[0])
     # choose data in given time range
     # calculate the day length
     t_lst = utils.time.tRange2Array(time_range)
     # choose usgs data in these period
-    all_t_list = usgs.iloc[sites_index, 0].astype(str).tolist()
+    all_t_list = usgs.columns.values
     ts, ind1, ind2 = np.intersect1d(all_t_list, t_lst, return_indices=True)
     usgs_values = usgs.iloc[sites_index, ind1]
 
     for site_index in sites_index:
         # loop for every site
-        runoff = usgs_values[site_index]
+        runoff = usgs_values.iloc[site_index, :]
         for criteria in kwargs:
             # if any criteria is not matched, we can filter this site
             if sites_chosen[site_index] == 0:
@@ -250,20 +265,14 @@ def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
                 else:
                     sites_chosen[site_index] = 1
 
-            elif kwargs[criteria] == 'zero_value_ratio':
+            elif criteria == 'zero_value_ratio':
                 sites_chosen[site_index] = 1
-            elif kwargs[criteria] == 'basin_area_ceil':
+            elif criteria == 'basin_area_ceil':
                 sites_chosen[site_index] = 1
             else:
                 print("Oops!  That is not valid value.  Try again...")
-    # get discharge data of chosen sites
-    usgs_out = usgs_values.iloc[np.where(sites_chosen > 0)]
-
-    # just for test
-    for site_index in range(1, np.shape(usgs)[0]):
-        usgs[site_index].id = usgs[site_index].name
-    IDs = usgs.id
-    print(np.where(IDs == '08168797'))
+    # get discharge data of chosen sites, and change to ndarray
+    usgs_out = usgs_values.iloc[np.where(sites_chosen > 0)].values
 
     return usgs_out, sites_chosen
 
@@ -340,8 +349,8 @@ def cal_stat_all(id_lst):
 
     # usgs streamflow and choose sites which match conditions
     usgs = read_usgs(id_lst)
-    y, gageChosen = usgs_screen(usgs, time_range=tRange, missing_data_ratio=0.1, zero_value_ratio=0.005,
-                                basin_area_ceil='HUC4')
+    y, gage_chosen = usgs_screen(pd.DataFrame(usgs, index=id_lst, columns=tLst), time_range=[19900101, 19950101],
+                                missing_data_ratio=0.1, zero_value_ratio=0.005, basin_area_ceil='HUC4')
     # 计算统计值，可以和camels下的共用同一个函数
     stat_dict['usgsFlow'] = cal_stat(y)
     # forcing数据可以暂时使用camels下的，后续有了新数据，也可以组织成和camels一样的
@@ -351,7 +360,7 @@ def cal_stat_all(id_lst):
         stat_dict[var] = cal_stat(x[:, :, k])
 
     # const attribute
-    attr_data, attr_lst = read_attr_all(gageChosen)
+    attr_data, attr_lst = read_attr_all(gage_chosen)
     for k in range(len(attr_lst)):
         var = attr_lst[k]
         print(var)
