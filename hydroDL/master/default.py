@@ -8,11 +8,11 @@ optDataGages2 = OrderedDict(
     varT=gages2.forcingLst,
     varC=gages2.attrLstSel,
     target=['streamflowTest'],
-    tRange=[19900101, 19950101],
+    tRange=gages2.tRangeTrain,
     doNorm=[True, True],
     rmNan=[True, False],
     daObs=0)
-optTrainGages2 = OrderedDict(miniBatch=[100, 200], nEpoch=1000, saveEpoch=10)
+optTrainGages2 = OrderedDict(miniBatch=[100, 200], nEpoch=10, saveEpoch=1)
 # Streamflow default options
 optDataCamels = OrderedDict(
     name='hydroDL.data.camels.DataframeCamels',

@@ -19,6 +19,8 @@ from hydroDL.post.stat import cal_stat, trans_norm
 from hydroDL.utils.time import t2dt
 
 dirDB = pathGages2['DB']
+# training time range
+tRangeTrain = [19960101, 19970101]
 # USGS所有站点
 gageFile = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format',
                         'conterm_basinid.txt')
@@ -33,7 +35,7 @@ streamflowUrl = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_
 tRange = [19800101, 20150101]
 tLst = utils.time.tRange2Array(tRange)
 nt = len(tLst)
-tRangeChosen = [19950101, 19950103]
+
 # 671个流域的forcing值需要重新计算，但是训练先用着671个流域，可以先用CAMELS的计算。
 forcingLst = ['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp']
 # gages的attributes可以先按照CAMELS的这几项去找，因为使用了forcing数据，因此attributes里就没用气候的数据，因为要进行预测，所以也没用水文的
@@ -56,17 +58,18 @@ attrGeol = ['GEOL_REEDBUSH_DOM', 'GEOL_REEDBUSH_DOM_PCT', 'GEOL_REEDBUSH_SITE']
 # attributes include: Hydro, HydroMod_Dams, HydroMod_Other,Landscape_Pat,
 # LC06_Basin,LC06_Mains100,LC06_Mains800,LC06_Rip100,LC_Crops,Pop_Infrastr,Prot_Areas
 attrHydro = ['STREAMS_KM_SQ_KM', 'STRAHLER_MAX', 'MAINSTEM_SINUOUSITY', 'REACHCODE', 'ARTIFPATH_PCT',
-             'ARTIFPATH_MAINSTEM_PCT', 'HIRES_LENTIC_PCT', 'BFI_AVE', 'PERDUN', 'PERHOR', 'TOPWET', 'CONTACT',
-             'RUNAVE7100', 'WB5100_JAN_MM', 'WB5100_FEB_MM', 'WB5100_MAR_MM', 'WB5100_APR_MM', 'WB5100_MAY_MM',
-             'WB5100_JUN_MM', 'WB5100_JUL_MM', 'WB5100_AUG_MM', 'WB5100_SEP_MM', 'WB5100_OCT_MM', 'WB5100_NOV_MM',
-             'WB5100_DEC_MM', 'WB5100_ANN_MM', 'PCT_1ST_ORDER', 'PCT_2ND_ORDER', 'PCT_3RD_ORDER', 'PCT_4TH_ORDER',
-             'PCT_5TH_ORDER', 'PCT_6TH_ORDER_OR_MORE', 'PCT_NO_ORDER']
+             'ARTIFPATH_MAINSTEM_PCT', 'HIRES_LENTIC_PCT', 'BFI_AVE', 'PERDUN', 'PERHOR', 'TOPWET', 'CONTACT']
+# 'RUNAVE7100', 'WB5100_JAN_MM', 'WB5100_FEB_MM', 'WB5100_MAR_MM', 'WB5100_APR_MM', 'WB5100_MAY_MM',
+# 'WB5100_JUN_MM', 'WB5100_JUL_MM', 'WB5100_AUG_MM', 'WB5100_SEP_MM', 'WB5100_OCT_MM', 'WB5100_NOV_MM',
+# 'WB5100_DEC_MM', 'WB5100_ANN_MM', 'PCT_1ST_ORDER', 'PCT_2ND_ORDER', 'PCT_3RD_ORDER', 'PCT_4TH_ORDER',
+# 'PCT_5TH_ORDER', 'PCT_6TH_ORDER_OR_MORE', 'PCT_NO_ORDER'
+# "pre19xx" attributes need be given to right period
 attrHydroModDams = ['NDAMS_2009', 'DDENS_2009', 'STOR_NID_2009', 'STOR_NOR_2009', 'MAJ_NDAMS_2009', 'MAJ_DDENS_2009',
-                    'pre1940_NDAMS', 'pre1950_NDAMS', 'pre1960_NDAMS', 'pre1970_NDAMS', 'pre1980_NDAMS',
-                    'pre1990_NDAMS', 'pre1940_DDENS', 'pre1950_DDENS', 'pre1960_DDENS', 'pre1970_DDENS',
-                    'pre1980_DDENS', 'pre1990_DDENS', 'pre1940_STOR', 'pre1950_STOR', 'pre1960_STOR', 'pre1970_STOR',
-                    'pre1980_STOR', 'pre1990_STOR', 'RAW_DIS_NEAREST_DAM', 'RAW_AVG_DIS_ALLDAMS',
-                    'RAW_DIS_NEAREST_MAJ_DAM', 'RAW_AVG_DIS_ALL_MAJ_DAMS']
+                    'RAW_DIS_NEAREST_DAM', 'RAW_AVG_DIS_ALLDAMS', 'RAW_DIS_NEAREST_MAJ_DAM', 'RAW_AVG_DIS_ALL_MAJ_DAMS']
+# 'pre1940_NDAMS', 'pre1950_NDAMS', 'pre1960_NDAMS', 'pre1970_NDAMS', 'pre1980_NDAMS',
+#                     'pre1990_NDAMS', 'pre1940_DDENS', 'pre1950_DDENS', 'pre1960_DDENS', 'pre1970_DDENS',
+#                     'pre1980_DDENS', 'pre1990_DDENS', 'pre1940_STOR', 'pre1950_STOR', 'pre1960_STOR', 'pre1970_STOR',
+#                     'pre1980_STOR', 'pre1990_STOR',
 attrHydroModOther = ['CANALS_PCT', 'RAW_DIS_NEAREST_CANAL', 'RAW_AVG_DIS_ALLCANALS', 'CANALS_MAINSTEM_PCT',
                      'NPDES_MAJ_DENS', 'RAW_DIS_NEAREST_MAJ_NPDES', 'RAW_AVG_DIS_ALL_MAJ_NPDES', 'FRESHW_WITHDRAWAL',
                      'MINING92_PCT', 'PCT_IRRIG_AG', 'POWER_NUM_PTS', 'POWER_SUM_MW']
@@ -95,7 +98,9 @@ attrPopInfrastr = ['CDL_CORN', 'CDL_COTTON', 'CDL_RICE', 'CDL_SORGHUM', 'CDL_SOY
                    'CDL_PASTURE_GRASS', 'CDL_ORANGES', 'CDL_OTHER_CROPS', 'CDL_ALL_OTHER_LAND']
 attrProtAreas = ['PDEN_2000_BLOCK', 'PDEN_DAY_LANDSCAN_2007', 'PDEN_NIGHT_LANDSCAN_2007', 'ROADS_KM_SQ_KM',
                  'RD_STR_INTERS', 'IMPNLCD06', 'NLCD01_06_DEV']
-attrLstSel = attrBasin + attrLandcover + attrSoil + attrGeol
+attrLstSel = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams + attrHydroModOther + \
+             attrLandscapePat + attrLC06Basin + attrLC06Mains100 + attrLC06Mains800 + attrLC06Rip100 + attrLCCrops + \
+             attrPopInfrastr + attrProtAreas
 
 
 # 然后根据配置读取所需的gages-ii站点信息
@@ -155,7 +160,8 @@ def read_usgs_gage(usgs_id, *, read_qc=False):
     df_flow = pd.read_csv(usgs_file, skiprows=skip_rows_index, sep='\t', dtype={'site_no': str})
     if usgs_id == '07311600':
         print(
-            "just for test, it only contains max and min flow of a day, but dont have a mean, there will be some warning, but it's fine. no impact for results.")
+            "just for test, it only contains max and min flow of a day, but dont have a mean, there will be some "
+            "warning, but it's fine. no impact for results.")
     # 原数据的列名并不好用，这里修改
     columns_names = df_flow.columns.tolist()
     for column_name in columns_names:
@@ -388,25 +394,44 @@ def read_attr_all(gages_ids):
 def read_forcing(usgs_id_lst, t_range, var_lst, dataset='daymet'):
     """读取gagesII_forcing文件夹下的驱动数据(data processed from GEE)"""
     t0 = time.time()
-    t_lst_chosen = utils.time.tRange2Array(t_range)
     data_folder = os.path.join(dirDB, 'gagesII_forcing')
     if dataset is 'nldas':
         print("no data now!!!")
-    data_file = os.path.join(data_folder, dataset, 'daymet_MxWdShld_mean.csv')
-    data_temp = pd.read_csv(data_file, sep=',', dtype={'gage_id': int})
+    # different files for different years
+    t_start = str(t_range[0])[0:4]
+    t_end = str(t_range[1])[0:4]
+    t_lst_chosen = utils.time.tRange2Array(t_range)
+    t_lst_years = np.arange(t_start, t_end, dtype='datetime64[Y]').astype(str)
+    data_temps = pd.DataFrame()
+    for year in t_lst_years:
+        data_file = os.path.join(data_folder, dataset, 'daymet_MxWdShld_mean_' + year + '.csv')
+        data_temp = pd.read_csv(data_file, sep=',', dtype={'gage_id': int})
+        frames_temp = [data_temps, data_temp]
+        data_temps = pd.concat(frames_temp)
     # choose data in given time and sites. if there is no value for site in usgs_id_lst, just error(because every
     # site should have forcing). using dataframe mostly will make data type easy to handle with
-    sites_forcing = data_temp.iloc[:, 0].values
+    sites_forcing = data_temps.iloc[:, 0].values
     sites_index = [i for i in range(sites_forcing.size) if sites_forcing[i] in usgs_id_lst.astype(int)]
-    data_sites_chosen = data_temp.iloc[sites_index, :]
+    data_sites_chosen = data_temps.iloc[sites_index, :]
     t_range_forcing = np.array(data_sites_chosen.iloc[:, 1].values.astype(str), dtype='datetime64[D]')
     t_index = [j for j in range(t_range_forcing.size) if t_range_forcing[j] in t_lst_chosen]
     data_chosen = data_sites_chosen.iloc[t_index, :]
-    data_2dim = data_chosen.iloc[:, 2:].values
-    data_3dim = data_2dim.reshape(len(usgs_id_lst), len(t_lst_chosen), len(var_lst))
+    # when year is a leap year, only 365d will be provided by gee datasets. better to fill it with nan
+    # number of days are different in different years, so reshape can't be used
+    x = np.empty([len(usgs_id_lst), t_lst_chosen.size, len(var_lst)])
+    data_chosen_t_length = np.unique(data_chosen.iloc[:, 1].values).size
+    for k in range(len(usgs_id_lst)):
+        data_k = data_chosen.iloc[k * data_chosen_t_length:(k + 1) * data_chosen_t_length, :]
+        out = np.full([t_lst_chosen.size, len(forcingLst)], np.nan)
+        # df中的date是字符串，转换为datetime，方可与tLst求交集
+        df_date = data_k.iloc[:, 1]
+        date = df_date.values.astype('datetime64[D]')
+        c, ind1, ind2 = np.intersect1d(t_lst_chosen, date, return_indices=True)
+        out[ind1, :] = data_k.iloc[ind2, 2:].values
+        x[k, :, :] = out
 
     print("time of reading usgs forcing data", time.time() - t0)
-    return data_3dim
+    return x
 
 
 def cal_stat_all(id_lst):
@@ -419,14 +444,14 @@ def cal_stat_all(id_lst):
 
     # usgs streamflow and choose sites which match conditions
     usgs = read_usgs(id_lst)
-    y, sites_chosen = usgs_screen(pd.DataFrame(usgs, index=id_lst, columns=tLst), time_range=tRangeChosen,
+    y, sites_chosen = usgs_screen(pd.DataFrame(usgs, index=id_lst, columns=tLst), time_range=tRangeTrain,
                                   missing_data_ratio=0.1, zero_value_ratio=0.005, basin_area_ceil='HUC4')
     # 计算统计值，可以和camels下的共用同一个函数
     stat_dict['usgsFlow'] = cal_stat(y)
     gage_chosen_ids = id_lst[np.where(sites_chosen == 1)]
 
     # forcing数据
-    x = read_forcing(gage_chosen_ids, tRangeChosen, forcingLst)
+    x = read_forcing(gage_chosen_ids, tRangeTrain, forcingLst)
     for k in range(len(forcingLst)):
         var = forcingLst[k]
         stat_dict[var] = cal_stat(x[:, :, k])
@@ -508,8 +533,7 @@ class DataframeGages2(Dataframe):
         return data
 
     def get_data_const(self, *, var_lst=attrLstSel, do_norm=True, rm_nan=True):
-        """属性数据读取及归一化处理, some attributes have time, which need to repeat in different periods in this function of
-        'gages2.py' """
+        """属性数据读取及归一化处理"""
         if type(var_lst) is str:
             var_lst = [var_lst]
         data = read_attr(self.usgsId, var_lst)

@@ -42,6 +42,10 @@ def loadModel(out, epoch=None):
 
 
 def namePred(out, tRange, subset, epoch=None, doMC=False, suffix=None):
+    if not os.path.exists(out):
+        os.makedirs(out)
+    if not os.path.exists(os.path.join(out, 'master.json')):
+        return ['None']
     mDict = read_master_file(out)
     target = mDict['data']['target']
     if type(target) is not list:

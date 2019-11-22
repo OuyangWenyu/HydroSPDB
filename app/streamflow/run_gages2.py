@@ -21,15 +21,16 @@ from hydroDL import utils
 
 cid = 0
 # train config
-out = os.path.join(pathGages2['Out'], 'All-90-95')
 optData = default.optDataGages2
 optModel = default.optLstmGages2
 optLoss = default.optLossRMSE
 optTrain = default.optTrainGages2
+case = optData['subset'] + '-' + str(optData['tRange'][0])[2:4] + '-' + str(optData['tRange'][1])[2:4]
+out = os.path.join(pathGages2['Out'], case)
 masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
 
 # test config
-caseLst = ['All-90-95']
+caseLst = [case]
 outLst = [os.path.join(pathGages2['Out'], x) for x in caseLst]
 subset = 'All'
 tRangeTest = [19950101, 20000101]
