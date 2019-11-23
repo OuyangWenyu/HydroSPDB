@@ -327,7 +327,10 @@ def read_attr(usgs_id_lst, var_lst):
 
 
 def read_forcing(usgs_id_lst, t_range, var_lst, dataset='daymet'):
-    """读取gagesII_forcing文件夹下的驱动数据(data processed from GEE)"""
+    """读取gagesII_forcing文件夹下的驱动数据(data processed from GEE)
+    :return
+    x: ndarray -- 1d-axis:gages, 2d-axis: day, 3d-axis: forcing vst
+    """
     t0 = time.time()
     data_folder = os.path.join(dirDB, 'gagesII_forcing')
     if dataset is 'nldas':
@@ -456,8 +459,8 @@ attrHydroModOther = ['CANALS_PCT', 'RAW_DIS_NEAREST_CANAL', 'RAW_AVG_DIS_ALLCANA
 attrLandscapePat = ['FRAGUN_BASIN', 'HIRES_LENTIC_NUM', 'HIRES_LENTIC_DENS', 'HIRES_LENTIC_MEANSIZ']
 attrLC06Basin = ['DEVNLCD06', 'FORESTNLCD06', 'PLANTNLCD06', 'WATERNLCD06', 'SNOWICENLCD06', 'DEVOPENNLCD06',
                  'DEVLOWNLCD06', 'DEVMEDNLCD06', 'DEVHINLCD06', 'BARRENNLCD06', 'DECIDNLCD06', 'EVERGRNLCD06',
-                 'MIXEDFORNLCD06', 'DWARFNLCD', 'SHRUBNLCD06', 'GRASSNLCD06', 'SEDGENLCD', 'MOSSNLCD', 'PASTURENLCD06',
-                 'CROPSNLCD06', 'WOODYWETNLCD06', 'EMERGWETNLCD06']
+                 'MIXEDFORNLCD06', 'SHRUBNLCD06', 'GRASSNLCD06', 'PASTURENLCD06', 'CROPSNLCD06', 'WOODYWETNLCD06',
+                 'EMERGWETNLCD06']
 attrLC06Mains100 = ['MAINS100_DEV', 'MAINS100_FOREST', 'MAINS100_PLANT', 'MAINS100_11', 'MAINS100_12', 'MAINS100_21',
                     'MAINS100_22', 'MAINS100_23', 'MAINS100_24', 'MAINS100_31', 'MAINS100_41', 'MAINS100_42',
                     'MAINS100_43', 'MAINS100_52', 'MAINS100_71', 'MAINS100_81', 'MAINS100_82', 'MAINS100_90',
@@ -488,7 +491,7 @@ tLstAll = utils.time.tRange2Array(tRange4DownloadData)
 # gageDict = read_gage_info(gageField)
 
 # training time range
-tRangeTrain = [19960101, 19970101]
+tRangeTrain = [19950101, 20000101]
 
 # regions
 REF_NONREF_REGIONS_SHP = ['bas_nonref_MxWdShld.shp']
@@ -526,6 +529,7 @@ class DataframeGages2(Dataframe):
             crd[:, 0] = gageDict[GAGE_FLD_LST[4]]
             crd[:, 1] = gageDict[GAGE_FLD_LST[5]]
             self.crd = crd
+        self.tRange = t_range
         self.time = utils.time.tRange2Array(t_range)
 
     def getGeo(self):
@@ -551,9 +555,7 @@ class DataframeGages2(Dataframe):
         if type(var_lst) is str:
             var_lst = [var_lst]
         # read ts forcing
-        data = read_forcing(self.usgsId, var_lst)
-        C, ind1, ind2 = np.intersect1d(self.time, tLstAll, return_indices=True)
-        data = data[:, ind2, :]
+        data = read_forcing(self.usgsId, self.tRange, var_lst)
         if do_norm is True:
             data = trans_norm(data, var_lst, statDict, to_norm=True)
         if rm_nan is True:
