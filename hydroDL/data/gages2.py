@@ -1,4 +1,4 @@
-"""read gages-ii data以计算统计值，为归一化备用"""
+"""read gages-ii data以计算统计值 and ready for model"""
 
 # 读取GAGES-II数据需要指定文件路径、时间范围、属性类型、需要计算配置的项是forcing data。
 # module variable
@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import requests
 from pandas.api.types import is_numeric_dtype, is_string_dtype
+import geopandas as gpd
 
 from hydroDL import pathGages2
 from hydroDL import utils
@@ -18,132 +19,51 @@ from hydroDL.data import Dataframe
 from hydroDL.post.stat import cal_stat, trans_norm
 from hydroDL.utils.time import t2dt
 
-dirDB = pathGages2['DB']
-# training time range
-tRangeTrain = [19960101, 19970101]
-# USGS所有站点
-gageFile = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format',
-                        'conterm_basinid.txt')
-gageChosen = []
-gageFldLst = ['STAID', 'STANAME', 'DRAIN_SQKM', 'HUC02', 'LAT_GAGE', 'LNG_GAGE', 'STATE', 'BOUND_SOURCE', 'HCDN-2009',
-              'HBN36', 'OLD_HCDN', 'NSIP_SENTINEL', 'FIPS_SITE', 'COUNTYNAME_SITE', 'NAWQA_SUID']
-# gageFldLst = camels.gageFldLst
-dirGageflow = os.path.join(dirDB, 'gages_streamflow')
-dirGageAttr = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format')
-streamflowUrl = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{}'
-# 左闭右开
-tRange = [19800101, 20150101]
-tLst = utils.time.tRange2Array(tRange)
-nt = len(tLst)
 
-# 671个流域的forcing值需要重新计算，但是训练先用着671个流域，可以先用CAMELS的计算。
-forcingLst = ['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp']
-# gages的attributes可以先按照CAMELS的这几项去找，因为使用了forcing数据，因此attributes里就没用气候的数据，因为要进行预测，所以也没用水文的
-attrLstAll = os.listdir(dirGageAttr)
-# 因为是对CONUS分析，所以只用conterm开头的
-attrLst = []
-for attrLstAllTemp in attrLstAll:
-    if 'conterm' in attrLstAllTemp:
-        attrLstTemp = attrLstAllTemp[8:].lower()
-        attrLst.append(attrLstTemp)
+# -----------------------------------functions for configure of gages-------------------------------------------------
 
-# land cover部分：forest_frac对应FORESTNLCD06；lai没有，这里暂时用所有forest的属性；land_cover暂时用除人为种植之外的其他所有属性。
-# soil：soil_depth相关的有：ROCKDEPAVE；soil_porosity类似的可能是：AWCAVE；soil_conductivity可能相关的：PERMAVE；max_water_content没有，暂时用RFACT
-# geology在GAGES-II中一共两类，来自两个数据源，用第一种，
-attrBasin = ['ELEV_MEAN_M_BASIN', 'SLOPE_PCT', 'DRAIN_SQKM']
-attrLandcover = ['FORESTNLCD06', 'BARRENNLCD06', 'DECIDNLCD06', 'EVERGRNLCD06', 'MIXEDFORNLCD06', 'SHRUBNLCD06',
-                 'GRASSNLCD06', 'WOODYWETNLCD06', 'EMERGWETNLCD06']
-attrSoil = ['ROCKDEPAVE', 'AWCAVE', 'PERMAVE', 'RFACT', ]
-attrGeol = ['GEOL_REEDBUSH_DOM', 'GEOL_REEDBUSH_DOM_PCT', 'GEOL_REEDBUSH_SITE']
-# attributes include: Hydro, HydroMod_Dams, HydroMod_Other,Landscape_Pat,
-# LC06_Basin,LC06_Mains100,LC06_Mains800,LC06_Rip100,LC_Crops,Pop_Infrastr,Prot_Areas
-attrHydro = ['STREAMS_KM_SQ_KM', 'STRAHLER_MAX', 'MAINSTEM_SINUOUSITY', 'REACHCODE', 'ARTIFPATH_PCT',
-             'ARTIFPATH_MAINSTEM_PCT', 'HIRES_LENTIC_PCT', 'BFI_AVE', 'PERDUN', 'PERHOR', 'TOPWET', 'CONTACT']
-# 'RUNAVE7100', 'WB5100_JAN_MM', 'WB5100_FEB_MM', 'WB5100_MAR_MM', 'WB5100_APR_MM', 'WB5100_MAY_MM',
-# 'WB5100_JUN_MM', 'WB5100_JUL_MM', 'WB5100_AUG_MM', 'WB5100_SEP_MM', 'WB5100_OCT_MM', 'WB5100_NOV_MM',
-# 'WB5100_DEC_MM', 'WB5100_ANN_MM', 'PCT_1ST_ORDER', 'PCT_2ND_ORDER', 'PCT_3RD_ORDER', 'PCT_4TH_ORDER',
-# 'PCT_5TH_ORDER', 'PCT_6TH_ORDER_OR_MORE', 'PCT_NO_ORDER'
-# "pre19xx" attributes need be given to right period
-attrHydroModDams = ['NDAMS_2009', 'DDENS_2009', 'STOR_NID_2009', 'STOR_NOR_2009', 'MAJ_NDAMS_2009', 'MAJ_DDENS_2009',
-                    'RAW_DIS_NEAREST_DAM', 'RAW_AVG_DIS_ALLDAMS', 'RAW_DIS_NEAREST_MAJ_DAM', 'RAW_AVG_DIS_ALL_MAJ_DAMS']
-# 'pre1940_NDAMS', 'pre1950_NDAMS', 'pre1960_NDAMS', 'pre1970_NDAMS', 'pre1980_NDAMS',
-#                     'pre1990_NDAMS', 'pre1940_DDENS', 'pre1950_DDENS', 'pre1960_DDENS', 'pre1970_DDENS',
-#                     'pre1980_DDENS', 'pre1990_DDENS', 'pre1940_STOR', 'pre1950_STOR', 'pre1960_STOR', 'pre1970_STOR',
-#                     'pre1980_STOR', 'pre1990_STOR',
-attrHydroModOther = ['CANALS_PCT', 'RAW_DIS_NEAREST_CANAL', 'RAW_AVG_DIS_ALLCANALS', 'CANALS_MAINSTEM_PCT',
-                     'NPDES_MAJ_DENS', 'RAW_DIS_NEAREST_MAJ_NPDES', 'RAW_AVG_DIS_ALL_MAJ_NPDES', 'FRESHW_WITHDRAWAL',
-                     'MINING92_PCT', 'PCT_IRRIG_AG', 'POWER_NUM_PTS', 'POWER_SUM_MW']
-attrLandscapePat = ['FRAGUN_BASIN', 'HIRES_LENTIC_NUM', 'HIRES_LENTIC_DENS', 'HIRES_LENTIC_MEANSIZ']
-attrLC06Basin = ['DEVNLCD06', 'FORESTNLCD06', 'PLANTNLCD06', 'WATERNLCD06', 'SNOWICENLCD06', 'DEVOPENNLCD06',
-                 'DEVLOWNLCD06', 'DEVMEDNLCD06', 'DEVHINLCD06', 'BARRENNLCD06', 'DECIDNLCD06', 'EVERGRNLCD06',
-                 'MIXEDFORNLCD06', 'DWARFNLCD', 'SHRUBNLCD06', 'GRASSNLCD06', 'SEDGENLCD', 'MOSSNLCD', 'PASTURENLCD06',
-                 'CROPSNLCD06', 'WOODYWETNLCD06', 'EMERGWETNLCD06']
-attrLC06Mains100 = ['MAINS100_DEV', 'MAINS100_FOREST', 'MAINS100_PLANT', 'MAINS100_11', 'MAINS100_12', 'MAINS100_21',
-                    'MAINS100_22', 'MAINS100_23', 'MAINS100_24', 'MAINS100_31', 'MAINS100_41', 'MAINS100_42',
-                    'MAINS100_43', 'MAINS100_52', 'MAINS100_71', 'MAINS100_81', 'MAINS100_82', 'MAINS100_90',
-                    'MAINS100_95', ]
-attrLC06Mains800 = ['MAINS800_DEV', 'MAINS800_FOREST', 'MAINS800_PLANT', 'MAINS800_11', 'MAINS800_12', 'MAINS800_21',
-                    'MAINS800_22', 'MAINS800_23', 'MAINS800_24', 'MAINS800_31', 'MAINS800_41', 'MAINS800_42',
-                    'MAINS800_43', 'MAINS800_52', 'MAINS800_71', 'MAINS800_81', 'MAINS800_82', 'MAINS800_90',
-                    'MAINS800_95']
-attrLC06Rip100 = ['RIP100_DEV', 'RIP100_FOREST', 'RIP100_PLANT', 'RIP100_11', 'RIP100_12', 'RIP100_21', 'RIP100_22',
-                  'RIP100_23', 'RIP100_24', 'RIP100_31', 'RIP100_41', 'RIP100_42', 'RIP100_43', 'RIP100_52',
-                  'RIP100_71', 'RIP100_81', 'RIP100_82', 'RIP100_90', 'RIP100_95']
-attrLCCrops = ['RIP800_DEV', 'RIP800_FOREST', 'RIP800_PLANT', 'RIP800_11', 'RIP800_12', 'RIP800_21', 'RIP800_22',
-               'RIP800_23', 'RIP800_24', 'RIP800_31', 'RIP800_41', 'RIP800_42', 'RIP800_43', 'RIP800_52', 'RIP800_71',
-               'RIP800_81', 'RIP800_82', 'RIP800_90', 'RIP800_95']
-attrPopInfrastr = ['CDL_CORN', 'CDL_COTTON', 'CDL_RICE', 'CDL_SORGHUM', 'CDL_SOYBEANS', 'CDL_SUNFLOWERS', 'CDL_PEANUTS',
-                   'CDL_BARLEY', 'CDL_DURUM_WHEAT', 'CDL_SPRING_WHEAT', 'CDL_WINTER_WHEAT', 'CDL_WWHT_SOY_DBL_CROP',
-                   'CDL_OATS', 'CDL_ALFALFA', 'CDL_OTHER_HAYS', 'CDL_DRY_BEANS', 'CDL_POTATOES', 'CDL_FALLOW_IDLE',
-                   'CDL_PASTURE_GRASS', 'CDL_ORANGES', 'CDL_OTHER_CROPS', 'CDL_ALL_OTHER_LAND']
-attrProtAreas = ['PDEN_2000_BLOCK', 'PDEN_DAY_LANDSCAN_2007', 'PDEN_NIGHT_LANDSCAN_2007', 'ROADS_KM_SQ_KM',
-                 'RD_STR_INTERS', 'IMPNLCD06', 'NLCD01_06_DEV']
-attrLstSel = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams + attrHydroModOther + \
-             attrLandscapePat + attrLC06Basin + attrLC06Mains100 + attrLC06Mains800 + attrLC06Rip100 + attrLCCrops + \
-             attrPopInfrastr + attrProtAreas
-
-
-# 然后根据配置读取所需的gages-ii站点信息
-def read_gage_info(dir_db, id4test=None):
+# 根据配置读取所需的gages-ii站点信息
+def read_gage_info(dir_db, region_shapefiles=None, ids_specific=None):
     """读取gages-ii站点及流域基本location等信息。
     从中选出field_lst中属性名称对应的值，存入dic中。
-    it will take so much time to read all sites' data which make test inconvenient, so add 'id4test' param.
+
+    Parameter:
+        dir_db: file of gages' information
+        region_shapefile: choose some regions
+        ids_specific： given sites' ids
+    Return：
+        各个站点的attibutes in basinid.txt and 径流数据
     """
     # 数据从第二行开始，因此跳过第一行。
     data = pd.read_csv(dir_db, sep=',', header=None, skiprows=1, dtype={0: str})
     out = dict()
-    if id4test:
-        df_id = data.iloc[:, 0].values
-        c, ind1, ind2 = np.intersect1d(df_id, id4test, return_indices=True)
+    if len(region_shapefiles):
+        # read sites from shapefile of region, get id from it.
+        # Read file using gpd.read_file()  # TODO: read multi shapefiles
+        shapefile = os.path.join(GAGE_SHAPE_DIR, region_shapefiles[0])
+        shape_data = gpd.read_file(shapefile)
+        print(shape_data.columns)
+        gages_id = shape_data['GAGE_ID'].values
+        df_id_region = data.iloc[:, 0].values
+        c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
         data = data.iloc[ind1, :]
-    for s in gageFldLst:
-        if s is gageFldLst[1]:
-            out[s] = data[gageFldLst.index(s)].values.tolist()
+    if ids_specific:
+        df_id_test = data.iloc[:, 0].values
+        c, ind1, ind2 = np.intersect1d(df_id_test, ids_specific, return_indices=True)
+        data = data.iloc[ind1, :]
+    for s in GAGE_FLD_LST:
+        if s is GAGE_FLD_LST[1]:
+            out[s] = data[GAGE_FLD_LST.index(s)].values.tolist()
         else:
-            out[s] = data[gageFldLst.index(s)].values
+            out[s] = data[GAGE_FLD_LST.index(s)].values
     return out
 
 
-# module variable
-# GAGES-II的所有站点
-# gageDict = read_gage_info(gageField)
-# id_lst = gageDict['STAID']
-# gageDict = camels.read_gage_info(pathCamels['DB'])
-gageDict = read_gage_info(gageFile, ['07311600', '04074548', '04121000', '04121500', '05211000'])
-idLst = gageDict[gageFldLst[0]]
-
-# 为了便于后续的归一化计算，这里需要计算流域attributes、forcings和streamflows统计值。
-# module variable
-statFile = os.path.join(dirDB, 'Statistics.json')
-
-
-def read_usgs_gage(usgs_id, *, read_qc=False):
+def read_usge_gage(huc, usgs_id, t_range, read_qc=False):
     """读取各个径流站的径流数据"""
     print(usgs_id)
     # 首先找到要读取的那个txt
-    ind = np.argwhere(gageDict[gageFldLst[0]] == usgs_id)[0][0]
-    huc = gageDict[gageFldLst[3]][ind]
-    usgs_file = os.path.join(dirGageflow, str(huc), usgs_id + '.txt')
+    usgs_file = os.path.join(DIR_GAGE_FLOW, str(huc), usgs_id + '.txt')
     # 下载的数据文件，注释结束的行不一样
     row_comment_end = 27  # 从0计数的行数
     with open(usgs_file, 'r') as f:
@@ -193,12 +113,14 @@ def read_usgs_gage(usgs_id, *, read_qc=False):
         qc_dict = {'A': 1, 'A:e': 2, 'M': 3}
         qc = np.array([qc_dict[x] for x in data_temp[4]])
     # 如果时间序列长度和径流数据长度不一致，说明有missing值，先补充nan值
+    t_lst = utils.time.tRange2Array(t_range)
+    nt = len(t_lst)
     if len(obs) != nt:
         out = np.full([nt], np.nan)
         # df中的date是字符串，转换为datetime，方可与tLst求交集
         df_date = data_temp['datetime']
         date = pd.to_datetime(df_date).values.astype('datetime64[D]')
-        c, ind1, ind2 = np.intersect1d(date, tLst, return_indices=True)
+        c, ind1, ind2 = np.intersect1d(date, t_lst, return_indices=True)
         out[ind2] = obs
         if read_qc is True:
             out_qc = np.full([nt], np.nan)
@@ -214,50 +136,52 @@ def read_usgs_gage(usgs_id, *, read_qc=False):
         return out
 
 
-def read_usgs(usgs_id_lst):
-    """读取USGS的径流数据，首先判断哪些径流站点的数据已经读取并存入本地，如果没有，就从网上下载并读入txt文件。
+def read_usgs(gage_dict, t_range):
+    """读取USGS的daily average 径流数据 according to id and time,
+        首先判断哪些径流站点的数据已经读取并存入本地，如果没有，就从网上下载并读入txt文件。
     Parameter:
-        usgs_id_lst：站点列表
-
+        gage_dict：站点 information
+        t_range: must be time range for downloaded data
     Return：
-        各个站点的径流数据
+        y: ndarray--各个站点的径流数据, 1d-axis: gages, 2d-axis: day
     """
-    if not os.path.isdir(dirGageflow):
-        os.mkdir(dirGageflow)
-    dir_list = os.listdir(dirGageflow)
+    if not os.path.isdir(DIR_GAGE_FLOW):
+        os.mkdir(DIR_GAGE_FLOW)
+    dir_list = os.listdir(DIR_GAGE_FLOW)
     # 区域一共有18个，因此，为了便于后续处理，还是要把属于不同region的站点的文件放到不同的文件夹下面
     # 判断usgs_id_lst中没有对应径流文件的要从网上下载
-    for usgs_id in usgs_id_lst:
-        # 首先判断站点属于哪个region
-        ind = np.argwhere(idLst == usgs_id)[0][0]
+    usgs_id_lst = gage_dict[GAGE_FLD_LST[0]]
+    for ind in range(len(usgs_id_lst)):
         # different hucs different directories
-        huc_02 = gageDict[gageFldLst[3]][ind]
+        huc_02 = gage_dict[GAGE_FLD_LST[3]][ind]
         dir_huc_02 = str(huc_02)
         if dir_huc_02 not in dir_list:
-            dir_huc_02 = os.path.join(dirGageflow, str(huc_02))
+            dir_huc_02 = os.path.join(DIR_GAGE_FLOW, str(huc_02))
             os.mkdir(dir_huc_02)
-            dir_list = os.listdir(dirGageflow)
-        dir_huc_02 = os.path.join(dirGageflow, str(huc_02))
+            dir_list = os.listdir(DIR_GAGE_FLOW)
+        dir_huc_02 = os.path.join(DIR_GAGE_FLOW, str(huc_02))
         file_list = os.listdir(dir_huc_02)
-        file_usgs_id = str(usgs_id) + ".txt"
+        file_usgs_id = str(usgs_id_lst[ind]) + ".txt"
         if file_usgs_id not in file_list:
             # 通过直接读取网页的方式获取数据，然后存入txt文件
-            start_time_str = t2dt(tRange[0])
-            #
-            end_time_str = t2dt(tRange[1]) - timedelta(days=1)
-            url = streamflowUrl.format(usgs_id, start_time_str.year, start_time_str.month, start_time_str.day,
-                                       end_time_str.year, end_time_str.month, end_time_str.day)
+            start_time_str = t2dt(t_range[0])
+            end_time_str = t2dt(t_range[1]) - timedelta(days=1)
+            url = STREAMFLOW_URL.format(usgs_id_lst[ind], start_time_str.year, start_time_str.month, start_time_str.day,
+                                        end_time_str.year, end_time_str.month, end_time_str.day)
             r = requests.get(url)
             # 存放的位置是对应HUC02区域的文件夹下
-            temp_file = os.path.join(dir_huc_02, str(usgs_id) + '.txt')
+            temp_file = os.path.join(dir_huc_02, str(usgs_id_lst[ind]) + '.txt')
             with open(temp_file, 'w') as f:
                 f.write(r.text)
             print("成功写入 " + temp_file + " 径流数据！")
+    t_lst = utils.time.tRange2Array(t_range)
+    nt = len(t_lst)
     t0 = time.time()
     y = np.empty([len(usgs_id_lst), nt])
     for k in range(len(usgs_id_lst)):
-        dataObs = read_usgs_gage(usgs_id_lst[k])
-        y[k, :] = dataObs
+        huc_02 = gage_dict[GAGE_FLD_LST[3]][k]
+        data_obs = read_usge_gage(huc_02, usgs_id_lst[k], t_range)
+        y[k, :] = data_obs
     print("time of reading usgs streamflow: ", time.time() - t0)
     return y
 
@@ -274,9 +198,9 @@ def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
 
         Returns
         -------
-        usgs_out : ndarray -- the ids of usgs sites which match the criteria
-        sites_chosen: []
-        time_range: []
+        usgs_out : ndarray -- streamflow  1d-var is gage, 2d-var is day
+        sites_chosen: [] -- ids of chosen gages
+
         Examples
         --------
         usgs_screen(usgs, ["02349000","08168797"], [19950101,20150101],
@@ -292,10 +216,11 @@ def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
         sites_index = np.arange(usgs.shape[0])
         sites_chosen = np.ones(usgs.shape[0])
     # choose data in given time range
-    # calculate the day length
-    t_lst = utils.time.tRange2Array(time_range)
-    # choose usgs data in these period
     all_t_list = usgs.columns.values
+    t_lst = all_t_list
+    if time_range:
+        # calculate the day length
+        t_lst = utils.time.tRange2Array(time_range)
     ts, ind1, ind2 = np.intersect1d(all_t_list, t_lst, return_indices=True)
     usgs_values = usgs.iloc[sites_index, ind1]
 
@@ -323,13 +248,14 @@ def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
                 print("Oops!  That is not valid value.  Try again...")
     # get discharge data of chosen sites, and change to ndarray
     usgs_out = usgs_values.iloc[np.where(sites_chosen > 0)].values
+    gages_chosen_id = [usgs_all_sites[i] for i in range(len(sites_chosen)) if sites_chosen[i] > 0]
 
-    return usgs_out, sites_chosen
+    return usgs_out, gages_chosen_id
 
 
 def read_attr_all(gages_ids):
     """读取GAGES-II下的属性数据，目前是将用到的几个属性所属的那个属性大类下的所有属性的统计值都计算一下"""
-    data_folder = dirGageAttr
+    data_folder = DIR_GAGE_ATTR
     f_dict = dict()  # factorize dict
     # 每个key-value对是一个文件（str）下的所有属性（list）
     var_dict = dict()
@@ -337,7 +263,7 @@ def read_attr_all(gages_ids):
     var_lst = list()
     out_lst = list()
     # 读取所有属性，直接按类型判断要读取的文件名
-    var_des = pd.read_csv(os.path.join(dirGageAttr, 'variable_descriptions.txt'), sep=',')
+    var_des = pd.read_csv(os.path.join(DIR_GAGE_ATTR, 'variable_descriptions.txt'), sep=',')
     var_des_map_values = var_des['VARIABLE_TYPE'].tolist()
     for i in range(len(var_des)):
         var_des_map_values[i] = var_des_map_values[i].lower()
@@ -391,6 +317,15 @@ def read_attr_all(gages_ids):
     return out, var_lst
 
 
+def read_attr(usgs_id_lst, var_lst):
+    attr_all, var_lst_all = read_attr_all(usgs_id_lst)
+    ind_var = list()
+    for var in var_lst:
+        ind_var.append(var_lst_all.index(var))
+    out = attr_all[:, ind_var]
+    return out
+
+
 def read_forcing(usgs_id_lst, t_range, var_lst, dataset='daymet'):
     """读取gagesII_forcing文件夹下的驱动数据(data processed from GEE)"""
     t0 = time.time()
@@ -422,7 +357,7 @@ def read_forcing(usgs_id_lst, t_range, var_lst, dataset='daymet'):
     data_chosen_t_length = np.unique(data_chosen.iloc[:, 1].values).size
     for k in range(len(usgs_id_lst)):
         data_k = data_chosen.iloc[k * data_chosen_t_length:(k + 1) * data_chosen_t_length, :]
-        out = np.full([t_lst_chosen.size, len(forcingLst)], np.nan)
+        out = np.full([t_lst_chosen.size, len(FORCING_LST)], np.nan)
         # df中的date是字符串，转换为datetime，方可与tLst求交集
         df_date = data_k.iloc[:, 1]
         date = df_date.values.astype('datetime64[D]')
@@ -434,30 +369,24 @@ def read_forcing(usgs_id_lst, t_range, var_lst, dataset='daymet'):
     return x
 
 
-def cal_stat_all(id_lst):
-    """计算统计值，便于后面归一化处理。
-    目前驱动数据暂时使用camels的驱动数据，因此forcing的统计计算可以直接使用camels的；
-    这里仅针对GAGES-II属性值进行统计计算；
-    USGS径流数据也使用GAGES-II的数据：先确定要
-    """
+def cal_stat_all(gage_dict, t_range, forcing_lst, flow=None):
+    """计算统计值，便于后面归一化处理。"""
     stat_dict = dict()
+    id_lst = gage_dict[GAGE_FLD_LST[0]]
+    if flow.size < 1:
+        flow = read_usgs(gage_dict, tRange4DownloadData)
 
-    # usgs streamflow and choose sites which match conditions
-    usgs = read_usgs(id_lst)
-    y, sites_chosen = usgs_screen(pd.DataFrame(usgs, index=id_lst, columns=tLst), time_range=tRangeTrain,
-                                  missing_data_ratio=0.1, zero_value_ratio=0.005, basin_area_ceil='HUC4')
-    # 计算统计值，可以和camels下的共用同一个函数
-    stat_dict['usgsFlow'] = cal_stat(y)
-    gage_chosen_ids = id_lst[np.where(sites_chosen == 1)]
+    # 计算统计值
+    stat_dict['usgsFlow'] = cal_stat(flow)
 
     # forcing数据
-    x = read_forcing(gage_chosen_ids, tRangeTrain, forcingLst)
-    for k in range(len(forcingLst)):
-        var = forcingLst[k]
+    x = read_forcing(id_lst, t_range, forcing_lst)
+    for k in range(len(forcing_lst)):
+        var = forcing_lst[k]
         stat_dict[var] = cal_stat(x[:, :, k])
 
     # const attribute
-    attr_data, attr_lst = read_attr_all(gage_chosen_ids)
+    attr_data, attr_lst = read_attr_all(id_lst)
     for k in range(len(attr_lst)):
         var = attr_lst[k]
         print(var)
@@ -468,35 +397,134 @@ def cal_stat_all(id_lst):
         json.dump(stat_dict, FP, indent=4)
 
 
+# ------------------- some scripts for config of gages-ii datasets  -----------------------
+
+dirDB = pathGages2['DB']
+
+# USGS所有站点 file
+GAGE_FILE = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format',
+                         'conterm_basinid.txt')
+GAGE_SHAPE_DIR = os.path.join(dirDB, 'boundaries-shapefiles-by-aggeco')
+
+GAGE_FLD_LST = ['STAID', 'STANAME', 'DRAIN_SQKM', 'HUC02', 'LAT_GAGE', 'LNG_GAGE', 'STATE', 'BOUND_SOURCE', 'HCDN-2009',
+                'HBN36', 'OLD_HCDN', 'NSIP_SENTINEL', 'FIPS_SITE', 'COUNTYNAME_SITE', 'NAWQA_SUID']
+# gageFldLst = camels.gageFldLst
+DIR_GAGE_FLOW = os.path.join(dirDB, 'gages_streamflow')
+DIR_GAGE_ATTR = os.path.join(dirDB, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format')
+STREAMFLOW_URL = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={' \
+                 '}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{} '
+
+# 671个流域的forcing值需要重新计算，但是训练先用着671个流域，可以先用CAMELS的计算。
+FORCING_LST = ['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp']
+
+# all attributes:
+# attrLstAll = os.listdir(DIR_GAGE_ATTR)
+# # 因为是对CONUS分析，所以只用conterm开头的
+# ATTR_LST = []
+# for attrLstAllTemp in attrLstAll:
+#     if 'conterm' in attrLstAllTemp:
+#         attrLstTemp = attrLstAllTemp[8:].lower()
+#         ATTR_LST.append(attrLstTemp)
+
+# gages的attributes可以先按照CAMELS的这几项去找，因为使用了forcing数据，因此attributes里就没用气候的数据，因为要进行预测，所以也没用水文的
+# land cover部分：forest_frac对应FORESTNLCD06；lai没有，这里暂时用所有forest的属性；land_cover暂时用除人为种植之外的其他所有属性。
+# soil：soil_depth相关的有：ROCKDEPAVE；soil_porosity类似的可能是：AWCAVE；soil_conductivity可能相关的：PERMAVE；max_water_content没有，暂时用RFACT
+# geology在GAGES-II中一共两类，来自两个数据源，用第一种，
+attrBasin = ['ELEV_MEAN_M_BASIN', 'SLOPE_PCT', 'DRAIN_SQKM']
+attrLandcover = ['FORESTNLCD06', 'BARRENNLCD06', 'DECIDNLCD06', 'EVERGRNLCD06', 'MIXEDFORNLCD06', 'SHRUBNLCD06',
+                 'GRASSNLCD06', 'WOODYWETNLCD06', 'EMERGWETNLCD06']
+attrSoil = ['ROCKDEPAVE', 'AWCAVE', 'PERMAVE', 'RFACT', ]
+attrGeol = ['GEOL_REEDBUSH_DOM', 'GEOL_REEDBUSH_DOM_PCT', 'GEOL_REEDBUSH_SITE']
+# attributes include: Hydro, HydroMod_Dams, HydroMod_Other,Landscape_Pat,
+# LC06_Basin,LC06_Mains100,LC06_Mains800,LC06_Rip100,LC_Crops,Pop_Infrastr,Prot_Areas
+attrHydro = ['STREAMS_KM_SQ_KM', 'STRAHLER_MAX', 'MAINSTEM_SINUOUSITY', 'REACHCODE', 'ARTIFPATH_PCT',
+             'ARTIFPATH_MAINSTEM_PCT', 'HIRES_LENTIC_PCT', 'BFI_AVE', 'PERDUN', 'PERHOR', 'TOPWET', 'CONTACT']
+# 'RUNAVE7100', 'WB5100_JAN_MM', 'WB5100_FEB_MM', 'WB5100_MAR_MM', 'WB5100_APR_MM', 'WB5100_MAY_MM',
+# 'WB5100_JUN_MM', 'WB5100_JUL_MM', 'WB5100_AUG_MM', 'WB5100_SEP_MM', 'WB5100_OCT_MM', 'WB5100_NOV_MM',
+# 'WB5100_DEC_MM', 'WB5100_ANN_MM', 'PCT_1ST_ORDER', 'PCT_2ND_ORDER', 'PCT_3RD_ORDER', 'PCT_4TH_ORDER',
+# 'PCT_5TH_ORDER', 'PCT_6TH_ORDER_OR_MORE', 'PCT_NO_ORDER'
+# "pre19xx" attributes need be given to right period
+attrHydroModDams = ['NDAMS_2009', 'DDENS_2009', 'STOR_NID_2009', 'STOR_NOR_2009', 'MAJ_NDAMS_2009', 'MAJ_DDENS_2009',
+                    'RAW_DIS_NEAREST_DAM', 'RAW_AVG_DIS_ALLDAMS', 'RAW_DIS_NEAREST_MAJ_DAM', 'RAW_AVG_DIS_ALL_MAJ_DAMS']
+# 'pre1940_NDAMS', 'pre1950_NDAMS', 'pre1960_NDAMS', 'pre1970_NDAMS', 'pre1980_NDAMS',
+#                     'pre1990_NDAMS', 'pre1940_DDENS', 'pre1950_DDENS', 'pre1960_DDENS', 'pre1970_DDENS',
+#                     'pre1980_DDENS', 'pre1990_DDENS', 'pre1940_STOR', 'pre1950_STOR', 'pre1960_STOR', 'pre1970_STOR',
+#                     'pre1980_STOR', 'pre1990_STOR',
+attrHydroModOther = ['CANALS_PCT', 'RAW_DIS_NEAREST_CANAL', 'RAW_AVG_DIS_ALLCANALS', 'CANALS_MAINSTEM_PCT',
+                     'NPDES_MAJ_DENS', 'RAW_DIS_NEAREST_MAJ_NPDES', 'RAW_AVG_DIS_ALL_MAJ_NPDES', 'FRESHW_WITHDRAWAL',
+                     'MINING92_PCT', 'PCT_IRRIG_AG', 'POWER_NUM_PTS', 'POWER_SUM_MW']
+attrLandscapePat = ['FRAGUN_BASIN', 'HIRES_LENTIC_NUM', 'HIRES_LENTIC_DENS', 'HIRES_LENTIC_MEANSIZ']
+attrLC06Basin = ['DEVNLCD06', 'FORESTNLCD06', 'PLANTNLCD06', 'WATERNLCD06', 'SNOWICENLCD06', 'DEVOPENNLCD06',
+                 'DEVLOWNLCD06', 'DEVMEDNLCD06', 'DEVHINLCD06', 'BARRENNLCD06', 'DECIDNLCD06', 'EVERGRNLCD06',
+                 'MIXEDFORNLCD06', 'DWARFNLCD', 'SHRUBNLCD06', 'GRASSNLCD06', 'SEDGENLCD', 'MOSSNLCD', 'PASTURENLCD06',
+                 'CROPSNLCD06', 'WOODYWETNLCD06', 'EMERGWETNLCD06']
+attrLC06Mains100 = ['MAINS100_DEV', 'MAINS100_FOREST', 'MAINS100_PLANT', 'MAINS100_11', 'MAINS100_12', 'MAINS100_21',
+                    'MAINS100_22', 'MAINS100_23', 'MAINS100_24', 'MAINS100_31', 'MAINS100_41', 'MAINS100_42',
+                    'MAINS100_43', 'MAINS100_52', 'MAINS100_71', 'MAINS100_81', 'MAINS100_82', 'MAINS100_90',
+                    'MAINS100_95', ]
+attrLC06Mains800 = ['MAINS800_DEV', 'MAINS800_FOREST', 'MAINS800_PLANT', 'MAINS800_11', 'MAINS800_12', 'MAINS800_21',
+                    'MAINS800_22', 'MAINS800_23', 'MAINS800_24', 'MAINS800_31', 'MAINS800_41', 'MAINS800_42',
+                    'MAINS800_43', 'MAINS800_52', 'MAINS800_71', 'MAINS800_81', 'MAINS800_82', 'MAINS800_90',
+                    'MAINS800_95']
+attrLC06Rip100 = ['RIP100_DEV', 'RIP100_FOREST', 'RIP100_PLANT', 'RIP100_11', 'RIP100_12', 'RIP100_21', 'RIP100_22',
+                  'RIP100_23', 'RIP100_24', 'RIP100_31', 'RIP100_41', 'RIP100_42', 'RIP100_43', 'RIP100_52',
+                  'RIP100_71', 'RIP100_81', 'RIP100_82', 'RIP100_90', 'RIP100_95']
+attrLCCrops = ['RIP800_DEV', 'RIP800_FOREST', 'RIP800_PLANT', 'RIP800_11', 'RIP800_12', 'RIP800_21', 'RIP800_22',
+               'RIP800_23', 'RIP800_24', 'RIP800_31', 'RIP800_41', 'RIP800_42', 'RIP800_43', 'RIP800_52', 'RIP800_71',
+               'RIP800_81', 'RIP800_82', 'RIP800_90', 'RIP800_95']
+attrPopInfrastr = ['CDL_CORN', 'CDL_COTTON', 'CDL_RICE', 'CDL_SORGHUM', 'CDL_SOYBEANS', 'CDL_SUNFLOWERS', 'CDL_PEANUTS',
+                   'CDL_BARLEY', 'CDL_DURUM_WHEAT', 'CDL_SPRING_WHEAT', 'CDL_WINTER_WHEAT', 'CDL_WWHT_SOY_DBL_CROP',
+                   'CDL_OATS', 'CDL_ALFALFA', 'CDL_OTHER_HAYS', 'CDL_DRY_BEANS', 'CDL_POTATOES', 'CDL_FALLOW_IDLE',
+                   'CDL_PASTURE_GRASS', 'CDL_ORANGES', 'CDL_OTHER_CROPS', 'CDL_ALL_OTHER_LAND']
+attrProtAreas = ['PDEN_2000_BLOCK', 'PDEN_DAY_LANDSCAN_2007', 'PDEN_NIGHT_LANDSCAN_2007', 'ROADS_KM_SQ_KM',
+                 'RD_STR_INTERS', 'IMPNLCD06', 'NLCD01_06_DEV']
+ATTR_STR_SEL = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams + attrHydroModOther + \
+               attrLandscapePat + attrLC06Basin + attrLC06Mains100 + attrLC06Mains800 + attrLC06Rip100 + attrLCCrops + \
+               attrPopInfrastr + attrProtAreas
+
+# GAGES-II的所有站点 and all time, for first using of this code to download streamflow datasets
+tRange4DownloadData = [19800101, 20150101]  # 左闭右开
+tLstAll = utils.time.tRange2Array(tRange4DownloadData)
+# gageDict = read_gage_info(gageField)
+
+# training time range
+tRangeTrain = [19960101, 19970101]
+
+# regions
+REF_NONREF_REGIONS_SHP = ['bas_nonref_MxWdShld.shp']
+
+# 为了便于后续的归一化计算，这里需要计算流域attributes、forcings和streamflows统计值。
+# module variable
+statFile = os.path.join(dirDB, 'Statistics.json')
+gageDictOrigin = read_gage_info(GAGE_FILE, REF_NONREF_REGIONS_SHP,
+                                ['07311600', '04074548', '04121000', '04121500', '05211000'])
+# screen some sites
+usgs = read_usgs(gageDictOrigin, tRange4DownloadData)
+usgsFlow, gagesChosen = usgs_screen(pd.DataFrame(usgs, index=gageDictOrigin[GAGE_FLD_LST[0]], columns=tLstAll),
+                                    time_range=tRangeTrain, missing_data_ratio=0.1, zero_value_ratio=0.005,
+                                    basin_area_ceil='HUC4')
+# after screening, update the gageDict and idLst
+gageDict = read_gage_info(GAGE_FILE, region_shapefiles=REF_NONREF_REGIONS_SHP, ids_specific=gagesChosen)
 # 如果统计值已经计算过了，就没必要再重新计算了
 if not os.path.isfile(statFile):
-    cal_stat_all(idLst)
+    cal_stat_all(gageDict, tRangeTrain, FORCING_LST, usgsFlow)
 # 计算过了，就从存储的json文件中读取出统计结果
 with open(statFile, 'r') as fp:
     statDict = json.load(fp)
 
 
-def read_attr(usgs_id_lst, var_lst):
-    attr_all, var_lst_all = read_attr_all(gageChosen)
-    ind_var = list()
-    for var in var_lst:
-        ind_var.append(var_lst_all.index(var))
-    id_lst_all = idLst
-    c, ind_grid, ind2 = np.intersect1d(id_lst_all, usgs_id_lst, return_indices=True)
-    temp = attr_all[ind_grid, :]
-    out = temp[:, ind_var]
-    return out
-
+# ------------------- DataframeGages2  -----------------------
 
 class DataframeGages2(Dataframe):
     def __init__(self, *, subset='All', t_range):
         self.rootDB = dirDB
         self.subset = subset
+        self.gageDict = gageDict
         if subset == 'All':  # change to read subset later
-            self.usgsId = gageDict['id']
+            self.usgsId = gageDict[GAGE_FLD_LST[0]]
             crd = np.zeros([len(self.usgsId), 2])
-            crd[:, 0] = gageDict['lat']
-            crd[:, 1] = gageDict['lon']
+            crd[:, 0] = gageDict[GAGE_FLD_LST[4]]
+            crd[:, 1] = gageDict[GAGE_FLD_LST[5]]
             self.crd = crd
         self.time = utils.time.tRange2Array(t_range)
 
@@ -508,9 +536,9 @@ class DataframeGages2(Dataframe):
 
     def get_data_obs(self, *, do_norm=True, rm_nan=True):
         """径流数据读取及归一化处理"""
-        data = read_usgs(self.usgsId)
+        data = read_usgs(self.gageDict, tRange4DownloadData)
         data = np.expand_dims(data, axis=2)
-        C, ind1, ind2 = np.intersect1d(self.time, tLst, return_indices=True)
+        C, ind1, ind2 = np.intersect1d(self.time, tLstAll, return_indices=True)
         data = data[:, ind2, :]
         if do_norm is True:
             data = trans_norm(data, 'usgsFlow', statDict, to_norm=True)
@@ -518,13 +546,13 @@ class DataframeGages2(Dataframe):
             data[np.where(np.isnan(data))] = 0
         return data
 
-    def get_data_ts(self, *, var_lst=forcingLst, do_norm=True, rm_nan=True):
+    def get_data_ts(self, *, var_lst=FORCING_LST, do_norm=True, rm_nan=True):
         """时间序列数据，主要是驱动数据读取 and choose data in the given time interval 及归一化处理"""
         if type(var_lst) is str:
             var_lst = [var_lst]
         # read ts forcing
         data = read_forcing(self.usgsId, var_lst)
-        C, ind1, ind2 = np.intersect1d(self.time, tLst, return_indices=True)
+        C, ind1, ind2 = np.intersect1d(self.time, tLstAll, return_indices=True)
         data = data[:, ind2, :]
         if do_norm is True:
             data = trans_norm(data, var_lst, statDict, to_norm=True)
@@ -532,7 +560,7 @@ class DataframeGages2(Dataframe):
             data[np.where(np.isnan(data))] = 0
         return data
 
-    def get_data_const(self, *, var_lst=attrLstSel, do_norm=True, rm_nan=True):
+    def get_data_const(self, *, var_lst=ATTR_STR_SEL, do_norm=True, rm_nan=True):
         """属性数据读取及归一化处理"""
         if type(var_lst) is str:
             var_lst = [var_lst]

@@ -5,8 +5,8 @@ from hydroDL.data import camels, gages2
 optDataGages2 = OrderedDict(
     name='hydroDL.data.gages2.DataframeGages2',
     subset='All',
-    varT=gages2.forcingLst,
-    varC=gages2.attrLstSel,
+    varT=gages2.FORCING_LST,
+    varC=gages2.ATTR_STR_SEL,
     target=['streamflowTest'],
     tRange=gages2.tRangeTrain,
     doNorm=[True, True],
