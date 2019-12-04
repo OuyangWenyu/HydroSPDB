@@ -244,6 +244,7 @@ def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
                 sites_chosen[site_index] = 1
             elif criteria == 'basin_area_ceil':
                 # using shapefile of all basins to check if their basin area satisfy the criteria
+                # read shpfile from data directory and calculate the area
                 sites_chosen[site_index] = 1
             else:
                 print("Oops!  That is not valid value.  Try again...")

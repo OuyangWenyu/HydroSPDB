@@ -8,7 +8,7 @@
 import os
 import argparse
 from hydroDL import master
-from hydroDL.utils import email
+from hydroDL.utils import send_email
 
 
 def run_train(master_dict, *, screen='test', cuda_id):
@@ -36,7 +36,7 @@ def run_train(master_dict, *, screen='test', cuda_id):
         m_dict = master.read_master_file(args.m_file)
         master.train(m_dict)
         out = m_dict['out']
-        email.sendEmail(subject='Training Done', text=out)
+        send_email.sendEmail(subject='Training Done', text=out)
     # os.system(cmd)
 
 # if __name__ == '__main__':

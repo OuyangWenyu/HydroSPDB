@@ -29,7 +29,7 @@ def trans_points(from_crs, to_crs, pxs, pys):
     start = time.time()
     df['x2'], df['y2'] = transform(from_crs, to_crs, df['x'].tolist(), df['y'].tolist())
     end = time.time()
-    print('%.7f' % (end - start))
+    print('计算耗时：','%.7f' % (end - start))
     # 坐标转换完成后，将x2, y2数据取出，首先转为numpy数组，然后转置，然后每行一个坐标放入list中即可
     arr_x = df['x2'].values
     arr_y = df['y2'].values
@@ -80,16 +80,19 @@ def write_shpfile(geodata, output_folder):
 
 
 def trans_shp_coord(input_folder, input_shp_file, output_folder,
-                    output_crs_proj4_str='+proj=longlat +datum=WGS84 +no_defs'):
-    """按照坐标系信息，转换shapefile，被转换坐标读取自shapefile，默认转换为WGS84经纬度坐标"""
+                    output_crs_epsg_or_proj4_str=4326):
+    """按照坐标系信息，转换shapefile，被转换坐标读取自shapefile，默认转换为WGS84经纬度坐标  +proj=longlat +datum=WGS84 +no_defs"""
+    # Join folder path and filename
     fp = os.path.join(input_folder, input_shp_file)
     data = gpd.read_file(fp)
-    crs_proj4 = CRS(data.crs).to_proj4()
-    crs_final = CRS.from_proj4(output_crs_proj4_str)
+    # crs_proj4 = CRS(data.crs).to_proj4()
+    crs_proj4 = CRS(data.crs)
+    # crs_final = CRS.from_proj4(output_crs_proj4_str)
+    crs_final = CRS.from_epsg(output_crs_epsg_or_proj4_str)
     all_columns = data.columns.values  # ndarray type
     new_datas = []
     start = time.time()
-    for i in range(2, 3):  # data.shape[0]
+    for i in range(0, data.shape[0]):  # data.shape[0]
         print("生成第 ", i, " 个流域的shapefile:")
         newdata = gpd.GeoDataFrame()
         for column in all_columns:
@@ -99,10 +102,10 @@ def trans_shp_coord(input_folder, input_shp_file, output_folder,
                 polygon_from = data.iloc[i, :]['geometry']
                 polygon_to = trans_polygon(crs_proj4, crs_final, polygon_from)
                 # 要赋值到newdata的i位置上，否则就成为geoseries了，无法导出到shapefile
-                newdata.at[i, 'geometry'] = polygon_to
-                print(type(newdata.at[i, 'geometry']))
+                newdata.at[0, 'geometry'] = polygon_to
+                print(type(newdata.at[0, 'geometry']))
             else:
-                newdata.at[i, column] = data.iloc[i, :][column]
+                newdata.at[0, column] = data.iloc[i, :][column]
         print("转换该流域的坐标完成！")
         print(newdata)
         # 貌似必须转到wkt才能用来创建shapefile
@@ -115,14 +118,23 @@ def trans_shp_coord(input_folder, input_shp_file, output_folder,
     return new_datas
 
 
-# Define path to folder，以r开头表示相对路径
-input_folder = r"examples_data"
-output_folder = r"examples_data/wgs84"
+if __name__ == "__main__":
+    print("main")
+    # Define path to folder，以r开头表示相对路径
+    input_folder = r"../../example/data/GAGES-II/boundaries-shapefiles-by-aggeco"
+    output_folder = r"../../example/data/GAGES-II/gagesII_basin_shapefile_wgs84"
+    shp_file_names = []
+    for f_name in os.listdir(input_folder):
+        if f_name.endswith('.shp'):
+            print(f_name)
+            shp_file_names.append(f_name)
 
-# Join folder path and filename
-shp_file = "bas_nonref_CntlPlains.shp"
+    print(shp_file_names)
+    # exclude AKHIPR
+    for i in range(1, 2):  # len(shp_file_names)
+        shp_file = shp_file_names[i]
 
-# output_folder = r"examples_data/wgs84lccsp2"
-# crs_final_str = '+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
+        # output_folder = r"examples_data/wgs84lccsp2" crs_final_str = '+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5
+        # +lon_0=-100 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
 
-new_datas = trans_shp_coord(input_folder, shp_file, output_folder)
+        new_datas = trans_shp_coord(input_folder, shp_file, output_folder)
