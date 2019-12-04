@@ -33,7 +33,7 @@ masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
 caseLst = [case]
 outLst = [os.path.join(pathGages2['Out'], x) for x in caseLst]
 subset = 'All'
-tRangeTest = [19950101, 20000101]
+tRangeTest = [20010101, 20050101]
 predLst = list()
 
 # train model

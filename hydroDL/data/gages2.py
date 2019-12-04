@@ -243,6 +243,7 @@ def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
             elif criteria == 'zero_value_ratio':
                 sites_chosen[site_index] = 1
             elif criteria == 'basin_area_ceil':
+                # using shapefile of all basins to check if their basin area satisfy the criteria
                 sites_chosen[site_index] = 1
             else:
                 print("Oops!  That is not valid value.  Try again...")
@@ -481,9 +482,10 @@ attrPopInfrastr = ['CDL_CORN', 'CDL_COTTON', 'CDL_RICE', 'CDL_SORGHUM', 'CDL_SOY
                    'CDL_PASTURE_GRASS', 'CDL_ORANGES', 'CDL_OTHER_CROPS', 'CDL_ALL_OTHER_LAND']
 attrProtAreas = ['PDEN_2000_BLOCK', 'PDEN_DAY_LANDSCAN_2007', 'PDEN_NIGHT_LANDSCAN_2007', 'ROADS_KM_SQ_KM',
                  'RD_STR_INTERS', 'IMPNLCD06', 'NLCD01_06_DEV']
-ATTR_STR_SEL = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams + attrHydroModOther + \
-               attrLandscapePat + attrLC06Basin + attrLC06Mains100 + attrLC06Mains800 + attrLC06Rip100 + attrLCCrops + \
-               attrPopInfrastr + attrProtAreas
+# firstly don't use all attributes
+ATTR_STR_SEL = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams + attrHydroModOther
+               # + attrLandscapePat + attrLC06Basin + attrLC06Mains100 + attrLC06Mains800 + attrLC06Rip100 + attrLCCrops + \
+               # attrPopInfrastr + attrProtAreas
 
 # GAGES-II的所有站点 and all time, for first using of this code to download streamflow datasets
 tRange4DownloadData = [19800101, 20150101]  # 左闭右开
