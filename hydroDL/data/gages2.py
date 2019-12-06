@@ -4,6 +4,7 @@
 # module variable
 import json
 import os
+import fnmatch
 import time
 from datetime import timedelta
 
@@ -17,15 +18,18 @@ from hydroDL import pathGages2
 from hydroDL import utils
 from hydroDL.data import Dataframe
 from hydroDL.post.stat import cal_stat, trans_norm
+from hydroDL.utils.geo import spatial_join
 from hydroDL.utils.time import t2dt
 
 
 # -----------------------------------functions for configure of gages-------------------------------------------------
 
 # 根据配置读取所需的gages-ii站点信息
-def read_gage_info(dir_db, region_shapefiles=None, ids_specific=None):
+def read_gage_info(dir_db, region_shapefiles=None, ids_specific=None, screen_basin_area=None):
     """读取gages-ii站点及流域基本location等信息。
     从中选出field_lst中属性名称对应的值，存入dic中。
+                # using shapefile of all basins to check if their basin area satisfy the criteria
+                # read shpfile from data directory and calculate the area
 
     Parameter:
         dir_db: file of gages' information
@@ -39,11 +43,23 @@ def read_gage_info(dir_db, region_shapefiles=None, ids_specific=None):
     out = dict()
     if len(region_shapefiles):
         # read sites from shapefile of region, get id from it.
-        # Read file using gpd.read_file()  # TODO: read multi shapefiles
-        shapefile = os.path.join(GAGE_SHAPE_DIR, region_shapefiles[0])
+        # Read file using gpd.read_file()
+        shapefile = os.path.join(GAGE_SHAPE_DIR, region_shapefiles[0] + '.shp')
         shape_data = gpd.read_file(shapefile)
         print(shape_data.columns)
         gages_id = shape_data['GAGE_ID'].values
+        if screen_basin_area == 'HUC4':
+            # using shapefile of all basins to check if their basin area satisfy the criteria
+            # remove stations with catchment areas greater than the HUC4 basins in which they are located
+            # firstly, get the HUC4 basin's area of the site
+            print("screen big area basins")
+            points_file = os.path.join(dirDB, GAGESII_POINTS_DIR, GAGESII_POINTS_FILE)
+            polys_file = os.path.join(dirDB, HUC4_SHP_DIR, HUC4_SHP_FILE)
+            join_points = spatial_join(points_file, polys_file)
+            # get "AREASQKM" attribute data to filter
+            join_points = join_points[join_points["DRAIN_SQKM"] < join_points["AREASQKM"]]
+            gages_huc4_id = join_points['STAID'].values
+            gages_id, ind1, ind2 = np.intersect1d(gages_id, gages_huc4_id, return_indices=True)
         df_id_region = data.iloc[:, 0].values
         c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
         data = data.iloc[ind1, :]
@@ -186,8 +202,9 @@ def read_usgs(gage_dict, t_range):
     return y
 
 
-def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
-    """according to the criteria and its ancillary condition--thresh, choose appropriate ones from all usgs sites
+def usgs_screen_streamflow(usgs, usgs_ids=None, time_range=None, **kwargs):
+    """according to the criteria and its ancillary condition--thresh of streamflow data,
+        choose appropriate ones from all usgs sites
         Parameters
         ----------
         usgs : pd.DataFrame -- all usgs sites' data, its index are 'sites', its columns are 'day',
@@ -241,10 +258,6 @@ def usgs_screen(usgs, usgs_ids=None, time_range=None, **kwargs):
                     sites_chosen[site_index] = 1
 
             elif criteria == 'zero_value_ratio':
-                sites_chosen[site_index] = 1
-            elif criteria == 'basin_area_ceil':
-                # using shapefile of all basins to check if their basin area satisfy the criteria
-                # read shpfile from data directory and calculate the area
                 sites_chosen[site_index] = 1
             else:
                 print("Oops!  That is not valid value.  Try again...")
@@ -328,7 +341,7 @@ def read_attr(usgs_id_lst, var_lst):
     return out
 
 
-def read_forcing(usgs_id_lst, t_range, var_lst, dataset='daymet'):
+def read_forcing(usgs_id_lst, t_range, var_lst, dataset='daymet', regions=None):
     """读取gagesII_forcing文件夹下的驱动数据(data processed from GEE)
     :return
     x: ndarray -- 1d-axis:gages, 2d-axis: day, 3d-axis: forcing vst
@@ -344,7 +357,14 @@ def read_forcing(usgs_id_lst, t_range, var_lst, dataset='daymet'):
     t_lst_years = np.arange(t_start, t_end, dtype='datetime64[Y]').astype(str)
     data_temps = pd.DataFrame()
     for year in t_lst_years:
-        data_file = os.path.join(data_folder, dataset, 'daymet_MxWdShld_mean_' + year + '.csv')
+        # to match the file of the given year
+        data_dir = os.path.join(data_folder, dataset, regions[0])
+        data_file = ''
+        for f_name in os.listdir(data_dir):
+            if fnmatch.fnmatch(f_name, dataset + '_*_mean_' + year + '.csv'):
+                print(f_name)
+                data_file = os.path.join(data_dir, f_name)
+                break
         data_temp = pd.read_csv(data_file, sep=',', dtype={'gage_id': int})
         frames_temp = [data_temps, data_temp]
         data_temps = pd.concat(frames_temp)
@@ -374,7 +394,7 @@ def read_forcing(usgs_id_lst, t_range, var_lst, dataset='daymet'):
     return x
 
 
-def cal_stat_all(gage_dict, t_range, forcing_lst, flow=None):
+def cal_stat_all(gage_dict, t_range, forcing_lst, flow=None, regions=None):
     """计算统计值，便于后面归一化处理。"""
     stat_dict = dict()
     id_lst = gage_dict[GAGE_FLD_LST[0]]
@@ -385,7 +405,7 @@ def cal_stat_all(gage_dict, t_range, forcing_lst, flow=None):
     stat_dict['usgsFlow'] = cal_stat(flow)
 
     # forcing数据
-    x = read_forcing(id_lst, t_range, forcing_lst)
+    x = read_forcing(id_lst, t_range, forcing_lst, regions=regions)
     for k in range(len(forcing_lst)):
         var = forcing_lst[k]
         stat_dict[var] = cal_stat(x[:, :, k])
@@ -485,8 +505,8 @@ attrProtAreas = ['PDEN_2000_BLOCK', 'PDEN_DAY_LANDSCAN_2007', 'PDEN_NIGHT_LANDSC
                  'RD_STR_INTERS', 'IMPNLCD06', 'NLCD01_06_DEV']
 # firstly don't use all attributes
 ATTR_STR_SEL = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams + attrHydroModOther
-               # + attrLandscapePat + attrLC06Basin + attrLC06Mains100 + attrLC06Mains800 + attrLC06Rip100 + attrLCCrops + \
-               # attrPopInfrastr + attrProtAreas
+# + attrLandscapePat + attrLC06Basin + attrLC06Mains100 + attrLC06Mains800 + attrLC06Rip100 + attrLCCrops + \
+# attrPopInfrastr + attrProtAreas
 
 # GAGES-II的所有站点 and all time, for first using of this code to download streamflow datasets
 tRange4DownloadData = [19800101, 20150101]  # 左闭右开
@@ -497,23 +517,28 @@ tLstAll = utils.time.tRange2Array(tRange4DownloadData)
 tRangeTrain = [19950101, 20000101]
 
 # regions
-REF_NONREF_REGIONS_SHP = ['bas_nonref_MxWdShld.shp']
+# TODO: now just for one region
+REF_NONREF_REGIONS = ['bas_nonref_CntlPlains']
+REF_NONREF_REGIONS_SHPFILES_DIR = "gagesII_basin_shapefile_wgs84"
+GAGESII_POINTS_DIR = "gagesII_9322_point_shapefile"
+GAGESII_POINTS_FILE = "gagesII_9322_sept30_2011.shp"
+HUC4_SHP_DIR = "huc4"
+HUC4_SHP_FILE = "HUC4.shp"
 
 # 为了便于后续的归一化计算，这里需要计算流域attributes、forcings和streamflows统计值。
 # module variable
 statFile = os.path.join(dirDB, 'Statistics.json')
-gageDictOrigin = read_gage_info(GAGE_FILE, REF_NONREF_REGIONS_SHP,
-                                ['07311600', '04074548', '04121000', '04121500', '05211000'])
+gageDictOrigin = read_gage_info(GAGE_FILE, region_shapefiles=REF_NONREF_REGIONS, screen_basin_area='HUC4')
 # screen some sites
 usgs = read_usgs(gageDictOrigin, tRange4DownloadData)
-usgsFlow, gagesChosen = usgs_screen(pd.DataFrame(usgs, index=gageDictOrigin[GAGE_FLD_LST[0]], columns=tLstAll),
-                                    time_range=tRangeTrain, missing_data_ratio=0.1, zero_value_ratio=0.005,
-                                    basin_area_ceil='HUC4')
+usgsFlow, gagesChosen = usgs_screen_streamflow(
+    pd.DataFrame(usgs, index=gageDictOrigin[GAGE_FLD_LST[0]], columns=tLstAll),
+    time_range=tRangeTrain, missing_data_ratio=0.1, zero_value_ratio=0.005)
 # after screening, update the gageDict and idLst
-gageDict = read_gage_info(GAGE_FILE, region_shapefiles=REF_NONREF_REGIONS_SHP, ids_specific=gagesChosen)
+gageDict = read_gage_info(GAGE_FILE, region_shapefiles=REF_NONREF_REGIONS, ids_specific=gagesChosen)
 # 如果统计值已经计算过了，就没必要再重新计算了
 if not os.path.isfile(statFile):
-    cal_stat_all(gageDict, tRangeTrain, FORCING_LST, usgsFlow)
+    cal_stat_all(gageDict, tRangeTrain, FORCING_LST, usgsFlow, REF_NONREF_REGIONS)
 # 计算过了，就从存储的json文件中读取出统计结果
 with open(statFile, 'r') as fp:
     statDict = json.load(fp)
@@ -558,7 +583,7 @@ class DataframeGages2(Dataframe):
         if type(var_lst) is str:
             var_lst = [var_lst]
         # read ts forcing
-        data = read_forcing(self.usgsId, self.tRange, var_lst)
+        data = read_forcing(self.usgsId, self.tRange, var_lst, regions=REF_NONREF_REGIONS)
         if do_norm is True:
             data = trans_norm(data, var_lst, statDict, to_norm=True)
         if rm_nan is True:
