@@ -5,21 +5,21 @@ import imp
 
 __all__ = ['classDB', 'funDB', 'classLSTM', 'funLSTM', 'kPath']
 
-print('load rnnSMAP')
+print('load refine')
 
 #################################################
-# initialize data / out path of rnnSMAP
+# initialize data / out path of refine
 
 
 def initPath():
     hostName = socket.gethostname()
     if hostName == 'smallLinux':
         dirDB = os.path.join(
-            os.path.sep, 'mnt', 'sdc', 'rnnSMAP', 'Database_SMAPgrid')
+            os.path.sep, 'mnt', 'sdc', 'refine', 'Database_SMAPgrid')
         dirOut = os.path.join(
-            os.path.sep, 'mnt', 'sdb', 'rnnSMAP', 'Output_SMAPgrid')
+            os.path.sep, 'mnt', 'sdb', 'refine', 'Output_SMAPgrid')
         dirResult = os.path.join(
-            os.path.sep, 'mnt', 'sdb', 'rnnSMAP', 'Result_SMAPgrid')
+            os.path.sep, 'mnt', 'sdb', 'refine', 'Result_SMAPgrid')
     kPath = collections.OrderedDict(
         DB_L3_CONUS=os.path.join(dirDB, 'Daily_L3_CONUS'),
         DB_L3_Global=os.path.join(dirDB, 'Daily_L3'),

@@ -1,13 +1,13 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intervals temporal test
@@ -21,18 +21,18 @@ testName = 'CONUSv2f1'
 strSigmaLst = ['sigma']
 strErrLst = ['ubRMSE', 'RMSE']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'paper')
+    refine.kPath['dirResult'], 'Sigma', 'paper')
 matplotlib.rcParams.update({'font.size': 16})
 matplotlib.rcParams.update({'lines.linewidth': 2})
 matplotlib.rcParams.update({'lines.markersize': 10})
 
 #################################################
 if 'test' in doOpt:
-    rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-    rootDB = rnnSMAP.kPath['DB_L3_NA']
+    rootOut = refine.kPath['OutSigma_L3_NA']
+    rootDB = refine.kPath['DB_L3_NA']
 
     out = trainName+'_y15_Forcing'
-    ds = rnnSMAP.classDB.DatasetPost(
+    ds = refine.classDB.DatasetPost(
         rootDB=rootDB, subsetName=testName, yrLst=[2016,2017])
     ds.readData(var='SMAP_AM', field='SMAP')
     ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -46,7 +46,7 @@ if 'plotMap' in doOpt:
         grid = ds.data2grid(data=getattr(statErr, s))
         saveFile = os.path.join(saveFolder, 'map_'+testName+'_'+s)
         titleStr = s
-        fig = rnnSMAP.funPost.plotMap(
+        fig = refine.funPost.plotMap(
             grid, crd=ds.crdGrid, cRange=cRangeErr, title=titleStr, showFig=False)
         fig.savefig(saveFile)
     for s in strSigmaLst:
@@ -57,7 +57,7 @@ if 'plotMap' in doOpt:
             cRangeSigma = [0, 0.04]
         else:
             cRangeSigma = [0, 0.08]
-        fig = rnnSMAP.funPost.plotMap(
+        fig = refine.funPost.plotMap(
             grid, crd=ds.crdGrid, cRange=cRangeSigma, title=titleStr, showFig=False)
         fig.savefig(saveFile, dpi=1000)
 
@@ -76,8 +76,8 @@ if 'plotVS' in doOpt:
             # y = y[ind]
             # ax = axes[iE]
             fig, ax = plt.subplots(figsize=(8, 6))
-            rnnSMAP.funPost.plotVS(x, y, ax=ax, doRank=False)
-            # rnnSMAP.funPost.plot121Line(ax)
+            refine.funPost.plotVS(x, y, ax=ax, doRank=False)
+            # refine.funPost.plot121Line(ax)
             ax.set_ylabel(strE)
             ax.set_xlabel(strS)
             fig.suptitle(strS+' vs '+strE)

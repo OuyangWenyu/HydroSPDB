@@ -1,11 +1,11 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intervals temporal test
@@ -20,10 +20,10 @@ doOpt.append('plotBin')
 hucLst = ['01020405', '12131518', '01021518', '04051213']
 testName = '03060708091011141617_v2f1'
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'huc_spatial')
+    refine.kPath['dirResult'], 'Sigma', 'huc_spatial')
 
 #################################################
 if 'test' in doOpt:
@@ -35,7 +35,7 @@ if 'test' in doOpt:
         trainName = hucLst[k]+'_v2f1'
         out = trainName+'_y15_Forcing'
 
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2015])
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -59,7 +59,7 @@ if 'plotConf' in doOpt:
         for iHuc in range(0, len(hucLst)):
             temp = getattr(statConfLst[iHuc], strConfLst[k])
             plotLst.append(temp)
-        rnnSMAP.funPost.plotCDF(
+        refine.funPost.plotCDF(
             plotLst, ax=axes[k], cLst='myrgcb',
             legendLst=hucLst)
         axes[k].set_title(titleLst[k])
@@ -88,7 +88,7 @@ if 'plotBox' in doOpt:
             data.append(tempLst)
         labelS = attrLst
         titleStr = 'Temporal Test ' + titleTp[iP]
-        fig = rnnSMAP.funPost.plotBox(
+        fig = refine.funPost.plotBox(
             data, labelC=hucLst, labelS=labelS, figsize=(8, 6),
             title=titleStr)
         saveFile = os.path.join(saveFolder, +'hucComb_'+saveFileTp[iP])
@@ -112,7 +112,7 @@ if 'plotBin' in doOpt:
         distLst = list()
         for k in range(0, nbin):
             ind = (sigmaMC > xbin[k]) & (sigmaMC <= xbin[k+1])
-            conf = rnnSMAP.funPost.flatData(confMat[ind, :])
+            conf = refine.funPost.flatData(confMat[ind, :])
             yRank = np.arange(len(conf))/float(len(conf)-1)
             dist = np.sqrt(((conf - yRank) ** 2).mean())
             corr = scipy.stats.pearsonr(sigma[ind], ubRMSE[ind])[0]

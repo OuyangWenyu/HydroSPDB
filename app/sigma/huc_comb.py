@@ -1,11 +1,11 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intervals temporal test
@@ -20,14 +20,14 @@ doOpt.append('train')
 hucLst = ['04051118', '03101317', '02101114',
           '01020304', '02030406', '14151617']
 # hucLst = ['12131518', '01021518', '04051213']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'huc_spatial')
+    refine.kPath['dirResult'], 'Sigma', 'huc_spatial')
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
+    opt = refine.classLSTM.optLSTM(
         rootDB=rootDB, rootOut=rootOut,
         syr=2015, eyr=2015,
         var='varLst_Forcing', varC='varConstLst_Noah',
@@ -57,7 +57,7 @@ if 'test' in doOpt:
         for kk in range(0, len(dsTuple)):
             out = outLst[kk]
             testName = testNameLst[kk]
-            ds = rnnSMAP.classDB.DatasetPost(
+            ds = refine.classDB.DatasetPost(
                 rootDB=rootDB, subsetName=testName, yrLst=[2015])
             ds.readData(var='SMAP_AM', field='SMAP')
             ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -98,7 +98,7 @@ if 'plotBox' in doOpt:
     plotTup = (dataSigmaX, dataSigmaMC, dataErr, dataErr2)
     plotStr = ('sigmaX', 'sigmaMC', 'ubRMSE', 'RMSE')
     for k in range(0, len(plotTup)):
-        fig = rnnSMAP.funPost.plotBox(
+        fig = refine.funPost.plotBox(
             plotTup[k], labelC=hucLst, labelS=labelS,
             title=plotStr[k]+' Spatial Extrapolation')
         saveFile = os.path.join(saveFolder, 'box_'+plotStr[k])
@@ -157,7 +157,7 @@ if 'plotVS2' in doOpt:
         for kk in range(0, len(dsTuple)):
             y = statErrTuple[kk][k].RMSE
             x = [statSigmaTuple[kk][k].sigmaX, statSigmaTuple[kk][k].sigmaMC]
-            yLr = rnnSMAP.funPost.regLinear(y, x)
+            yLr = refine.funPost.regLinear(y, x)
             pLr = np.polyfit(x, y, 1)
             xLr = np.array([np.min(x), np.max(x)])
             yLr = np.poly1d(pLr)(xLr)

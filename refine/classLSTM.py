@@ -1,7 +1,7 @@
 
 import collections
 import argparse
-import rnnSMAP
+import refine
 import torch
 from . import kuaiLSTM
 
@@ -9,8 +9,8 @@ from . import kuaiLSTM
 class optLSTM(collections.OrderedDict):
     def __init__(self, **kw):
         # dataset
-        self['rootDB'] = rnnSMAP.kPath['DB_L3_Global']
-        self['rootOut'] = rnnSMAP.kPath['Out_L3_Global']
+        self['rootDB'] = refine.kPath['DB_L3_Global']
+        self['rootOut'] = refine.kPath['Out_L3_Global']
         self['gpu'] = 1
         self['out'] = 'test'
         self['train'] = 'Globalv8f1'

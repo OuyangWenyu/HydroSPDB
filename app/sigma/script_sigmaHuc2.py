@@ -1,18 +1,18 @@
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 hucLst = ['101114', '0203101114']
 
 #################################################
 # Training
-opt = rnnSMAP.classLSTM.optLSTM(
-    rootDB=rnnSMAP.kPath['DB_L3_NA'],
-    rootOut=rnnSMAP.kPath['OutSigma_L3_NA'],
+opt = refine.classLSTM.optLSTM(
+    rootDB=refine.kPath['DB_L3_NA'],
+    rootOut=refine.kPath['OutSigma_L3_NA'],
     syr=2015, eyr=2015,
     var='varLst_soilM', varC='varConstLst_Noah',
     dr=0.5, modelOpt='relu',
@@ -29,14 +29,14 @@ for k in range(0, len(hucLst)):
 
 #################################################
 # Test
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 dsTuple = ([], [], [])
 dsTuple2 = ([], [])
 for k in range(0, len(hucLst)):
     trainName = hucLst[k]+'_v2f1'
     out = trainName+'_y15_soilM'
-    rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+    rootOut = refine.kPath['OutSigma_L3_NA']
 
     outLst = [trainName+'_y15_soilM',
               trainName+'_y15_soilM',
@@ -53,7 +53,7 @@ for k in range(0, len(hucLst)):
     for kk in range(0, len(dsTuple)):
         out = outLst[kk]
         testName = testNameLst[kk]
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2015])
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -62,7 +62,7 @@ for k in range(0, len(hucLst)):
     for kk in range(0, len(dsTuple2)):
         out = outLst2[kk]
         testName = testNameLst2[kk]
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -98,15 +98,15 @@ for k in range(0, len(hucLst)):
     dataSigmaMC.append(tempSigmaMC)
     dataErr.append(tempErr)
 
-rnnSMAP.funPost.plotBox(dataSigmaX, labelC=hucLst,
-                        labelS=['HUC-exHUC', 'HUC-CONUS', 'CONUS-exHUC'],
-                        title='SigmaX Spatial Extrapolation')
-rnnSMAP.funPost.plotBox(dataSigmaMC, labelC=hucLst,
-                        labelS=['HUC-exHUC', 'HUC-CONUS', 'CONUS-exHUC'],
-                        title='SigmaMC Spatial Extrapolation')
-rnnSMAP.funPost.plotBox(dataErr, labelC=hucLst,
-                        labelS=['HUC-exHUC', 'HUC-CONUS', 'CONUS-exHUC'],
-                        title='RMSE Spatial Extrapolation')
+refine.funPost.plotBox(dataSigmaX, labelC=hucLst,
+                       labelS=['HUC-exHUC', 'HUC-CONUS', 'CONUS-exHUC'],
+                       title='SigmaX Spatial Extrapolation')
+refine.funPost.plotBox(dataSigmaMC, labelC=hucLst,
+                       labelS=['HUC-exHUC', 'HUC-CONUS', 'CONUS-exHUC'],
+                       title='SigmaMC Spatial Extrapolation')
+refine.funPost.plotBox(dataErr, labelC=hucLst,
+                       labelS=['HUC-exHUC', 'HUC-CONUS', 'CONUS-exHUC'],
+                       title='RMSE Spatial Extrapolation')
 
 #################################################
 # Plot - regression

@@ -1,6 +1,6 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
@@ -9,8 +9,8 @@ import pylab
 import scipy.stats as stats
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intervals temporal test
@@ -49,15 +49,15 @@ for j in C1Lst:
         caseStrLst.append('a='+str(j-1)+','+'b='+str(i/2))
 
 nCase = len(outLst)
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-saveFolder = os.path.join(rnnSMAP.kPath['dirResult'], 'paperSigma')
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
+saveFolder = os.path.join(refine.kPath['dirResult'], 'paperSigma')
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
-        rootDB=rnnSMAP.kPath['DB_L3_NA'],
-        rootOut=rnnSMAP.kPath['OutSigma_L3_NA'],
+    opt = refine.classLSTM.optLSTM(
+        rootDB=refine.kPath['DB_L3_NA'],
+        rootOut=refine.kPath['OutSigma_L3_NA'],
         train=trainName,
         syr=2015, eyr=2015,
         var='varLst_Forcing', varC='varConstLst_Noah',
@@ -72,7 +72,7 @@ if 'train' in doOpt:
             opt['lossPrior'] = 'invGamma+'+str(j)+'+'+str(i)
             runTrainLSTM.runCmdLine(
                 opt=opt, cudaID=k % 3, screenName=opt['lossPrior'])
-            # rnnSMAP.funLSTM.trainLSTM(opt)
+            # refine.funLSTM.trainLSTM(opt)
             k = k+1
 
 #################################################
@@ -84,7 +84,7 @@ if 'test' in doOpt:
     statNormLst = list()
     for k in range(0, nCase):
         out = outLst[k]
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=yr)
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -92,7 +92,7 @@ if 'test' in doOpt:
         statSigma = ds.statCalSigma(field='LSTM')
         statConf = ds.statCalConf(
             predField='LSTM', targetField='SMAP', rmBias=True)
-        statNorm = rnnSMAP.classPost.statNorm(
+        statNorm = refine.classPost.statNorm(
             statSigma=statSigma, dataPred=ds.LSTM, dataTarget=ds.SMAP)
 
         dsLst.append(ds)
@@ -122,11 +122,11 @@ if 'plotConf' in doOpt:
             temp = getattr(statConfLst[iCase], strConfLst[k])
             plotLst.append(temp)
         if k == 0:
-            _, _, out = rnnSMAP.funPost.plotCDF(
+            _, _, out = refine.funPost.plotCDF(
                 plotLst, ax=axes[k], legendLst=caseStrLst, ylabel=None,
                 xlabel='Predicted Probablity', showDiff=False)
         else:
-            _, _, out = rnnSMAP.funPost.plotCDF(
+            _, _, out = refine.funPost.plotCDF(
                 plotLst, ax=axes[k], legendLst=None, ylabel=None,
                 xlabel='Predicted Probablity', showDiff=False)
         outLst.append(out)
@@ -148,7 +148,7 @@ if 'plotConfDist' in doOpt:
     # plotLst = list()
     # for k in range(0, len(caseStrLst)):
     #     plotLst.append(getattr(statConfLst[k], 'conf_sigma'))
-    # _, _, out = rnnSMAP.funPost.plotCDF(
+    # _, _, out = refine.funPost.plotCDF(
     #     plotLst, ax=axes[0], legendLst=caseStrLst,
     #     xlabel=r'$P_{ee}$', ylabel=None, showDiff=False)
     # axes[0].set_title(r'CDF($p_{comb}$)')
@@ -156,7 +156,7 @@ if 'plotConfDist' in doOpt:
 
     cLst = 'rgb'
     x = getattr(statConfLst[0], 'conf_sigma')
-    xSort = rnnSMAP.funPost.flatData(x)
+    xSort = refine.funPost.flatData(x)
     yRank = np.arange(len(xSort))/float(len(xSort)-1)
     dd = np.max(np.abs(xSort - yRank))
     ax = axes[0]
@@ -169,7 +169,7 @@ if 'plotConfDist' in doOpt:
             a = C1Lst[j]-1
             b = C2Lst[i]/2
             x = getattr(statConfLst[k], 'conf_sigma')
-            xSort = rnnSMAP.funPost.flatData(x)
+            xSort = refine.funPost.flatData(x)
             yRank = np.arange(len(xSort))/float(len(xSort)-1)
             d = np.max(np.abs(xSort - yRank))
             k = k+1
@@ -193,13 +193,13 @@ if 'plotConfDist' in doOpt:
             a = C1Lst[j]-1
             b = C2Lst[i]/2
             x = getattr(statSigmaLst[k], 'sigmaX_mat')
-            x1 = rnnSMAP.funPost.flatData(x)/0.088578376
+            x1 = refine.funPost.flatData(x) / 0.088578376
             y1 = np.arange(len(x1))/float(len(x1)-1)
             y2 = scipy.stats.invgamma.cdf(x1, a, loc=0, scale=b)
             d1 = np.max(np.abs(y1-y2))
 
             x = getattr(statConfLst[k], 'conf_sigma')
-            xSort = rnnSMAP.funPost.flatData(x)
+            xSort = refine.funPost.flatData(x)
             yRank = np.arange(len(xSort))/float(len(xSort)-1)
             d2 = np.max(np.abs(xSort - yRank))
             d1Lst.append(d1)
@@ -227,13 +227,13 @@ if 'plotInvGammaCDF' in doOpt:
             a = C1Lst[j]-1
             b = C2Lst[i]/2
             x = getattr(statSigmaLst[k], 'sigmaX_mat')
-            x1 = rnnSMAP.funPost.flatData(x)/0.088578376
+            x1 = refine.funPost.flatData(x) / 0.088578376
             y1 = np.arange(len(x1))/float(len(x1)-1)
             y2 = scipy.stats.invgamma.cdf(x1, a, scale=b)
             d1 = np.max(np.abs(y1-y2))
 
             x = getattr(statConfLst[k], 'conf_sigma')
-            xSort = rnnSMAP.funPost.flatData(x)
+            xSort = refine.funPost.flatData(x)
             yRank = np.arange(len(xSort))/float(len(xSort)-1)
             d2 = np.max(np.abs(xSort - yRank))
             d1Lst.append(d1)

@@ -1,10 +1,10 @@
 import os
-import rnnSMAP
-# from rnnSMAP import runTrainLSTM
+import refine
+# from refine import runTrainLSTM
 import numpy as np
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 import matplotlib
 
 #################################################
@@ -21,16 +21,16 @@ noiseNameLstPlot = ['0', '0.05', '0.1', '0.2', '0.3', '0.4', '0.5']
 strSigmaLst = ['sigmaX', 'sigmaMC']
 strErrLst = ['RMSE', 'ubRMSE']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'int_noise_red')
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+    refine.kPath['dirResult'], 'Sigma', 'int_noise_red')
+rootOut = refine.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 matplotlib.rcParams.update({'font.size': 16})
 matplotlib.rcParams.update({'lines.linewidth': 2})
 matplotlib.rcParams.update({'lines.markersize': 10})
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
+    opt = refine.classLSTM.optLSTM(
         rootDB=rootDB, rootOut=rootOut,
         syr=2015, eyr=2015,
         var='varLst_Forcing', varC='varConstLst_Noah',
@@ -64,7 +64,7 @@ if 'test' in doOpt:
             targetName = 'SMAP_AM'
             out = 'CONUSv4f1_y15_Forcing'
 
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2016,2017])
         ds.readData(var=targetName, field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -92,7 +92,7 @@ if 'plotBox' in doOpt:
             for data in dataLst:
                 stat = getattr(data, strS)
                 plotLst.append(stat/statRef)
-            fig = rnnSMAP.funPost.plotBox(
+            fig = refine.funPost.plotBox(
                 plotLst, labelC=noiseNameLstPlot, labelS=None,
                 title='Temporal Test ' + strS)
             saveFile = os.path.join(saveFolder, 'box_'+strS)

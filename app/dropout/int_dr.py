@@ -1,20 +1,20 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 # drLst = np.arange(0, 1, 0.1)
 drLst = [0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]
 drStrLst = ["%02d" % (x*100) for x in drLst]
 
-opt = rnnSMAP.classLSTM.optLSTM(
+opt = refine.classLSTM.optLSTM(
     rootDB=rootDB,
     rootOut=rootOut,
     syr=2015, eyr=2015,

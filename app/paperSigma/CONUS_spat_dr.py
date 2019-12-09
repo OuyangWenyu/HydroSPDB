@@ -1,15 +1,15 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
-from rnnSMAP import runTestLSTM
+import refine
+from refine import runTrainLSTM
+from refine import runTestLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import scipy.stats as stats
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intervals temporal test
@@ -25,20 +25,20 @@ doOpt.append('plotConfDist')
 # doOpt.append('plotVS')
 
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 drLst = np.arange(0.1, 1, 0.1)
 drStrLst = ["%02d" % (x*100) for x in drLst]
 testName = 'CONUSv2fx2'
 yrLst = [2015]
-saveFolder = os.path.join(rnnSMAP.kPath['dirResult'], 'paperSigma')
+saveFolder = os.path.join(refine.kPath['dirResult'], 'paperSigma')
 legLst = list()
 for dr in drLst:
     legLst.append('dr='+str(dr))
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
+    opt = refine.classLSTM.optLSTM(
         rootDB=rootDB,
         rootOut=rootOut,
         syr=2015, eyr=2015,
@@ -56,8 +56,8 @@ if 'train' in doOpt:
 
 #################################################
 if 'test' in doOpt:
-    rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-    rootDB = rnnSMAP.kPath['DB_L3_NA']
+    rootOut = refine.kPath['OutSigma_L3_NA']
+    rootDB = refine.kPath['DB_L3_NA']
     for k in range(0, len(drLst)):
         out = 'CONUSv2f1_y15_Forcing_dr'+drStrLst[k]
         cudaID = k % 3
@@ -68,8 +68,8 @@ if 'test' in doOpt:
 
 #################################################
 if 'loadData' in doOpt:
-    rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-    rootDB = rnnSMAP.kPath['DB_L3_NA']
+    rootOut = refine.kPath['OutSigma_L3_NA']
+    rootDB = refine.kPath['DB_L3_NA']
     predField = 'LSTM'
     targetField = 'SMAP'
     dsLst = list()
@@ -81,7 +81,7 @@ if 'loadData' in doOpt:
             out = 'CONUSv2f1_y15_Forcing'
         else:
             out = 'CONUSv2f1_y15_Forcing_dr'+drStrLst[k]
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=yrLst)
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -106,11 +106,11 @@ if 'plotConf' in doOpt:
         confXLst.append(statConf.conf_sigmaX)
         confMCLst.append(statConf.conf_sigmaMC)
         confLst.append(statConf.conf_sigma)
-    rnnSMAP.funPost.plotCDF(confXLst, ax=axes[0], legendLst=legLst)
+    refine.funPost.plotCDF(confXLst, ax=axes[0], legendLst=legLst)
     axes[0].set_title('sigmaX')
-    rnnSMAP.funPost.plotCDF(confMCLst, ax=axes[1], legendLst=legLst)
+    refine.funPost.plotCDF(confMCLst, ax=axes[1], legendLst=legLst)
     axes[1].set_title('sigmaMC')
-    rnnSMAP.funPost.plotCDF(confLst, ax=axes[2], legendLst=legLst)
+    refine.funPost.plotCDF(confLst, ax=axes[2], legendLst=legLst)
     axes[2].set_title('sigmaComb')
     plt.tight_layout()
     fig.show()
@@ -139,7 +139,7 @@ if 'plotBox' in doOpt:
             statErr = statErrLst[k]
             temp.append(getattr(statErr, strErr))
         data.append(temp)
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         data, labelS=legLst, labelC=labelC,
         colorLst=plt.cm.jet(drLst), figsize=(4, 4), sharey=False)
     # fig.subplots_adjust(wspace=0.5)
@@ -157,7 +157,7 @@ if 'plotConfDist' in doOpt:
         statConf = statConfLst[k]
         confLst.append(statConf.conf_sigma)
 
-        xSort = rnnSMAP.funPost.flatData(statConf.conf_sigma)
+        xSort = refine.funPost.flatData(statConf.conf_sigma)
         yRank = np.arange(len(xSort))/float(len(xSort)-1)
         # rmse = np.sqrt(((xSort - yRank) ** 2).mean())
         dist = 0
@@ -169,7 +169,7 @@ if 'plotConfDist' in doOpt:
                 dist = dist+temp*dbin
         distLst.append(dist)
 
-    rnnSMAP.funPost.plotCDF(
+    refine.funPost.plotCDF(
         confLst, ax=axes[0], legendLst=legLst, showDiff=None,
         xlabel='Predicted Probablity', ylabel='Frequency')
     axes[1].plot(drLst, distLst, marker='*')

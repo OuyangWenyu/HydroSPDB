@@ -1,14 +1,14 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import scipy.stats as stats
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intervals temporal test
@@ -20,17 +20,17 @@ doOpt.append('plotConf')
 # doOpt.append('plotBox')
 # doOpt.append('plotVS')
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['Out_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['Out_L3_NA']
 drStrLst = ['00', '20', '50', '80']
 testName = 'CONUSv4f1'
 yrLst = [2016, 2017]
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'int_temp_dr')
+    refine.kPath['dirResult'], 'Sigma', 'int_temp_dr')
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
+    opt = refine.classLSTM.optLSTM(
         rootDB=rootDB,
         rootOut=rootOut,
         syr=2015, eyr=2015,
@@ -59,7 +59,7 @@ if 'test' in doOpt:
         else:
             out = 'CONUSv4f1_y15_Forcing_dr'+drStrLst[k]
         testName = testName
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=yrLst)
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -79,7 +79,7 @@ if 'plotConf' in doOpt:
     for k in range(0, len(drStrLst)):
         statConf = statConfLst[k]
         confMCLst.append(statConf.conf_sigmaMC)
-    rnnSMAP.funPost.plotCDF(confMCLst, ax=ax, legendLst=drStrLst)
+    refine.funPost.plotCDF(confMCLst, ax=ax, legendLst=drStrLst)
     ax.set_title('sigmaMC')
     fig.show()
     saveFile = os.path.join(saveFolder, 'dr_conf.png')
@@ -98,8 +98,8 @@ if 'plotVS' in doOpt:
             y = getattr(statErr, strE)
             x = getattr(statSigma, strS)
             ax = axes[k-1]
-            rnnSMAP.funPost.plotVS(x, y, ax=ax, doRank=False)
-            # rnnSMAP.funPost.plot121Line(ax)
+            refine.funPost.plotVS(x, y, ax=ax, doRank=False)
+            # refine.funPost.plot121Line(ax)
             if iS == 0:
                 ax.set_ylabel(strE)
             if iE == len(strErrLst)-1:
@@ -110,6 +110,6 @@ if 'plotVS' in doOpt:
         plt.close(fig)
         y = getattr(statSigma, 'sigmaMC')
         x = getattr(statSigma, 'sigmaX')
-        fig = rnnSMAP.funPost.plotVS(x, y)
+        fig = refine.funPost.plotVS(x, y)
         saveFile = os.path.join(saveFolder, 'vsPlotSigma_'+trainName)
         fig.savefig(saveFile)

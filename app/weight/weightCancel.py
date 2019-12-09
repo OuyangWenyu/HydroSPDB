@@ -1,7 +1,7 @@
 import os
 import pandas as pd
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -11,15 +11,15 @@ import time
 
 testName = 'CONUSv4f1'
 out = 'CONUSv4f1_y15_Forcing'
-rootOut = rnnSMAP.kPath['Out_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+rootOut = refine.kPath['Out_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 epoch = 500
 yr = 2015
 
 outFolder = os.path.join(rootOut, out)
-optDict = rnnSMAP.funLSTM.loadOptLSTM(outFolder)
+optDict = refine.funLSTM.loadOptLSTM(outFolder)
 opt = Namespace(**optDict)
-dataset = rnnSMAP.classDB.DatasetLSTM(
+dataset = refine.classDB.DatasetLSTM(
     rootDB=rootDB, subsetName=testName,
     yrLst=[yr],
     var=(opt.var, opt.varC))
@@ -105,7 +105,7 @@ y1 = model.linearOut(houtView)
 cXout = torch.cat(cX, 0).view(nt, ngrid,nh*4).detach().cpu().numpy().squeeze()/1024
 cHout = torch.cat(cH, 0).view(nt, ngrid).detach().cpu().numpy().squeeze()/1024
 
-saveFolder = '/mnt/sdc/rnnSMAP/Result_SMAPgrid/weightDetector/'
+saveFolder = '/mnt/sdc/refine/Result_SMAPgrid/weightDetector/'
 cXoutFile = os.path.join(saveFolder, testName+'_yr'+str(yr)+'_cX')
 pd.DataFrame(cXout).to_csv(cXoutFile, header=False, index=False)
 cHoutFile = os.path.join(saveFolder, testName+'_yr'+str(yr)+'_cH')

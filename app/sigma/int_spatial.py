@@ -1,12 +1,12 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intervals temporal test
@@ -22,12 +22,12 @@ testNameLst = ['CONUSv2f2']
 strSigmaLst = ['sigmaX', 'sigmaMC', 'sigma']
 strErrLst = ['RMSE', 'ubRMSE']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'interval_spatial')
+    refine.kPath['dirResult'], 'Sigma', 'interval_spatial')
 
 #################################################
 if 'test' in doOpt:
-    rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-    rootDB = rnnSMAP.kPath['DB_L3_NA']
+    rootOut = refine.kPath['OutSigma_L3_NA']
+    rootDB = refine.kPath['DB_L3_NA']
 
     predField = 'LSTM'
     targetField = 'SMAP'
@@ -37,7 +37,7 @@ if 'test' in doOpt:
     for k in range(0, len(trainNameLst)):
         out = trainNameLst[k]+'_y15_Forcing'
         testName = testNameLst[k]
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2015])
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -61,7 +61,7 @@ if 'plotMap' in doOpt:
             grid = ds.data2grid(data=getattr(statErr, s))
             saveFile = os.path.join(saveFolder, 'map_'+trainName+'_'+s)
             titleStr = 'temporal '+s+' '+trainName
-            fig = rnnSMAP.funPost.plotMap(
+            fig = refine.funPost.plotMap(
                 grid, crd=ds.crdGrid, cRange=cRangeErr, title=titleStr, showFig=False)
             fig.savefig(saveFile)
         for s in strSigmaLst:
@@ -72,7 +72,7 @@ if 'plotMap' in doOpt:
                 cRangeSigma = [0, 0.03]
             else:
                 cRangeSigma = [0, 0.06]
-            fig = rnnSMAP.funPost.plotMap(
+            fig = refine.funPost.plotMap(
                 grid, crd=ds.crdGrid, cRange=cRangeSigma, title=titleStr, showFig=False)
             fig.savefig(saveFile)
 
@@ -86,7 +86,7 @@ if 'plotBox' in doOpt:
         for strS in strSigmaLst:
             tempLst.append(getattr(statSigma, strS))
         data.append(tempLst)
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         data, labelC=trainNameLst, labelS=strSigmaLst, title='Temporal Test CONUS')
     saveFile = os.path.join(saveFolder, 'boxPlot_sigma')
 
@@ -110,8 +110,8 @@ if 'plotVS' in doOpt:
                 # x = x[ind]
                 # y = y[ind]
                 ax = axes[iE, iS]
-                rnnSMAP.funPost.plotVS(x, y, ax=ax, doRank=False)
-                # rnnSMAP.funPost.plot121Line(ax)
+                refine.funPost.plotVS(x, y, ax=ax, doRank=False)
+                # refine.funPost.plot121Line(ax)
                 if iS == 0:
                     ax.set_ylabel(strE)
                 if iE == len(strErrLst)-1:
@@ -122,6 +122,6 @@ if 'plotVS' in doOpt:
         plt.close(fig)
         y = getattr(statSigma, 'sigmaMC')
         x = getattr(statSigma, 'sigmaX')
-        fig = rnnSMAP.funPost.plotVS(x, y)
+        fig = refine.funPost.plotVS(x, y)
         saveFile = os.path.join(saveFolder, 'vsPlotSigma_'+trainName)
         fig.savefig(saveFile)

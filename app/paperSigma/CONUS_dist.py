@@ -1,18 +1,18 @@
 import os
-import rnnSMAP
+import refine
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 trainName = 'CONUSv2f1'
 out = trainName+'_y15_Forcing'
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-saveFolder = os.path.join(rnnSMAP.kPath['dirResult'], 'paperSigma')
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
+saveFolder = os.path.join(refine.kPath['dirResult'], 'paperSigma')
 
 doOpt = []
 # doOpt.append('loadData')
@@ -45,13 +45,13 @@ if 'loadData' in doOpt:
 
         predField = 'LSTM'
         targetField = 'SMAP'
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=yr)
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
         statErr = ds.statCalError(predField='LSTM', targetField='SMAP')
         statSigma = ds.statCalSigma(field='LSTM')
-        statNorm = rnnSMAP.classPost.statNorm(
+        statNorm = refine.classPost.statNorm(
             statSigma=statSigma, dataPred=ds.LSTM, dataTarget=ds.SMAP)
         dsLst.append(ds)
         statErrLst.append(statErr)
@@ -72,7 +72,7 @@ if 'plotConf' in doOpt:
         for k in range(0, len(sigmaStrLst)):
             plotLst.append(getattr(statNorm, 'yNorm_'+sigmaStrLst[k]))
         legendLst = [r'$norm_{x}$', r'$norm_{comb}$']
-        _, _, out = rnnSMAP.funPost.plotCDF(
+        _, _, out = refine.funPost.plotCDF(
             plotLst, ax=axes[iFig], legendLst=legendLst, cLst='grbm', ref='norm',
             xlabel='Predicting Probablity', ylabel=None, showDiff=False)
         axes[iFig].set_title(figTitle)

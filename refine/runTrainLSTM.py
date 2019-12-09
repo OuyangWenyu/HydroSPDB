@@ -1,17 +1,17 @@
-import rnnSMAP
+import refine
 # import argparse
 import os
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 if __name__ == '__main__':
-    opt = rnnSMAP.classLSTM.optLSTM()
+    opt = refine.classLSTM.optLSTM()
     parser = opt.toParser()
     args = parser.parse_args()
     opt.fromParser(parser)
     print(opt)
-    rnnSMAP.funLSTM.trainLSTM(opt)
+    refine.funLSTM.trainLSTM(opt)
 
 
 def screen(*, opt, cudaID, screenName='test'):

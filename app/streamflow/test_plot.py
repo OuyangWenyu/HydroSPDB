@@ -6,7 +6,7 @@ import pandas as pd
 #     "/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/data/GAGES-II/rnnStreamflow/All-90-95/run.csv",
 #     header=None)
 train_process = pd.read_csv(
-    "/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/data/Camels/rnnStreamflow/All-90-95/run.csv",
+    "/example/data/Camels/rnnStreamflow/All-90-95/run.csv",
     header=None)
 train_process_ = train_process.iloc[:, 0].str.split()
 p_x = np.array([])

@@ -1,12 +1,12 @@
 import os
-import rnnSMAP
-# from rnnSMAP import runTrainLSTM
+import refine
+# from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intervals temporal test
@@ -24,13 +24,13 @@ strEpochLst = ['ep100', 'ep200', 'ep300', 'ep400', 'ep500']
 strSigmaLst = ['sigmaX', 'sigmaMC', 'sigma']
 strErrLst = ['RMSE', 'ubRMSE']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'int_epoch')
+    refine.kPath['dirResult'], 'Sigma', 'int_epoch')
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
-        rootDB=rnnSMAP.kPath['DB_L3_NA'],
-        rootOut=rnnSMAP.kPath['Out_L3_NA'],
+    opt = refine.classLSTM.optLSTM(
+        rootDB=refine.kPath['DB_L3_NA'],
+        rootOut=refine.kPath['Out_L3_NA'],
         syr=2015, eyr=2015,
         var='varLst_Forcing', varC='varConstLst_Noah',
         dr=0.5, modelOpt='relu', model='cudnn',
@@ -47,8 +47,8 @@ if 'train' in doOpt:
 
 #################################################
 if 'test' in doOpt:
-    rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-    rootDB = rnnSMAP.kPath['DB_L3_NA']
+    rootOut = refine.kPath['OutSigma_L3_NA']
+    rootDB = refine.kPath['DB_L3_NA']
 
     predField = 'LSTM'
     targetField = 'SMAP'
@@ -56,7 +56,7 @@ if 'test' in doOpt:
     statErrLst = list()
     statSigmaLst = list()
     out = trainName+'_y15_Forcing'
-    ds = rnnSMAP.classDB.DatasetPost(
+    ds = refine.classDB.DatasetPost(
         rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
     ds.readData(var='SMAP_AM', field='SMAP')
     for k in range(0, len(epochLst)):
@@ -80,7 +80,7 @@ if 'plotBox' in doOpt:
         for strS in strSigmaLst:
             tempLst.append(getattr(statSigma, strS))
         data.append(tempLst)
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         data, labelC=strEpochLst, labelS=strSigmaLst, title='Temporal Test CONUS')
     saveFile = os.path.join(saveFolder, 'boxPlot_sigma')
 
@@ -103,8 +103,8 @@ if 'plotVS' in doOpt:
                 x = x[ind]
                 y = y[ind]
                 ax = axes[iE, iS]
-                rnnSMAP.funPost.plotVS(x, y, ax=ax, doRank=False)
-                # rnnSMAP.funPost.plot121Line(ax)
+                refine.funPost.plotVS(x, y, ax=ax, doRank=False)
+                # refine.funPost.plot121Line(ax)
                 if iS == 0:
                     ax.set_ylabel(strE)
                 if iE == len(strErrLst)-1:
@@ -115,7 +115,7 @@ if 'plotVS' in doOpt:
         plt.close(fig)
         y = getattr(statSigma, 'sigmaMC')
         x = getattr(statSigma, 'sigmaX')
-        fig = rnnSMAP.funPost.plotVS(x, y)
+        fig = refine.funPost.plotVS(x, y)
         saveFile = os.path.join(
             saveFolder, 'vsPlotSigma_'+trainName+strEpochLst[k])
         fig.savefig(saveFile)

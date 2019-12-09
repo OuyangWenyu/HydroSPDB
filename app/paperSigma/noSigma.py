@@ -1,6 +1,6 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
@@ -8,8 +8,8 @@ import scipy.stats as stats
 import matplotlib
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 
 #################################################
@@ -20,19 +20,19 @@ doOpt.append('test')
 doOpt.append('plotMap')
 # doOpt.append('plotMapAll')
 
-rootOutLst = [rnnSMAP.kPath['Out_L3_NA'], rnnSMAP.kPath['OutSigma_L3_NA']]
+rootOutLst = [refine.kPath['Out_L3_NA'], refine.kPath['OutSigma_L3_NA']]
 testName = 'CONUSv2f1'
 yr = [2017]
 nCase = len(rootOutLst)
 
-saveFolder = os.path.join(rnnSMAP.kPath['dirResult'], 'paperSigma')
+saveFolder = os.path.join(refine.kPath['dirResult'], 'paperSigma')
 matplotlib.rcParams.update({'font.size': 16})
 matplotlib.rcParams.update({'lines.linewidth': 2})
 matplotlib.rcParams.update({'lines.markersize': 6})
 
 #################################################
 if 'test' in doOpt:
-    rootDB = rnnSMAP.kPath['DB_L3_NA']
+    rootDB = refine.kPath['DB_L3_NA']
 
     predField = 'LSTM'
     targetField = 'SMAP'
@@ -43,7 +43,7 @@ if 'test' in doOpt:
     for k in range(0, len(rootOutLst)):
         rootOut = rootOutLst[k]
         out = 'CONUSv2f1_y15_Forcing_dr60'
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=yr)
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -63,8 +63,8 @@ if 'plotMap' in doOpt:
     cRange = [-0.00, 0.005]
     grid = ds.data2grid(data=diff)
     titleStr = r'ubRMSE(w/o $\sigma_x$) - ubRMSE(w/ $\sigma_x$)'
-    rnnSMAP.funPost.plotMap(grid, crd=ds.crdGrid, ax=ax,
-                            cRange=cRange, title=titleStr)
+    refine.funPost.plotMap(grid, crd=ds.crdGrid, ax=ax,
+                           cRange=cRange, title=titleStr)
     fig.show()
     saveFile = os.path.join(saveFolder, 'map_noSigma')
     fig.savefig(saveFile, dpi=100)
@@ -77,22 +77,22 @@ if 'plotMapAll' in doOpt:
     cRange = [0, 0.05]
     grid = ds.data2grid(data=diff)
     titleStr = r'ubRMSE(w/o $\sigma_x$)'
-    rnnSMAP.funPost.plotMap(grid, crd=ds.crdGrid, ax=axes[0],
-                            cRange=cRange, title=titleStr)
+    refine.funPost.plotMap(grid, crd=ds.crdGrid, ax=axes[0],
+                           cRange=cRange, title=titleStr)
 
     diff = getattr(statErrLst[1], 'ubRMSE')
     cRange = [0, 0.05]
     grid = ds.data2grid(data=diff)
     titleStr = r'ubRMSE(w/ $\sigma_x$)'
-    rnnSMAP.funPost.plotMap(grid, crd=ds.crdGrid, ax=axes[1],
-                            cRange=cRange, title=titleStr)
+    refine.funPost.plotMap(grid, crd=ds.crdGrid, ax=axes[1],
+                           cRange=cRange, title=titleStr)
 
     diff = getattr(statErrLst[0], 'ubRMSE')-getattr(statErrLst[1], 'ubRMSE')
     cRange = [-0.005, 0.005]
     grid = ds.data2grid(data=diff)
     titleStr = r'ubRMSE(w/o $\sigma_x$) - ubRMSE(w/ $\sigma_x$)'
-    rnnSMAP.funPost.plotMap(grid, crd=ds.crdGrid, ax=axes[2],
-                            cRange=cRange, title=titleStr)
+    refine.funPost.plotMap(grid, crd=ds.crdGrid, ax=axes[2],
+                           cRange=cRange, title=titleStr)
     fig.show()
     saveFile = os.path.join(saveFolder, 'map_noSigma')
     fig.savefig(saveFile, dpi=100)

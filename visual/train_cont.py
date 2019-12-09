@@ -44,18 +44,18 @@ for k in range(len(subsetLst)):
 
 # some of them failed and rerun
 # master.runTrain(
-#     r'/mnt/sdb/rnnSMAP/Model_SMAPgrid/L3_Global/Africa_v4f1_y1_Forcing/',
+#     r'/mnt/sdb/refine/Model_SMAPgrid/L3_Global/Africa_v4f1_y1_Forcing/',
 #     cudaID=1,
 #     screen='Africa_v4f1_y1_Forcing')
 # master.runTrain(
-#     r'/mnt/sdb/rnnSMAP/Model_SMAPgrid/L3_Global/Asia_v4f1_y1_Soilm/',
+#     r'/mnt/sdb/refine/Model_SMAPgrid/L3_Global/Asia_v4f1_y1_Soilm/',
 #     cudaID=0,
 #     screen='Asia_v4f1_y1_Soilm')
 # master.runTrain(
-#     r'/mnt/sdb/rnnSMAP/Model_SMAPgrid/L3_Global/NorthAmerica_v4f1_y1_Soilm/',
+#     r'/mnt/sdb/refine/Model_SMAPgrid/L3_Global/NorthAmerica_v4f1_y1_Soilm/',
 #     cudaID=1,
 #     screen='NorthAmerica_v4f1_y1_Soilm')
 # master.runTrain(
-#     r'/mnt/sdb/rnnSMAP/Model_SMAPgrid/L3_Global/Global_v4f1_y1_Forcing/',
+#     r'/mnt/sdb/refine/Model_SMAPgrid/L3_Global/Global_v4f1_y1_Forcing/',
 #     cudaID=2,
 #     screen='Global_v4f1_y1_Forcing')

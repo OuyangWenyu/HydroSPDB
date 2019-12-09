@@ -1,12 +1,12 @@
 import os
-import rnnSMAP
-# from rnnSMAP import runTrainLSTM
+import refine
+# from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intervals temporal test
@@ -23,13 +23,13 @@ testName = trainName
 strSigmaLst = ['sigmaX', 'sigmaMC', 'sigma']
 strErrLst = ['RMSE', 'ubRMSE']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'int_temporal3')
+    refine.kPath['dirResult'], 'Sigma', 'int_temporal3')
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
-        rootDB=rnnSMAP.kPath['DB_L3_NA'],
-        rootOut=rnnSMAP.kPath['Out_L3_NA'],
+    opt = refine.classLSTM.optLSTM(
+        rootDB=refine.kPath['DB_L3_NA'],
+        rootOut=refine.kPath['Out_L3_NA'],
         syr=2015, eyr=2015,
         var='varLst_Forcing', varC='varConstLst_Noah',
         dr=0.5, modelOpt='relu', model='cudnn',
@@ -46,15 +46,15 @@ if 'train' in doOpt:
 
 #################################################
 if 'test' in doOpt:
-    rootDB = rnnSMAP.kPath['DB_L3_NA']
+    rootDB = refine.kPath['DB_L3_NA']
     out = trainName+'_y15_Forcing'
-    ds = rnnSMAP.classDB.DatasetPost(
+    ds = refine.classDB.DatasetPost(
         rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
     ds.readData(var='SMAP_AM', field='SMAP')
     ds.readPred(field='LSTM1', out=out, drMC=100,
-                rootOut=rnnSMAP.kPath['Out_L3_NA'],)
+                rootOut=refine.kPath['Out_L3_NA'], )
     ds.readPred(out=out, drMC=100, field='LSTM2',
-                rootOut=rnnSMAP.kPath['OutSigma_L3_NA'])
+                rootOut=refine.kPath['OutSigma_L3_NA'])
     statErr1 = ds.statCalError(predField='LSTM1', targetField='SMAP')
     statErr2 = ds.statCalError(predField='LSTM2', targetField='SMAP')
     statSigma1 = ds.statCalSigma(field='LSTM1')
@@ -68,8 +68,8 @@ if 'plotVS' in doOpt:
     sigmaLst = [sigmaX, sigmaMC, sigma]
     x = statSigma2.sigmaMC_mat
     y = ds.LSTM2-ds.SMAP
-    fig = rnnSMAP.funPost.plotVS(x.flatten(), y.flatten(), doRank=False)
-    rnnSMAP.funPost.plot121Line(fig.axes[0])
+    fig = refine.funPost.plotVS(x.flatten(), y.flatten(), doRank=False)
+    refine.funPost.plot121Line(fig.axes[0])
     fig.show()
 
 
@@ -87,5 +87,5 @@ if 'plotBox' in doOpt:
     tempLst.append(statErr2.ubRMSE)
     data.append(tempLst)
 
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         data, labelC=['sigmaMC', 'ubRMSE'], labelS=['wo sigma', 'w sigma'], title='Temporal Test CONUS')

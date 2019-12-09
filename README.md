@@ -1,91 +1,56 @@
-# Example
-Two examples with sample data are wrapped up including
- - [train a LSTM network to learn SMAP soil moisture](example/train-lstm.py)
- - [estimate uncertainty of a LSTM network ](example/train-lstm-mca.py)
+# workflow
 
-A demo for temporal test is [here](example/demo-temporal-test.ipynb)
+主要参考了项目[machine-learning-project-walkthrough](https://github.com/WillKoehrsen/machine-learning-project-walkthrough)，
+重新构建整体流程，便于项目调试和各个模块的测试。
 
+机器学习的pipeline主要有如下部分：
 
-# Database description
-## Database Structure
-```
-├── CONUS
-│   ├── 2000
-│   │   ├── [Variable-Name].csv
-│   │   ├── ...
-│   │   ├── timeStr.csv
-│   │   └── time.csv
-│   ├── ...
-│   ├── 2017
-│   │   └── ...
-│   ├── const
-│   │   ├── [Constant-Variable-Name].csv
-│   │   └── ...
-│   └── crd.csv
-├── CONUSv4f1
-│   └── ...
-├── Statistics
-│   ├── [Variable-Name]_stat.csv
-│   ├── ...
-│   ├── const_[Constant-Variable-Name]_stat.csv
-│   └── ...
-├── Subset
-│   ├── CONUS.csv
-│   └── CONUSv4f1.csv
-└── Variable
-    ├── varConstLst.csv
-    └── varLst.csv
-```
-### 1. Dataset folders (*CONUS* , *CONUSv4f1*)
-Data folder contains all data including both training and testing, time-dependent variables and constant variables. 
-In example data structure, there are two dataset folders - *CONUS* and *CONUSv4f1*. Those data are saved in:
+1. 数据获取和数据清理，及格式化为输入格式
+2. 探索性数据分析
+3. 构建模型，即特征工程与选择
+4. 比较不同机器学习模型的性能
+5. 执行超参数调优得到最优模型
+6. 测试集上评价最优模型
 
- - **year/[Variable-Name].csv**:
+最后就是解释模型结果，并总结写出成果。针对上述6个需要coding的部分，结合本项目实际情况，
+分步骤再简要阐述一些。
+ 
+## 数据前处理
 
-A csv file of size [#grid, #time], where each column is one grid and each row is one time step. This file saved data of a time-dependent variable of current year. For example, *CONUS/2010/SMAP_AM.csv* is SMAP data of 2002 on the CONUS. 
+首先要明确所需数据内容，然后去查看相应的数据下载方法，尽量使用code下载以实现自动化。
 
-Most time-dependent varibles comes from NLDAS, which included two forcing product (FORA, FORB) and three simulations product land surface models (NOAH, MOS, VIC). Variables are named as *[variable]\_[product]\_[layer]*, and reference of variable can be found in [NLDAS document](https://hydro1.gesdisc.eosdis.nasa.gov/data/NLDAS/README.NLDAS2.pdf). For example, *SOILM_NOAH_0-10* refers to soil moisture product simulated by NOAH model at 0-10 cm. 
+然后需要对数据进行格式转换，转换成输入所需的格式，在这过程中还会有一些数据清洗过程。
 
-Other than NLDAS, SMAP data are also saved in same format but always used as target. In level 3 database, there are two SMAP csv files which are only available after 2015: *SMAP_AM.csv* and *SMAP_PM.csv*. 
+## 探索性数据分析
 
--9999 refers to NaN. 
+为了辨别关键变量等，可能需要先大致看看哪些数据的影响比较大，PCA等方式是相对比较常用的方法。
 
-- **year/time.csv** & **timeStr.csv**
+对于深度学习算法，这一步可能不是太重要，因此这里可以先不展开。
 
-Dates csv file of current year folder, of size [#date]. *time.csv* recorded Matlab datenum and *timeStr.csv* recorded date in format of yyyy-mm-dd.
+## 建模
 
-Notice that each year start from and end before April 1st. For example data in folder 2010 is actually data from 2010-04-01 to 2011-03-31. The reason is that SMAP launched at April 1st. 
+这部分是核心部分，不过因为有很多前人工作，可能并不是最难的部分。
 
-- **const/[Constant Variable Name].csv**
+## 比较不同模型性能
 
-csv file for constant variables of size [#grid]. 
+不同模型运行，还有要做模型结果可视化等，以便进行模型比较。
 
-- **crd.csv**
+## 超参数调优
 
-Coordinate of all grids. First Column is latitude and second column is longitude. Each row refers a grid.
+可以使用贝叶斯优化等来实现超参数调优，得到最优模型。
 
-### 2. Statistics folder
+## 测试模型
 
-Stored statistics of variables in order to do data normalization during training. Named as:
-- Time dependent variables-> [variable name].csv
-- Constant variables-> const_[variable name].csv
+最后一步执行测试，复用前面的代码，略加修改即可。
 
-Each file wrote four statistics of variable:
-- 90 percentile
-- 10 percentile
-- mean
-- std
+因此，总结一下code需要注意的部分，首先是数据下载和转换，其次是建模包括训练和测试，还有就是超参数调优。
 
-During training we normalize data by (data - mean) / std
+第一部分放到data文件夹下。下载的数据放到example文件夹下。
 
-### 3. Subset folder
-Subset refers to a subset of grids from the complete dataset (CONUS or Global). For example, a subset only contains grids in Pennsylvania. All subsets (including the CONUS or Global dataset) will have a *[subset name].csv* file in the *Subset* folder. *[subset name].csv* is wrote as:
-- line 1 -> root dataset 
-- line 2 - end -> indexs of subset grids in rootset (start from 1)
+第二部分的模型code在hydroDL中，结果可视化部分在visual文件夹中
 
-If the index is -1 means all grid, from example CONUS dataset. 
+第三部分在refine文件夹下。
 
-### 4. Variable folder
-Stored csv files contains a list of variables. Used as input to training code. Time-dependent variables and constant variables should be stored seperately. For example:
-- varLst.csv -> a list of time-dependent variables used as training predictors.
-- varLst.csv -> a list of constant variables used as training predictors.
+另外如果需要简单探索性分析数据，放在explore文件夹下。
+
+最后执行代码的脚本在app文件夹下。docker是最后制作项目镜像所用。

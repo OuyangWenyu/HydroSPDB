@@ -1,16 +1,16 @@
 import os
-import rnnSMAP
-# from rnnSMAP import runTrainLSTM
+import refine
+# from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
-from rnnSMAP import runTestLSTM
+from refine import runTestLSTM
 import shapefile
 import time
 import imp
 import math
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # train on one HUC and test on CONUS. look at map of sigma
@@ -21,15 +21,15 @@ doOpt = []
 # doOpt.append('plotMapMC')
 doOpt.append('plotMapPaper')
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'paperSigma', 'huc_single_map')
+    refine.kPath['dirResult'], 'paperSigma', 'huc_single_map')
 strSigmaLst = ['sigmaX', 'sigmaMC']
 strErrLst = ['Bias', 'ubRMSE']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 yrLst = [2017]
 
 hucShapeFile = '/mnt/sdc/Kuai/Map/HUC/HUC2_CONUS'
@@ -69,7 +69,7 @@ if 'loadData' in doOpt:
         trainName = 'hucn1_'+str(k+1).zfill(2)+'_v2f1'
         testName = 'CONUSv2f1'
         out = trainName+'_y15_Forcing_dr60'
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=yrLst)
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -91,7 +91,7 @@ if 'plotMapMC' in doOpt:
         data = statSigma.sigmaMC
         grid = ds.data2grid(data=data)
         titleStr = r'$\sigma_{mc}$' + ' from HUC%02d model' % (k+1)
-        rnnSMAP.funPost.plotMap(
+        refine.funPost.plotMap(
             grid, crd=ds.crdGrid, ax=ax, title=titleStr,
             shape=shapeLst[k])
         plt.tight_layout()
@@ -113,7 +113,7 @@ if 'plotMapPaper' in doOpt:
         grid = ds.data2grid(data=data)
         titleStr = figNum[a]+' '+r'$\sigma_{mc}$' + ' from HUC%02d model' % (k+1)
         ax = axes[math.floor(a/2), a % 2]
-        rnnSMAP.funPost.plotMap(
+        refine.funPost.plotMap(
             grid, crd=ds.crdGrid, ax=ax, title=titleStr,
             shape=shapeLst[k])
         a = a+1

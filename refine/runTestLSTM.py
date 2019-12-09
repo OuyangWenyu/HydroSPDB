@@ -1,9 +1,9 @@
 import os
-import rnnSMAP
+import refine
 import argparse
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     eyr = int(args.eyr)
     yrLst = range(syr, eyr+1)
 
-    ds = rnnSMAP.classDB.DatasetPost(
+    ds = refine.classDB.DatasetPost(
         rootDB=rootDB, subsetName=testName, yrLst=yrLst)
     ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
 

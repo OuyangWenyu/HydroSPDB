@@ -1,12 +1,12 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intend to test if hidden size affact sigma performance
@@ -19,15 +19,15 @@ doOpt.append('plotBox')
 # doOpt.append('plotVS')
 
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'int_multiInput')
+    refine.kPath['dirResult'], 'Sigma', 'int_multiInput')
 
 trainName = 'CONUSv4f1'
 outLst = ['CONUSv4f1_y15_Forcing_noAPCP',
           'CONUSv4f1_y15_Forcing',
           'CONUSv4f1_y15_soilM']
 caseLst = ['noAPCP', 'Forcing', 'soilM']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 
 
 #################################################
@@ -41,7 +41,7 @@ if 'test' in doOpt:
     statErrLst = list()
     statSigmaLst = list()
     for out in outLst:
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100,
@@ -65,14 +65,14 @@ if 'plotMap' in doOpt:
             grid = ds.data2grid(data=getattr(statErr, s))
             saveFile = os.path.join(saveFolder, 'map'+s+'_'+caseLst[k])
             titleStr = 'temporal '+s+' '+caseLst[k]
-            fig = rnnSMAP.funPost.plotMap(
+            fig = refine.funPost.plotMap(
                 grid, crd=ds.crdGrid, cRange=cRangeErr, title=titleStr, showFig=False)
             fig.savefig(saveFile)
         for s in strSigmaLst:
             grid = ds.data2grid(data=getattr(statSigma, s))
             saveFile = os.path.join(saveFolder, 'map'+s+'_'+caseLst[k])
             titleStr = 'temporal '+s+' '+trainName
-            fig = rnnSMAP.funPost.plotMap(
+            fig = refine.funPost.plotMap(
                 grid, crd=ds.crdGrid, cRange=cRangeSigma, title=titleStr, showFig=False)
             fig.savefig(saveFile)
 
@@ -86,7 +86,7 @@ if 'plotBox' in doOpt:
         for strS in strSigmaLst:
             tempLst.append(getattr(statSigma, strS))
         dataSigma.append(tempLst)
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         dataSigma, labelC=caseLst, labelS=strSigmaLst, title='Temporal Test CONUS')
     saveFile = os.path.join(saveFolder, 'boxSigma')
     fig.savefig(saveFile)
@@ -98,7 +98,7 @@ if 'plotBox' in doOpt:
         for strE in strErrLst:
             tempLst.append(getattr(statErr, strE))
         dataErr.append(tempLst)
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         dataErr, labelC=caseLst, labelS=strErrLst, title='Temporal Test Noise')
     saveFile = os.path.join(saveFolder, 'boxErr')
     fig.savefig(saveFile)
@@ -117,7 +117,7 @@ if 'plotVS' in doOpt:
                 y = getattr(statErr, strE)
                 x = getattr(statSigma, strS)
                 ax = axes[iE, iS]
-                rnnSMAP.funPost.plotVS(x, y, ax=ax, doRank=False)
+                refine.funPost.plotVS(x, y, ax=ax, doRank=False)
                 if iS == 0:
                     ax.set_ylabel(strE)
                 if iE == len(strErrLst)-1:

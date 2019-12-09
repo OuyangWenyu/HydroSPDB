@@ -1,22 +1,22 @@
 import os
 
-import rnnSMAP
+import refine
 import numpy as np
 import pandas as pd
 import torch
 import argparse
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-k", "--kk", dest="opt")
 args = parser.parse_args()
 
-opt = rnnSMAP.classLSTM.optLSTM(
-    rootDB=rnnSMAP.kPath['DBSMAP_L3_NA'],
-    rootOut=rnnSMAP.kPath['OutSMAP_L3_NA'],
+opt = refine.classLSTM.optLSTM(
+    rootDB=refine.kPath['DBSMAP_L3_NA'],
+    rootOut=refine.kPath['OutSMAP_L3_NA'],
     syr=2015, eyr=2015,
     var='varLst_soilM', varC='varConstLst_Noah',
     train='CONUSv4f1', dr=0.5
@@ -56,22 +56,22 @@ opt['out'] = outLst[k]
 opt['drMethod'] = drmLst[k]
 opt['modelOpt'] = mopLst[k]
 
-# rnnSMAP.funLSTM.trainLSTM(opt)
+# refine.funLSTM.trainLSTM(opt)
 
 # opt['out'] = 'CONUSv4f1_tied_relu_drW'
 # opt['drMethod'] = 'drW'
 # opt['modelOpt'] = 'tied+relu'
 
-# rnnSMAP.funLSTM.trainLSTM(opt)
+# refine.funLSTM.trainLSTM(opt)
 
 # test model
 out = opt['out']
-rootOut = rnnSMAP.kPath['OutSMAP_L3_NA']
+rootOut = refine.kPath['OutSMAP_L3_NA']
 testName = 'CONUSv4f1'
-rnnSMAP.funLSTM.testLSTM(
+refine.funLSTM.testLSTM(
     out=out, rootOut=rootOut, test=testName,
     syr=2016, eyr=2017)
 
-rnnSMAP.funLSTM.testLSTM(
+refine.funLSTM.testLSTM(
     out=out, rootOut=rootOut, test=testName,
     syr=2015, eyr=2015)

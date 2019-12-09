@@ -1,12 +1,12 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # noise affact on sigmaX (or sigmaMC)
@@ -27,8 +27,8 @@ noiseLabelLst = ['0', '0.01', '0.02', '0.03', '0.04', '0.05',
                  '0.06', '0.07', '0.08', '0.09', '0.1']
 strErrLst = ['RMSE', 'ubRMSE']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'paperSigma')
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+    refine.kPath['dirResult'], 'paperSigma')
+rootDB = refine.kPath['DB_L3_NA']
 
 matplotlib.rcParams.update({'font.size': 16})
 matplotlib.rcParams.update({'lines.linewidth': 2})
@@ -50,9 +50,9 @@ if 'test' in doOpt:
             out = 'CONUSv4f1_y15_Forcing_dr06_sn'+noiseNameLst[k]
             targetName = 'SMAP_AM_sn'+noiseNameLst[k]
 
-        rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+        rootOut = refine.kPath['OutSigma_L3_NA']
         caseStrLst = ['sigmaMC', 'sigmaX', 'sigma']
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2017])
         ds.readData(var=targetName, field='SMAP')
         ds.readPred(out=out, drMC=100, field='LSTM', rootOut=rootOut)
@@ -77,7 +77,7 @@ if 'plotErrBox' in doOpt:
         temp.append(getattr(statErrLst[k], strErr))
         data.append(temp)
 
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         data, labelC=noiseLabelLst, figsize=(12, 6), colorLst='rbgk',
         labelS=labelS, title='Error and uncertainty estimates in temporal test')
 
@@ -108,11 +108,11 @@ if 'plotConf' in doOpt:
         for k in range(0, len(noiseNameLst)):
             plotLst.append(getattr(statConfLst[k], 'conf_'+strSigmaLst[iFig]))
         if iFig == 2:
-            _, _, out = rnnSMAP.funPost.plotCDF(
+            _, _, out = refine.funPost.plotCDF(
                 plotLst, ax=axes[iFig], legendLst=noiseLabelLst,
                 xlabel='Predicted Probablity', ylabel=None, showDiff=True)
         else:
-            _, _, out = rnnSMAP.funPost.plotCDF(
+            _, _, out = refine.funPost.plotCDF(
                 plotLst, ax=axes[iFig], legendLst=None,
                 xlabel='Predicted Probablity', ylabel=None, showDiff=True)
         axes[iFig].set_title(titleLst[iFig])
@@ -135,7 +135,7 @@ if 'plotConfDist' in doOpt:
         plotLst = list()
         for k in range(0, len(noiseNameLst)):
             plotLst.append(getattr(statConfLst[k], 'conf_'+strSigmaLst[iFig]))
-        _, _, out = rnnSMAP.funPost.plotCDF(
+        _, _, out = refine.funPost.plotCDF(
             plotLst, ax=axes[iFig], legendLst=None,
             xlabel=r'$P_{ee}$', ylabel=None, showDiff=False)
         axes[iFig].set_title(titleLst[iFig])
@@ -152,7 +152,7 @@ if 'plotConfDist' in doOpt:
         for iN in range(0, len(noiseNameLst)):
             x = getattr(statConfLst[iN], 'conf_'+strSigmaLst[iS])
             # calculate dist of CDF
-            xSort = rnnSMAP.funPost.flatData(x)
+            xSort = refine.funPost.flatData(x)
             yRank = np.arange(len(xSort))/float(len(xSort)-1)
             dist = np.max(np.abs(xSort - yRank))
             distLst.append(dist)
@@ -176,7 +176,7 @@ if 'plotConfLegend' in doOpt:
     plotLst = list()
     for k in range(0, len(noiseNameLst)):
         plotLst.append(getattr(statConfLst[k], 'conf_'+strSigmaLst[iFig]))
-    _, _, out = rnnSMAP.funPost.plotCDF(
+    _, _, out = refine.funPost.plotCDF(
         plotLst, ax=axes[0], legendLst=noiseLabelLst,
         xlabel=r'$P_{ee}$', ylabel=None, showDiff=False)
 

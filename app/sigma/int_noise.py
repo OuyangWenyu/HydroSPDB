@@ -1,10 +1,10 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import numpy as np
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # noise affact on sigmaX (or sigmaMC)
@@ -23,13 +23,13 @@ noiseNameLst = ['1e2', '2e2', '3e2', '4e2', '5e2',
 strSigmaLst = ['sigmaX', 'sigmaMC', 'sigma']
 strErrLst = ['RMSE', 'ubRMSE']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'int_noise')
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+    refine.kPath['dirResult'], 'Sigma', 'int_noise')
+rootOut = refine.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
+    opt = refine.classLSTM.optLSTM(
         rootDB=rootDB, rootOut=rootOut,
         syr=2015, eyr=2015, varC='varConstLst_Noah',
         dr=0.6, modelOpt='relu', model='cudnn',
@@ -58,7 +58,7 @@ if 'test' in doOpt:
         # targetName = 'SMAP_AM_sn'+noiseNameLst[k]
         targetName = 'SMAP_AM'
         out = 'CONUSv4f1_y15_soilM_sn'+noiseNameLst[k]
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
         ds.readData(var=targetName, field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -90,7 +90,7 @@ if 'plotBox' in doOpt:
                     tempLst.append(getattr(stat, strS))
             data.append(tempLst)
         labelS = attrLst
-        fig = rnnSMAP.funPost.plotBox(
+        fig = refine.funPost.plotBox(
             data, labelC=noiseNameLst, labelS=labelS,
             title='Temporal Test ' + titleTp[iP])
         saveFile = os.path.join(saveFolder, saveFileTp[iP])

@@ -1,17 +1,17 @@
 import os
 import numpy as np
-import rnnSMAP
+import refine
 import imp
 import matplotlib.pyplot as plt
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 out = 'CONUSv4f1_y15_Forcing'
 
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'weight', 'wp_int')
-rootOut = rnnSMAP.kPath['Out_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+    refine.kPath['dirResult'], 'weight', 'wp_int')
+rootOut = refine.kPath['Out_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 dataLst = ['CONUSv4f1', 'CONUSv4f1', 'CONUSv4f2']
 caseStr = ['train', 'spatial test', 'temporal test']
 syLst = [2015, 2017, 2015]
@@ -32,7 +32,7 @@ if 'test' in doOpt:
         testName = dataLst[k]
         syr = syLst[k]
         eyr = eyLst[k]
-        cX, cH = rnnSMAP.funWeight.readWeightDector(
+        cX, cH = refine.funWeight.readWeightDector(
             rootOut=rootOut, out=out, test=testName, syr=syr, eyr=eyr,
             wOpt=wOpt, nPerm=nPerm, redo=True)
 
@@ -42,12 +42,12 @@ if 'plotMap' in doOpt:
         testName = dataLst[k]
         syr = syLst[k]
         eyr = eyLst[k]
-        cX, cH = rnnSMAP.funWeight.readWeightDector(
+        cX, cH = refine.funWeight.readWeightDector(
             rootOut=rootOut, out=out, test=testName, syr=syr, eyr=eyr,
             wOpt=wOpt)
         rX = cX.sum(axis=2)/cX.shape[2]
         rH = cH.sum(axis=2)/cH.shape[2]
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=range(syr, eyr+1))
 
         nt, ngrid = rX.shape
@@ -63,10 +63,10 @@ if 'plotMap' in doOpt:
             saveFolder, 'mapX_'+testName+'_'+str(syr)+'_'+str(eyr))
         mapFileH = os.path.join(
             saveFolder, 'mapH_'+testName+'_'+str(syr)+'_'+str(eyr))
-        fig = rnnSMAP.funPost.plotMap(
+        fig = refine.funPost.plotMap(
             gridX.mean(axis=2), crd=ds.crdGrid, saveFile=mapFileX,
             title='weight cancellation input to hidden', showFig=False)
-        fig = rnnSMAP.funPost.plotMap(
+        fig = refine.funPost.plotMap(
             gridH.mean(axis=2), crd=ds.crdGrid, saveFile=mapFileH,
             title='weight cancellation hidden to hidden', showFig=False)
 
@@ -77,14 +77,14 @@ if 'plotBox' in doOpt:
         testName = dataLst[k]
         syr = syLst[k]
         eyr = eyLst[k]
-        cX, cH = rnnSMAP.funWeight.readWeightDector(
+        cX, cH = refine.funWeight.readWeightDector(
             rootOut=rootOut, out=out, test=testName, syr=syr, eyr=eyr,
             wOpt=wOpt)
         rX = cX.sum(axis=2)/cX.shape[2]
         rH = cH.sum(axis=2)/cH.shape[2]
         dataBox.append([rX.mean(axis=0), rH.mean(axis=0)])
 
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         dataBox, title='box of weight cancellation',
         labelC=['train', 'spatial test', 'temporal test'],
         labelS=['input->hidden', 'hidden->hidden'])
@@ -99,13 +99,13 @@ if 'plotVS' in doOpt:
         testName = dataLst[k]
         syr = syLst[k]
         eyr = eyLst[k]
-        cX, cH = rnnSMAP.funWeight.readWeightDector(
+        cX, cH = refine.funWeight.readWeightDector(
             rootOut=rootOut, out=out, test=testName, syr=syr, eyr=eyr,
             wOpt=wOpt)
         rX = (cX.sum(axis=2)/cX.shape[2]).transpose()
         rH = (cH.sum(axis=2)/cH.shape[2]).transpose()
 
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=range(syr, eyr+1))
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100,
@@ -113,10 +113,10 @@ if 'plotVS' in doOpt:
         statErr = ds.statCalError(predField='LSTM', targetField='SMAP')
         statSigma = ds.statCalSigma(field='LSTM')
 
-        rnnSMAP.funPost.plotVS(rX.mean(axis=1), statSigma.sigmaMC,
-                               ax=axes[k, 0], plot121=False, title=caseStr[k])
-        rnnSMAP.funPost.plotVS(rH.mean(axis=1), statSigma.sigmaMC,
-                               ax=axes[k, 1], plot121=False, title=caseStr[k])
+        refine.funPost.plotVS(rX.mean(axis=1), statSigma.sigmaMC,
+                              ax=axes[k, 0], plot121=False, title=caseStr[k])
+        refine.funPost.plotVS(rH.mean(axis=1), statSigma.sigmaMC,
+                              ax=axes[k, 1], plot121=False, title=caseStr[k])
 
         axes[k, 0].set_ylabel('sigmaMC')
         if k == nCase-1:
@@ -128,6 +128,6 @@ if 'plotVS' in doOpt:
 
 
 # fig, axes = plt.subplots()
-# rnnSMAP.funPost.plotVS(
+# refine.funPost.plotVS(
 #     rX.flatten(), statSigma.sigmaMC_mat.flatten(), ax=axes, plot121=False)
 # fig.show()

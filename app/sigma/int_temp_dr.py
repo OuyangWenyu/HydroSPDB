@@ -1,15 +1,15 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
-from rnnSMAP import runTestLSTM
+import refine
+from refine import runTrainLSTM
+from refine import runTestLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import scipy.stats as stats
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intervals temporal test
@@ -22,18 +22,18 @@ doOpt.append('plotConf')
 # doOpt.append('plotBox')
 # doOpt.append('plotVS')
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 drLst = np.arange(0.1, 1, 0.1)
 drStrLst = ["%02d" % (x*100) for x in drLst]
 testName = 'CONUSv2f2'
 yrLst = [2015]
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'int_temp_dr')
+    refine.kPath['dirResult'], 'Sigma', 'int_temp_dr')
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
+    opt = refine.classLSTM.optLSTM(
         rootDB=rootDB,
         rootOut=rootOut,
         syr=2015, eyr=2015,
@@ -51,8 +51,8 @@ if 'train' in doOpt:
 
 #################################################
 if 'test' in doOpt:
-    rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-    rootDB = rnnSMAP.kPath['DB_L3_NA']
+    rootOut = refine.kPath['OutSigma_L3_NA']
+    rootDB = refine.kPath['DB_L3_NA']
     for k in range(0, len(drLst)):
         out = 'CONUSv2f1_y15_Forcing_dr'+drStrLst[k]
         cudaID = k % 3
@@ -63,8 +63,8 @@ if 'test' in doOpt:
 
 #################################################
 if 'loadData' in doOpt:
-    rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-    rootDB = rnnSMAP.kPath['DB_L3_NA']
+    rootOut = refine.kPath['OutSigma_L3_NA']
+    rootDB = refine.kPath['DB_L3_NA']
     predField = 'LSTM'
     targetField = 'SMAP'
     dsLst = list()
@@ -76,7 +76,7 @@ if 'loadData' in doOpt:
             out = 'CONUSv2f1_y15_Forcing'
         else:
             out = 'CONUSv2f1_y15_Forcing_dr'+drStrLst[k]
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=yrLst)
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -101,11 +101,11 @@ if 'plotConf' in doOpt:
         confXLst.append(statConf.conf_sigmaX)
         confMCLst.append(statConf.conf_sigmaMC)
         confLst.append(statConf.conf_sigma)
-    rnnSMAP.funPost.plotCDF(confXLst, ax=axes[0], legendLst=drStrLst)
+    refine.funPost.plotCDF(confXLst, ax=axes[0], legendLst=drStrLst)
     axes[0].set_title('sigmaX')
-    rnnSMAP.funPost.plotCDF(confMCLst, ax=axes[1], legendLst=drStrLst)
+    refine.funPost.plotCDF(confMCLst, ax=axes[1], legendLst=drStrLst)
     axes[1].set_title('sigmaMC')
-    rnnSMAP.funPost.plotCDF(confLst, ax=axes[2], legendLst=drStrLst)
+    refine.funPost.plotCDF(confLst, ax=axes[2], legendLst=drStrLst)
     axes[2].set_title('sigmaComb')
     fig.show()
     saveFile = os.path.join(saveFolder, 'dr_conf.png')
@@ -124,8 +124,8 @@ if 'plotVS' in doOpt:
             y = getattr(statErr, strE)
             x = getattr(statSigma, strS)
             ax = axes[k-1]
-            rnnSMAP.funPost.plotVS(x, y, ax=ax, doRank=False)
-            # rnnSMAP.funPost.plot121Line(ax)
+            refine.funPost.plotVS(x, y, ax=ax, doRank=False)
+            # refine.funPost.plot121Line(ax)
             if iS == 0:
                 ax.set_ylabel(strE)
             if iE == len(strErrLst)-1:
@@ -136,6 +136,6 @@ if 'plotVS' in doOpt:
         plt.close(fig)
         y = getattr(statSigma, 'sigmaMC')
         x = getattr(statSigma, 'sigmaX')
-        fig = rnnSMAP.funPost.plotVS(x, y)
+        fig = refine.funPost.plotVS(x, y)
         saveFile = os.path.join(saveFolder, 'vsPlotSigma_'+trainName)
         fig.savefig(saveFile)

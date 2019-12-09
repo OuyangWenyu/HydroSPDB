@@ -1,10 +1,10 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import numpy as np
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # noise affact on sigmaX (or sigmaMC)
@@ -16,8 +16,8 @@ doOpt.append('plotBox')
 # doOpt.append('plotVS')
 
 trainName = 'CONUSv4f1'
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 varLst = ['varLst_Forcing',
           #   'varLst_Forcing_noSPFH',
           'varLst_APCP_rn1e1',
@@ -40,11 +40,11 @@ strSigmaLst = ['sigmaX', 'sigmaMC']
 # strSigmaLst = ['sigmaMC']
 strErrLst = ['RMSE', 'ubRMSE']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'noise_red')
+    refine.kPath['dirResult'], 'Sigma', 'noise_red')
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
+    opt = refine.classLSTM.optLSTM(
         rootDB=rootDB, rootOut=rootOut,
         syr=2015, eyr=2015,
         var='varLst_Forcing', varC='varConstLst_Noah',
@@ -71,7 +71,7 @@ if 'test' in doOpt:
         targetName = 'SMAP_AM'
         out = outLst[k]
 
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
         ds.readData(var=targetName, field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -99,7 +99,7 @@ if 'plotBox' in doOpt:
             for strS in attrLst:
                 tempLst.append(getattr(stat, strS))
             data.append(tempLst)
-        fig = rnnSMAP.funPost.plotBox(
+        fig = refine.funPost.plotBox(
             data, labelC=labelLst, labelS=attrLst,
             title='Temporal Test ' + titleTp[iP])
 
@@ -109,7 +109,7 @@ if 'plotBox' in doOpt:
         #         stat = statLst[k]
         #         tempLst.append(getattr(stat, strS))
         #     data.append(tempLst)
-        # fig = rnnSMAP.funPost.plotBox(
+        # fig = refine.funPost.plotBox(
         #     data, labelC=attrLst, labelS=labelLst,
         #     title='Temporal Test ' + titleTp[iP])
 

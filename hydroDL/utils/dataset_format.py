@@ -24,7 +24,7 @@ def trans_nldas_forcing_file_to_camels():
     for i_basin in range(num_basin):
         # name csv
         name_csv = 'basin' + str(i_basin) + '_s.csv'
-        # read csv by pandas
+        # read csv by data
         csv_data = pd.read_csv('_csv/' + name_csv)
         # create an empty DataFrame
         data_df = pd.DataFrame()

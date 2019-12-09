@@ -1,19 +1,19 @@
-import rnnSMAP
-# from rnnSMAP import runTrainLSTM
+import refine
+# from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 hucLst = ['04051118', '03101317', '02101114',
           '01020304', '02030406', '14151617']
 
 #################################################
 # Training
-opt = rnnSMAP.classLSTM.optLSTM(
-    rootDB=rnnSMAP.kPath['DB_L3_NA'],
-    rootOut=rnnSMAP.kPath['OutSigma_L3_NA'],
+opt = refine.classLSTM.optLSTM(
+    rootDB=refine.kPath['DB_L3_NA'],
+    rootOut=refine.kPath['OutSigma_L3_NA'],
     syr=2015, eyr=2015,
     var='varLst_soilM', varC='varConstLst_Noah',
     dr=0.5, modelOpt='relu',
@@ -30,14 +30,14 @@ for k in range(0, len(hucLst)):
 
 #################################################
 # Test
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 dsTuple = ([], [])
 labelS = ['HUC-HUC', 'CONUS-HUC']
 for k in range(0, len(hucLst)):
     trainName = hucLst[k]+'_v2f1'
     out = trainName+'_y15_soilM'
-    rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+    rootOut = refine.kPath['OutSigma_L3_NA']
 
     outLst = [trainName+'_y15_soilM',
               'CONUSv2f1_y15_soilM']
@@ -47,7 +47,7 @@ for k in range(0, len(hucLst)):
     for kk in range(0, len(dsTuple)):
         out = outLst[kk]
         testName = testNameLst[kk]
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -83,15 +83,15 @@ for k in range(0, len(hucLst)):
     dataSigmaMC.append(tempSigmaMC)
     dataErr.append(tempErr)
 
-rnnSMAP.funPost.plotBox(dataSigmaX, labelC=hucLst,
-                        labelS=labelS,
-                        title='SigmaX Temporal Extrapolation')
-rnnSMAP.funPost.plotBox(dataSigmaMC, labelC=hucLst,
-                        labelS=labelS,
-                        title='SigmaMC Temporal Extrapolation')
-rnnSMAP.funPost.plotBox(dataErr, labelC=hucLst,
-                        labelS=labelS,
-                        title='ubRMSE Temporal Extrapolation')
+refine.funPost.plotBox(dataSigmaX, labelC=hucLst,
+                       labelS=labelS,
+                       title='SigmaX Temporal Extrapolation')
+refine.funPost.plotBox(dataSigmaMC, labelC=hucLst,
+                       labelS=labelS,
+                       title='SigmaMC Temporal Extrapolation')
+refine.funPost.plotBox(dataErr, labelC=hucLst,
+                       labelS=labelS,
+                       title='ubRMSE Temporal Extrapolation')
 
 #################################################
 # Plot - regression

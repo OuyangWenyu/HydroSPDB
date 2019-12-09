@@ -1,13 +1,13 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import huc_single_test
 import imp
 import matplotlib
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intend to test huc vs huc
@@ -20,8 +20,8 @@ doOpt.append('plotBox')
 # doOpt.append('plotVS')
 # doOpt.append('plotConf')
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 
 for kkk in range(0, 3):
     if kkk == 0:
@@ -33,7 +33,7 @@ for kkk in range(0, 3):
 
     hucLst = np.asarray(hucStrLst, dtype=int)-1
     saveFolder = os.path.join(
-        rnnSMAP.kPath['dirResult'], 'paperSigma')
+        refine.kPath['dirResult'], 'paperSigma')
     caseStr = ''.join(hucStrLst)
     legendLst = [hucStrLst[0]+' (train)',
                  hucStrLst[1]+' (close)',
@@ -54,11 +54,11 @@ for kkk in range(0, 3):
             testName = 'hucn1_'+str(hucLst[k]+1).zfill(2)+'_v2f1'
             trainName = 'hucn1_'+str(hucLst[0]+1).zfill(2)+'_v2f1'
             out = trainName+'_y15_Forcing_dr60'
-            ds = rnnSMAP.classDB.DatasetPost(
+            ds = refine.classDB.DatasetPost(
                 rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
             ds.readData(var='SMAP_AM', field='SMAP')
             ds.readPred(out=out, drMC=100, field='LSTM',
-                        rootOut=rnnSMAP.kPath['OutSigma_L3_NA'])
+                        rootOut=refine.kPath['OutSigma_L3_NA'])
 
             statErr = ds.statCalError(predField='LSTM', targetField='SMAP')
             statErrLst.append(statErr)
@@ -127,7 +127,7 @@ for kkk in range(0, 3):
             for iHuc in range(0, 3):
                 temp = getattr(statConfLst[iHuc], strConfLst[k])
                 plotLst.append(temp)
-            rnnSMAP.funPost.plotCDF(
+            refine.funPost.plotCDF(
                 plotLst, ax=axes[k], cLst='grb', legendLst=legendLst)
             axes[k].set_title(titleLst[k])
         saveFile = os.path.join(saveFolder, caseStr+'_conf.png')
@@ -153,7 +153,7 @@ for kkk in range(0, 3):
                 statErr = statErrLst[k]
                 temp.append(getattr(statErr, strErr))
             data.append(temp)
-        fig = rnnSMAP.funPost.plotBox(
+        fig = refine.funPost.plotBox(
             data, labelS=None, labelC=labelC,
             colorLst='rgb', figsize=(9, 3), sharey=False)
         fig.subplots_adjust(wspace=0.5)

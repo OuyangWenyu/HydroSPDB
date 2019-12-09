@@ -1,17 +1,17 @@
 import os
-import rnnSMAP
-# from rnnSMAP import runTrainLSTM
+import refine
+# from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
-from rnnSMAP import runTestLSTM
+from refine import runTestLSTM
 import shapefile
 import time
 import imp
 import math
 import torch
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # train on one HUC and test on CONUS. look at map of sigma
@@ -22,14 +22,14 @@ doOpt.append('loadData')
 # doOpt.append('plotMapMC')
 # doOpt.append('plotMapPaper')
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 
-saveFolder = os.path.join(rnnSMAP.kPath['dirResult'], 'regionalization')
+saveFolder = os.path.join(refine.kPath['dirResult'], 'regionalization')
 strSigmaLst = ['sigmaX', 'sigmaMC']
 strErrLst = ['Bias', 'ubRMSE']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 yrLst = [2016, 2017]
 
 hucShapeFile = '/mnt/sdc/Kuai/Map/HUC/HUC2_CONUS'
@@ -75,7 +75,7 @@ if 'loadData' in doOpt:
         statErrLst = list()
         statSigmaLst = list()
         for out in outLst:
-            ds = rnnSMAP.classDB.DatasetPost(
+            ds = refine.classDB.DatasetPost(
                 rootDB=rootDB, subsetName=testName, yrLst=yrLst)
             ds.readData(var='SMAP_AM', field='SMAP')
             ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -98,7 +98,7 @@ for strErr in strErrLst:
         for kk in range(4):
             temp.append(getattr(statErrLstAll[k][kk], strErr))
         dataBox.append(temp)
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         dataBox,
         labelC=hucStrLst,
         figsize=(16, 6),
@@ -121,7 +121,7 @@ for strSigma in strSigmaLst:
         for kk in range(4):
             temp.append(getattr(statSigmaLstAll[k][kk], strSigma))
         dataBox.append(temp)
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         dataBox,
         labelC=hucStrLst,
         figsize=(16, 6),
@@ -152,14 +152,14 @@ for strErr in strErrLst:
 
 hucShapeFile = '/mnt/sdc/Kuai/Map/HUC/HUC2_CONUS'
 shapeLst = shapefile.Reader(hucShapeFile).shapes()
-(gridY, gridX, indY, indX) = rnnSMAP.funDB.crd2grid(crd[:, 0], crd[:, 1])
+(gridY, gridX, indY, indX) = refine.funDB.crd2grid(crd[:, 0], crd[:, 1])
 strLst = strSigmaLst + strErrLst
 for s in strLst:
     grid = np.full([len(gridY), len(gridX)], np.nan)
     grid[indY, indX] = statDiff[s]
     titleStr = s + '(local) - ' + s + '(CONUS)'
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    rnnSMAP.funPost.plotMap(
+    refine.funPost.plotMap(
         grid, crd=(gridY, gridX), title=titleStr, ax=ax, shape=shapeLst)
     plt.tight_layout()
     fig.show()

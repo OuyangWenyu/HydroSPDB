@@ -1,12 +1,12 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 
 doOpt = []
@@ -19,8 +19,8 @@ doOpt.append('plotVS')
 
 #################################################
 # pre-define options
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['Out_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['Out_L3_NA']
 drLst = [0, 0.2, 0.8]
 drStr = ['00', '20', '80']
 
@@ -50,13 +50,13 @@ titleStr = 'Training Set'
 
 wOpt = 'wp'
 nPerm = 100
-saveFolder = os.path.join(rnnSMAP.kPath['dirResult'], 'weight', wOpt+'_int_dr')
+saveFolder = os.path.join(refine.kPath['dirResult'], 'weight', wOpt + '_int_dr')
 if not os.path.exists(saveFolder):
     os.mkdir(saveFolder)
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
+    opt = refine.classLSTM.optLSTM(
         rootDB=rootDB,
         rootOut=rootOut,
         syr=2015, eyr=2015,
@@ -76,7 +76,7 @@ if 'train' in doOpt:
 if 'test' in doOpt:
     for k in range(0, nCase):
         out = outLst[k]
-        cX, cH = rnnSMAP.funWeight.readWeightDector(
+        cX, cH = refine.funWeight.readWeightDector(
             rootOut=rootOut, out=out, test=testName,
             syr=yrLst[0], eyr=yrLst[-1],
             wOpt=wOpt, nPerm=nPerm, redo=True)
@@ -87,7 +87,7 @@ if 'loadData' in doOpt:
     cHLst = []
     for k in range(0, nCase):
         out = outLst[k]
-        cX, cH = rnnSMAP.funWeight.readWeightDector(
+        cX, cH = refine.funWeight.readWeightDector(
             rootOut=rootOut, out=out, test=testName,
             syr=yrLst[0], eyr=yrLst[-1], wOpt=wOpt)
         cXLst.append(cX)
@@ -100,7 +100,7 @@ if 'plotMap' in doOpt:
         cH = cHLst[k]
         rX = cX.sum(axis=2)/cX.shape[2]
         rH = cH.sum(axis=2)/cH.shape[2]
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=yrLst)
 
         nt, ngrid = rX.shape
@@ -116,10 +116,10 @@ if 'plotMap' in doOpt:
             saveFolder, 'mapX_'+saveStrLst[k]+'_'+saveSuffix)
         mapFileH = os.path.join(
             saveFolder, 'mapH_'+saveStrLst[k]+'_'+saveSuffix)
-        fig = rnnSMAP.funPost.plotMap(
+        fig = refine.funPost.plotMap(
             gridX.mean(axis=2), crd=ds.crdGrid, saveFile=mapFileX,
             title='WCR input to hidden of', showFig=False)
-        fig = rnnSMAP.funPost.plotMap(
+        fig = refine.funPost.plotMap(
             gridH.mean(axis=2), crd=ds.crdGrid, saveFile=mapFileH,
             title='WCR hidden to hidden of', showFig=False)
 
@@ -133,7 +133,7 @@ if 'plotBox' in doOpt:
         rH = cH.sum(axis=2)/cH.shape[2]
         dataBox.append([rX.mean(axis=0), rH.mean(axis=0)])
 
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         dataBox, title='WCR box of '+titleStr,
         labelC=caseStrLst,
         labelS=['input->hidden', 'hidden->hidden'])
@@ -150,7 +150,7 @@ if 'plotVS' in doOpt:
         rX = (cX.sum(axis=2)/cX.shape[2]).transpose()
         rH = (cH.sum(axis=2)/cH.shape[2]).transpose()
 
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=yrLst)
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100,
@@ -158,10 +158,10 @@ if 'plotVS' in doOpt:
         statErr = ds.statCalError(predField='LSTM', targetField='SMAP')
         statSigma = ds.statCalSigma(field='LSTM')
 
-        rnnSMAP.funPost.plotVS(rX.mean(axis=1), statSigma.sigmaMC,
-                               ax=axes[0, k], plot121=False, title=caseStrLst[k])
-        rnnSMAP.funPost.plotVS(rH.mean(axis=1), statSigma.sigmaMC,
-                               ax=axes[1, k], plot121=False, title=caseStrLst[k])
+        refine.funPost.plotVS(rX.mean(axis=1), statSigma.sigmaMC,
+                              ax=axes[0, k], plot121=False, title=caseStrLst[k])
+        refine.funPost.plotVS(rH.mean(axis=1), statSigma.sigmaMC,
+                              ax=axes[1, k], plot121=False, title=caseStrLst[k])
 
         axes[1, k].set_xlabel('sigmaMC')
         if k == 0:

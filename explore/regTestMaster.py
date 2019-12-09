@@ -9,7 +9,7 @@ optData = master.updateOpt(
 optModel = master.default.optLstm
 optLoss = master.default.optLoss
 optTrain = master.default.optTrainSMAP
-out = os.path.join(pathSMAP['Out_L3_Global'], 'regTest')
+out = os.path.join(pathSMAP['Out_L3_Global'], 'explore')
 masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
 # master.train(masterDict, overwrite=True)
 

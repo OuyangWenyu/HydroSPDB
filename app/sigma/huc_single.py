@@ -1,13 +1,13 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import huc_single_test
 import imp
 import matplotlib
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intend to test huc vs huc
@@ -21,13 +21,13 @@ doOpt.append('crdMap')
 doOpt.append('plotBox')
 # doOpt.append('plotVS')
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 
 hucStrLst = ['02', '05', '18']  # [ref, close, far]
 hucLst = np.asarray(hucStrLst, dtype=int)-1
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'hucSingle')
+    refine.kPath['dirResult'], 'Sigma', 'hucSingle')
 caseStr = ''.join(hucStrLst)
 strSigmaLst = ['sigmaX', 'sigmaMC', 'sigma']
 strErrLst = ['RMSE', 'ubRMSE']
@@ -38,7 +38,7 @@ matplotlib.rcParams.update({'lines.markersize': 10})
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
+    opt = refine.classLSTM.optLSTM(
         rootDB=rootDB, rootOut=rootOut,
         syr=2015, eyr=2015, varC='varConstLst_Noah',
         dr=0.5, modelOpt='relu',
@@ -77,7 +77,7 @@ if 'loadData' in doOpt:
         testName = 'hucn1_'+str(hucLst[k]+1).zfill(2)+'_v2f1'
         trainName = 'hucn1_'+str(hucLst[0]+1).zfill(2)+'_v2f1'
         out = trainName+'_y15_soilM'
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -102,7 +102,7 @@ if 'crdMap' in doOpt:
         plt.plot(x, y, 'k-', label=None)
     for k in range(0, len(hucLst)):
         dataName = 'hucn1_'+str(hucLst[k]+1).zfill(2)+'_v2f1'
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=dataName, yrLst=[2016, 2017])
         # plt.plot(ds.crd[:, 1], ds.crd[:, 0], cmap[k] + '*',
         #          label=labelLst[k]+' '+hucStrLst[k])
@@ -136,7 +136,7 @@ if 'plotBox' in doOpt:
         # titleStr = 'Temporal Test ' + \
         #     titleTp[iP]+' for model trained on huc'+hucStrLst[0]
         titleStr = 'Temporal Test ' + titleTp[iP]
-        fig = rnnSMAP.funPost.plotBox(
+        fig = refine.funPost.plotBox(
             data, labelC=['A', 'B', 'C'], labelS=labelS, figsize=(8, 6),
             title=titleStr)
         saveFile = os.path.join(saveFolder, caseStr+'_'+saveFileTp[iP])
@@ -161,8 +161,8 @@ if 'plotVS' in doOpt:
                 x = x[ind]
                 y = y[ind]
                 ax = axes[k, iS]
-                rnnSMAP.funPost.plotVS(x, y, ax=ax, doRank=False)
-                rnnSMAP.funPost.plot121Line(ax)
+                refine.funPost.plotVS(x, y, ax=ax, doRank=False)
+                refine.funPost.plot121Line(ax)
                 if iS == 0:
                     ax.set_ylabel('huc'+hucStrLst[k])
                 if k == len(hucLst)-1:

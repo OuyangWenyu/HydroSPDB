@@ -1,10 +1,10 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import rnnSMAP
+import refine
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 
 hucStrLst = ['13', '15', '03']  # [ref, close, far]
@@ -13,9 +13,9 @@ hucLst = np.asarray(hucStrLst, dtype=int)-1
 out = 'CONUSv4f1_y15_Forcing'
 
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'weight', 'wc_huc')
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
+    refine.kPath['dirResult'], 'weight', 'wc_huc')
+rootOut = refine.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
 nCase = len(hucStrLst)
 caseStr = ['train', 'close', 'far']
 
@@ -34,13 +34,13 @@ if 'plotBox' in doOpt:
         out = trainName+'_y15_Forcing'
         syr = 2016
         eyr = 2017
-        cX, cH = rnnSMAP.funWeight.readWeightCancel(
+        cX, cH = refine.funWeight.readWeightCancel(
             rootOut=rootOut, out=out, test=testName, syr=syr, eyr=eyr)
         rX = cX.sum(axis=2)/cX.shape[2]
         rH = cH.sum(axis=2)/cH.shape[2]
         dataBox.append([rX.mean(axis=0), rH.mean(axis=0)])
 
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         dataBox, title='box of weight cancellation',
         labelC=['train-'+hucStrLst[0], 'close-' +
                 hucStrLst[1], 'far-'+hucStrLst[2]],
@@ -59,12 +59,12 @@ if 'plotVS' in doOpt:
         out = trainName+'_y15_Forcing'
         syr = 2016
         eyr = 2017
-        cX, cH = rnnSMAP.funWeight.readWeightCancel(
+        cX, cH = refine.funWeight.readWeightCancel(
             rootOut=rootOut, out=out, test=testName, syr=syr, eyr=eyr)
         rX = (cX.sum(axis=2)/cX.shape[2]).transpose()
         rH = (cH.sum(axis=2)/cH.shape[2]).transpose()
 
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=range(syr, eyr+1))
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100,
@@ -72,10 +72,10 @@ if 'plotVS' in doOpt:
         statErr = ds.statCalError(predField='LSTM', targetField='SMAP')
         statSigma = ds.statCalSigma(field='LSTM')
 
-        rnnSMAP.funPost.plotVS(rX.mean(axis=1), statSigma.sigmaMC,
-                               ax=axes[k, 0], plot121=False, title=caseStr[k])
-        rnnSMAP.funPost.plotVS(rH.mean(axis=1), statSigma.sigmaMC,
-                               ax=axes[k, 1], plot121=False, title=caseStr[k])
+        refine.funPost.plotVS(rX.mean(axis=1), statSigma.sigmaMC,
+                              ax=axes[k, 0], plot121=False, title=caseStr[k])
+        refine.funPost.plotVS(rH.mean(axis=1), statSigma.sigmaMC,
+                              ax=axes[k, 1], plot121=False, title=caseStr[k])
 
         axes[k, 0].set_ylabel('sigmaMC')
         if k == nCase-1:

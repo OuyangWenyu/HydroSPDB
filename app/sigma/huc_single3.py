@@ -1,12 +1,12 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import huc_single_test
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intend to test huc vs huc
@@ -18,10 +18,10 @@ doOpt = []
 doOpt.append('plotBox')
 
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'Sigma', 'huc_single3')
+    refine.kPath['dirResult'], 'Sigma', 'huc_single3')
 strSigmaLst = ['sigmaX', 'sigmaMC', 'sigma']
 strErrLst = ['RMSE', 'ubRMSE']
 
@@ -50,7 +50,7 @@ if 'loadData' in doOpt:
                     else:
                         testName = 'hucn1_'+str(j+1).zfill(2)+'_v2f1'
                     out = trainName+'_y15_soilM'
-                    ds = rnnSMAP.classDB.DatasetPost(
+                    ds = refine.classDB.DatasetPost(
                         rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
                     ds.readData(var='SMAP_AM', field='SMAP')
                     ds.readPred(rootOut=rootOut, out=out,
@@ -88,14 +88,14 @@ if 'plotBox' in doOpt:
         if kk == 1:
             y = temp
             y2 = temp2
-        # rnnSMAP.funPost.plotTwinBox(
+        # refine.funPost.plotTwinBox(
         #     ax, x, y, xErr, yErr, edgecolor=cLst[j], alpha=0)
     # ind = np.where(xErr < yErr)
     h1 = ax.plot(x, y, 'b*')
     h2 = ax.plot(x2, y2, 'ro', mfc='none')
     ax.set_xlim(0.005, 0.025)
     ax.set_ylim(0.005, 0.025)
-    rnnSMAP.funPost.plot121Line(ax)
+    refine.funPost.plot121Line(ax)
     # ax.legend(handles=[h1, h2], labels=['sigmaX', 'sigmaMC'])
     ax.legend(['sigmaX', 'sigmaMC'])
     ax.set_xlabel('similar basins')

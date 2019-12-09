@@ -1,12 +1,12 @@
 import os
-import rnnSMAP
-from rnnSMAP import runTrainLSTM
+import refine
+from refine import runTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 
 doOpt = []
@@ -20,8 +20,8 @@ doOpt.append('plotErr')
 
 #################################################
 # pre-define options
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['Out_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['Out_L3_NA']
 drLst = [0, 0.2, 0.5, 0.8]
 drLegLst = ['dr=0', 'dr=0.2', 'dr=0.5', 'dr=0.8']
 drSaveLst = ['00', '20', '50', '80']
@@ -31,7 +31,7 @@ yrLst = [2015]
 
 wOpt = 'wp'
 nPerm = 100
-saveFolder = os.path.join(rnnSMAP.kPath['dirResult'], 'weight', wOpt+'_huc_dr')
+saveFolder = os.path.join(refine.kPath['dirResult'], 'weight', wOpt + '_huc_dr')
 if not os.path.exists(saveFolder):
     os.mkdir(saveFolder)
 
@@ -41,7 +41,7 @@ hucCaseLst = [['16', '14', '12'],
 
 #################################################
 if 'train' in doOpt:
-    opt = rnnSMAP.classLSTM.optLSTM(
+    opt = refine.classLSTM.optLSTM(
         rootDB=rootDB, rootOut=rootOut, syr=2015, eyr=2015,
         var='varLst_Forcing', varC='varConstLst_Noah',
         modelOpt='relu', model='cudnn', loss='mse',
@@ -55,7 +55,7 @@ if 'train' in doOpt:
             cudaID = k % 3
             runTrainLSTM.runCmdLine(
                 opt=opt, cudaID=cudaID, screenName=opt['out'])
-            # rnnSMAP.funLSTM.trainLSTM(opt)
+            # refine.funLSTM.trainLSTM(opt)
 
 
 for hucSaveLst in hucCaseLst:
@@ -70,7 +70,7 @@ for hucSaveLst in hucCaseLst:
                 testName = 'hucn1_' + str(hucLst[i]+1).zfill(2)+'_v2f1'
                 trainName = 'hucn1_' + str(hucLst[0]+1).zfill(2)+'_v2f1'
                 out = trainName+'_y15_Forcing_dr'+drSaveLst[j]
-                cX, cH = rnnSMAP.funWeight.readWeightDector(
+                cX, cH = refine.funWeight.readWeightDector(
                     rootOut=rootOut, out=out, test=testName,
                     syr=yrLst[0], eyr=yrLst[-1],
                     wOpt=wOpt, nPerm=nPerm, redo=True)
@@ -86,7 +86,7 @@ for hucSaveLst in hucCaseLst:
                 testName = 'hucn1_' + str(hucLst[i]+1).zfill(2)+'_v2f1'
                 trainName = 'hucn1_' + str(hucLst[0]+1).zfill(2)+'_v2f1'
                 out = trainName+'_y15_Forcing_dr'+drSaveLst[j]
-                cX, cH = rnnSMAP.funWeight.readWeightDector(
+                cX, cH = refine.funWeight.readWeightDector(
                     rootOut=rootOut, out=out, test=testName,
                     syr=yrLst[0], eyr=yrLst[-1], wOpt=wOpt)
                 tempX.append(cX)
@@ -111,13 +111,13 @@ for hucSaveLst in hucCaseLst:
             dataBoxX.append(tempX)
             dataBoxH.append(tempH)
 
-        fig = rnnSMAP.funPost.plotBox(
+        fig = refine.funPost.plotBox(
             dataBoxX, title='weight cancellation input->hidden',
             labelC=hucLegLst, labelS=drLegLst)
         saveFile = os.path.join(saveFolder, 'boxPlotX_'+str().join(hucSaveLst))
         fig.savefig(saveFile)
 
-        fig = rnnSMAP.funPost.plotBox(
+        fig = refine.funPost.plotBox(
             dataBoxH, title='weight cancellation hidden->hidden',
             labelC=hucLegLst, labelS=drLegLst)
         saveFile = os.path.join(saveFolder, 'boxPlotH_'+str().join(hucSaveLst))
@@ -134,7 +134,7 @@ for hucSaveLst in hucCaseLst:
                 trainName = 'hucn1_' + str(hucLst[0]+1).zfill(2)+'_v2f1'
                 out = trainName+'_y15_Forcing_dr'+drSaveLst[j]
 
-                ds = rnnSMAP.classDB.DatasetPost(
+                ds = refine.classDB.DatasetPost(
                     rootDB=rootDB, subsetName=testName, yrLst=[2015])
                 ds.readData(var='SMAP_AM', field='SMAP')
                 ds.readPred(rootOut=rootOut, out=out, drMC=0, field='LSTM')
@@ -144,7 +144,7 @@ for hucSaveLst in hucCaseLst:
             plotDataLst.append(temp)
         strE = 'RMSE'
 
-        fig = rnnSMAP.funPost.plotBox(
+        fig = refine.funPost.plotBox(
             plotDataLst, labelC=hucLegLst, labelS=drLegLst, title='Spatial Test '+strE)
         saveFile = os.path.join(saveFolder, 'box'+strE+'_'+str().join(hucSaveLst))
         fig.savefig(saveFile)

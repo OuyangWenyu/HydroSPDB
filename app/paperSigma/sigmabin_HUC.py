@@ -1,13 +1,13 @@
 import os
-import rnnSMAP
+import refine
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
 import imp
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 
 hucLst = ['04051118', '03101317', '02101114',
@@ -18,10 +18,10 @@ hucTitleLst = ['HUC 04+05+11+18', 'HUC 03+10+13+17', 'HUC 02+10+11+14',
 # hucLst = ['04051118', '03101317', '14151617', '02030406']
 # hucTitleLst = ['HUC 04+05+11+18', 'HUC 03+10+13+17',
 #                'HUC 14+15+16+17', 'HUC 02+03+04+06']
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'paperSigma')
+    refine.kPath['dirResult'], 'paperSigma')
 matplotlib.rcParams.update({'font.size': 16})
 matplotlib.rcParams.update({'lines.linewidth': 2})
 matplotlib.rcParams.update({'lines.markersize': 10})
@@ -44,7 +44,7 @@ if 'test' in doOpt:
         out = trainName+'_y15_Forcing_dr60'
         testName = 'ex_'+hucLst[k]+'_v2f1'
 
-        ds = rnnSMAP.classDB.DatasetPost(
+        ds = refine.classDB.DatasetPost(
             rootDB=rootDB, subsetName=testName, yrLst=[2015])
         ds.readData(var='SMAP_AM', field='SMAP')
         ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -76,7 +76,7 @@ if 'plotBin' in doOpt:
         distLst = list()
         for k in range(0, nbin):
             ind = (dataBin > xbin[k]) & (dataBin <= xbin[k+1])
-            conf = rnnSMAP.funPost.flatData(confMat[ind])
+            conf = refine.funPost.flatData(confMat[ind])
             if k == 0:
                 print(iHuc, len(conf))
             yRank = np.arange(len(conf))/float(len(conf)-1)

@@ -1,13 +1,13 @@
 import os
-import rnnSMAP
-from rnnSMAP import arunTrainLSTM
+import refine
+from refine import arunTrainLSTM
 import matplotlib.pyplot as plt
 import numpy as np
 import huc_single_test
 import imp
 import matplotlib
-imp.reload(rnnSMAP)
-rnnSMAP.reload()
+imp.reload(refine)
+refine.reload()
 
 #################################################
 # intend to test huc vs huc
@@ -20,8 +20,8 @@ doOpt.append('plotBox')
 # doOpt.append('plotVS')
 doOpt.append('plotConf')
 
-rootDB = rnnSMAP.kPath['DB_L3_NA']
-rootOut = rnnSMAP.kPath['OutSigma_L3_NA']
+rootDB = refine.kPath['DB_L3_NA']
+rootOut = refine.kPath['OutSigma_L3_NA']
 
 # hucStrLst = ['02', '05', '18']  # [ref, close, far]
 # hucStrLst = ['13', '15', '03']  # [ref, close, far]
@@ -31,7 +31,7 @@ drLst = [0.2, 0.5, 0.8]
 
 hucLst = np.asarray(hucStrLst, dtype=int)-1
 saveFolder = os.path.join(
-    rnnSMAP.kPath['dirResult'], 'paperSigma')
+    refine.kPath['dirResult'], 'paperSigma')
 caseStr = ''.join(hucStrLst)
 hucLegLst = [hucStrLst[0]+' (train)',
              hucStrLst[1]+' (close)',
@@ -69,7 +69,7 @@ if 'loadData' in doOpt:
             else:
                 drStr = '%02d' % (dr*100)
                 out = trainName+'_y15_Forcing_dr'+drStr
-            ds = rnnSMAP.classDB.DatasetPost(
+            ds = refine.classDB.DatasetPost(
                 rootDB=rootDB, subsetName=testName, yrLst=[2016, 2017])
             ds.readData(var='SMAP_AM', field='SMAP')
             ds.readPred(rootOut=rootOut, out=out, drMC=100, field='LSTM')
@@ -98,7 +98,7 @@ if 'plotConf' in doOpt:
             for iDr in range(0, len(drLst)):
                 temp = getattr(statConfLst[iHuc][iDr], strConfLst[k])
                 plotLst.append(temp)
-        rnnSMAP.funPost.plotCDF(
+        refine.funPost.plotCDF(
             plotLst, ax=axes[k], cLst=cLst, legendLst=legStrLst)
         axes[k].set_title(titleLst[k])
     saveFile = os.path.join(saveFolder, caseStr+'_conf_dr.png')
@@ -128,7 +128,7 @@ if 'plotBox' in doOpt:
               r'$\sigma_{comb}$', 'ubRMSE', 'Bias']
     cTuple = (plt.cm.Greens(drLst), plt.cm.Reds(drLst), plt.cm.Blues(drLst))
     cLst = np.concatenate(cTuple, axis=0)
-    fig = rnnSMAP.funPost.plotBox(
+    fig = refine.funPost.plotBox(
         data, labelS=legStrLst, labelC=labelC,
         colorLst=cLst, figsize=(12, 4), sharey=False)
     fig.subplots_adjust(wspace=0.5)
