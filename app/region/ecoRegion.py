@@ -1,7 +1,6 @@
 from hydroDL import pathSMAP, master
 import os
-from hydroDL.data import dbCsv
-from hydroDL.post import plot, stat
+from hydroDL import stat
 
 # train for each cont
 subsetLst = ['ecoRegion{0:0>2}_v2f1'.format(x) for x in range(1, 18)]

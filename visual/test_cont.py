@@ -1,7 +1,7 @@
 from hydroDL import pathSMAP, master
 import os
-from hydroDL.data import dbCsv
-from hydroDL.post import plot, stat
+from hydroDL import stat
+from visual import plot
 
 contLst = [
     'Africa',

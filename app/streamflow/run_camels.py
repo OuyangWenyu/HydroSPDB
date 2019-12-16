@@ -1,7 +1,8 @@
 from hydroDL import pathCamels, master, utils
-from hydroDL.master import default
-from hydroDL.master.master import namePred
-from hydroDL.post import plot, stat
+from app.common import default
+from hydroDL import namePred
+from hydroDL import stat
+from visual import plot
 import matplotlib.pyplot as plt
 
 import numpy as np

@@ -121,8 +121,8 @@ def trans_shp_coord(input_folder, input_shp_file, output_folder,
 if __name__ == "__main__":
     print("main")
     # Define path to folder，以r开头表示相对路径
-    input_folder = r"../../example/data/GAGES-II/boundaries-shapefiles-by-aggeco"
-    output_folder = r"../../example/data/GAGES-II/gagesII_basin_shapefile_wgs84"
+    input_folder = r"../../example/data/gages/boundaries-shapefiles-by-aggeco"
+    output_folder = r"../../example/data/gages/gagesII_basin_shapefile_wgs84"
     shp_file_names = []
     for f_name in os.listdir(input_folder):
         if f_name.endswith('.shp'):

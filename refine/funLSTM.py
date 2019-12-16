@@ -247,7 +247,7 @@ def testLSTM(*, rootOut, out, test, syr, eyr, epoch=None, drMC=0, testBatch=0):
         pd.DataFrame(sOut).to_csv(sigmaFile, header=False, index=False)
 
     #############################################
-    # MC dropout
+    # MC common
     if drMC > 0:
         # model.train()
         mcName = 'test_{}_{}_{}_ep{}_drM{}'.format(

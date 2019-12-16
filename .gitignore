@@ -215,5 +215,5 @@ pyvenv.cfg
 pip-selfcheck.json
 
 .idea/
-/example/data/GAGES-II/
-/example/data/Camels/
+/example/data/gages/
+/example/data/camels/

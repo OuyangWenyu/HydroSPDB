@@ -77,12 +77,12 @@ def namePred(out, tRange, subset, epoch=None, doMC=False, suffix=None):
 
 
 def load_data(opt_data):
-    if eval(opt_data['name']) is hydroDL.data.gages2.DataframeGages2:
-        df = hydroDL.data.gages2.DataframeGages2(
+    if eval(opt_data['name']) is app.streamflow.data.gages2.DataframeGages2:
+        df = app.streamflow.data.gages2.DataframeGages2(
             subset=opt_data['subset'],
             t_range=opt_data['tRange'])
-    elif eval(opt_data['name']) is hydroDL.data.camels.DataframeCamels:
-        df = hydroDL.data.camels.DataframeCamels(
+    elif eval(opt_data['name']) is app.streamflow.data.camels.DataframeCamels:
+        df = app.streamflow.data.camels.DataframeCamels(
             subset=opt_data['subset'], t_range=opt_data['tRange'])
     else:
         raise Exception('unknown database')
@@ -102,10 +102,10 @@ def load_data(opt_data):
             opt_data['tRange'][0]) - dt.timedelta(days=nday)
         ed = utils.time.t2dt(
             opt_data['tRange'][1]) - dt.timedelta(days=nday)
-        if eval(opt_data['name']) is hydroDL.data.gages2.DataframeGages2:
-            df = hydroDL.data.gages2.DataframeGages2(subset=opt_data['subset'], tRange=[sd, ed])
-        elif eval(opt_data['name']) is hydroDL.data.camels.DataframeCamels:
-            df = hydroDL.data.camels.DataframeCamels(subset=opt_data['subset'], tRange=[sd, ed])
+        if eval(opt_data['name']) is app.streamflow.data.gages2.DataframeGages2:
+            df = app.streamflow.data.gages2.DataframeGages2(subset=opt_data['subset'], tRange=[sd, ed])
+        elif eval(opt_data['name']) is app.streamflow.data.camels.DataframeCamels:
+            df = app.streamflow.data.camels.DataframeCamels(subset=opt_data['subset'], tRange=[sd, ed])
         obs = df.get_data_obs(do_norm=opt_data['doNorm'][1], rm_nan=True)
         x = np.concatenate([x, obs], axis=2)
     return df, x, y, c
@@ -228,14 +228,14 @@ def test(out,
 
     if opt_data['doNorm'][1] is True:
         # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
-        if eval(opt_data['name']) is hydroDL.data.gages2.DataframeGages2:
-            stat_dict = hydroDL.data.gages2.statDict
-            pred = hydroDL.post.stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
-            obs = hydroDL.post.stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
-        elif eval(opt_data['name']) is hydroDL.data.camels.DataframeCamels:
-            stat_dict = hydroDL.data.camels.statDict
-            pred = hydroDL.post.stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
-            obs = hydroDL.post.stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+        if eval(opt_data['name']) is app.streamflow.data.gages2.DataframeGages2:
+            stat_dict = app.streamflow.data.gages2.statDict
+            pred = refine.stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+            obs = refine.stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+        elif eval(opt_data['name']) is app.streamflow.data.camels.DataframeCamels:
+            stat_dict = app.streamflow.data.camels.statDict
+            pred = refine.stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+            obs = refine.stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
     if is_sigma_x is True:
         return df, pred, obs, sigma_x
     else:

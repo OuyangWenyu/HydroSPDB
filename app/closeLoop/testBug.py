@@ -1,11 +1,7 @@
 import hydroDL
 import os
-from hydroDL.data import dbCsv
-from hydroDL.model import rnn, crit, train
-from hydroDL.post import plot, stat
-from hydroDL import utils
-import numpy as np
-import matplotlib.pyplot as plt
+from data import dbCsv
+from hydroDL import rnn, crit, train
 
 rootDB = hydroDL.pathSMAP['DB_L3_NA']
 nEpoch = 100
@@ -19,7 +15,7 @@ doLst.append('train')
 # doLst.append('test')
 # doLst.append('post')
 
-df = hydroDL.data.dbCsv.DataframeCsv(
+df = app.streamflow.data.dbCsv.DataframeCsv(
     rootDB=rootDB, subset='CONUSv4f1', tRange=ty1)
 x = df.getData(
     varT=dbCsv.varForcing, varC=dbCsv.varConst, doNorm=True, rmNan=True)

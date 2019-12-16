@@ -50,7 +50,7 @@ if 'plotBox' in doOpt:
 
 
 #################################################
-# plot MC dropout vs weight cancellation rate
+# plot MC common vs weight cancellation rate
 if 'plotVS' in doOpt:
     fig, axes = plt.subplots(nCase, 2, figsize=(8, 10))
     for k in range(0, nCase):

@@ -3,7 +3,7 @@ import torch
 import time
 import os
 import hydroDL
-from hydroDL.model import rnn
+from hydroDL import rnn
 import pandas as pd
 
 

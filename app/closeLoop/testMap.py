@@ -1,12 +1,9 @@
 import hydroDL
 import os
-from hydroDL.data import dbCsv
-from hydroDL.model import rnn, crit, train
-from hydroDL.post import plot, stat
-from hydroDL import utils
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+from data import dbCsv
+from hydroDL import train
+from hydroDL import stat
+from visual import plot
 
 rootDB = hydroDL.pathSMAP['DB_L3_NA']
 nEpoch = 100
@@ -14,7 +11,7 @@ outFolder = os.path.join(hydroDL.pathSMAP['outTest'], 'closeLoop')
 ty1 = [20150401, 20160401]
 ty2 = [20160401, 20170401]
 ty3 = [20170401, 20180401]
-df = hydroDL.data.dbCsv.DataframeCsv(
+df = app.streamflow.data.dbCsv.DataframeCsv(
     rootDB=rootDB, subset='CONUSv4f1', tRange=ty2)
 x = df.getData(
     varT=dbCsv.varForcing, varC=dbCsv.varConst, doNorm=True, rmNan=True)

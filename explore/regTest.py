@@ -1,8 +1,8 @@
 import hydroDL
-from hydroDL.data import dbCsv
-from hydroDL.model import rnn, crit, train
+from data import dbCsv
+from hydroDL import rnn, crit, train
 
-df1 = hydroDL.data.dbCsv.DataframeCsv(
+df1 = app.streamflow.data.dbCsv.DataframeCsv(
     rootDB=hydroDL.pathSMAP['DB_L3_NA'],
     subset='CONUSv4f1',
     tRange=[20150401, 20160401])
@@ -16,7 +16,7 @@ lossFun = crit.SigmaLoss()
 model = hydroDL.model.train.train_model(
     model, x1, y1, lossFun, nEpoch=5, miniBatch=(30, 100))
 
-df2 = hydroDL.data.dbCsv.DataframeCsv(
+df2 = app.streamflow.data.dbCsv.DataframeCsv(
     rootDB=hydroDL.pathSMAP['DB_L3_NA'],
     subset='CONUSv4f1',
     tRange=[20150401, 20160401])

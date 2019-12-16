@@ -1,6 +1,6 @@
 from hydroDL import pathSMAP, master
 import os
-from hydroDL.data import dbCsv
+from data import dbCsv
 
 # train for each cont
 contLst = [
@@ -25,15 +25,15 @@ for k in range(len(subsetLst)):
         else:
             varLst = dbCsv.varSoilmGlobal
 
-        optData = master.default.update(
-            master.default.optDataSMAP,
+        optData = data.default.update(
+            data.default.optDataSMAP,
             rootDB=pathSMAP['DB_L3_Global'],
             subset=subsetLst[k],
             tRange=[20150401, 20160401],
             varT=varLst)
-        optModel = master.default.optLstm
-        optLoss = master.default.optLossSigma
-        optTrain = master.default.optTrainSMAP
+        optModel = data.default.optLstm
+        optLoss = data.default.optLossSigma
+        optTrain = data.default.optTrainSMAP
         out = os.path.join(pathSMAP['Out_L3_Global'], outLst[k] + '_' + case)
 
         masterDict = master.wrapMaster(out, optData, optModel, optLoss,

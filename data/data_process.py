@@ -21,6 +21,7 @@ class Formatting(object):
 
     def process_attr(self):
         print("processing formatting attributes")
+        # 暂时设置成类，看情况，如果比较简单的数据结构，也不需要设计类
         return Attribute(self)
 
     def process_forc(self):

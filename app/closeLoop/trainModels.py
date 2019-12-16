@@ -1,10 +1,6 @@
-from hydroDL import pathSMAP, master, utils
-from hydroDL.master import default
-from hydroDL.post import plot, stat
+from hydroDL import pathSMAP, master
+from app.common import default
 import os
-import matplotlib.pyplot as plt
-import numpy as np
-import torch
 
 # training
 tLst = [[20150402, 20160401], [20160402, 20170401], [20170402, 20180401]]

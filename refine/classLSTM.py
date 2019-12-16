@@ -138,7 +138,7 @@ class torchLSTM(torch.nn.Module):
         ngrid = x.size(1)
         h0, c0 = initLSTMstate(ngrid, self.hiddenSize, self.gpu)
         out, (hn, cn) = self.lstm(x, (h0, c0))
-        # out = self.dropout(out)
+        # out = self.common(out)
         out = self.linear(out)
         return out
 

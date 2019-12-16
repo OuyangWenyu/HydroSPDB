@@ -1,8 +1,9 @@
 import hydroDL
 import os
-from hydroDL.data import dbCsv
-from hydroDL.model import rnn, crit, train
-from hydroDL.post import plot, stat
+from data import dbCsv
+from hydroDL import rnn, crit, train
+from hydroDL import stat
+from visual import plot
 from hydroDL import utils
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,7 +24,7 @@ doLst.append('post')
 if 'train' in doLst:
     # load data
     ty = ty1
-    df = hydroDL.data.dbCsv.DataframeCsv(
+    df = app.streamflow.data.dbCsv.DataframeCsv(
         rootDB=rootDB, subset='CONUSv4f1', tRange=ty)
     x = df.getDataTs(dbCsv.varForcing, doNorm=True, rmNan=True)
     c = df.getDataConst(dbCsv.varConst, doNorm=True, rmNan=True)
@@ -48,7 +49,7 @@ if 'train' in doLst:
     for k in dLst:
         sd = utils.time.t2dt(ty[0]) - dt.timedelta(days=k)
         ed = utils.time.t2dt(ty[1]) - dt.timedelta(days=k)
-        df2 = hydroDL.data.dbCsv.DataframeCsv(
+        df2 = app.streamflow.data.dbCsv.DataframeCsv(
             rootDB=rootDB, subset='CONUSv4f1', tRange=[sd, ed])
         obs = df2.getDataTs('SMAP_AM', doNorm=True, rmNan=False)
 
@@ -69,7 +70,7 @@ if 'train' in doLst:
 if 'test' in doLst:
     # load data
     ty = ty2
-    df = hydroDL.data.dbCsv.DataframeCsv(
+    df = app.streamflow.data.dbCsv.DataframeCsv(
         rootDB=rootDB, subset='CONUSv4f1', tRange=ty)
     x = df.getDataTs(dbCsv.varForcing, doNorm=True, rmNan=True)
     c = df.getDataConst(dbCsv.varConst, doNorm=True, rmNan=True)
@@ -93,7 +94,7 @@ if 'test' in doLst:
     for k in dLst:
         sd = utils.time.t2dt(ty[0]) - dt.timedelta(days=k)
         ed = utils.time.t2dt(ty[1]) - dt.timedelta(days=k)
-        df2 = hydroDL.data.dbCsv.DataframeCsv(
+        df2 = app.streamflow.data.dbCsv.DataframeCsv(
             rootDB=rootDB, subset='CONUSv4f1', tRange=[sd, ed])
         obs = df2.getDataTs('SMAP_AM', doNorm=True, rmNan=False)
 
