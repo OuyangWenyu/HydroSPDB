@@ -1,3 +1,5 @@
+import app.common.default
+import data.data_process
 from hydroDL import pathCamels, master, utils
 from app.common import default
 from hydroDL import namePred
@@ -15,7 +17,7 @@ optData = default.optDataCamels
 optModel = default.optLstmCamels
 optLoss = default.optLossRMSE
 optTrain = default.optTrainCamels
-masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
+masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
 
 # test config
 caseLst = ['All-90-95']
@@ -87,7 +89,7 @@ for iS in range(len(keyLst)):
         data = data[~np.isnan(data)]
         temp.append(data)
     dataBox.append(temp)
-fig = plot.plotBoxFig(dataBox, keyLst, ['LSTM'], sharey=False)
+fig = plot.plot_box_fig(dataBox, keyLst, ['LSTM'], sharey=False)
 fig.show()
 
 # plot time series
@@ -99,7 +101,7 @@ for k in range(5):
     for y in predLst:
         yPlot.append(y[iGrid, :])
     if k == 0:
-        plot.plotTS(
+        plot.plot_ts(
             t,
             yPlot,
             ax=axes[k],
@@ -107,5 +109,5 @@ for k in range(5):
             markerLst='----',
             legLst=['USGS', 'LSTM'])
     else:
-        plot.plotTS(t, yPlot, ax=axes[k], cLst='kbrg', markerLst='----')
+        plot.plot_ts(t, yPlot, ax=axes[k], cLst='kbrg', markerLst='----')
 fig.show()

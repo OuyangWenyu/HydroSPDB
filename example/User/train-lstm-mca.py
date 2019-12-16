@@ -1,3 +1,5 @@
+import app.common.default
+import data.data_process
 from hydroDL import master
 import os
 from app.common import default
@@ -16,7 +18,7 @@ optModel = default.optLstm
 optLoss = default.optLossSigma
 optTrain = default.update(data.default.optTrainSMAP, nEpoch=5, saveEpoch=5)
 out = os.path.join(cDir, 'output', 'CONUSv4f1_sigma')
-masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
+masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
 
 # train
 master.train(masterDict)

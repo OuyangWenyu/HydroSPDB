@@ -144,7 +144,7 @@ if 'post' in doLst:
             for j in range(n2):
                 temp.append(statDictLst[j][i][statStr])
             dataBox.append(temp)
-        fig = plot.plotBoxFig(
+        fig = plot.plot_box_fig(
             dataBox,
             caseLst1,
             caseLst2,

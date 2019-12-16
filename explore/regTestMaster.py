@@ -1,3 +1,5 @@
+import app.common.default
+import data.data_process
 from hydroDL import pathSMAP, master
 import os
 
@@ -10,7 +12,7 @@ optModel = data.default.optLstm
 optLoss = data.default.optLoss
 optTrain = data.default.optTrainSMAP
 out = os.path.join(pathSMAP['Out_L3_Global'], 'explore')
-masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
+masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
 # master.train(masterDict, overwrite=True)
 
 pred = master.test(

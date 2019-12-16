@@ -1,3 +1,5 @@
+import app.common.default
+import data.data_process
 from hydroDL import pathSMAP, master, utils
 from app.common import default
 from hydroDL import stat
@@ -29,8 +31,8 @@ if 'train' in doLst:
         optTrain = default.update(default.optTrainSMAP, nEpoch=300)
         out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                            'CONUSv2f1_d' + str(nd))
-        masterDict = master.wrapMaster(out, optData, optModel, optLoss,
-                                       optTrain)
+        masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss,
+                                                   optTrain)
         master.run_train(masterDict, cudaID=cid % 3, screen='d' + str(nd))
         # master.train(masterDict)
         cid = cid + 1
@@ -44,7 +46,7 @@ if 'train' in doLst:
     optLoss = default.optLossRMSE
     optTrain = default.update(default.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA', 'CONUSv2f1')
-    masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=0, screen='LSTM')
 
 # test
@@ -81,7 +83,7 @@ for iS in range(len(keyLst)):
         data = data[~np.isnan(data)]
         temp.append(data)
     dataBox.append(temp)
-fig = plot.plotBoxFig(dataBox, keyLst, caseLst, sharey=False)
+fig = plot.plot_box_fig(dataBox, keyLst, caseLst, sharey=False)
 fig.show()
 fig.savefig(os.path.join(saveDir, 'box_latency'))
 
@@ -132,7 +134,7 @@ for k in range(len(keyLst)):
         temp.append(data)
         print(key, np.nanmean(data))
     dataBox.append(temp)
-fig = plot.plotBoxFig(dataBox, keyLst, caseLst, sharey=False)
+fig = plot.plot_box_fig(dataBox, keyLst, caseLst, sharey=False)
 fig.show()
 fig.savefig(os.path.join(saveDir, 'box_forecast'))
 

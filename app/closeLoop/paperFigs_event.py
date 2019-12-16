@@ -133,7 +133,7 @@ for k in range(nts):
     else:
         legLst1 = None
         legLst2 = None
-    plot.plotTS(
+    plot.plot_ts(
         t, [ypLst[indY][ind, :], yfLst[indY][ind, :], obs[ind, :]],
         ax=ax,
         tBar=tBar,
@@ -141,7 +141,7 @@ for k in range(nts):
         linewidth=1)
     ax.set_xticklabels([])
     ax = fig.add_subplot(gs[k * 3 + 1, 0])
-    plot.plotTS(
+    plot.plot_ts(
         t, [prcp[ind, :]],
         ax=ax,
         cLst='c',

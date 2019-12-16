@@ -1,3 +1,5 @@
+import app.common.default
+import data.data_process
 from hydroDL import pathSMAP, master
 from app.common import default
 import os
@@ -43,7 +45,7 @@ for k in range(len(tLst)):
     optTrain = default.update(default.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                         'CONUSv2f1_NN' + yrLst[k])
-    masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=k % 3, screen='NN' + yrLst[k])
     # master.train(masterDict)
 
@@ -59,6 +61,6 @@ for k in range(len(tLst)):
     optTrain = default.update(default.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                        'CONUSv2f1_DANN' + yrLst[k])
-    masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=k % 3, screen='DANN' + yrLst[k])
     # master.train(masterDict)

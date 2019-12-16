@@ -198,7 +198,7 @@ for iC in range(len(indLst)):
         tempLst.append(data)
         print(key, k, np.nanmedian(data))
     dataBox.append(tempLst)
-fig = plot.plotBoxFig(dataBox, sharey=True, figsize=[8, 3])
+fig = plot.plot_box_fig(dataBox, sharey=True, figsize=[8, 3])
 plt.tight_layout()
 fig.show()
 
@@ -217,8 +217,8 @@ for k in range(len(indLst)):
         strLst[k], lat[ind], lon[ind])
     tsLst = [obs[ind, :], yp[ind, :], yf[ind, :]]
     tsLst2 = [prcp[ind, :]]
-    plot.plotTS(t, tsLst, ax=axes[1], legLst=tsNameLst, cLst='krb', tBar=tBar)
-    plot.plotTS(
+    plot.plot_ts(t, tsLst, ax=axes[1], legLst=tsNameLst, cLst='krb', tBar=tBar)
+    plot.plot_ts(
         t,
         tsLst2,
         ax=axes[0],

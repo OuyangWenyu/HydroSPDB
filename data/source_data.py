@@ -31,6 +31,8 @@ class SourceData(object):
 
     def read_usgs_streamfile(self):
         """根据时间读取数据，没有的数据下载"""
+        STREAMFLOW_URL = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={' \
+                         '}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{} '
         return
 
     # 接下来把之前读取数据的部分都移植过来

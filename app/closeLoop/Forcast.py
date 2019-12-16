@@ -78,7 +78,7 @@ for k in range(len(keyLst)):
         # print(key, np.nanmedian(data))
     dataBox.append(temp)
 plt.tight_layout()
-fig = plot.plotBoxFig(dataBox, keyLst, caseLst, sharey=False, figsize=[8, 3])
+fig = plot.plot_box_fig(dataBox, keyLst, caseLst, sharey=False, figsize=[8, 3])
 fig.show()
 fig.savefig(os.path.join(saveDir, 'box_forecast'))
 

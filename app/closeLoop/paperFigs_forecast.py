@@ -80,7 +80,7 @@ for k in range(len(keyLst)):
         data = statLstF[i][key]
         temp.append(data)
     dataBox.append(temp)
-fig = plot.plotBoxFig(dataBox, keyLegLst, sharey=False, figsize=[8, 4])
+fig = plot.plot_box_fig(dataBox, keyLegLst, sharey=False, figsize=[8, 4])
 plt.suptitle('Error metrics of projection and forecast model')
 plt.tight_layout()
 plt.subplots_adjust(top=0.85, right=0.95)
@@ -88,7 +88,7 @@ fig.show()
 fig.savefig(os.path.join(saveDir, 'box_forecast.eps'))
 fig.savefig(os.path.join(saveDir, 'box_forecast.png'))
 
-fig = plot.plotBoxFig(
+fig = plot.plot_box_fig(
     dataBox, keyLst, caseLst, sharey=False, figsize=[8, 3], legOnly=True)
 # plt.suptitle('Error matrices of project and forecast model')
 plt.tight_layout()

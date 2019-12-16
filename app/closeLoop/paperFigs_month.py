@@ -107,7 +107,7 @@ for k in range(12):
             data = None
         tempLst.append(data)
     dataBox.append(tempLst)
-fig = plot.plotBoxFig(
+fig = plot.plot_box_fig(
     dataBox,
     label1=labMonth,
     label2=None,
@@ -121,7 +121,7 @@ fig.show()
 fig.savefig(os.path.join(saveDir, 'box_crop.eps'))
 fig.savefig(os.path.join(saveDir, 'box_crop.png'))
 
-fig = plot.plotBoxFig(
+fig = plot.plot_box_fig(
     dataBox[10:11],
     label1=labMonth[10:11],
     label2=labCrop,

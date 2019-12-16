@@ -1,3 +1,5 @@
+import app.common.default
+import data.data_process
 from hydroDL import pathSMAP, master
 import os
 from data import dbCsv
@@ -36,8 +38,8 @@ for k in range(len(subsetLst)):
         optTrain = data.default.optTrainSMAP
         out = os.path.join(pathSMAP['Out_L3_Global'], outLst[k] + '_' + case)
 
-        masterDict = master.wrapMaster(out, optData, optModel, optLoss,
-                                       optTrain)
+        masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss,
+                                                   optTrain)
         master.run_train(masterDict, cudaID=cid % 3, screen=outLst[k])
         cid = cid + 1
         # master.train(masterDict)

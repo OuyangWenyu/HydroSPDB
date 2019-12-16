@@ -106,6 +106,6 @@ if 'post' in doLst:
             for k in range(len(statDictLst)):
                 temp.append(statDictLst[k][statStr])
             dataBox.append(temp)
-        fig = plot.plotBoxFig(
+        fig = plot.plot_box_fig(
             dataBox, caseLst1, caseLst2, sharey=True, title=statStr)
         fig.show()

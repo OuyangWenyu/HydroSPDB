@@ -49,7 +49,7 @@ for k in range(len(keyLst)):
         for s in ss:
             temp.append(s[key])
         dataBox.append(temp)
-    fig = plot.plotBoxFig(dataBox, contLst, caseLst, title=key)
+    fig = plot.plot_box_fig(dataBox, contLst, caseLst, title=key)
     fig.show()
 
 # fig = plot.plotBoxFig(dataBox, keyLst, caseLst, sharey=False)

@@ -22,15 +22,14 @@ print(projectionPath)
 os.environ["PROJ_LIB"] = projectionPath
 
 
-
-def plotBoxFig(data,
-               label1=None,
-               label2=None,
-               colorLst='rbkgcmy',
-               title=None,
-               figsize=(8, 6),
-               sharey=True,
-               legOnly=False):
+def plot_box_fig(data,
+                 label1=None,
+                 label2=None,
+                 colorLst='rbkgcmy',
+                 title=None,
+                 figsize=(8, 6),
+                 sharey=True,
+                 legOnly=False):
     nc = len(data)
     fig, axes = plt.subplots(ncols=nc, sharey=sharey, figsize=figsize)
 
@@ -65,17 +64,17 @@ def plotBoxFig(data,
     return fig
 
 
-def plotTS(t,
-           y,
-           *,
-           ax=None,
-           tBar=None,
-           figsize=(12, 4),
-           cLst='rbkgcmy',
-           markerLst=None,
-           legLst=None,
-           title=None,
-           linewidth=2):
+def plot_ts(t,
+            y,
+            *,
+            ax=None,
+            tBar=None,
+            figsize=(12, 4),
+            cLst='rbkgcmy',
+            markerLst=None,
+            legLst=None,
+            title=None,
+            linewidth=2):
     newFig = False
     if ax is None:
         fig = plt.figure(figsize=figsize)
@@ -327,7 +326,7 @@ def plotTsMap(dataMap,
                 tsLst.append(temp[ind, :])
             axTsLst[ix].clear()
             if ix == 0:
-                plotTS(
+                plot_ts(
                     t,
                     tsLst,
                     ax=axTsLst[ix],
@@ -337,7 +336,7 @@ def plotTsMap(dataMap,
                     linewidth=linewidth,
                     tBar=tBar)
             else:
-                plotTS(
+                plot_ts(
                     t,
                     tsLst,
                     ax=axTsLst[ix],
@@ -351,7 +350,7 @@ def plotTsMap(dataMap,
                 for temp in dataTs2[ix]:
                     tsLst2.append(temp[ind, :])
                 axTs2Lst[ix].clear()
-                plotTS(
+                plot_ts(
                     t,
                     tsLst2,
                     ax=axTs2Lst[ix],

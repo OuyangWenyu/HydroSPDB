@@ -159,7 +159,7 @@ for iC in range(len(indLst)):
         if len(data[~np.isnan(data)]) < 20:
             data = []
         dataBox.append(data)
-    fig = plot.plotBoxFig(
+    fig = plot.plot_box_fig(
         dataBox,
         label1=labMonth,
         label2=[labCrop[iC]],

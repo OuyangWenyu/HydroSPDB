@@ -7,16 +7,19 @@
 
 import os
 import argparse
+
+import app.common.default
+import data.data_process
 from hydroDL import master
-from hydroDL import send_email
+from hydroDL.utils import send_email
 
 
 def run_train(master_dict, *, screen='test', cuda_id):
     if type(master_dict) is str:
         m_file = master_dict
-        master_dict = master.read_master_file(m_file)
+        master_dict = data.data_process.read_master_file(m_file)
     else:
-        m_file = master.write_master_file(master_dict)
+        m_file = data.data_process.write_master_file(master_dict)
 
     code_path = os.path.realpath(__file__)
     if screen is None:
@@ -33,7 +36,7 @@ def run_train(master_dict, *, screen='test', cuda_id):
     parser.add_argument('-M', dest='m_file', type=str, default=m_file)
     args = parser.parse_args()
     if args.func == 'train':
-        m_dict = master.read_master_file(args.m_file)
+        m_dict = data.data_process.read_master_file(args.m_file)
         master.train(m_dict)
         out = m_dict['out']
         send_email.sendEmail(subject='Training Done', text=out)

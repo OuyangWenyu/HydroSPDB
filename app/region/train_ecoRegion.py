@@ -1,3 +1,5 @@
+import app.common.default
+import data.data_process
 from hydroDL import pathSMAP, master
 import os
 from data import dbCsv
@@ -23,7 +25,7 @@ for case in caseLst:
     optLoss = data.default.optLossRMSE
     optTrain = data.default.optTrainSMAP
     out = os.path.join(pathSMAP['Out_L3_NA'], 'CONUSv2f1_' + case)
-    masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=cid % 3, screen=case)
     cid = cid + 1
 
@@ -46,8 +48,8 @@ for k in range(len(subsetLst)):
         optTrain = data.default.optTrainSMAP
         out = os.path.join(pathSMAP['Out_L3_NA'], 'ecoRegion',
                            subsetLst[k] + '_' + case)
-        masterDict = master.wrapMaster(out, optData, optModel, optLoss,
-                                       optTrain)
+        masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss,
+                                                   optTrain)
         # master.runTrain(masterDict, cudaID=cid % 3, screen=subsetLst[k])
         cid = cid + 1
         # master.train(masterDict)
@@ -73,7 +75,7 @@ for kk in range(len(rtEcoLst)):
     optTrain = data.default.optTrainSMAP
     out = os.path.join(pathSMAP['Out_L3_NA'], 'ecoRegion',
                        subsetLst[k] + '_' + case)
-    masterDict = master.wrapMaster(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=cid % 3, screen=subsetLst[k])
     cid = cid + 1
     # master.train(masterDict)

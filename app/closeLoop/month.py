@@ -137,7 +137,7 @@ for k in range(12):
             data = None
         tempLst.append(data)
     dataBox.append(tempLst)
-fig = plot.plotBoxFig(
+fig = plot.plot_box_fig(
     dataBox,
     label1=labMonth,
     label2=labCrop,

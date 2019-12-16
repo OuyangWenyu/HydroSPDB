@@ -94,7 +94,7 @@ for k in range(nts):
     ind = indLst[k]
     ax = axes[k]
     legLst = ['SMAP', 'project', 'forecast'] if k == 2 else None
-    plot.plotTS(
+    plot.plot_ts(
         t, [obs[ind, :], yp[ind, :], yf[ind, :]],
         ax=ax,
         cLst='krb',
@@ -109,7 +109,7 @@ fig.savefig(os.path.join(saveDir, 'ts_pixel.eps'))
 fig.savefig(os.path.join(saveDir, 'ts_pixel'))
 
 fig, ax = plt.subplots(1, 1, figsize=[8, 6])
-plot.plotTS(
+plot.plot_ts(
     t, [obs[ind, :], yp[ind, :], yf[ind, :]],
     ax=ax,
     cLst='krb',

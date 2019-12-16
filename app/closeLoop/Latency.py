@@ -69,7 +69,7 @@ for iS in range(len(keyLst)):
         temp.append(data)
         print(key, k, np.nanmedian(data))
     dataBox.append(temp)
-fig = plot.plotBoxFig(dataBox, keyLst, caseLst, sharey=False, figsize=[8, 3])
+fig = plot.plot_box_fig(dataBox, keyLst, caseLst, sharey=False, figsize=[8, 3])
 plt.tight_layout()
 fig.show()
 fig.savefig(os.path.join(saveDir, 'box_latency'))

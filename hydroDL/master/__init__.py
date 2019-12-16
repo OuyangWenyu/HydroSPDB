@@ -1,2 +1,3 @@
-from .master import read_master_file, write_master_file, wrapMaster, train, test
-from .screen import run_train
+from .master import train, test
+from data.data_process import wrap_master, read_master_file, write_master_file
+from .back_run import run_train
