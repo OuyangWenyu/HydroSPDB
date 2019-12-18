@@ -2,17 +2,22 @@
 
 # 数据类型包括：径流数据（从usgs下载），forcing数据（从daymet或者nldas下载），属性数据（从usgs属性表读取）
 # 定义选择哪些源数据
+import collections
 import fnmatch
 import json
 import time
 import os
+from datetime import datetime, timedelta
+import kaggle
+import requests
 from six.moves import urllib
 import zipfile
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
-
+import shutil
+from app.common.default import init_path, init_data_param
 from data.data_process import read_usge_gage
 from urllib import parse
 from hydroDL import utils
@@ -29,6 +34,36 @@ def download_small_zip(data_url, data_dir):
 
     with zipfile.ZipFile(filepath, 'r') as _zip:
         _zip.extractall(data_dir)
+
+
+def download_small_file(data_url, temp_file):
+    """根据url下载数据到temp_file中"""
+    r = requests.get(data_url)
+    with open(temp_file, 'w') as f:
+        f.write(r.text)
+
+
+def download_kaggle_file(name_of_dataset, path_download):
+    """下载kaggle上的数据"""
+    home_dir = os.environ['HOME']
+    kaggle_dir = os.path.join(home_dir, '.kaggle')
+    print(home_dir)
+    print(kaggle_dir)
+    print(os.path.isdir(kaggle_dir))
+    if not os.path.isdir(kaggle_dir):
+        os.mkdir(os.path.join(home_dir, '.kaggle'))
+    print(os.path.isdir(kaggle_dir))
+
+    src = './kaggle.json'
+    kaggle_dir = os.path.join(home_dir, '.kaggle')
+    dst = os.path.join(kaggle_dir, 'kaggle.json')
+    if not os.path.isfile(dst):
+        print("copying file...")
+        shutil.copy(src, dst)
+
+    kaggle.api.authenticate()
+
+    kaggle.api.dataset_download_files(name_of_dataset, path=path_download)
 
 
 class SourceData(object):
@@ -52,44 +87,76 @@ class SourceData(object):
 
     def prepare_forcing_data(self):
         """如果没有给url或者查到没有数据，就只能报错了，提示需要手动下载"""
-        return
+        if self.url_forcing is None:
+            print("please read downloaded dataset directly")
 
-    def prepare_flow_data(self, streamflow_dir):
-        """检查数据是否齐全，不够的话进行下载"""
+    def prepare_flow_data(self, gage_fld_lst, dir_gage_flow, t_range):
+        """检查数据是否齐全，不够的话进行下载，下载数据的时间范围要设置的大一些，这里暂时例子都是以1980-01-01到2015-12-31"""
+        streamflow_dir = self.dir_flow
+        streamflow_url = self.url_flow
         if not os.path.isdir(streamflow_dir):
             os.mkdir(streamflow_dir)
         dir_list = os.listdir(streamflow_dir)
         # 区域一共有18个，为了便于后续处理，把属于不同region的站点的文件放到不同的文件夹下面
         # 判断usgs_id_lst中没有对应径流文件的要从网上下载
-        usgs_id_lst = gage_dict[GAGE_FLD_LST[0]]
+        usgs_id_lst = gage_dict[gage_fld_lst[0]]
         for ind in range(len(usgs_id_lst)):
             # different hucs different directories
-            huc_02 = gage_dict[GAGE_FLD_LST[3]][ind]
+            huc_02 = gage_dict[gage_fld_lst[3]][ind]
             dir_huc_02 = str(huc_02)
             if dir_huc_02 not in dir_list:
-                dir_huc_02 = os.path.join(DIR_GAGE_FLOW, str(huc_02))
+                dir_huc_02 = os.path.join(dir_gage_flow, str(huc_02))
                 os.mkdir(dir_huc_02)
-                dir_list = os.listdir(DIR_GAGE_FLOW)
-            dir_huc_02 = os.path.join(DIR_GAGE_FLOW, str(huc_02))
+                dir_list = os.listdir(dir_gage_flow)
+            dir_huc_02 = os.path.join(dir_gage_flow, str(huc_02))
             file_list = os.listdir(dir_huc_02)
             file_usgs_id = str(usgs_id_lst[ind]) + ".txt"
             if file_usgs_id not in file_list:
                 # 通过直接读取网页的方式获取数据，然后存入txt文件
-                start_time_str = t2dt(t_range[0])
-                end_time_str = t2dt(t_range[1]) - timedelta(days=1)
-                url = STREAMFLOW_URL.format(usgs_id_lst[ind], start_time_str.year, start_time_str.month,
-                                            start_time_str.day,
-                                            end_time_str.year, end_time_str.month, end_time_str.day)
-                r = requests.get(url)
+                start_time_str = datetime.strptime(t_range[0], '%Y-%m-%d')
+                end_time_str = datetime.strptime(t_range[1]) - timedelta(days=1)
+                url = streamflow_url.format(usgs_id_lst[ind], start_time_str.year, start_time_str.month,
+                                            start_time_str.day, end_time_str.year, end_time_str.month, end_time_str.day)
+
                 # 存放的位置是对应HUC02区域的文件夹下
                 temp_file = os.path.join(dir_huc_02, str(usgs_id_lst[ind]) + '.txt')
-                with open(temp_file, 'w') as f:
-                    f.write(r.text)
+                download_small_file(url, temp_file)
                 print("成功写入 " + temp_file + " 径流数据！")
-        return
-        # 接下来把之前读取数据的部分都移植过来
 
-    def read_gage_info(dir_db, region_shapefiles=None, ids_specific=None, screen_basin_area=None):
+    def read_gages_config(self, config_file):
+        """读取gages数据项的配置，即各项所需数据的文件夹，返回到一个dict中"""
+        dir_db = init_path(config_file)
+        # USGS所有站点 file
+        DIR_GAGE_ATTR = os.path.join(dir_db, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format')
+        gage_id_file = os.path.join(DIR_GAGE_ATTR, 'conterm_basinid.txt')
+        GAGE_SHAPE_DIR = os.path.join(dir_db, 'boundaries-shapefiles-by-aggeco')
+        # 读取id文件，得到属性值
+        gage_ids = pd.read_csv(gage_id_file)
+        GAGE_FLD_LST = gage_ids.columns.tolist()
+        DIR_GAGE_FLOW = self.dir_flow
+
+        ATTR_LST = []
+        for f_name in os.listdir(DIR_GAGE_ATTR):
+            if f_name.startswith('conterm'):
+                ATTR_LST.append(f_name)
+
+        data_params = init_data_param(config_file)
+        ATTR_chosen = data_params.get("varC")
+        # gageDict = read_gage_info(gageField)
+
+        # training time range
+        tRangeTrain = data_params.get("tRange")
+
+        # regions TODO: now just for one region
+        REF_NONREF_REGIONS = ['bas_nonref_CntlPlains']
+        REF_NONREF_REGIONS_SHPFILES_DIR = "gagesII_basin_shapefile_wgs84"
+        GAGESII_POINTS_DIR = "gagesII_9322_point_shapefile"
+        GAGESII_POINTS_FILE = "gagesII_9322_sept30_2011.shp"
+        HUC4_SHP_DIR = "huc4"  # 后面判断该文件夹下是否有数据，没有的话调用download_kaggle_file从kaggle上下载
+        HUC4_SHP_FILE = "HUC4.shp"
+        return collections.OrderedDict()
+
+    def read_gage_info(self, dir_db, region_shapefiles=None, ids_specific=None, screen_basin_area=None):
         """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
         从中选出field_lst中属性名称对应的值，存入dic中。
                     # using shapefile of all basins to check if their basin area satisfy the criteria
@@ -103,6 +170,7 @@ class SourceData(object):
             各个站点的attibutes in basinid.txt and 径流数据
         """
         # 数据从第二行开始，因此跳过第一行。
+
         data = pd.read_csv(dir_db, sep=',', header=None, skiprows=1, dtype={0: str})
         out = dict()
         if len(region_shapefiles):
@@ -280,47 +348,3 @@ class SourceData(object):
 
         print("time of reading usgs forcing data", time.time() - t0)
         return x
-
-    def read_gages_config(config_file):
-        """读取gages数据项的配置"""
-        dir_db = init_path(config_file)
-        # USGS所有站点 file
-        gage_file = os.path.join(dir_db, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format',
-                                 'conterm_basinid.txt')
-        GAGE_SHAPE_DIR = os.path.join(dir_db, 'boundaries-shapefiles-by-aggeco')
-        # 读取id文件，得到属性值
-        GAGE_FLD_LST = ['STAID', 'STANAME', 'DRAIN_SQKM', 'HUC02', 'LAT_GAGE', 'LNG_GAGE', 'STATE', 'BOUND_SOURCE',
-                        'HCDN-2009',
-                        'HBN36', 'OLD_HCDN', 'NSIP_SENTINEL', 'FIPS_SITE', 'COUNTYNAME_SITE', 'NAWQA_SUID']
-        # gageFldLst = camels.gageFldLst
-        DIR_GAGE_FLOW = os.path.join(dir_db, 'gages_streamflow')
-        DIR_GAGE_ATTR = os.path.join(dir_db, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format')
-        # all attributes:
-        # attrLstAll = os.listdir(DIR_GAGE_ATTR)
-        # # 因为是对CONUS分析，所以只用conterm开头的
-        # ATTR_LST = []
-        # for attrLstAllTemp in attrLstAll:
-        #     if 'conterm' in attrLstAllTemp:
-        #         attrLstTemp = attrLstAllTemp[8:].lower()
-        #         ATTR_LST.append(attrLstTemp)
-        ATTR_STR_SEL = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams + attrHydroModOther
-        # + attrLandscapePat + attrLC06Basin + attrLC06Mains100 + attrLC06Mains800 + attrLC06Rip100 + attrLCCrops + \
-        # attrPopInfrastr + attrProtAreas
-
-        # GAGES-II的所有站点 and all time, for first using of this code to download streamflow datasets
-        tRange4DownloadData = [19800101, 20150101]  # 左闭右开
-        tLstAll = utils.time.tRange2Array(tRange4DownloadData)
-        # gageDict = read_gage_info(gageField)
-
-        # training time range
-        tRangeTrain = [19950101, 20000101]
-
-        # regions
-        # TODO: now just for one region
-        REF_NONREF_REGIONS = ['bas_nonref_CntlPlains']
-        REF_NONREF_REGIONS_SHPFILES_DIR = "gagesII_basin_shapefile_wgs84"
-        GAGESII_POINTS_DIR = "gagesII_9322_point_shapefile"
-        GAGESII_POINTS_FILE = "gagesII_9322_sept30_2011.shp"
-        HUC4_SHP_DIR = "huc4"
-        HUC4_SHP_FILE = "HUC4.shp"
-        return
