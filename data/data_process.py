@@ -7,10 +7,8 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 
-from app.common.default import init_path
-from data.data_source import SourceData
 from explore.stat import cal_stat_all
-from hydroDL import utils
+import utils
 
 
 class DataFrameGages(object):

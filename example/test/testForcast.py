@@ -3,7 +3,7 @@ import os
 from data import dbCsv
 from hydroDL import rnn, crit, train
 from hydroDL import post
-from hydroDL import utils
+import utils
 import numpy as np
 
 rootDB = hydroDL.pathSMAP['DB_L3_NA']

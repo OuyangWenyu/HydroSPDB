@@ -1,4 +1,5 @@
-from hydroDL import pathSMAP, master, utils
+from hydroDL import pathSMAP, master
+import utils
 from hydroDL import stat
 import os
 import numpy as np

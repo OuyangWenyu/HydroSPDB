@@ -1,4 +1,5 @@
-from hydroDL import pathSMAP, master, utils
+from hydroDL import pathSMAP, master
+import utils
 from hydroDL import stat
 from visual import plot
 import os

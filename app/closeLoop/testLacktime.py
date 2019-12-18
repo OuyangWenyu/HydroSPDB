@@ -4,7 +4,7 @@ from data import dbCsv
 from hydroDL import rnn, crit, train
 from hydroDL import stat
 from visual import plot
-from hydroDL import utils
+import utils
 import numpy as np
 import matplotlib.pyplot as plt
 import datetime as dt

@@ -1,6 +1,6 @@
-import app.common.default
 import data.data_process
-from hydroDL import pathSMAP, master, utils
+from hydroDL import pathSMAP, master
+import utils
 from app.common import default
 from hydroDL import stat
 from visual import plot

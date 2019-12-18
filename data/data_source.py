@@ -20,7 +20,10 @@ import shutil
 from app.common.default import init_path, init_data_param
 from data.data_process import read_usge_gage
 from urllib import parse
-from hydroDL import utils
+import utils
+from utils.geo import spatial_join
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
 
 def download_small_zip(data_url, data_dir):
@@ -43,8 +46,8 @@ def download_small_file(data_url, temp_file):
         f.write(r.text)
 
 
-def download_kaggle_file(name_of_dataset, path_download):
-    """下载kaggle上的数据"""
+def download_kaggle_file(kaggle_json, name_of_dataset, path_download):
+    """下载kaggle上的数据，首先要下载好kaggle_json文件"""
     home_dir = os.environ['HOME']
     kaggle_dir = os.path.join(home_dir, '.kaggle')
     print(home_dir)
@@ -54,19 +57,52 @@ def download_kaggle_file(name_of_dataset, path_download):
         os.mkdir(os.path.join(home_dir, '.kaggle'))
     print(os.path.isdir(kaggle_dir))
 
-    src = './kaggle.json'
     kaggle_dir = os.path.join(home_dir, '.kaggle')
     dst = os.path.join(kaggle_dir, 'kaggle.json')
     if not os.path.isfile(dst):
         print("copying file...")
-        shutil.copy(src, dst)
+        shutil.copy(kaggle_json, dst)
 
     kaggle.api.authenticate()
 
     kaggle.api.dataset_download_files(name_of_dataset, path=path_download)
 
 
+def download_google_drive(google_drive_dir_name, download_dir):
+    """从google drive下载文件，首先要下载好client_secrets.json文件"""
+    # 根据client_secrets.json授权
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth()
+    drive = GoogleDrive(gauth)
+    # 先从google drive根目录判断是否有dir_name这一文件夹，没有的话就直接报错即可。
+    dir_id = None
+    file_list_root = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
+    for file_temp in file_list_root:
+        print('title: %s, id: %s' % (file_temp['title'], file_temp['id']))
+        if file_temp['title'] == google_drive_dir_name:
+            dir_id = str(file_temp['id'])
+            #  列出该文件夹下的文件
+            print('该文件夹的id是：', dir_id)
+    if dir_id is None:
+        print("No data....")
+    else:
+        # Auto-iterate through all files that matches this query
+        file_list = drive.ListFile({'q': "'" + dir_id + "' in parents and trashed=false"}).GetList()
+        for file in file_list:
+            print('title: %s, id: %s' % (file['title'], file['id']))
+            file_dl = drive.CreateFile({'id': file['id']})
+            print('Downloading file %s from Google Drive' % file_dl['title'])
+            file_dl.GetContentFile(os.path.join(download_dir, file_dl['title']))
+        print('Downloading files finished')
+
+
 class SourceData(object):
+    """获取源数据的思路是：
+    首先准备好属性文件，主要是从网上下载获取；
+    然后读取配置文件及相关属性文件了解到模型计算的对象；
+    接下来获取forcing数据和streamflow数据
+    """
+
     def __init__(self, url_attr, url_forcing, url_flow, dir_attr, dir_forcing, dir_flow, t_range, site_ids):
         self.t_range = t_range
         self.site_ids = site_ids
@@ -85,10 +121,93 @@ class SourceData(object):
         attr_url = self.url_attr
         download_small_zip(attr_url, attr_dir)
 
+    def read_gages_config(self, config_file):
+        """读取gages数据项的配置，即各项所需数据的文件夹，返回到一个dict中"""
+        dir_db = init_path(config_file)
+        # USGS所有站点的文件，gages文件夹下载下来之后文件夹都是固定的
+        dir_gage_attr = os.path.join(dir_db, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format')
+        gage_id_file = os.path.join(dir_gage_attr, 'conterm_basinid.txt')
+        # 所选属性
+        data_params = init_data_param(config_file)
+        attr_chosen = data_params.get("varC")
+        # training time range
+        t_range_train = data_params.get("tRange")
+        # regions
+        ref_nonref_regions = data_params.get("regions")
+        # region文件夹
+        gage_region_dir = os.path.join(dir_db, 'boundaries-shapefiles-by-aggeco')
+        # 站点的point文件文件夹
+        gagesii_points_file = os.path.join(dir_db, "gagesII_9322_point_shapefile", "gagesII_9322_sept30_2011.shp")
+        # 调用download_kaggle_file从kaggle上下载,
+        huc4_shp_file = os.path.join(dir_db, "huc4", "HUC4.shp")
+        # 这步暂时需要手动放置到指定文件夹下
+        kaggle_src = os.path.join(dir_db, 'kaggle.json')
+        name_of_dataset = "owenyy/wbdhu4-a-us-september2019-shpfile"
+        download_kaggle_file(kaggle_src, name_of_dataset, huc4_shp_file)
+        return collections.OrderedDict(attr_root_dir=dir_db, gage_id_file=gage_id_file, gage_region_dir=gage_region_dir,
+                                       gage_point_file=gagesii_points_file, huc4_shp_file=huc4_shp_file,
+                                       attr_chosen=attr_chosen, t_range_train=t_range_train, regions=ref_nonref_regions)
+
+    def read_gage_info(self, gage_id_file, gage_fld_lst, points_file, huc4_shp_file, gage_region_dir,
+                       region_shapefiles=None,
+                       ids_specific=None, screen_basin_area_huc4=False):
+        """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
+        从中选出field_lst中属性名称对应的值，存入dic中。
+                    # using shapefile of all basins to check if their basin area satisfy the criteria
+                    # read shpfile from data directory and calculate the area
+
+        Parameter:
+            dir_db: file of gages' information
+            region_shapefile: choose some regions
+            ids_specific： given sites' ids
+        Return：
+            各个站点的attibutes in basinid.txt
+        """
+        # 数据从第二行开始，因此跳过第一行。
+        data = pd.read_csv(gage_id_file, sep=',', header=None, skiprows=1, dtype={0: str})
+        out = dict()
+        if len(region_shapefiles):
+            # read sites from shapefile of region, get id from it.
+            # Read file using gpd.read_file() TODO:多个regins情况还未完成
+            shapefile = os.path.join(gage_region_dir, region_shapefiles[0] + '.shp')
+            shape_data = gpd.read_file(shapefile)
+            print(shape_data.columns)
+            gages_id = shape_data['GAGE_ID'].values
+            if screen_basin_area_huc4:
+                # using shapefile of all basins to check if their basin area satisfy the criteria
+                # remove stations with catchment areas greater than the HUC4 basins in which they are located
+                # firstly, get the HUC4 basin's area of the site
+                print("screen big area basins")
+                join_points = spatial_join(points_file, huc4_shp_file)
+                # get "AREASQKM" attribute data to filter
+                join_points = join_points[join_points["DRAIN_SQKM"] < join_points["AREASQKM"]]
+                gages_huc4_id = join_points['STAID'].values
+                gages_id, ind1, ind2 = np.intersect1d(gages_id, gages_huc4_id, return_indices=True)
+            df_id_region = data.iloc[:, 0].values
+            c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+            data = data.iloc[ind1, :]
+        if ids_specific:
+            df_id_test = data.iloc[:, 0].values
+            c, ind1, ind2 = np.intersect1d(df_id_test, ids_specific, return_indices=True)
+            data = data.iloc[ind1, :]
+        for s in gage_fld_lst:
+            if s is gage_fld_lst[1]:
+                out[s] = data[gage_fld_lst.index(s)].values.tolist()
+            else:
+                out[s] = data[gage_fld_lst.index(s)].values
+        return out
+
     def prepare_forcing_data(self):
-        """如果没有给url或者查到没有数据，就只能报错了，提示需要手动下载"""
+        """如果没有给url或者查到没有数据，就只能报错了，提示需要手动下载. 可以使用google drive下载数据"""
         if self.url_forcing is None:
-            print("please read downloaded dataset directly")
+            print("Downloading dataset from google drive directly...")
+        download_dir_name = self.dir_forcing
+        if not os.path.isdir(download_dir_name):
+            os.mkdir(download_dir_name)
+        # 然后下载数据到这个文件夹下，这里从google drive下载数据
+        # 文件夹的名字和dir_forcing名字一样
+        dir_name = self.dir_forcing
+        download_google_drive(dir_name, download_dir_name)
 
     def prepare_flow_data(self, gage_fld_lst, dir_gage_flow, t_range):
         """检查数据是否齐全，不够的话进行下载，下载数据的时间范围要设置的大一些，这里暂时例子都是以1980-01-01到2015-12-31"""
@@ -122,89 +241,6 @@ class SourceData(object):
                 temp_file = os.path.join(dir_huc_02, str(usgs_id_lst[ind]) + '.txt')
                 download_small_file(url, temp_file)
                 print("成功写入 " + temp_file + " 径流数据！")
-
-    def read_gages_config(self, config_file):
-        """读取gages数据项的配置，即各项所需数据的文件夹，返回到一个dict中"""
-        dir_db = init_path(config_file)
-        # USGS所有站点 file
-        DIR_GAGE_ATTR = os.path.join(dir_db, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format')
-        gage_id_file = os.path.join(DIR_GAGE_ATTR, 'conterm_basinid.txt')
-        GAGE_SHAPE_DIR = os.path.join(dir_db, 'boundaries-shapefiles-by-aggeco')
-        # 读取id文件，得到属性值
-        gage_ids = pd.read_csv(gage_id_file)
-        GAGE_FLD_LST = gage_ids.columns.tolist()
-        DIR_GAGE_FLOW = self.dir_flow
-
-        ATTR_LST = []
-        for f_name in os.listdir(DIR_GAGE_ATTR):
-            if f_name.startswith('conterm'):
-                ATTR_LST.append(f_name)
-
-        data_params = init_data_param(config_file)
-        ATTR_chosen = data_params.get("varC")
-        # gageDict = read_gage_info(gageField)
-
-        # training time range
-        tRangeTrain = data_params.get("tRange")
-
-        # regions TODO: now just for one region
-        REF_NONREF_REGIONS = ['bas_nonref_CntlPlains']
-        REF_NONREF_REGIONS_SHPFILES_DIR = "gagesII_basin_shapefile_wgs84"
-        GAGESII_POINTS_DIR = "gagesII_9322_point_shapefile"
-        GAGESII_POINTS_FILE = "gagesII_9322_sept30_2011.shp"
-        HUC4_SHP_DIR = "huc4"  # 后面判断该文件夹下是否有数据，没有的话调用download_kaggle_file从kaggle上下载
-        HUC4_SHP_FILE = "HUC4.shp"
-        return collections.OrderedDict()
-
-    def read_gage_info(self, dir_db, region_shapefiles=None, ids_specific=None, screen_basin_area=None):
-        """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
-        从中选出field_lst中属性名称对应的值，存入dic中。
-                    # using shapefile of all basins to check if their basin area satisfy the criteria
-                    # read shpfile from data directory and calculate the area
-
-        Parameter:
-            dir_db: file of gages' information
-            region_shapefile: choose some regions
-            ids_specific： given sites' ids
-        Return：
-            各个站点的attibutes in basinid.txt and 径流数据
-        """
-        # 数据从第二行开始，因此跳过第一行。
-
-        data = pd.read_csv(dir_db, sep=',', header=None, skiprows=1, dtype={0: str})
-        out = dict()
-        if len(region_shapefiles):
-            # read sites from shapefile of region, get id from it.
-            # Read file using gpd.read_file()
-            shapefile = os.path.join(GAGE_SHAPE_DIR, region_shapefiles[0] + '.shp')
-            shape_data = gpd.read_file(shapefile)
-            print(shape_data.columns)
-            gages_id = shape_data['GAGE_ID'].values
-            if screen_basin_area == 'HUC4':
-                # using shapefile of all basins to check if their basin area satisfy the criteria
-                # remove stations with catchment areas greater than the HUC4 basins in which they are located
-                # firstly, get the HUC4 basin's area of the site
-                print("screen big area basins")
-                points_file = os.path.join(dirDB, GAGESII_POINTS_DIR, GAGESII_POINTS_FILE)
-                polys_file = os.path.join(dirDB, HUC4_SHP_DIR, HUC4_SHP_FILE)
-                join_points = spatial_join(points_file, polys_file)
-                # get "AREASQKM" attribute data to filter
-                join_points = join_points[join_points["DRAIN_SQKM"] < join_points["AREASQKM"]]
-                gages_huc4_id = join_points['STAID'].values
-                gages_id, ind1, ind2 = np.intersect1d(gages_id, gages_huc4_id, return_indices=True)
-            df_id_region = data.iloc[:, 0].values
-            c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
-            data = data.iloc[ind1, :]
-        if ids_specific:
-            df_id_test = data.iloc[:, 0].values
-            c, ind1, ind2 = np.intersect1d(df_id_test, ids_specific, return_indices=True)
-            data = data.iloc[ind1, :]
-        for s in GAGE_FLD_LST:
-            if s is GAGE_FLD_LST[1]:
-                out[s] = data[GAGE_FLD_LST.index(s)].values.tolist()
-            else:
-                out[s] = data[GAGE_FLD_LST.index(s)].values
-        return out
 
     def read_usgs(huc_02s, usgs_id_lst, t_range):
         """读取USGS的daily average 径流数据 according to id and time,

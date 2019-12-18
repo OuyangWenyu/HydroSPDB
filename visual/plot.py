@@ -2,15 +2,12 @@ import numpy as np
 import scipy
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
-from matplotlib.collections import PatchCollection
-from matplotlib.patches import Rectangle
 import matplotlib.gridspec as gridspec
-from hydroDL import utils
+import utils
 import string
 
 import os
 import sys
-import mpl_toolkits
 
 projectionPath = "/home/owen/anaconda3/pkgs/proj4-5.2.0-he6710b0_1/share/proj"
 print(sys.platform)

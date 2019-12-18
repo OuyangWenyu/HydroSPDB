@@ -29,11 +29,12 @@ def init_data_param(config_file):
     attr_str_sel = cfg.get(section, options[1])
     streamflow_data = cfg.get(section, options[2])
     t_range_train = cfg.get(section, options[3])
-    do_norm = cfg.get(section, options[4])
-    rm_nan = cfg.get(section, options[5])
-    da_obs = cfg.get(section, options[6])
+    regions = cfg.get(section, options[4])
+    do_norm = cfg.get(section, options[5])
+    rm_nan = cfg.get(section, options[6])
+    da_obs = cfg.get(section, options[7])
     return collections.OrderedDict(varT=forcing_lst, varC=attr_str_sel, streamflowData=streamflow_data,
-                                   tRange=t_range_train, doNorm=do_norm, rmNan=rm_nan, daObs=da_obs)
+                                   tRange=t_range_train, regions=regions, doNorm=do_norm, rmNan=rm_nan, daObs=da_obs)
 
 
 def init_model_param(config_file, optDataParam):

@@ -8,10 +8,9 @@
 import os
 import argparse
 
-import app.common.default
 import data.data_process
 from hydroDL import master
-from hydroDL.utils import send_email
+from utils import send_email
 
 
 def run_train(master_dict, *, screen='test', cuda_id):
