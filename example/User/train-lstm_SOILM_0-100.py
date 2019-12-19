@@ -1,13 +1,13 @@
 from hydroDL import wrapMaster, train
-from app.common import default
+from data import read_config
 import os
 
 cDir = os.path.dirname(os.path.abspath(__file__))
 cDir = r'/mnt/sdc/SUR_VIC/'
 
 # define training options
-optData = default.update(
-    default.optDataSMAP,
+optData = read_config.update(
+    read_config.optDataSMAP,
     rootDB='/mnt/sdc/SUR_VIC/input_VIC/',
     varT=[
     'APCP_FORA', 'DLWRF_FORA', 'DSWRF_FORA', 'TMP_2_FORA', 'SPFH_2_FORA',
@@ -21,9 +21,9 @@ optData = default.update(
     target='SOILM_0-100_VIC',
     subset='CONUS_VICv16f1',
     tRange=[20150401, 20160401])
-optModel = default.optLstm
-optLoss = default.optLossRMSE
-optTrain = default.update(default.optTrainSMAP, nEpoch=300)
+optModel = read_config.optLstm
+optLoss = read_config.optLossRMSE
+optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
 out = os.path.join(cDir, 'output_VIC/CONUS_v16f1_SOILM_0-100')
 masterDict = wrapMaster(out, optData, optModel, optLoss, optTrain)
 

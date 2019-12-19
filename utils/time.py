@@ -27,6 +27,14 @@ def tRange2Array(tRange, *, step=np.timedelta64(1, 'D')):
     return tArray
 
 
+def t_range_days(tRange, *, step=np.timedelta64(1, 'D')):
+    """将给定的一个区间，转换为每日一个值的数组"""
+    sd = dt.datetime.strptime(tRange[0], '%Y-%m-%d')
+    ed = dt.datetime.strptime(tRange[1], '%Y-%m-%d')
+    t_array = np.arange(sd, ed, step)
+    return t_array
+
+
 def intersect(tLst1, tLst2):
     C, ind1, ind2 = np.intersect1d(tLst1, tLst2, return_indices=True)
     return ind1, ind2

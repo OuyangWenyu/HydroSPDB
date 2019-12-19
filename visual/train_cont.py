@@ -1,4 +1,4 @@
-import app.common.default
+import data.read_config
 import data.data_process
 from hydroDL import pathSMAP, master
 import os
@@ -27,15 +27,15 @@ for k in range(len(subsetLst)):
         else:
             varLst = dbCsv.varSoilmGlobal
 
-        optData = data.default.update(
-            data.default.optDataSMAP,
+        optData = data.read_config.update(
+            data.read_config.optDataSMAP,
             rootDB=pathSMAP['DB_L3_Global'],
             subset=subsetLst[k],
             tRange=[20150401, 20160401],
             varT=varLst)
-        optModel = data.default.optLstm
-        optLoss = data.default.optLossSigma
-        optTrain = data.default.optTrainSMAP
+        optModel = data.read_config.optLstm
+        optLoss = data.read_config.optLossSigma
+        optTrain = data.read_config.optTrainSMAP
         out = os.path.join(pathSMAP['Out_L3_Global'], outLst[k] + '_' + case)
 
         masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss,

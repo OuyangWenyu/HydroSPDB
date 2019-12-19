@@ -1,22 +1,22 @@
-import app.common.default
+import data.read_config
 import data.data_process
 from hydroDL import master
 import os
-from app.common import default
+from data import read_config
 
 cDir = os.path.dirname(os.path.abspath(__file__))
 cDir = r'/home/kxf227/work/GitHUB/pyRnnSMAP/example/'
 
 # define training options
-optData = default.update(
-    default.optDataSMAP,
+optData = read_config.update(
+    read_config.optDataSMAP,
     rootDB=os.path.join(cDir, 'data'),
     subset='CONUSv4f1',
     tRange=[20150401, 20160401],
 )
-optModel = default.optLstm
-optLoss = default.optLossSigma
-optTrain = default.update(data.default.optTrainSMAP, nEpoch=5, saveEpoch=5)
+optModel = read_config.optLstm
+optLoss = read_config.optLossSigma
+optTrain = read_config.update(data.read_config.optTrainSMAP, nEpoch=5, saveEpoch=5)
 out = os.path.join(cDir, 'output', 'CONUSv4f1_sigma')
 masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
 

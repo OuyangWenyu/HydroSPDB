@@ -1,7 +1,7 @@
 import data.data_process
 from hydroDL import pathSMAP, master
 import utils
-from app.common import default
+from data import read_config
 from hydroDL import stat
 from visual import plot
 import os
@@ -20,15 +20,15 @@ saveDir = os.path.join(pathSMAP['dirResult'], 'DA')
 if 'train' in doLst:
     cid = 0
     for nd in dLst:
-        optData = default.update(
-            default.optDataSMAP,
+        optData = read_config.update(
+            read_config.optDataSMAP,
             rootDB=pathSMAP['DB_L3_NA'],
             subset='CONUSv2f1',
             tRange=[20150501, 20160501],
             daObs=nd)
-        optModel = default.optLstmClose
-        optLoss = default.optLossRMSE
-        optTrain = default.update(default.optTrainSMAP, nEpoch=300)
+        optModel = read_config.optLstmClose
+        optLoss = read_config.optLossRMSE
+        optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
         out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                            'CONUSv2f1_d' + str(nd))
         masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss,
@@ -37,14 +37,14 @@ if 'train' in doLst:
         # master.train(masterDict)
         cid = cid + 1
     # vanila LSTM
-    optData = default.update(
-        default.optDataSMAP,
+    optData = read_config.update(
+        read_config.optDataSMAP,
         rootDB=pathSMAP['DB_L3_NA'],
         subset='CONUSv2f1',
         tRange=[20150501, 20160501])
-    optModel = default.optLstm
-    optLoss = default.optLossRMSE
-    optTrain = default.update(default.optTrainSMAP, nEpoch=300)
+    optModel = read_config.optLstm
+    optLoss = read_config.optLossRMSE
+    optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA', 'CONUSv2f1')
     masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=0, screen='LSTM')

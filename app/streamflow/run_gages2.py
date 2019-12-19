@@ -1,7 +1,8 @@
 """target：利用GAGES-II数据训练LSTM，并进行流域径流模拟。
    procedure： 标准机器学习pipeline，数据前处理——统计分析——模型训练及测试——可视化结果——参数调优"""
-from app.common.default import init_path, init_data_param, init_model_param
-from data.data_process import wrap_master, namePred, prepare_data_source, read_gages_config, basic_statistic
+from data.data_source import SourceData
+from data.read_config import init_path, init_data_param, init_model_param
+from data.data_process import wrap_master, namePred, basic_statistic
 
 # 读取配置文件# 首先，配置GAGES-II原始数据文件的路径。在hydroDL的init文件里直接配置输入输出路径
 import os
@@ -11,7 +12,7 @@ from visual.plot import plot_box_fig, plot_ts
 
 print('loading package hydroDL')
 
-config_file = "config.ini"
+config_file = "../../data/config.ini"
 pathDataSource = init_path(config_file)
 
 # 读取配置文件
@@ -25,8 +26,8 @@ out = os.path.join(pathDataSource['Out'], case)
 masterDict = wrap_master(out, optData, optModel, optLoss, optTrain)
 
 # 准备数据并读取
-prepare_data_source()
-attrConfig, forcingConfig, flowConfig = read_gages_config()
+source_data = SourceData(config_file, optData.get("tRange"))
+
 # 初步统计计算
 basic_statistic()
 

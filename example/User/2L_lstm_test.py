@@ -1,5 +1,4 @@
-from data import dbCsv
-from app.common import default
+from data import dbCsv, read_config
 from hydroDL import wrapMaster
 from hydroDL import rnn, crit, train
 
@@ -9,8 +8,8 @@ cDir = os.path.dirname(os.path.abspath(__file__))
 cDir = r'/mnt/sdc/SUR_VIC/'
 
 # define training options
-optData = default.update(
-    default.optDataSMAP,
+optData = read_config.update(
+    read_config.optDataSMAP,
     rootDB='/mnt/sdc/SUR_VIC/input_VIC/',
     varT=[
     'APCP_FORA', 'DLWRF_FORA', 'DSWRF_FORA', 'TMP_2_FORA', 'SPFH_2_FORA',
@@ -27,7 +26,7 @@ optData = default.update(
     tRange=[20100401, 20160401])
 '''
 optData_2L = default.update(
-    default.optDataSMAP_2L, # need to modify 'master/default.py & master.py', 'data/dbCsv.py'
+    default.optDataSMAP_2L, # need to modify 'master/read_config.py & master.py', 'data/dbCsv.py'
     rootDB_2L='/mnt/sdc/SUR_VIC/input_VIC/',
     varConst=[],
     varR=[
@@ -37,11 +36,11 @@ optData_2L = default.update(
     subset_2L='CONUS_VICv16f1',
     tRange_2L=[2010041, 20160401])
 '''
-optModel = default.optLstm
+optModel = read_config.optLstm
 # optModel_2L = default.optLstm_2L 
-optLoss = default.optLossSigma
+optLoss = read_config.optLossSigma
 # optLoss_2L = default.optLossSigma
-optTrain = default.update(default.optTrainSMAP, miniBatch=[100, 60], nEpoch=1)
+optTrain = read_config.update(read_config.optTrainSMAP, miniBatch=[100, 60], nEpoch=1)
 # optTrain_2L = default.update(default.optTrainSMAP_2L, miniBatch_2L=[100,1], nEpoch_2L=500)
 out = os.path.join(cDir, 'multiOutput_CONUSv16f1_VIC/2L_CONUS_v16f1_SOILM_lev1_test')
 masterDict = wrapMaster(out, optData, optModel, optLoss, optTrain)

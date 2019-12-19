@@ -1,6 +1,6 @@
 from hydroDL import pathSMAP
 from hydroDL import wrapMaster, train, test
-from app.common import default
+from data import read_config
 from hydroDL import stat
 from visual import plot
 
@@ -10,15 +10,15 @@ cDir = os.path.dirname(os.path.abspath(__file__))
 cDir = r'/home/kxf227/work/GitHUB/pyRnnSMAP/example/'  # for coding. delete.
 
 # define training options
-optData = default.update(
-    default.optDataSMAP,
+optData = read_config.update(
+    read_config.optDataSMAP,
     rootDB=pathSMAP['DB_L3_NA'],
     target=['SMAP_AM', 'SOILM_0-10_NOAH'],
     subset='CONUSv4f1',
     tRange=[20150401, 20160401])
-optModel = default.optLstm
-optLoss = default.optLossSigma
-optTrain = default.update(default.optTrainSMAP, nEpoch=100)
+optModel = read_config.optLstm
+optLoss = read_config.optLossSigma
+optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=100)
 out = os.path.join(cDir, 'output', 'CONUSv4f1_multi')
 masterDict = wrapMaster(out, optData, optModel, optLoss, optTrain)
 

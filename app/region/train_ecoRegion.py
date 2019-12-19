@@ -1,4 +1,4 @@
-import app.common.default
+import data.read_config
 import data.data_process
 from hydroDL import pathSMAP, master
 import os
@@ -15,15 +15,15 @@ for case in caseLst:
         varLst = dbCsv.varForcing
     else:
         varLst = dbCsv.varSoilM
-    optData = data.default.update(
-        data.default.optDataSMAP,
+    optData = data.read_config.update(
+        data.read_config.optDataSMAP,
         rootDB=pathSMAP['DB_L3_NA'],
         subset='CONUSv2f1',
         tRange=[20150401, 20160401],
         varT=varLst)
-    optModel = data.default.optLstm
-    optLoss = data.default.optLossRMSE
-    optTrain = data.default.optTrainSMAP
+    optModel = data.read_config.optLstm
+    optLoss = data.read_config.optLossRMSE
+    optTrain = data.read_config.optTrainSMAP
     out = os.path.join(pathSMAP['Out_L3_NA'], 'CONUSv2f1_' + case)
     masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=cid % 3, screen=case)
@@ -37,15 +37,15 @@ for k in range(len(subsetLst)):
             varLst = dbCsv.varForcing
         else:
             varLst = dbCsv.varSoilM
-        optData = data.default.update(
-            data.default.optDataSMAP,
+        optData = data.read_config.update(
+            data.read_config.optDataSMAP,
             rootDB=pathSMAP['DB_L3_NA'],
             subset=subsetLst[k],
             tRange=[20150401, 20160401],
             varT=varLst)
-        optModel = data.default.optLstm
-        optLoss = data.default.optLossRMSE
-        optTrain = data.default.optTrainSMAP
+        optModel = data.read_config.optLstm
+        optLoss = data.read_config.optLossRMSE
+        optTrain = data.read_config.optTrainSMAP
         out = os.path.join(pathSMAP['Out_L3_NA'], 'ecoRegion',
                            subsetLst[k] + '_' + case)
         masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss,
@@ -64,15 +64,15 @@ cid = 0
 for kk in range(len(rtEcoLst)):
     k = rtEcoLst[kk] - 1
     case = rtCaseLst[kk]
-    optData = data.default.update(
-        data.default.optDataSMAP,
+    optData = data.read_config.update(
+        data.read_config.optDataSMAP,
         rootDB=pathSMAP['DB_L3_NA'],
         subset=subsetLst[k],
         tRange=[20150401, 20160401],
         varT=varLst)
-    optModel = data.default.optLstm
-    optLoss = data.default.optLossRMSE
-    optTrain = data.default.optTrainSMAP
+    optModel = data.read_config.optLstm
+    optLoss = data.read_config.optLossRMSE
+    optTrain = data.read_config.optTrainSMAP
     out = os.path.join(pathSMAP['Out_L3_NA'], 'ecoRegion',
                        subsetLst[k] + '_' + case)
     masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)

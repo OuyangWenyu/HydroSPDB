@@ -2,98 +2,20 @@
 
 # 数据类型包括：径流数据（从usgs下载），forcing数据（从daymet或者nldas下载），属性数据（从usgs属性表读取）
 # 定义选择哪些源数据
-import collections
 import fnmatch
 import json
 import time
 import os
 from datetime import datetime, timedelta
-import kaggle
-import requests
-from six.moves import urllib
-import zipfile
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
-import shutil
-from app.common.default import init_path, init_data_param
-from data.data_process import read_usge_gage
-from urllib import parse
+
 import utils
+from data.download_data import download_small_zip, download_small_file, download_google_drive
+from data.read_config import read_gages_config
 from utils.geo import spatial_join
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
-
-
-def download_small_zip(data_url, data_dir):
-    """下载文件较小的zip文件并解压"""
-    data_url_str = data_url.split('/')
-    filename = parse.unquote(data_url_str[-1])
-    filepath = os.path.join(data_dir, filename)
-    if not os.path.isdir(data_dir):
-        os.mkdir(data_dir)
-    filepath, _ = urllib.request.urlretrieve(data_url, filepath)
-
-    with zipfile.ZipFile(filepath, 'r') as _zip:
-        _zip.extractall(data_dir)
-
-
-def download_small_file(data_url, temp_file):
-    """根据url下载数据到temp_file中"""
-    r = requests.get(data_url)
-    with open(temp_file, 'w') as f:
-        f.write(r.text)
-
-
-def download_kaggle_file(kaggle_json, name_of_dataset, path_download):
-    """下载kaggle上的数据，首先要下载好kaggle_json文件"""
-    home_dir = os.environ['HOME']
-    kaggle_dir = os.path.join(home_dir, '.kaggle')
-    print(home_dir)
-    print(kaggle_dir)
-    print(os.path.isdir(kaggle_dir))
-    if not os.path.isdir(kaggle_dir):
-        os.mkdir(os.path.join(home_dir, '.kaggle'))
-    print(os.path.isdir(kaggle_dir))
-
-    kaggle_dir = os.path.join(home_dir, '.kaggle')
-    dst = os.path.join(kaggle_dir, 'kaggle.json')
-    if not os.path.isfile(dst):
-        print("copying file...")
-        shutil.copy(kaggle_json, dst)
-
-    kaggle.api.authenticate()
-
-    kaggle.api.dataset_download_files(name_of_dataset, path=path_download)
-
-
-def download_google_drive(google_drive_dir_name, download_dir):
-    """从google drive下载文件，首先要下载好client_secrets.json文件"""
-    # 根据client_secrets.json授权
-    gauth = GoogleAuth()
-    gauth.LocalWebserverAuth()
-    drive = GoogleDrive(gauth)
-    # 先从google drive根目录判断是否有dir_name这一文件夹，没有的话就直接报错即可。
-    dir_id = None
-    file_list_root = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
-    for file_temp in file_list_root:
-        print('title: %s, id: %s' % (file_temp['title'], file_temp['id']))
-        if file_temp['title'] == google_drive_dir_name:
-            dir_id = str(file_temp['id'])
-            #  列出该文件夹下的文件
-            print('该文件夹的id是：', dir_id)
-    if dir_id is None:
-        print("No data....")
-    else:
-        # Auto-iterate through all files that matches this query
-        file_list = drive.ListFile({'q': "'" + dir_id + "' in parents and trashed=false"}).GetList()
-        for file in file_list:
-            print('title: %s, id: %s' % (file['title'], file['id']))
-            file_dl = drive.CreateFile({'id': file['id']})
-            print('Downloading file %s from Google Drive' % file_dl['title'])
-            file_dl.GetContentFile(os.path.join(download_dir, file_dl['title']))
-        print('Downloading files finished')
 
 
 class SourceData(object):
@@ -103,68 +25,46 @@ class SourceData(object):
     接下来获取forcing数据和streamflow数据
     """
 
-    def __init__(self, url_attr, url_forcing, url_flow, dir_attr, dir_forcing, dir_flow, t_range, site_ids):
+    def __init__(self, config_file, t_range):
+        """读取配置，准备数据，关于数据读取部分，可以放在外部需要的时候再执行"""
+        gages_config = read_gages_config(config_file)
+        self.all_configs = gages_config
+        # t_range: 训练数据还是测试数据，需要外部指定
         self.t_range = t_range
-        self.site_ids = site_ids
-        self.url_attr = url_attr
-        self.url_forcing = url_forcing
-        self.url_flow = url_flow
-        self.dir_attr = dir_attr
-        self.dir_forcing = dir_forcing
-        self.dir_flow = dir_flow
+        self.prepare_attr_data()
+        gage_dict, gage_fld_lst = self.read_gage_info()
+        self.prepare_forcing_data()
+        self.prepare_flow_data(gage_dict, gage_fld_lst)
 
     def prepare_attr_data(self):
         """根据时间读取数据，没有的数据下载"""
-        attr_dir = self.dir_attr
+        configs = self.all_configs
+        attr_dir = configs.get('attr_dir')
         if not os.path.isdir(attr_dir):
             os.mkdir(attr_dir)
-        attr_url = self.url_attr
+        attr_url = configs.get('attr_url')
         download_small_zip(attr_url, attr_dir)
 
-    def read_gages_config(self, config_file):
-        """读取gages数据项的配置，即各项所需数据的文件夹，返回到一个dict中"""
-        dir_db = init_path(config_file)
-        # USGS所有站点的文件，gages文件夹下载下来之后文件夹都是固定的
-        dir_gage_attr = os.path.join(dir_db, 'basinchar_and_report_sept_2011', 'spreadsheets-in-csv-format')
-        gage_id_file = os.path.join(dir_gage_attr, 'conterm_basinid.txt')
-        # 所选属性
-        data_params = init_data_param(config_file)
-        attr_chosen = data_params.get("varC")
-        # training time range
-        t_range_train = data_params.get("tRange")
-        # regions
-        ref_nonref_regions = data_params.get("regions")
-        # region文件夹
-        gage_region_dir = os.path.join(dir_db, 'boundaries-shapefiles-by-aggeco')
-        # 站点的point文件文件夹
-        gagesii_points_file = os.path.join(dir_db, "gagesII_9322_point_shapefile", "gagesII_9322_sept30_2011.shp")
-        # 调用download_kaggle_file从kaggle上下载,
-        huc4_shp_file = os.path.join(dir_db, "huc4", "HUC4.shp")
-        # 这步暂时需要手动放置到指定文件夹下
-        kaggle_src = os.path.join(dir_db, 'kaggle.json')
-        name_of_dataset = "owenyy/wbdhu4-a-us-september2019-shpfile"
-        download_kaggle_file(kaggle_src, name_of_dataset, huc4_shp_file)
-        return collections.OrderedDict(attr_root_dir=dir_db, gage_id_file=gage_id_file, gage_region_dir=gage_region_dir,
-                                       gage_point_file=gagesii_points_file, huc4_shp_file=huc4_shp_file,
-                                       attr_chosen=attr_chosen, t_range_train=t_range_train, regions=ref_nonref_regions)
-
-    def read_gage_info(self, gage_id_file, gage_fld_lst, points_file, huc4_shp_file, gage_region_dir,
-                       region_shapefiles=None,
-                       ids_specific=None, screen_basin_area_huc4=False):
+    def read_gage_info(self, ids_specific=None, screen_basin_area_huc4=False):
         """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
         从中选出field_lst中属性名称对应的值，存入dic中。
                     # using shapefile of all basins to check if their basin area satisfy the criteria
                     # read shpfile from data directory and calculate the area
 
         Parameter:
-            dir_db: file of gages' information
-            region_shapefile: choose some regions
             ids_specific： given sites' ids
+            screen_basin_area_huc4: 是否取出流域面积大于等于所处HUC流域的面积的流域
         Return：
             各个站点的attibutes in basinid.txt
         """
         # 数据从第二行开始，因此跳过第一行。
+        gage_id_file = self.all_configs.get("gage_id_file")
+        points_file = self.all_configs.get("gage_point_file")
+        huc4_shp_file = self.all_configs.get("huc4_shp_file")
+        gage_region_dir = self.all_configs.get("gage_region_dir")
+        region_shapefiles = self.all_configs.get("regions")
         data = pd.read_csv(gage_id_file, sep=',', header=None, skiprows=1, dtype={0: str})
+        gage_fld_lst = data.columns.values
         out = dict()
         if len(region_shapefiles):
             # read sites from shapefile of region, get id from it.
@@ -195,27 +95,33 @@ class SourceData(object):
                 out[s] = data[gage_fld_lst.index(s)].values.tolist()
             else:
                 out[s] = data[gage_fld_lst.index(s)].values
-        return out
+        return out, gage_fld_lst
 
     def prepare_forcing_data(self):
         """如果没有给url或者查到没有数据，就只能报错了，提示需要手动下载. 可以使用google drive下载数据"""
-        if self.url_forcing is None:
+        url_forcing = self.all_configs.get("forcing_url")
+        if url_forcing is None:
             print("Downloading dataset from google drive directly...")
-        download_dir_name = self.dir_forcing
+        # 个人定义的：google drive上的forcing数据文件夹名和forcing类型一样的
+        dir_name = self.all_configs.get("forcing_type")
+        download_dir_name = os.path.join(self.all_configs.get("forcing_dir"), dir_name)
         if not os.path.isdir(download_dir_name):
             os.mkdir(download_dir_name)
         # 然后下载数据到这个文件夹下，这里从google drive下载数据
-        # 文件夹的名字和dir_forcing名字一样
-        dir_name = self.dir_forcing
         download_google_drive(dir_name, download_dir_name)
 
-    def prepare_flow_data(self, gage_fld_lst, dir_gage_flow, t_range):
-        """检查数据是否齐全，不够的话进行下载，下载数据的时间范围要设置的大一些，这里暂时例子都是以1980-01-01到2015-12-31"""
-        streamflow_dir = self.dir_flow
-        streamflow_url = self.url_flow
-        if not os.path.isdir(streamflow_dir):
-            os.mkdir(streamflow_dir)
-        dir_list = os.listdir(streamflow_dir)
+    def prepare_flow_data(self, gage_dict, gage_fld_lst):
+        """检查数据是否齐全，不够的话进行下载，下载数据的时间范围要设置的大一些，这里暂时例子都是以1980-01-01到2015-12-31
+        parameters:
+            gage_dict: read_gage_info返回值--out
+            gage_dict: read_gage_info返回值--gage_fld_lst
+        """
+        dir_gage_flow = self.all_configs.get("flow_dir")
+        streamflow_url = self.all_configs.get("flow_url")
+        t_range = self.t_range
+        if not os.path.isdir(dir_gage_flow):
+            os.mkdir(dir_gage_flow)
+        dir_list = os.listdir(dir_gage_flow)
         # 区域一共有18个，为了便于后续处理，把属于不同region的站点的文件放到不同的文件夹下面
         # 判断usgs_id_lst中没有对应径流文件的要从网上下载
         usgs_id_lst = gage_dict[gage_fld_lst[0]]
@@ -242,7 +148,84 @@ class SourceData(object):
                 download_small_file(url, temp_file)
                 print("成功写入 " + temp_file + " 径流数据！")
 
-    def read_usgs(huc_02s, usgs_id_lst, t_range):
+    def read_usge_gage(self, huc, usgs_id, t_range, read_qc=False):
+        """读取各个径流站的径流数据"""
+        print(usgs_id)
+        dir_gage_flow = self.all_configs.get("flow_dir")
+        # 首先找到要读取的那个txt
+        usgs_file = os.path.join(dir_gage_flow, str(huc), usgs_id + '.txt')
+        # 下载的数据文件，注释结束的行不一样
+        row_comment_end = 27  # 从0计数的行数
+        with open(usgs_file, 'r') as f:
+            ind_temp = 0
+            for line in f:
+                if line[0] is not '#':
+                    row_comment_end = ind_temp
+                    break
+                ind_temp += 1
+
+        # 下载的时候，没有指定统计类型，因此下下来的数据表有的还包括径流在一个时段内的最值，这里仅适用均值
+        skip_rows_index = list(range(0, row_comment_end))
+        skip_rows_index.append(row_comment_end + 1)
+        df_flow = pd.read_csv(usgs_file, skiprows=skip_rows_index, sep='\t', dtype={'site_no': str})
+        if usgs_id == '07311600':
+            print(
+                "just for test, it only contains max and min flow of a day, but dont have a mean, there will be some "
+                "warning, but it's fine. no impact for results.")
+        # 原数据的列名并不好用，这里修改
+        columns_names = df_flow.columns.tolist()
+        for column_name in columns_names:
+            # 00060表示径流值，00003表示均值
+            # 还有一种情况：#        126801       00060     00003     Discharge, cubic feet per second (Mean)和
+            # 126805       00060     00003     Discharge, cubic feet per second (Mean), PUBLISHED 都是均值，但有两套数据，这里暂时取第一套
+            if '_00060_00003' in column_name and '_00060_00003_cd' not in column_name:
+                df_flow.rename(columns={column_name: 'flow'}, inplace=True)
+                break
+        for column_name in columns_names:
+            if '_00060_00003_cd' in column_name:
+                df_flow.rename(columns={column_name: 'mode'}, inplace=True)
+                break
+
+        columns = ['agency_cd', 'site_no', 'datetime', 'flow', 'mode']
+        if df_flow.empty:
+            df_flow = pd.DataFrame(columns=columns)
+
+        data_temp = df_flow.loc[:, columns]
+
+        # 处理下负值
+        obs = data_temp['flow'].astype('float').values
+        # 看看warning是哪个站点：01606500，时间索引为2828的站点为nan，不过不影响计算。
+        if usgs_id == '01606500':
+            print(obs)
+            print(np.argwhere(np.isnan(obs)))
+        obs[obs < 0] = np.nan
+        if read_qc is True:
+            qc_dict = {'A': 1, 'A:e': 2, 'M': 3}
+            qc = np.array([qc_dict[x] for x in data_temp[4]])
+        # 如果时间序列长度和径流数据长度不一致，说明有missing值，先补充nan值
+        t_lst = utils.time.t_range_days(t_range)
+        nt = len(t_lst)
+        if len(obs) != nt:
+            out = np.full([nt], np.nan)
+            # df中的date是字符串，转换为datetime，方可与tLst求交集
+            df_date = data_temp['datetime']
+            date = pd.to_datetime(df_date).values.astype('datetime64[D]')
+            c, ind1, ind2 = np.intersect1d(date, t_lst, return_indices=True)
+            out[ind2] = obs
+            if read_qc is True:
+                out_qc = np.full([nt], np.nan)
+                out_qc[ind2] = qc
+        else:
+            out = obs
+            if read_qc is True:
+                out_qc = qc
+
+        if read_qc is True:
+            return out, out_qc
+        else:
+            return out
+
+    def read_usgs(self, gage_dict, gage_fld_lst, t_range):
         """读取USGS的daily average 径流数据 according to id and time,
             首先判断哪些径流站点的数据已经读取并存入本地，如果没有，就从网上下载并读入txt文件。
         Parameter:
@@ -251,20 +234,26 @@ class SourceData(object):
         Return：
             y: ndarray--各个站点的径流数据, 1d-axis: gages, 2d-axis: day
         """
-        t_lst = utils.time.tRange2Array(t_range)
+        t_lst = utils.time.t_range_days(t_range)
         nt = len(t_lst)
         t0 = time.time()
+        usgs_id_lst = gage_dict[gage_fld_lst[0]]
+        huc_02s = gage_dict[gage_fld_lst[3]]
         y = np.empty([len(usgs_id_lst), nt])
         for k in range(len(usgs_id_lst)):
             huc_02 = huc_02s[k]
-            data_obs = read_usge_gage(huc_02, usgs_id_lst[k], t_range)
+            data_obs = self.read_usge_gage(huc_02, usgs_id_lst[k], t_range)
             y[k, :] = data_obs
         print("time of reading usgs streamflow: ", time.time() - t0)
         return y
 
-    def read_attr_all(gages_ids):
-        """读取GAGES-II下的属性数据，目前是将用到的几个属性所属的那个属性大类下的所有属性的统计值都计算一下"""
-        data_folder = DIR_GAGE_ATTR
+    def read_attr_all(self, gages_ids):
+        """读取GAGES-II下的属性数据，目前是将用到的几个属性所属的那个属性大类下的所有属性的统计值都计算一下
+        parameters:
+            gages_ids:可以指定几个gages站点
+        """
+        dir_gage_attr = self.all_configs.get("attr_dir")
+        dir_db = self.all_configs.get("root_dir")
         f_dict = dict()  # factorize dict
         # 每个key-value对是一个文件（str）下的所有属性（list）
         var_dict = dict()
@@ -272,7 +261,7 @@ class SourceData(object):
         var_lst = list()
         out_lst = list()
         # 读取所有属性，直接按类型判断要读取的文件名
-        var_des = pd.read_csv(os.path.join(DIR_GAGE_ATTR, 'variable_descriptions.txt'), sep=',')
+        var_des = pd.read_csv(os.path.join(dir_gage_attr, 'variable_descriptions.txt'), sep=',')
         var_des_map_values = var_des['VARIABLE_TYPE'].tolist()
         for i in range(len(var_des)):
             var_des_map_values[i] = var_des_map_values[i].lower()
@@ -286,7 +275,7 @@ class SourceData(object):
             # in "spreadsheets-in-csv-format" directory, the name of "flow_record" file is conterm_flowrec.txt
             if key == 'flow_record':
                 key = 'flowrec'
-            data_file = os.path.join(data_folder, 'conterm_' + key + '.txt')
+            data_file = os.path.join(dir_gage_attr, 'conterm_' + key + '.txt')
             # 各属性值的“参考来源”是不需读入的
             if key == 'bas_classif':
                 data_temp = pd.read_csv(data_file, sep=',', dtype={'STAID': str}, usecols=range(0, 4))
@@ -317,35 +306,36 @@ class SourceData(object):
             out_lst.append(out_temp)
         out = np.concatenate(out_lst, 1)
         # dictFactorize.json is the explanation of value of categorical variables
-        file_name = os.path.join(dirDB, 'dictFactorize.json')
+        file_name = os.path.join(dir_db, 'dictFactorize.json')
         with open(file_name, 'w') as fp:
             json.dump(f_dict, fp, indent=4)
-        file_name = os.path.join(dirDB, 'dictAttribute.json')
+        file_name = os.path.join(dir_db, 'dictAttribute.json')
         with open(file_name, 'w') as fp:
             json.dump(var_dict, fp, indent=4)
         return out, var_lst
 
-    def read_attr(usgs_id_lst, var_lst):
-        attr_all, var_lst_all = read_attr_all(usgs_id_lst)
+    def read_attr(self, usgs_id_lst, var_lst):
+        """指定读取某些站点的某些属性"""
+        attr_all, var_lst_all = self.read_attr_all(usgs_id_lst)
         ind_var = list()
         for var in var_lst:
             ind_var.append(var_lst_all.index(var))
         out = attr_all[:, ind_var]
         return out
 
-    def read_forcing(usgs_id_lst, t_range, var_lst, dataset='daymet', regions=None):
+    def read_forcing(self, usgs_id_lst, t_range, var_lst, regions=None):
         """读取gagesII_forcing文件夹下的驱动数据(data processed from GEE)
         :return
         x: ndarray -- 1d-axis:gages, 2d-axis: day, 3d-axis: forcing vst
         """
         t0 = time.time()
-        data_folder = os.path.join(dirDB, 'gagesII_forcing')
-        if dataset is 'nldas':
-            print("no data now!!!")
+        data_folder = os.path.join(self.all_configs.get("root_dir"), self.all_configs.get("forcing_dir"))
+        dataset = self.all_configs.get("forcing_type")
+        forcing_lst = self.all_configs.get("varT")
         # different files for different years
         t_start = str(t_range[0])[0:4]
         t_end = str(t_range[1])[0:4]
-        t_lst_chosen = utils.time.tRange2Array(t_range)
+        t_lst_chosen = utils.time.t_range_days(t_range)
         t_lst_years = np.arange(t_start, t_end, dtype='datetime64[Y]').astype(str)
         data_temps = pd.DataFrame()
         for year in t_lst_years:
@@ -374,7 +364,7 @@ class SourceData(object):
         data_chosen_t_length = np.unique(data_chosen.iloc[:, 1].values).size
         for k in range(len(usgs_id_lst)):
             data_k = data_chosen.iloc[k * data_chosen_t_length:(k + 1) * data_chosen_t_length, :]
-            out = np.full([t_lst_chosen.size, len(FORCING_LST)], np.nan)
+            out = np.full([t_lst_chosen.size, len(forcing_lst)], np.nan)
             # df中的date是字符串，转换为datetime，方可与tLst求交集
             df_date = data_k.iloc[:, 1]
             date = df_date.values.astype('datetime64[D]')
