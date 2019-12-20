@@ -1,3 +1,4 @@
+"""模型调用的核心代码"""
 import numpy as np
 import torch
 import time
@@ -8,7 +9,7 @@ from hydroDL.model import *
 import pandas as pd
 
 
-def train_model(model,
+def model_train(model,
                 x,
                 y,
                 c,
@@ -105,18 +106,18 @@ def train_model(model,
     return model
 
 
-def save_model(out_folder, model, epoch, model_name='model'):
+def model_save(out_folder, model, epoch, model_name='model'):
     model_file = os.path.join(out_folder, model_name + '_Ep' + str(epoch) + '.pt')
     torch.save(model, model_file)
 
 
-def load_model(out_folder, epoch, model_name='model'):
+def model_load(out_folder, epoch, model_name='model'):
     model_file = os.path.join(out_folder, model_name + '_Ep' + str(epoch) + '.pt')
     model = torch.load(model_file)
     return model
 
 
-def test_model(model, x, c, *, batch_size=None, file_path_lst=None):
+def model_test(model, x, c, *, batch_size=None, file_path_lst=None):
     if type(x) is tuple or type(x) is list:
         x, z = x
     else:
@@ -185,7 +186,7 @@ def test_model(model, x, c, *, batch_size=None, file_path_lst=None):
     return y_out
 
 
-def test_model_cnn_cond(model, x, y, *, batch_size=None):
+def model_cnn_cond_test(model, x, y, *, batch_size=None):
     ngrid, nt, nx = x.shape
     ct = model.ct
     ny = model.ny

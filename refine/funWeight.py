@@ -45,7 +45,7 @@ def readWeightDector(*, rootOut, out, test, syr, eyr,
         #############################################
         modelFile = os.path.join(outFolder, 'ep'+str(epoch)+'.pt')
         model = torch.load(modelFile)
-        model.train(mode=False)
+        model.master_train(mode=False)
         if opt.model == 'cudnn':
             w_ih = model.lstm.w_ih
             w_hh = model.lstm.w_hh

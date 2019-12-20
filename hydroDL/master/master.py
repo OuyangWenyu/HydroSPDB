@@ -1,22 +1,26 @@
+"""调用训练，测试，读取模型等函数的函数"""
 import os
-import hydroDL
 import numpy as np
-
-from data.read_config import read_master_file, write_master_file, namePred
 import pandas as pd
 
+from data.read_config import read_master_file, write_master_file, namePred
+from explore import stat
 from hydroDL.model import *
 
 
 def load_model(out, epoch=None):
+    """
+    根据out配置项读取
+    :parameter
+        out: model_dict"""
     if epoch is None:
         m_dict = read_master_file(out)
         epoch = m_dict['train']['nEpoch']
-    model = train.load_model(out, epoch)
+    model = model_run.model_load(out, epoch)
     return model
 
 
-def train(data_model, model_dict):
+def master_train(data_model, model_dict):
     if model_dict is str:
         """如果参数直接给出了json配置文件，则读取json文件"""
         model_dict = read_master_file(model_dict)
@@ -59,41 +63,39 @@ def train(data_model, model_dict):
 
     # train model
     write_master_file(model_dict)
-    model = train.train_model(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'], mini_batch=opt_train['miniBatch'],
-                              save_epoch=opt_train['saveEpoch'], save_folder=out)
+    model = model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'], mini_batch=opt_train['miniBatch'],
+                        save_epoch=opt_train['saveEpoch'], save_folder=out)
 
 
-def test(out,
-         *,
-         t_range,
-         subset,
-         do_mc=False,
-         suffix=None,
-         batch_size=None,
-         epoch=None,
-         re_test=False):
-    m_dict = read_master_file(out)
-
+def master_test(data_model, model_dict):
+    """:parameter
+        data_model：测试使用的数据
+        model_dict：测试时的模型配置
+    """
+    m_dict = model_dict
     opt_data = m_dict['data']
-    opt_data['subset'] = subset
-    opt_data['tRange'] = t_range
-    opt_train = m_dict['train']
-    batch_size, rho = opt_train['miniBatch']
+    opt_test = m_dict['test']
+    batch_size, rho = opt_test['miniBatch']
 
-    df, x, obs, c = load_data(opt_data)
+    df, x, obs, c = data_model.load_data(opt_data)
 
     # generate file names and run model
-    file_path_lst = namePred(
-        out, t_range, subset, epoch=epoch, doMC=do_mc, suffix=suffix)
+    out = data_model.data_source.all_configs['out']
+    t_range = data_model.data_source.t_range
+    epoch = model_dict["epoch"]
+    do_mc = model_dict["do_mc"]
+    suffix = model_dict["suffix"]
+    file_path_lst = namePred(out, t_range, epoch=epoch, doMC=do_mc, suffix=suffix)
     print('output files:', file_path_lst)
+    # 如果没有测试结果，那么就重新运行测试代码
+    re_test = False
     for file_path in file_path_lst:
         if not os.path.isfile(file_path):
             re_test = True
     if re_test is True:
         print('Runing new results')
-        model = load_model(out, epoch=epoch)
-        hydroDL.model.train.test_model(
-            model, x, c, batch_size=batch_size, file_path_lst=file_path_lst)
+        model = load_model(model_dict, epoch=epoch)
+        model_test(model, x, c, batch_size=batch_size, file_path_lst=file_path_lst)
     else:
         print('Loaded previous results')
 
@@ -112,15 +114,11 @@ def test(out,
         pred = data_pred
 
     if opt_data['doNorm'][1] is True:
+        stat_dict = data_model.stat_dict
         # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
-        if eval(opt_data['name']) is app.streamflow.data.gages2.DataframeGages2:
-            stat_dict = app.streamflow.data.gages2.statDict
-            pred = refine.stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
-            obs = refine.stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
-        elif eval(opt_data['name']) is app.streamflow.data.camels.DataframeCamels:
-            stat_dict = app.streamflow.data.camels.statDict
-            pred = refine.stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
-            obs = refine.stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+        pred = stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+        obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+
     if is_sigma_x is True:
         return df, pred, obs, sigma_x
     else:

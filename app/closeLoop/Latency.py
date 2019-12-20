@@ -24,12 +24,12 @@ if 'test' in doLst:
     subset = 'CONUSv2f1'
     tRange = [20160501, 20170501]
     outLSTM = os.path.join(pathSMAP['Out_L3_NA'], 'DA', 'CONUSv2f1')
-    df, yp, obs = master.test(
+    df, yp, obs = master.master_test(
         outLSTM, tRange=tRange, subset=subset, batchSize=100)
     yp = yp.squeeze()
     yfLst = list()
     for out in outLst:
-        df, yf, obs = master.test(
+        df, yf, obs = master.master_test(
             out, tRange=tRange, subset=subset, batchSize=100)
         yfLst.append(yf.squeeze())
     obs = obs.squeeze()

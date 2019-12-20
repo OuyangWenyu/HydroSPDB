@@ -1,13 +1,10 @@
 """一个处理数据的模板方法"""
-import datetime as dt
 import json
 import os
 
 import numpy as np
-import pandas as pd
 
-from explore.stat import cal_stat_all, trans_norm
-import utils
+from explore.stat import trans_norm, cal_stat
 
 
 class DataModel(object):
@@ -35,40 +32,64 @@ class DataModel(object):
         attr_lst = data_source.all_configs.get("attr_chosen")
         data_attr = data_source.read_attr(usgs_id, attr_lst)
         self.data_attr = data_attr
+        # 初步计算统计值
+        stat_dict = self.basic_statistic()
+        self.stat_dict = stat_dict
+
+    def cal_stat_all(self):
+        """计算统计值，便于后面归一化处理。"""
+        forcing_lst = self.data_source.all_configs["forcing_chosen"]
+        flow = self.data_flow
+        stat_dict = dict()
+        # 计算统计值
+        stat_dict['usgsFlow'] = cal_stat(flow)
+
+        # forcing数据
+        x = self.data_forcing
+        for k in range(len(forcing_lst)):
+            var = forcing_lst[k]
+            stat_dict[var] = cal_stat(x[:, :, k])
+
+        # const attribute
+        attr_data = self.data_attr
+        attr_lst = self.data_source.all_configs["attr_chosen"]
+        for k in range(len(attr_lst)):
+            var = attr_lst[k]
+            print(var)
+            stat_dict[var] = cal_stat(attr_data[:, k])
+
+        dir_db = self.data_source.all_configs["root_dir"]
+        stat_file = os.path.join(dir_db, 'Statistics.json')
+        with open(stat_file, 'w') as FP:
+            json.dump(stat_dict, FP, indent=4)
 
     def basic_statistic(self):
         """根据读取的数据进行基本统计运算，以便于归一化等运算"""
         # 为了便于后续的归一化计算，这里需要计算流域attributes、forcings和streamflows统计值。
         # module variable
         source_data = self.data_source
-        dirDB = source_data.all_configs.get("root_dir")
-        statFile = os.path.join(dirDB, 'Statistics.json')
-        gageDictOrigin = read_gage_info(GAGE_FILE, region_shapefiles=REF_NONREF_REGIONS, screen_basin_area='HUC4')
-        # screen some sites
-        usgs = read_usgs(gageDictOrigin, tRange4DownloadData)
-        usgsFlow, gagesChosen = usgsd_screen_streamflow(
-            pd.DataFrame(usgs, index=gageDictOrigin[GAGE_FLD_LST[0]], columns=tLstAll),
-            time_range=tRangeTrain, missing_data_ratio=0.1, zero_value_ratio=0.005)
-        # after screening, update the gageDict and idLst
-        gageDict = read_gage_info(GAGE_FILE, region_shapefiles=REF_NONREF_REGIONS, ids_specific=gagesChosen)
+        dir_db = source_data.all_configs.get("root_dir")
+        stat_file = os.path.join(dir_db, 'Statistics.json')
         # 如果统计值已经计算过了，就没必要再重新计算了
-        if not os.path.isfile(statFile):
-            cal_stat_all(gageDict, tRangeTrain, FORCING_LST, usgsFlow, REF_NONREF_REGIONS)
+        if not os.path.isfile(stat_file):
+            self.cal_stat_all()
         # 计算过了，就从存储的json文件中读取出统计结果
-        with open(statFile, 'r') as fp:
-            statDict = json.load(fp)
-        return
+        with open(stat_file, 'r') as fp:
+            stat_dict = json.load(fp)
+        return stat_dict
 
-    def get_data_obs(self, stat_dict, rm_nan=True):
+    def get_data_obs(self, rm_nan=True):
         """径流数据读取及归一化处理"""
+        stat_dict = self.stat_dict
         data = self.data_flow
         data = trans_norm(data, 'flow', stat_dict, to_norm=True)
         if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data
 
-    def get_data_ts(self, stat_dict, rm_nan=True):
+    def get_data_ts(self, rm_nan=True):
         """时间序列数据，主要是驱动数据读取 and choose data in the given time interval 及归一化处理"""
+        stat_dict = self.stat_dict
         var_lst = self.data_source.all_configs.get("forcing_chosen")
         data = self.data_forcing
         data = trans_norm(data, var_lst, stat_dict, to_norm=True)
@@ -76,8 +97,9 @@ class DataModel(object):
             data[np.where(np.isnan(data))] = 0
         return data
 
-    def get_data_const(self, stat_dict, rm_nan=True):
+    def get_data_const(self, rm_nan=True):
         """属性数据读取及归一化处理"""
+        stat_dict = self.stat_dict
         var_lst = self.data_source.all_configs.get("attr_chosen")
         data = self.data_attr
         data = trans_norm(data, var_lst, stat_dict, to_norm=True)

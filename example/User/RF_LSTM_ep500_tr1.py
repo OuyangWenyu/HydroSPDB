@@ -28,7 +28,7 @@ if os.path.exists(outFolder) is False:
 epoch=500
 model_RF = rnn.CudnnLstmModel(nx=nx, ny=ny, hiddenSize=256)
 lossFun_RF = crit.RmseLoss()
-model_RF = train.train_model(
+model_RF = train.model_train(
     model_RF, Forcing, Target, Raw_data, lossFun_RF, nEpoch=epoch, miniBatch=[100, 60], saveFolder=outFolder)
 modelName = 'RF_LSTM'
-train.save_model(outFolder, model_RF, epoch, modelName=modelName)
+train.model_save(outFolder, model_RF, epoch, modelName=modelName)

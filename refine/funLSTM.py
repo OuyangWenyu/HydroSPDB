@@ -215,7 +215,7 @@ def testLSTM(*, rootOut, out, test, syr, eyr, epoch=None, drMC=0, testBatch=0):
 
     #############################################
     # save prediction
-    model.train(mode=False)
+    model.master_train(mode=False)
     if testBatch > 0:
         yP = torch.zeros([nt, ngrid, ny])
         iS = np.arange(0, ngrid, testBatch)

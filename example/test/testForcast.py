@@ -31,10 +31,10 @@ if 'trainLstm' in doLst:
     ny = 1
     model = rnn.CudnnLstmModel(nx=nx, ny=ny, hiddenSize=64)
     lossFun = crit.RmseLoss()
-    model = train.train_model(
+    model = train.model_train(
         model, x, y, lossFun, nEpoch=nEpoch, miniBatch=[100, 30])
     modelName = 'lstmForcast'
-    train.save_model(outFolder, model, nEpoch, modelName=modelName)
+    train.model_save(outFolder, model, nEpoch, modelName=modelName)
 
 if 'trainCnn' in doLst:
     df = app.streamflow.data.dbCsv.DataframeCsv(
@@ -50,10 +50,10 @@ if 'trainCnn' in doLst:
         model = rnn.LstmCnnForcast(
             nx=nx, ny=ny, ct=30, hiddenSize=64, cnnSize=16, opt=opt)
         lossFun = crit.RmseLoss()
-        model = train.train_model(
+        model = train.model_train(
             model, (x, yc), y, lossFun, nEpoch=nEpoch, miniBatch=[100, 60])
         modelName = 'cnnForcast' + str(opt)
-        train.save_model(outFolder, model, nEpoch, modelName=modelName)
+        train.model_save(outFolder, model, nEpoch, modelName=modelName)
 
 ypLst = list()
 df = app.streamflow.data.dbCsv.DataframeCsv(
@@ -65,8 +65,8 @@ if 'testLstm' in doLst:
         rootDB=rootDB, subset='CONUSv4f1', tRange=ty2)
     x = df.getData(
         varT=dbCsv.varForcing, varC=dbCsv.varConst, doNorm=True, rmNan=True)
-    model = train.load_model(outFolder, nEpoch, modelName='lstmForcast')
-    yP = train.test_model(model, x).squeeze()
+    model = train.model_load(outFolder, nEpoch, modelName='lstmForcast')
+    yP = train.model_test(model, x).squeeze()
     ypLst.append(
         dbCsv.transNorm(yP, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))
 
@@ -81,8 +81,8 @@ if 'testCnn' in doLst:
 
     for opt in range(1, 3):
         modelName = 'cnnForcast' + str(opt)
-        model = train.load_model(outFolder, nEpoch, modelName=modelName)
-        yP = train.test_model(model, x, z=yc, batchSize=100).squeeze()
+        model = train.model_load(outFolder, nEpoch, modelName=modelName)
+        yP = train.model_test(model, x, z=yc, batchSize=100).squeeze()
         ypLst.append(
             dbCsv.transNorm(
                 yP, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))

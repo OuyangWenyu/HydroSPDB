@@ -87,7 +87,7 @@ for k in range(len(subsetLst)):
         out = os.path.join(pathSMAP['Out_L3_NA'], 'ecoRegion',
                            subsetLst[k] + '_' + case)
         try:
-            master.test(out, tRange=[20160401, 20180401], subset=subsetLst[k])
+            master.master_test(out, tRange=[20160401, 20180401], subset=subsetLst[k])
         except:
             ss = ss + 'ecoRegion ' + str(k) + ' case ' + case + '; '
 

@@ -46,7 +46,7 @@ if os.path.exists(outFolder) is False:
 epoch=500
 model_R2PF = rnn.CudnnLstmModel_R2P(nx=nx, ny=ny, hiddenSize=256, filename=filename)
 lossFun_R2PF = crit.RmseLoss()
-model_R2PF = train.train_model(
+model_R2PF = train.model_train(
     model_R2PF, Forcing, Target, Raw_data, lossFun_R2PF, nEpoch=epoch, miniBatch=[100, 60], saveFolder=outFolder)
 modelName = 'R2PF_LSTM'
-train.save_model(outFolder, model_R2PF, epoch, modelName=modelName)
+train.model_save(outFolder, model_R2PF, epoch, modelName=modelName)

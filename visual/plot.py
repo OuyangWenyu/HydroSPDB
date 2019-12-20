@@ -1,4 +1,4 @@
-"""基本绘制库"""
+"""基本绘制库，使用的是matplotlib库"""
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt

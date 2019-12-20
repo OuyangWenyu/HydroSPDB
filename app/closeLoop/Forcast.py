@@ -19,9 +19,9 @@ if 'test' in doLst:
     subset = 'CONUSv2f1'
     tRange = [20160401, 20180401]
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA', 'CONUSv2f1_DA2015')
-    df, yf, obs = master.test(out, tRange=tRange, subset=subset, batchSize=100)
+    df, yf, obs = master.master_test(out, tRange=tRange, subset=subset, batchSize=100)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA', 'CONUSv2f1_LSTM2015')
-    df, yp, obs = master.test(out, tRange=tRange, subset=subset)
+    df, yp, obs = master.master_test(out, tRange=tRange, subset=subset)
     yf = yf.squeeze()
     yp = yp.squeeze()
     obs = obs.squeeze()

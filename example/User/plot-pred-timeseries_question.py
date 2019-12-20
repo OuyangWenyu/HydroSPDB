@@ -14,7 +14,7 @@ out = os.path.join(cDir, 'output_VIC/CONUS_v8f1_SOILM_lev1_rho60_tr6')
 tRange = [20160401, 20170401]
 
 # load data
-df, yp, yt = master.test(
+df, yp, yt = master.master_test(
     out, tRange=[20160401, 20170401], subset='CONUS_VICv8f1', epoch=100)
 yp = yp.squeeze()
 yt = yt.squeeze()

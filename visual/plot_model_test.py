@@ -1,3 +1,4 @@
+"""绘制测试过程中结果的一些脚本代码"""
 from hydroDL import pathSMAP, master
 import os
 from hydroDL import stat
@@ -28,7 +29,7 @@ for k in range(len(subsetLst)):
             elif case1 == 'Global':
                 outName = 'Global_v4f1_y1' + '_' + case2
             out = os.path.join(pathSMAP['Out_L3_Global'], outName)
-            df, yp, yt = master.test(
+            df, yp, yt = master.master_test(
                 out, tRange=yrLst, subset=testName, epoch=500)
             temp = stat.statError(yp[:, :, 0], yt[:, :, 0])
             tempLst.append(temp)

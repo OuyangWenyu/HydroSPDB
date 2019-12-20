@@ -20,7 +20,7 @@ for k in range(len(subsetLst)):
                                    subsetLst[k] + '_' + case2)
             elif case1 == 'CONUS':
                 out = os.path.join(pathSMAP['Out_L3_NA'], 'CONUSv2f1_' + case2)
-            df, yp, yt = master.test(out, tRange=tRange, subset=testName)
+            df, yp, yt = master.master_test(out, tRange=tRange, subset=testName)
             temp = stat.statError(yp[:, :, 0], yt[:, :, 0])
             tempLst.append(temp)
     statLst.append(tempLst)

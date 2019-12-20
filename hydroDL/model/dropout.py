@@ -11,11 +11,11 @@ def create_mask(x, dr):
 class DropMask(torch.autograd.function.InplaceFunction):
     @classmethod
     def forward(cls, ctx, input, mask, train=False, inplace=False):
-        ctx.train = train
+        ctx.master_train = train
         ctx.inplace = inplace
         ctx.mask = mask
 
-        if not ctx.train:
+        if not ctx.master_train:
             return input
         else:
             if ctx.inplace:
@@ -29,7 +29,7 @@ class DropMask(torch.autograd.function.InplaceFunction):
 
     @staticmethod
     def backward(ctx, grad_output):
-        if ctx.train:
+        if ctx.master_train:
             return grad_output * ctx.mask, None, None, None
         else:
             return grad_output, None, None, None

@@ -17,7 +17,7 @@ tRange = [20160401, 20170401]
 # df, yp, yt, sigma = test(out, tRange=[20160401, 20170401], subset='CONUS_VICv16f1')
 
 # load data
-df, yp_1L, yt, sigma = master.test(
+df, yp_1L, yt, sigma = master.master_test(
     out, tRange=tRange, subset='CONUS_VICv16f1', epoch=nEpoch)
 yp_1L = yp_1L.squeeze()
 yt = yt.squeeze()
@@ -66,7 +66,7 @@ lossFun = crit.RmseLoss()
 model, yp_2L, yt_2L = train.trainModel_2L(
     model, x, y, lossFun, nEpoch=epoch)
 modelName = 'test-2L'
-train.save_model(outFolder, model, epoch, modelName=modelName)
+train.model_save(outFolder, model, epoch, modelName=modelName)
 
 # print(yp_2L)
 # print(yt_2L)

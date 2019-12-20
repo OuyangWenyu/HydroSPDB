@@ -17,7 +17,7 @@ tRange = [20160401, 20170401]
 # df, yp, yt, sigma = test(out, tRange=[20160401, 20170401], subset='CONUS_VICv16f1')
 
 # load data
-df, yp, yt, sigma = master.test(
+df, yp, yt, sigma = master.master_test(
     out, tRange=tRange, subset='CONUS_VICv16f1', epoch=nEpoch)
 yp = yp.squeeze()
 yt = yt.squeeze()

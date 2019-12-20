@@ -25,7 +25,7 @@ ny = 1
 
 model3 = rnn.LstmCloseModel(nx=nx + 1, ny=ny, hiddenSize=64, opt=1)
 lossFun = crit.RmseLoss()
-model3 = train.train_model(
+model3 = train.model_train(
     model3, x, y, lossFun, nEpoch=nEpoch, miniBatch=[100, 30])
 modelName = 'LSTM-DA'
-train.save_model(outFolder, model3, nEpoch, modelName=modelName)
+train.model_save(outFolder, model3, nEpoch, modelName=modelName)

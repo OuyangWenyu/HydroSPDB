@@ -21,13 +21,13 @@ yt = yt[:, :, 0]
 
 ypLst = list()
 modelName = 'LSTM'
-model = train.load_model(outFolder, nEpoch, modelName=modelName)
-yp = train.test_model(model, x, batchSize=100).squeeze()
+model = train.model_load(outFolder, nEpoch, modelName=modelName)
+yp = train.model_test(model, x, batchSize=100).squeeze()
 ypLst.append(
     dbCsv.transNorm(yp, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))
 modelName = 'LSTM-DA'
-model = train.load_model(outFolder, nEpoch, modelName=modelName)
-yp = train.test_model(model, x, z=y, batchSize=100).squeeze()
+model = train.model_load(outFolder, nEpoch, modelName=modelName)
+yp = train.model_test(model, x, z=y, batchSize=100).squeeze()
 ypLst.append(
     dbCsv.transNorm(yp, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))
 

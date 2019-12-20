@@ -61,11 +61,11 @@ if 'test' in doLst:
     tRange = [20160501, 20170501]
     predLst = list()
     outLSTM = os.path.join(pathSMAP['Out_L3_NA'], 'DA', 'CONUSv2f1')
-    df, pred, obs = master.test(
+    df, pred, obs = master.master_test(
         outLSTM, tRange=tRange, subset=subset, batchSize=100)
     predLst.append(pred.squeeze())
     for out in outLst:
-        df, pred, obs = master.test(
+        df, pred, obs = master.master_test(
             out, tRange=tRange, subset=subset, batchSize=100)
         predLst.append(pred.squeeze())
     obs = obs.squeeze()

@@ -1,18 +1,19 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
+"""测试可视化代码"""
+import data.read_config
+import data.data_input
+from hydroDL import pathSMAP, master
+import os
+from data import dbCsv
 
-# train_process = pd.read_csv(
-#     "/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/data/gages/rnnStreamflow/All-90-95/run.csv",
-#     header=None)
-train_process = pd.read_csv(
-    "/example/data/camels/rnnStreamflow/All-90-95/run.csv",
-    header=None)
-train_process_ = train_process.iloc[:, 0].str.split()
-p_x = np.array([])
-p_y = np.array([])
-for process in train_process_:
-    p_x = np.append(p_x, int(process[1]))
-    p_y = np.append(p_y, float(process[3]))
-plt.plot(p_x, p_y)
-plt.show()
+optData = data.read_config.update(
+    data.read_config.optDataSMAP,
+    rootDB=pathSMAP['DB_L3_Global'],
+    subset='Globalv4f1_NorthAmerica',
+    tRange=[20150401, 20160401],
+    varT=dbCsv.varForcingGlobal)
+optModel = data.read_config.optLstm
+optLoss = data.read_config.optLossSigma
+optTrain = data.read_config.optTrainSMAP
+out = os.path.join(pathSMAP['Out_L3_Global'], 'test')
+masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
+master.master_train(masterDict)

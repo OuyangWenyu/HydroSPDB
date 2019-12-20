@@ -1,11 +1,6 @@
-import json
-import os
-
 import numpy as np
 import scipy.stats
 from hydroeval import evaluator, nse
-
-from data.data_source import read_usgs, read_forcing, read_attr_all
 
 keyLst = ['Bias', 'RMSE', 'Corr', 'NSE']
 
@@ -84,7 +79,7 @@ def trans_norm(x, var_lst, stat_dict, *, to_norm):
     return out
 
 
-def stat_ind():
+def stat_ind(obs, pred):
     # 30% bottom 数据的分析，每个站点的<30分位数的径流数据和同时间的预测径流数据比较，计算box的几个指标
     obs2d = obs.squeeze()
     pred2d = pred.squeeze()
@@ -171,31 +166,3 @@ if __name__ == "__main__":
     print(c.shape)
 
     print(statError1d(np.array([1, 2, 3]), np.array([4, 5, 6])))
-
-
-def cal_stat_all(gage_dict, t_range, forcing_lst, flow=None, regions=None):
-    """计算统计值，便于后面归一化处理。"""
-    stat_dict = dict()
-    id_lst = gage_dict[GAGE_FLD_LST[0]]
-    if flow.size < 1:
-        flow = read_usgs(gage_dict, tRange4DownloadData)
-
-    # 计算统计值
-    stat_dict['usgsFlow'] = cal_stat(flow)
-
-    # forcing数据
-    x = read_forcing(id_lst, t_range, forcing_lst, regions=regions)
-    for k in range(len(forcing_lst)):
-        var = forcing_lst[k]
-        stat_dict[var] = cal_stat(x[:, :, k])
-
-    # const attribute
-    attr_data, attr_lst = read_attr_all(id_lst)
-    for k in range(len(attr_lst)):
-        var = attr_lst[k]
-        print(var)
-        stat_dict[var] = cal_stat(attr_data[:, k])
-
-    stat_file = os.path.join(dirDB, 'Statistics.json')
-    with open(stat_file, 'w') as FP:
-        json.dump(stat_dict, FP, indent=4)

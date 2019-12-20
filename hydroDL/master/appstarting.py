@@ -38,7 +38,7 @@ def run_train(master_dict, *, screen='test', cuda_id):
     args = parser.parse_args()
     if args.func == 'train':
         m_dict = data.read_config.read_master_file(args.m_file)
-        master.train(m_dict)
+        master.master_train(m_dict)
         out = m_dict['out']
         send_email.sendEmail(subject='Training Done', text=out)
     # os.system(cmd)

@@ -15,5 +15,5 @@ out = os.path.join(pathSMAP['Out_L3_Global'], 'explore')
 masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
 # master.train(masterDict, overwrite=True)
 
-pred = master.test(
+pred = master.master_test(
     out, tRange=[20160401, 20170401], subset='CONUSv4f1', epoch=500)

@@ -21,8 +21,8 @@ out = os.path.join(cDir, 'output', 'CONUSv4f1_sigma')
 masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
 
 # train
-master.train(masterDict)
+master.master_train(masterDict)
 
 # test
-pred = master.test(
+pred = master.master_test(
     out, tRange=[20160401, 20170401], subset='CONUSv4f1')

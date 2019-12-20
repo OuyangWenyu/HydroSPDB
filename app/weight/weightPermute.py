@@ -29,7 +29,7 @@ xTest = xTest.cuda()
 
 modelFile = os.path.join(rootOut, out, 'ep'+str(epoch)+'.pt')
 model = torch.load(modelFile)
-model.train(mode=False)
+model.master_train(mode=False)
 yP = model(xTest)
 nt, ngrid, nx = xTest.shape
 nh = opt.hiddenSize

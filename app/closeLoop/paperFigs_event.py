@@ -25,11 +25,11 @@ if 'test' in doLst:
     ypLst = list()
     for yrStr in yrStrLst:
         out = os.path.join(pathSMAP['Out_L3_NA'], 'DA', 'CONUSv2f1_DA' + yrStr)
-        df, yf, obs = master.test(
+        df, yf, obs = master.master_test(
             out, tRange=tRange, subset=subset, batchSize=100)
         out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                            'CONUSv2f1_LSTM' + yrStr)
-        df, yp, obs = master.test(out, tRange=tRange, subset=subset)
+        df, yp, obs = master.master_test(out, tRange=tRange, subset=subset)
         yf = yf.squeeze()
         yp = yp.squeeze()
         yfLst.append(yf)
