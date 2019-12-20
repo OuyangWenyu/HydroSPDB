@@ -1,4 +1,5 @@
-import data.data_process
+import data.data_input
+import data.read_config
 from hydroDL import pathSMAP, master
 from data import read_config
 import os
@@ -44,7 +45,7 @@ for k in range(len(tLst)):
     optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                         'CONUSv2f1_NN' + yrLst[k])
-    masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=k % 3, screen='NN' + yrLst[k])
     # master.train(masterDict)
 
@@ -60,6 +61,6 @@ for k in range(len(tLst)):
     optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                        'CONUSv2f1_DANN' + yrLst[k])
-    masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=k % 3, screen='DANN' + yrLst[k])
     # master.train(masterDict)

@@ -1,5 +1,5 @@
 import data.read_config
-import data.data_process
+import data.data_input
 from hydroDL import master
 import os
 from data import read_config
@@ -18,7 +18,7 @@ optModel = read_config.optLstm
 optLoss = read_config.optLossSigma
 optTrain = read_config.update(data.read_config.optTrainSMAP, nEpoch=5, saveEpoch=5)
 out = os.path.join(cDir, 'output', 'CONUSv4f1_sigma')
-masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
+masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
 
 # train
 master.train(masterDict)

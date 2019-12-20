@@ -35,6 +35,9 @@ class SourceData(object):
         gage_dict, gage_fld_lst = self.read_gage_info()
         self.prepare_forcing_data()
         self.prepare_flow_data(gage_dict, gage_fld_lst)
+        # 一些后面常用的变量也在这里赋值到SourceData对象中
+        self.gage_dict = gage_dict
+        self.gage_fld_lst = gage_fld_lst
 
     def prepare_attr_data(self):
         """根据时间读取数据，没有的数据下载"""
@@ -247,6 +250,74 @@ class SourceData(object):
         print("time of reading usgs streamflow: ", time.time() - t0)
         return y
 
+    def usgs_screen_streamflow(self, usgs, usgs_ids=None, time_range=None, **kwargs):
+        """according to the criteria and its ancillary condition--thresh of streamflow data,
+            choose appropriate ones from all usgs sites
+            Parameters
+            ----------
+            usgs : pd.DataFrame -- all usgs sites' data, its index are 'sites', its columns are 'day',
+                                   if there is some missing value, usgs should already be filled by nan
+            usgs_ids: list -- chosen sites' ids
+            time_range: list -- chosen time range
+            kwargs: all criteria
+
+            Returns
+            -------
+            usgs_out : ndarray -- streamflow  1d-var is gage, 2d-var is day
+            sites_chosen: [] -- ids of chosen gages
+
+            Examples
+            --------
+            usgs_screen(usgs, ["02349000","08168797"], [19950101,20150101],
+            {'missing_data_ratio':0.1,'zero_value_ratio':0.005,'basin_area_ceil':'HUC4'})
+        """
+        sites_chosen = np.zeros(usgs.shape[0])
+        # choose the given sites
+        usgs_all_sites = usgs.index.values
+        if usgs_ids:
+            sites_index = np.where(np.in1d(usgs_ids, usgs_all_sites))[0]
+            sites_chosen[sites_index] = 1
+        else:
+            sites_index = np.arange(usgs.shape[0])
+            sites_chosen = np.ones(usgs.shape[0])
+        # choose data in given time range
+        all_t_list = usgs.columns.values
+        t_lst = all_t_list
+        if time_range:
+            # calculate the day length
+            t_lst = utils.time.t_range_days(time_range)
+        else:
+            time_range = self.t_range
+            t_lst = utils.time.t_range_days(time_range)
+        ts, ind1, ind2 = np.intersect1d(all_t_list, t_lst, return_indices=True)
+        usgs_values = usgs.iloc[sites_index, ind1]
+
+        for site_index in sites_index:
+            # loop for every site
+            runoff = usgs_values.iloc[site_index, :]
+            for criteria in kwargs:
+                # if any criteria is not matched, we can filter this site
+                if sites_chosen[site_index] == 0:
+                    break
+                if criteria == 'missing_data_ratio':
+                    nan_length = len(runoff[np.isnan(runoff)])
+                    # then calculate the length of consecutive nan
+                    thresh = kwargs[criteria]
+                    if nan_length / runoff.size > thresh:
+                        sites_chosen[site_index] = 0
+                    else:
+                        sites_chosen[site_index] = 1
+
+                elif criteria == 'zero_value_ratio':
+                    sites_chosen[site_index] = 1
+                else:
+                    print("Oops!  That is not valid value.  Try again...")
+        # get discharge data of chosen sites, and change to ndarray
+        usgs_out = usgs_values.iloc[np.where(sites_chosen > 0)].values
+        gages_chosen_id = [usgs_all_sites[i] for i in range(len(sites_chosen)) if sites_chosen[i] > 0]
+
+        return usgs_out, gages_chosen_id
+
     def read_attr_all(self, gages_ids):
         """读取GAGES-II下的属性数据，目前是将用到的几个属性所属的那个属性大类下的所有属性的统计值都计算一下
         parameters:
@@ -323,7 +394,7 @@ class SourceData(object):
         out = attr_all[:, ind_var]
         return out
 
-    def read_forcing(self, usgs_id_lst, t_range, var_lst, regions=None):
+    def read_forcing(self, usgs_id_lst, t_range, var_lst, regions):
         """读取gagesII_forcing文件夹下的驱动数据(data processed from GEE)
         :return
         x: ndarray -- 1d-axis:gages, 2d-axis: day, 3d-axis: forcing vst

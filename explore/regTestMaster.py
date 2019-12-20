@@ -1,5 +1,5 @@
 import data.read_config
-import data.data_process
+import data.data_input
 from hydroDL import pathSMAP, master
 import os
 
@@ -12,7 +12,7 @@ optModel = data.read_config.optLstm
 optLoss = data.read_config.optLoss
 optTrain = data.read_config.optTrainSMAP
 out = os.path.join(pathSMAP['Out_L3_Global'], 'explore')
-masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
+masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
 # master.train(masterDict, overwrite=True)
 
 pred = master.test(

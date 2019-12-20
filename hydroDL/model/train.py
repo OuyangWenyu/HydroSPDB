@@ -3,7 +3,8 @@ import torch
 import time
 import os
 import hydroDL
-from hydroDL import rnn
+# import * 的时候就体现出__init__.py文件的作用了
+from hydroDL.model import *
 import pandas as pd
 
 

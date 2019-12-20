@@ -1,4 +1,5 @@
-import data.data_process
+import data.data_input
+import data.read_config
 from hydroDL import pathSMAP, master
 import utils
 from data import read_config
@@ -31,8 +32,8 @@ if 'train' in doLst:
         optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
         out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                            'CONUSv2f1_d' + str(nd))
-        masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss,
-                                                   optTrain)
+        masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss,
+                                                  optTrain)
         master.run_train(masterDict, cudaID=cid % 3, screen='d' + str(nd))
         # master.train(masterDict)
         cid = cid + 1
@@ -46,7 +47,7 @@ if 'train' in doLst:
     optLoss = read_config.optLossRMSE
     optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA', 'CONUSv2f1')
-    masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=0, screen='LSTM')
 
 # test

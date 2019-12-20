@@ -1,5 +1,6 @@
+"""可视化训练过程"""
 import data.read_config
-import data.data_process
+import data.data_input
 from hydroDL import pathSMAP, master
 import os
 from data import dbCsv
@@ -38,8 +39,8 @@ for k in range(len(subsetLst)):
         optTrain = data.read_config.optTrainSMAP
         out = os.path.join(pathSMAP['Out_L3_Global'], outLst[k] + '_' + case)
 
-        masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss,
-                                                   optTrain)
+        masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss,
+                                                  optTrain)
         master.run_train(masterDict, cudaID=cid % 3, screen=outLst[k])
         cid = cid + 1
         # master.train(masterDict)

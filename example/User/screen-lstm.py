@@ -1,5 +1,5 @@
 import data.read_config
-import data.data_process
+import data.data_input
 from hydroDL import pathSMAP, master
 import os
 
@@ -17,7 +17,7 @@ optLoss = data.read_config.update(
     data.read_config.optLoss, name='hydroDL.model.crit.SigmaLoss')
 optTrain = data.read_config.optTrain
 
-masterDict = data.data_process.wrap_master(out, optData, optModel, optLoss, optTrain)
+masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
 
 # train
 master.run_train(masterDict, cudaID=0, screenName='sigmaTest')

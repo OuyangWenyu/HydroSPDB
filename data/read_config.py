@@ -1,5 +1,7 @@
 import collections
+import json
 import os
+from collections import OrderedDict
 from configparser import ConfigParser
 
 from data.download_data import download_kaggle_file
@@ -119,3 +121,66 @@ def read_gages_config(config_file):
                                    gage_id_file=gage_id_file, gage_region_dir=gage_region_dir,
                                    gage_point_file=gagesii_points_file, huc4_shp_file=huc4_shp_file
                                    )
+
+
+def wrap_master(out, optData, optModel, optLoss, optTrain):
+    mDict = OrderedDict(
+        out=out, data=optData, model=optModel, loss=optLoss, train=optTrain)
+    return mDict
+
+
+def read_master_file(out):
+    """json格式的配置文件"""
+    m_file = os.path.join(out, 'master.json')
+    with open(m_file, 'r') as fp:
+        m_dict = json.load(fp, object_pairs_hook=OrderedDict)
+    print('read master file ' + m_file)
+    return m_dict
+
+
+def write_master_file(m_dict):
+    """将配置内容写入json格式的配置文件"""
+    out = m_dict['out']
+    if not os.path.isdir(out):
+        os.makedirs(out)
+    m_file = os.path.join(out, 'master.json')
+    with open(m_file, 'w') as fp:
+        json.dump(m_dict, fp, indent=4)
+    print('write master file ' + m_file)
+    return out
+
+
+def namePred(out, tRange, subset, epoch=None, doMC=False, suffix=None):
+    """训练过程输出"""
+    if not os.path.exists(out):
+        os.makedirs(out)
+    if not os.path.exists(os.path.join(out, 'master.json')):
+        return ['None']
+    mDict = read_master_file(out)
+    target = mDict['data']['target']
+    if type(target) is not list:
+        target = [target]
+    nt = len(target)
+    lossName = mDict['loss']['name']
+    if epoch is None:
+        epoch = mDict['train']['nEpoch']
+
+    fileNameLst = list()
+    for k in range(nt):
+        testName = '_'.join(
+            [subset, str(tRange[0]),
+             str(tRange[1]), 'ep' + str(epoch)])
+        fileName = '_'.join([target[k], testName])
+        fileNameLst.append(fileName)
+        if lossName == 'hydroDL.model.crit.SigmaLoss':
+            fileName = '_'.join([target[k] + 'SigmaX', testName])
+            fileNameLst.append(fileName)
+
+    # sum up to file path list
+    filePathLst = list()
+    for fileName in fileNameLst:
+        if suffix is not None:
+            fileName = fileName + '_' + suffix
+        filePath = os.path.join(out, fileName + '.csv')
+        filePathLst.append(filePath)
+    return filePathLst

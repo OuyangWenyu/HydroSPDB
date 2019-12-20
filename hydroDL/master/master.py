@@ -2,83 +2,65 @@ import os
 import hydroDL
 import numpy as np
 
-from data.data_process import read_master_file, write_master_file, namePred, load_data
+from data.read_config import read_master_file, write_master_file, namePred
 import pandas as pd
 
+from hydroDL.model import *
 
-def loadModel(out, epoch=None):
+
+def load_model(out, epoch=None):
     if epoch is None:
-        mDict = read_master_file(out)
-        epoch = mDict['train']['nEpoch']
-    model = hydroDL.model.train.load_model(out, epoch)
+        m_dict = read_master_file(out)
+        epoch = m_dict['train']['nEpoch']
+    model = train.load_model(out, epoch)
     return model
 
 
-def train(m_dict):
-    if m_dict is str:
-        m_dict = read_master_file(m_dict)
-    out = m_dict['out']
-    opt_data = m_dict['data']
-    opt_model = m_dict['model']
-    opt_loss = m_dict['loss']
-    opt_train = m_dict['train']
+def train(data_model, model_dict):
+    if model_dict is str:
+        """如果参数直接给出了json配置文件，则读取json文件"""
+        model_dict = read_master_file(model_dict)
+    out = model_dict['out']
+    opt_model = model_dict['model']
+    opt_loss = model_dict['loss']
+    opt_train = model_dict['train']
 
     # data
-    df, x, y, c = load_data(opt_data)
+    x, y, c = data_model.load_data()
     nx = x.shape[-1] + c.shape[-1]
     ny = y.shape[-1]
 
     # loss
-    if eval(opt_loss['name']) is hydroDL.model.crit.SigmaLoss:
-        loss_fun = hydroDL.model.crit.SigmaLoss(prior=opt_loss['prior'])
+    if opt_loss['name'] == 'SigmaLoss':
+        loss_fun = crit.SigmaLoss(prior=opt_loss['prior'])
         opt_model['ny'] = ny * 2
-    elif eval(opt_loss['name']) is hydroDL.model.crit.RmseLoss:
-        loss_fun = hydroDL.model.crit.RmseLoss()
+    elif opt_loss['name'] == 'RmseLoss':
+        loss_fun = crit.RmseLoss()
         opt_model['ny'] = ny
 
     # model
     if opt_model['nx'] != nx:
         print('updated nx by input data')
         opt_model['nx'] = nx
-    if eval(opt_model['name']) is hydroDL.model.rnn.CudnnLstmModel:
-        model = hydroDL.model.rnn.CudnnLstmModel(
-            nx=opt_model['nx'],
-            ny=opt_model['ny'],
-            hidden_size=opt_model['hiddenSize'])
-    elif eval(opt_model['name']) is hydroDL.model.rnn.LstmCloseModel:
-        model = hydroDL.model.rnn.LstmCloseModel(
-            nx=opt_model['nx'],
-            ny=opt_model['ny'],
-            hiddenSize=opt_model['hiddenSize'],
-            fillObs=True)
-    elif eval(opt_model['name']) is hydroDL.model.rnn.AnnModel:
-        model = hydroDL.model.rnn.AnnCloseModel(
-            nx=opt_model['nx'],
-            ny=opt_model['ny'],
-            hiddenSize=opt_model['hiddenSize'])
-    elif eval(opt_model['name']) is hydroDL.model.rnn.AnnCloseModel:
-        model = hydroDL.model.rnn.AnnCloseModel(
-            nx=opt_model['nx'],
-            ny=opt_model['ny'],
-            hiddenSize=opt_model['hiddenSize'],
-            fillObs=True)
+    if opt_model['name'] == 'CudnnLstmModel':
+        model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+    elif opt_model['name'] == 'LstmCloseModel':
+        model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                   fillObs=True)
+    elif opt_model['name'] == 'AnnModel':
+        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+    elif opt_model['name'] == 'AnnCloseModel':
+        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                  fillObs=True)
 
     # train
     if opt_train['saveEpoch'] > opt_train['nEpoch']:
         opt_train['saveEpoch'] = opt_train['nEpoch']
 
     # train model
-    write_master_file(m_dict)
-    model = hydroDL.model.train.train_model(
-        model,
-        x,
-        y,
-        c,
-        loss_fun,
-        n_epoch=opt_train['nEpoch'],
-        mini_batch=opt_train['miniBatch'],
-        save_epoch=opt_train['saveEpoch'],
-        save_folder=out)
+    write_master_file(model_dict)
+    model = train.train_model(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'], mini_batch=opt_train['miniBatch'],
+                              save_epoch=opt_train['saveEpoch'], save_folder=out)
 
 
 def test(out,
@@ -109,7 +91,7 @@ def test(out,
             re_test = True
     if re_test is True:
         print('Runing new results')
-        model = loadModel(out, epoch=epoch)
+        model = load_model(out, epoch=epoch)
         hydroDL.model.train.test_model(
             model, x, c, batch_size=batch_size, file_path_lst=file_path_lst)
     else:
