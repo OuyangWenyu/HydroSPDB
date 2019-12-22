@@ -37,7 +37,7 @@ df, pred, obs = master_test(test_data_model, model_dict)
 inds = stat_ind(obs, pred)
 
 # plot box，使用seaborn库
-plot_box_fig(obs, pred)
+plot_box_inds(inds)
 
 # plot time series
-plot_ts(obs, pred)
+plot_ts_obs_pred(obs, pred)
