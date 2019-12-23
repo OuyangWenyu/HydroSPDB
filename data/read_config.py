@@ -29,39 +29,74 @@ def init_data_param(config_file):
     sections = cfg.sections()
     section = cfg.get(sections[0], 'data')
     options = cfg.options(section)
-    forcing_lst = cfg.get(section, options[0])
-    attr_str_sel = cfg.get(section, options[1])
-    streamflow_data = cfg.get(section, options[2])
-    t_range_train = cfg.get(section, options[3])
-    regions = cfg.get(section, options[4])
-    do_norm = cfg.get(section, options[5])
-    rm_nan = cfg.get(section, options[6])
-    da_obs = cfg.get(section, options[7])
-    return collections.OrderedDict(varT=forcing_lst, varC=attr_str_sel, streamflowData=streamflow_data,
-                                   tRange=t_range_train, regions=regions, doNorm=do_norm, rmNan=rm_nan, daObs=da_obs)
+
+    # 关于数据处理的一些配置项
+    do_norm = eval(cfg.get(section, options[0]))
+    rm_nan = eval(cfg.get(section, options[1]))
+    da_obs = eval(cfg.get(section, options[2]))
+
+    # 时间空间范围配置项
+    t_range_train = eval(cfg.get(section, options[3]))
+    t_range_test = eval(cfg.get(section, options[4]))
+    regions = eval(cfg.get(section, options[5]))
+
+    # forcing数据
+    forcingDir = cfg.get(section, options[6])
+    forcingType = cfg.get(section, options[7])
+    forcingUrl = cfg.get(section, options[8])
+    forcing_lst = eval(cfg.get(section, options[9]))
+
+    # streamflow数据
+    streamflow_dir = cfg.get(section, options[10])
+    streamflowUrl = cfg.get(section, options[11])
+
+    # attribute数据
+    attrDir = cfg.get(section, options[12])
+    attrUrl = cfg.get(section, options[13])
+    attrBasin = eval(cfg.get(section, options[15]))
+    attrLandcover = eval(cfg.get(section, options[16]))
+    attrSoil = eval(cfg.get(section, options[17]))
+    attrGeol = eval(cfg.get(section, options[18]))
+    attrHydro = eval(cfg.get(section, options[19]))
+    attrHydroModDams = eval(cfg.get(section, options[20]))
+    attr_str_sel = eval(cfg.get(section, options[14]))
+
+    opt_data = collections.OrderedDict(varT=forcing_lst, varC=attr_str_sel, streamflowData=streamflow_dir,
+                                       tRange=t_range_train, regions=regions, doNorm=do_norm, rmNan=rm_nan,
+                                       daObs=da_obs)
+    return opt_data
 
 
-def init_model_param(config_file, optDataParam):
-    """根据配置文件读取有关模型的各项参数，返回optModel, optLoss, optTrain三组参数"""
+def init_model_param(config_file):
+    """根据配置文件读取有关模型的各项参数，返回optModel, optLoss, optTrain三组参数，分成几组的原因是为写成json文件时更清晰"""
     cfg = ConfigParser()
     cfg.read(config_file)
     section = 'model'
     options = cfg.options(section)
-    mini_batch = cfg.get(section, options[0])
-    n_epoch = cfg.get(section, options[1])
-    save_epoch = cfg.get(section, options[2])
-    collection1 = collections.OrderedDict(miniBatch=mini_batch, nEpoch=n_epoch, saveEpoch=save_epoch)
 
-    ny = cfg.get(section, options[3])
-    hidden_size = cfg.get(section, options[4])
-    do_relu = cfg.get(section, options[5])
-    collection2 = collections.OrderedDict(name='hydroDL.model.rnn.CudnnLstmModel',
-                                          nx=len(optDataParam['varT']) + len(optDataParam['varC']), ny=ny,
-                                          hiddenSize=hidden_size, doReLU=do_relu)
+    # 首先读取几个训练使用的基本模型参数，主要是epoch和batch
+    mini_batch = eval(cfg.get(section, options[0]))
+    n_epoch = eval(cfg.get(section, options[1]))
+    save_epoch = eval(cfg.get(section, options[2]))
+    opt_train = collections.OrderedDict(miniBatch=mini_batch, nEpoch=n_epoch, saveEpoch=save_epoch)
 
-    prior = cfg.get(section, options[6])
-    collection3 = collections.OrderedDict(name='hydroDL.model.crit.RmseLoss', prior=prior)
-    return collection1, collection2, collection3
+    # 接下来是第二部分，是模型输入输出的相关参数。首先，需要读取数据配置项，这样才能判断输入输出变量个数，确定模型基本结构
+    model_name = cfg.get(section, options[3])
+    opt_data = init_data_param(config_file)
+    # 变量名不要修改
+    varT = opt_data["varT"]
+    varC = opt_data["varC"]
+    nx = eval(cfg.get(section, options[4]))
+    ny = cfg.get(section, options[5])
+    hidden_size = cfg.get(section, options[6])
+    do_relu = cfg.get(section, options[7])
+    opt_model = collections.OrderedDict(name=model_name, nx=nx, ny=ny, hiddenSize=hidden_size, doReLU=do_relu)
+
+    # 最后是loss的配置
+    loss_name = cfg.get(section, options[8])
+    prior = cfg.get(section, options[9])
+    opt_loss = collections.OrderedDict(name=loss_name, prior=prior)
+    return opt_train, opt_model, opt_loss
 
 
 def update(opt, **kw):
@@ -123,10 +158,10 @@ def read_gages_config(config_file):
                                    )
 
 
-def wrap_master(out, optData, optModel, optLoss, optTrain):
-    mDict = OrderedDict(
-        out=out, data=optData, model=optModel, loss=optLoss, train=optTrain)
-    return mDict
+def wrap_master(optModel, optLoss, optTrain):
+    """model的相关参数整合"""
+    m_dict = OrderedDict(model=optModel, loss=optLoss, train=optTrain)
+    return m_dict
 
 
 def read_master_file(out):

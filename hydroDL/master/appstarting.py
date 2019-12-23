@@ -40,7 +40,7 @@ def run_train(master_dict, *, screen='test', cuda_id):
         m_dict = data.read_config.read_master_file(args.m_file)
         master.master_train(m_dict)
         out = m_dict['out']
-        send_email.sendEmail(subject='Training Done', text=out)
+        send_email.send_email(subject='Training Done', text=out)
     # os.system(cmd)
 
 # if __name__ == '__main__':

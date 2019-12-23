@@ -1,7 +1,7 @@
 import smtplib, ssl
 
 
-def sendEmail(subject, text, receiver='hust2014owen@gmail.com'):
+def send_email(subject, text, receiver='hust2014owen@gmail.com'):
     """用于训练结束时发邮件提醒"""
     sender = 'hydro.wyouyang@gmail.com'
     password = 'D4VEFya3UQxGR3z'

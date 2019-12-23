@@ -11,8 +11,8 @@ print('loading package hydroDL')
 config_file = "../../data/config.ini"
 
 # 读取模型配置文件
-optModel, optLoss, optTrain, optTest = init_model_param(config_file)
-model_dict = wrap_master(optModel, optLoss, optTrain, optTest)
+optTrain, optModel, optLoss = init_model_param(config_file)
+model_dict = wrap_master(optModel, optLoss, optTrain)
 
 # 准备训练数据
 source_data = SourceData(config_file, optTrain.get("tRangeTrain"))
@@ -25,7 +25,7 @@ data_model = DataModel(source_data)
 master_train(data_model, model_dict)
 # 训练结束，发送email，email中给一个输出文件夹的提示
 out = source_data.all_configs['out']
-send_email.sendEmail(subject='Training Done', text=out)
+send_email.send_email(subject='Training Done', text=out)
 
 # test
 # 首先构建test时的data和model，然后调用test函数计算
