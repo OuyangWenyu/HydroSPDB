@@ -1,3 +1,4 @@
+import utils.dataset_format
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -52,7 +53,7 @@ maskObsDay = maskObs * maskDay
 maskF = (maskDay >= 1) & (maskDay <= 3)
 statP = stat.statError(yp, obs)
 statLst = [
-    stat.statError(utils.fillNan(x, maskF), utils.fillNan(obs, maskF))
+    stat.statError(utils.dataset_format.fillNan(x, maskF), utils.dataset_format.fillNan(obs, maskF))
     for x in yfLst
 ]
 
@@ -113,7 +114,7 @@ for k in [0, 1, 2, 3, 4, 5]:
     data = statP[key] - statLst[k][key]
     cRange = [0,0.03]
     grid, uy, ux = utils.grid.array2grid(data, lat=lat, lon=lon)
-    iy, ix = utils.index2d(k, 2, 3)
+    iy, ix = utils.dataset_format.index2d(k, 2, 3)
     print(iy, ix)
     plot.plotMap(
         grid, ax=axes[iy][ix], lat=uy, lon=ux, title=titleStr, cRange=cRange)

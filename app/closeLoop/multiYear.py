@@ -1,3 +1,4 @@
+import utils.dataset_format
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -79,7 +80,7 @@ for k in range(nts):
     ind = indLst[k]
     indY = indYLst[k]
     ax = fig.add_subplot(gs[k * 3, 0])
-    tBar = utils.time.t2dt(tBarLst[indY])
+    tBar = utils.hydro_time.t2dt(tBarLst[indY])
     if k == 0:
         legLst1 = ['project', 'forecast', 'SMAP']
         legLst2 = ['prcp']
@@ -114,17 +115,17 @@ for j in range(3):
     tempFLst = list()
     for i in range(3):
         trTest = trLst[i]
-        taTest = utils.time.tRange2Array(trTest)
-        taAll = utils.time.tRange2Array([20150402, 20180401])
-        ind, ind2 = utils.time.intersect(taAll, taTest)
+        taTest = utils.hydro_time.t_range2_array(trTest)
+        taAll = utils.hydro_time.t_range2_array([20150402, 20180401])
+        ind, ind2 = utils.hydro_time.intersect(taAll, taTest)
         tempYp = ypLst[j][:, ind]
         tempYf = yfLst[j][:, ind]
         tempMask = maskF[:, ind]
         tempObs = obs[:, ind]
         tempStatP = stat.statError(
-            utils.fillNan(tempYp, tempMask), utils.fillNan(tempObs, tempMask))
+            utils.dataset_format.fillNan(tempYp, tempMask), utils.dataset_format.fillNan(tempObs, tempMask))
         tempStatF = stat.statError(
-            utils.fillNan(tempYf, tempMask), utils.fillNan(tempObs, tempMask))
+            utils.dataset_format.fillNan(tempYf, tempMask), utils.dataset_format.fillNan(tempObs, tempMask))
         tempPLst.append(tempStatP)
         tempFLst.append(tempStatF)
     statPLst.append(tempPLst)

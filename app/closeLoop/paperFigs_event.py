@@ -1,3 +1,4 @@
+import utils.dataset_format
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -60,18 +61,18 @@ statPLst = list()
 statFLst = list()
 for k in range(3):
     trTrain = trLst[k]
-    taTrain = utils.time.tRange2Array(trTrain)
-    taAll = utils.time.tRange2Array([20150402, 20180401])
-    indTrain, ind2 = utils.time.intersect(taAll, taTrain)
+    taTrain = utils.hydro_time.t_range2_array(trTrain)
+    taAll = utils.hydro_time.t_range2_array([20150402, 20180401])
+    indTrain, ind2 = utils.hydro_time.intersect(taAll, taTrain)
     indTest = np.delete(np.arange(len(taAll)), indTrain)
     tempYp = ypLst[k][:, indTest]
     tempYf = yfLst[k][:, indTest]
     tempMask = maskF[:, indTest]
     tempObs = obs[:, indTest]
     tempStatP = stat.statError(
-        utils.fillNan(tempYp, tempMask), utils.fillNan(tempObs, tempMask))
+        utils.dataset_format.fillNan(tempYp, tempMask), utils.dataset_format.fillNan(tempObs, tempMask))
     tempStatF = stat.statError(
-        utils.fillNan(tempYf, tempMask), utils.fillNan(tempObs, tempMask))
+        utils.dataset_format.fillNan(tempYf, tempMask), utils.dataset_format.fillNan(tempObs, tempMask))
     statPLst.append(tempStatP)
     statFLst.append(tempStatF)
 
@@ -96,8 +97,8 @@ plot.plotTsMap(
     lat=crd[0],
     lon=crd[1],
     t=t,
-    tBar=[utils.time.t2dt(20160401),
-          utils.time.t2dt(20170401)],
+    tBar=[utils.hydro_time.t2dt(20160401),
+          utils.hydro_time.t2dt(20170401)],
     mapNameLst=mapNameLst,
     isGrid=True,
     multiTS=True)
@@ -127,7 +128,7 @@ for k in range(nts):
     ind = indLst[k]
     indY = indYLst[k]
     ax = fig.add_subplot(gs[k * 3, 0])
-    tBar = utils.time.t2dt(tBarLst[indY])
+    tBar = utils.hydro_time.t2dt(tBarLst[indY])
     if k == 0:
         legLst1 = ['project', 'forecast', 'SMAP']
         legLst2 = ['prcp']

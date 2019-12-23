@@ -1,3 +1,4 @@
+import utils.dataset_format
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -51,8 +52,8 @@ fLst = [1, 2, 3]
 statLstF = list()
 statLstP = list()
 maskF = (maskDay >= 1) & (maskDay <= 3)
-statP = stat.statError(utils.fillNan(yp, maskF), utils.fillNan(obs, maskF))
-statF = stat.statError(utils.fillNan(yf, maskF), utils.fillNan(obs, maskF))
+statP = stat.statError(utils.dataset_format.fillNan(yp, maskF), utils.dataset_format.fillNan(obs, maskF))
+statF = stat.statError(utils.dataset_format.fillNan(yf, maskF), utils.dataset_format.fillNan(obs, maskF))
 for nf in fLst:
     xp = np.full([ngrid, nt], np.nan)
     xf = np.full([ngrid, nt], np.nan)

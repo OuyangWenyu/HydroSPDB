@@ -1,3 +1,4 @@
+import utils.dataset_format
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -46,8 +47,8 @@ ind = np.random.randint(0, ngrid)
 maskObsDay = maskObs * maskDay
 unique, counts = np.unique(maskObsDay, return_counts=True)
 maskF = (maskDay >= 1) & (maskDay <= 3)
-statP = stat.statError(utils.fillNan(yp, maskF), utils.fillNan(obs, maskF))
-statF = stat.statError(utils.fillNan(yf, maskF), utils.fillNan(obs, maskF))
+statP = stat.statError(utils.dataset_format.fillNan(yp, maskF), utils.dataset_format.fillNan(obs, maskF))
+statF = stat.statError(utils.dataset_format.fillNan(yf, maskF), utils.dataset_format.fillNan(obs, maskF))
 
 maskObsDay = maskObs * maskDay
 print(np.array([maskObs[ind, :], maskDay[ind, :]]))
@@ -59,21 +60,21 @@ tRangeLst = [[20160401, 20160701], [20160701, 20161001], [20161001, 20170101],
              [20170101, 20170401], [20170401, 20170701], [20170701, 20171001],
              [20171001, 20180101], [20180101, 20180401]]
 
-tAllA = utils.time.tRange2Array(tAllR)
+tAllA = utils.hydro_time.t_range2_array(tAllR)
 statPLst = list()
 statFLst = list()
 for k in range(4):
     tRLst = [tRangeLst[k], tRangeLst[k + 4]]
     temp = list()
     for tR in tRLst:
-        tA = utils.time.tRange2Array(tR)
+        tA = utils.hydro_time.t_range2_array(tR)
         ind0 = np.array(range(nt))
-        ind1, ind2 = utils.time.intersect(tAllA, tA)
+        ind1, ind2 = utils.hydro_time.intersect(tAllA, tA)
         temp.append(ind1)
     indT = np.concatenate(temp)
-    yfTemp = utils.fillNan(yf, maskF)[:, indT]
-    ypTemp = utils.fillNan(yp, maskF)[:, indT]
-    obsTemp = utils.fillNan(obs, maskF)[:, indT]
+    yfTemp = utils.dataset_format.fillNan(yf, maskF)[:, indT]
+    ypTemp = utils.dataset_format.fillNan(yp, maskF)[:, indT]
+    obsTemp = utils.dataset_format.fillNan(obs, maskF)[:, indT]
     statPLst.append(stat.statError(ypTemp, obsTemp))
     statFLst.append(stat.statError(yfTemp, obsTemp))
 
@@ -100,7 +101,7 @@ for k in range(4):
     cRange = [0, 0.03]
     keyLeg = 'RMSE(Proj)-RMSE(Fore)'
     titleStr = tLeg[k] + ' ' + keyLeg
-    j, i = utils.index2d(k, 2, 2)
+    j, i = utils.dataset_format.index2d(k, 2, 2)
     grid, uy, ux = utils.grid.array2grid(data, lat=lat, lon=lon)
     plot.plotMap(
         grid, ax=axes[j][i], lat=uy, lon=ux, title=titleStr, cRange=cRange)
@@ -114,14 +115,14 @@ tRLst = [[20160000 + tM[0], 20160000 + tM[1]],
          [20170000 + tM[0], 20170000 + tM[1]]]
 temp = list()
 for tR in tRLst:
-    tA = utils.time.tRange2Array(tR)
+    tA = utils.hydro_time.t_range2_array(tR)
     ind0 = np.array(range(nt))
-    ind1, ind2 = utils.time.intersect(tAllA, tA)
+    ind1, ind2 = utils.hydro_time.intersect(tAllA, tA)
     temp.append(ind1)
 indT = np.concatenate(temp)
-yfTemp = utils.fillNan(yf, maskF)[:, indT]
-ypTemp = utils.fillNan(yp, maskF)[:, indT]
-obsTemp = utils.fillNan(obs, maskF)[:, indT]
+yfTemp = utils.dataset_format.fillNan(yf, maskF)[:, indT]
+ypTemp = utils.dataset_format.fillNan(yp, maskF)[:, indT]
+obsTemp = utils.dataset_format.fillNan(obs, maskF)[:, indT]
 statPtemp = stat.statError(ypTemp, obsTemp)
 statFtemp = stat.statError(yfTemp, obsTemp)
 dataGrid = [
@@ -206,7 +207,7 @@ fig.show()
 # plot time series
 indLst = [1023]
 strLst = ['east Texas']
-tBar = [utils.time.t2dt(20160401)]
+tBar = [utils.hydro_time.t2dt(20160401)]
 t = df.getT()
 [lat, lon] = df.getGeo()
 prcp = df.get_data_ts('APCP_FORA')
@@ -238,14 +239,14 @@ trLab = '1001-1201'
 cropLab='winter wheat'
 temp = list()
 for tR in trLst:
-    tA = utils.time.tRange2Array(tR)
+    tA = utils.hydro_time.t_range2_array(tR)
     ind0 = np.array(range(nt))
-    ind1, ind2 = utils.time.intersect(tAllA, tA)
+    ind1, ind2 = utils.hydro_time.intersect(tAllA, tA)
     temp.append(ind1)
 indT = np.concatenate(temp)
-yfTemp = utils.fillNan(yf, maskF)[:, indT]
-ypTemp = utils.fillNan(yp, maskF)[:, indT]
-obsTemp = utils.fillNan(obs, maskF)[:, indT]
+yfTemp = utils.dataset_format.fillNan(yf, maskF)[:, indT]
+ypTemp = utils.dataset_format.fillNan(yp, maskF)[:, indT]
+obsTemp = utils.dataset_format.fillNan(obs, maskF)[:, indT]
 statPTemp = stat.statError(ypTemp, obsTemp)
 statFTemp = stat.statError(yfTemp, obsTemp)
 cropFile = r'/mnt/sdb/Data/Crop/cropRate_CONUSv2f1.csv'

@@ -1,3 +1,4 @@
+import utils.dataset_format
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -50,21 +51,21 @@ maskF = (maskDay >= 1) & (maskDay <= 3)
 
 # figure out train and test time index
 tR0 = [20150402, 20180401]
-tA0 = utils.time.tRange2Array(tR0)
+tA0 = utils.hydro_time.t_range2_array(tR0)
 nt = len(tA0)
 tTrainLst = list()
 tTestLst = list()
 for k in range(len(yrLst)):
     tR = tRangeLst[k]
-    tA = utils.time.tRange2Array(tR)
+    tA = utils.hydro_time.t_range2_array(tR)
     ind0 = np.array(range(nt))
-    ind1, ind2 = utils.time.intersect(tA0, tA)
+    ind1, ind2 = utils.hydro_time.intersect(tA0, tA)
     tTestLst.append(np.delete(ind0, ind1))
     tTrainLst.append(ind1)
 
 # calculate stat
 for k in range(len(yrLst)):
-    yfTemp = utils.fillNan(yfLst[k], maskF)
+    yfTemp = utils.dataset_format.fillNan(yfLst[k], maskF)
     yfTemp = yfTemp[:, tTestLst[k]]
-    statP = stat.statError(yfTemp, utils.fillNan(obs, maskF))
-    statF = stat.statError(yfTemp, utils.fillNan(obs, maskF))
+    statP = stat.statError(yfTemp, utils.dataset_format.fillNan(obs, maskF))
+    statF = stat.statError(yfTemp, utils.dataset_format.fillNan(obs, maskF))

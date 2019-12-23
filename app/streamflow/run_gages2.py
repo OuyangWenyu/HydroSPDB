@@ -6,16 +6,16 @@ from hydroDL.master import *
 from utils import send_email
 from visual import *
 
-print('loading package hydroDL')
+print('starting hydroDL...')
 # TODO：多GPU计算
-config_file = "../../data/config.ini"
+config_file = r"../../data/config.ini"
 
 # 读取模型配置文件
-optTrain, optModel, optLoss = init_model_param(config_file)
-model_dict = wrap_master(optModel, optLoss, optTrain)
+optTrain, optData, optModel, optLoss = init_model_param(config_file)
+model_dict = wrap_master(optData, optModel, optLoss, optTrain)
 
 # 准备训练数据
-source_data = SourceData(config_file, optTrain.get("tRangeTrain"))
+source_data = SourceData(config_file, optData.get("tRangeTrain"))
 
 # 构建输入数据类对象
 data_model = DataModel(source_data)

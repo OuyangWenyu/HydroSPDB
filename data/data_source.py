@@ -12,10 +12,9 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 
-import utils
+from utils import *
 from data.download_data import download_small_zip, download_small_file, download_google_drive
 from data.read_config import read_gages_config
-from utils.geo import spatial_join
 
 
 class SourceData(object):
@@ -206,7 +205,7 @@ class SourceData(object):
             qc_dict = {'A': 1, 'A:e': 2, 'M': 3}
             qc = np.array([qc_dict[x] for x in data_temp[4]])
         # 如果时间序列长度和径流数据长度不一致，说明有missing值，先补充nan值
-        t_lst = utils.time.t_range_days(t_range)
+        t_lst = hydro_time.t_range_days(t_range)
         nt = len(t_lst)
         if len(obs) != nt:
             out = np.full([nt], np.nan)
@@ -237,7 +236,7 @@ class SourceData(object):
         Return：
             y: ndarray--各个站点的径流数据, 1d-axis: gages, 2d-axis: day
         """
-        t_lst = utils.time.t_range_days(t_range)
+        t_lst = hydro_time.t_range_days(t_range)
         nt = len(t_lst)
         t0 = time.time()
         usgs_id_lst = gage_dict[gage_fld_lst[0]]
@@ -285,10 +284,10 @@ class SourceData(object):
         t_lst = all_t_list
         if time_range:
             # calculate the day length
-            t_lst = utils.time.t_range_days(time_range)
+            t_lst = hydro_time.t_range_days(time_range)
         else:
             time_range = self.t_range
-            t_lst = utils.time.t_range_days(time_range)
+            t_lst = hydro_time.t_range_days(time_range)
         ts, ind1, ind2 = np.intersect1d(all_t_list, t_lst, return_indices=True)
         usgs_values = usgs.iloc[sites_index, ind1]
 
@@ -406,7 +405,7 @@ class SourceData(object):
         # different files for different years
         t_start = str(t_range[0])[0:4]
         t_end = str(t_range[1])[0:4]
-        t_lst_chosen = utils.time.t_range_days(t_range)
+        t_lst_chosen = hydro_time.t_range_days(t_range)
         t_lst_years = np.arange(t_start, t_end, dtype='datetime64[Y]').astype(str)
         data_temps = pd.DataFrame()
         for year in t_lst_years:

@@ -37,8 +37,8 @@ if 'train' in doLst:
     train.model_save(outFolder, model, nEpoch, modelName=modelName)
 
     for k in dLst:
-        sd = utils.time.t2dt(ty1[0]) - dt.timedelta(days=k)
-        ed = utils.time.t2dt(ty1[1]) - dt.timedelta(days=k)
+        sd = utils.hydro_time.t2dt(ty1[0]) - dt.timedelta(days=k)
+        ed = utils.hydro_time.t2dt(ty1[1]) - dt.timedelta(days=k)
         df2 = app.streamflow.data.dbCsv.DataframeCsv(
             rootDB=rootDB, subset='CONUSv4f1', tRange=[sd, ed])
         obs = df2.getDataTs('SMAP_AM', doNorm=True, rmNan=False)
@@ -69,8 +69,8 @@ if 'test' in doLst:
     ypLstmLst.append(
         dbCsv.transNorm(yp, rootDB=rootDB, fieldName='SMAP_AM', fromRaw=False))
     for k in dLst:
-        sd = utils.time.t2dt(ty2[0]) - dt.timedelta(days=k)
-        ed = utils.time.t2dt(ty2[1]) - dt.timedelta(days=k)
+        sd = utils.hydro_time.t2dt(ty2[0]) - dt.timedelta(days=k)
+        ed = utils.hydro_time.t2dt(ty2[1]) - dt.timedelta(days=k)
         df2 = app.streamflow.data.dbCsv.DataframeCsv(
             rootDB=rootDB, subset='CONUSv4f1', tRange=[sd, ed])
         obs = df2.getDataTs('SMAP_AM', doNorm=True, rmNan=False)

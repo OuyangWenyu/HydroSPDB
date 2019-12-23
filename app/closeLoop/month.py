@@ -1,3 +1,4 @@
+import utils.dataset_format
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -46,8 +47,8 @@ ind = np.random.randint(0, ngrid)
 maskObsDay = maskObs * maskDay
 unique, counts = np.unique(maskObsDay, return_counts=True)
 maskF = (maskDay >= 1) & (maskDay <= 3)
-statP = stat.statError(utils.fillNan(yp, maskF), utils.fillNan(obs, maskF))
-statF = stat.statError(utils.fillNan(yf, maskF), utils.fillNan(obs, maskF))
+statP = stat.statError(utils.dataset_format.fillNan(yp, maskF), utils.dataset_format.fillNan(obs, maskF))
+statF = stat.statError(utils.dataset_format.fillNan(yf, maskF), utils.dataset_format.fillNan(obs, maskF))
 
 maskObsDay = maskObs * maskDay
 print(np.array([maskObs[ind, :], maskDay[ind, :]]))
@@ -64,21 +65,21 @@ tRangeLst = [[20180101, 20180201], [20180201, 20180301], [20180301, 20180401],
              [20170701, 20170801], [20170801, 20170901], [20170901, 20171001],
              [20171001, 20171101], [20171101, 20171201], [20171201, 20180101]]
 
-tAllA = utils.time.tRange2Array(tAllR)
+tAllA = utils.hydro_time.t_range2_array(tAllR)
 statPLst = list()
 statFLst = list()
 for k in range(12):
     tRLst = [tRangeLst[k], tRangeLst[k + 12]]
     temp = list()
     for tR in tRLst:
-        tA = utils.time.tRange2Array(tR)
+        tA = utils.hydro_time.t_range2_array(tR)
         ind0 = np.array(range(nt))
-        ind1, ind2 = utils.time.intersect(tAllA, tA)
+        ind1, ind2 = utils.hydro_time.intersect(tAllA, tA)
         temp.append(ind1)
     indT = np.concatenate(temp)
-    yfTemp = utils.fillNan(yf, maskF)[:, indT]
-    ypTemp = utils.fillNan(yp, maskF)[:, indT]
-    obsTemp = utils.fillNan(obs, maskF)[:, indT]
+    yfTemp = utils.dataset_format.fillNan(yf, maskF)[:, indT]
+    ypTemp = utils.dataset_format.fillNan(yp, maskF)[:, indT]
+    obsTemp = utils.dataset_format.fillNan(obs, maskF)[:, indT]
     statPLst.append(stat.statError(ypTemp, obsTemp))
     statFLst.append(stat.statError(yfTemp, obsTemp))
 

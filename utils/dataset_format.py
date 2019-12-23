@@ -1,7 +1,9 @@
 """
-Define 
+Define 数据处理所需的一些基础类型工具类型的函数
 """
 import fnmatch
+import zipfile
+
 import numpy as np
 import pandas as pd
 import glob
@@ -146,9 +148,19 @@ def trans_daymet_forcing_file_to_camels(daymet_dir, output_dir):
                         data_df.to_csv(output_file, header=True, index=False, sep=' ', float_format='%.2f')
 
 
-class Dataset(object):
-    def __init__(self):
-        pass
+def unzip_file(dataset_zip, path_unzip):
+    """递归操作（文件夹内的压缩文件也要解压）：把zip文件 dataset_zip 解压到 path_unzip 文件夹下"""
+    with zipfile.ZipFile(dataset_zip, 'r') as zip_temp:
+        zip_temp.extractall(path_unzip)
 
-    def __repr__(self):
-        return 'later'
+
+def index2d(ind, ny, nx):
+    iy = np.floor(ind / nx)
+    ix = np.floor(ind % nx)
+    return int(iy), int(ix)
+
+
+def fillNan(mat, mask):
+    temp = mat.copy()
+    temp[~mask] = np.nan
+    return temp
