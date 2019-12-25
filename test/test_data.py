@@ -1,6 +1,7 @@
 import collections
 import os
 import unittest
+from datetime import datetime, timedelta
 
 from data import *
 
@@ -146,6 +147,15 @@ class MyTestCase(unittest.TestCase):
         t_result = np.array([1995, 1996, 1997, 1998, 1999])
         # np的数组assert需要调用numnpy自己的assert函数
         np.testing.assert_equal(t_list, t_result)
+
+    def test_temp(self):
+        t_range = ['1995-01-01', '2000-01-01']
+        start_time_str = datetime.strptime(t_range[0], '%Y-%m-%d')
+        end_time_str = datetime.strptime(t_range[1], '%Y-%m-%d') - timedelta(days=1)
+        streamflow_url = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{}'
+        url = streamflow_url.format('03010101', start_time_str.year, start_time_str.month,
+                                    start_time_str.day, end_time_str.year, end_time_str.month, end_time_str.day)
+        print(url)
 
 
 if __name__ == '__main__':

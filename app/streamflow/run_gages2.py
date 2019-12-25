@@ -15,7 +15,7 @@ optTrain, optData, optModel, optLoss = init_model_param(config_file)
 model_dict = wrap_master(optData, optModel, optLoss, optTrain)
 
 # 准备训练数据
-source_data = SourceData(config_file, optData.get("tRangeTrain"))
+source_data = SourceData(config_file, optData.get("tRangeTrain"), ['1980-01-01', '2015-01-01'])
 
 # 构建输入数据类对象
 data_model = DataModel(source_data)

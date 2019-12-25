@@ -24,12 +24,13 @@ class SourceData(object):
     接下来获取forcing数据和streamflow数据
     """
 
-    def __init__(self, config_file, t_range):
+    def __init__(self, config_file, t_range, t_download_range):
         """读取配置，准备数据，关于数据读取部分，可以放在外部需要的时候再执行"""
         gages_config = read_gages_config(config_file)
         self.all_configs = gages_config
         # t_range: 训练数据还是测试数据，需要外部指定
         self.t_range = t_range
+        self.t_download_range = t_download_range
         self.prepare_attr_data()
         gage_dict, gage_fld_lst = self.read_gage_info()
         self.prepare_forcing_data()
@@ -146,7 +147,7 @@ class SourceData(object):
         """
         dir_gage_flow = self.all_configs.get("flow_dir")
         streamflow_url = self.all_configs.get("flow_url")
-        t_range = self.t_range
+        t_download_range = self.t_download_range
         if not os.path.isdir(dir_gage_flow):
             os.mkdir(dir_gage_flow)
         dir_list = os.listdir(dir_gage_flow)
@@ -166,8 +167,8 @@ class SourceData(object):
             file_usgs_id = str(usgs_id_lst[ind]) + ".txt"
             if file_usgs_id not in file_list:
                 # 通过直接读取网页的方式获取数据，然后存入txt文件
-                start_time_str = datetime.strptime(t_range[0], '%Y-%m-%d')
-                end_time_str = datetime.strptime(t_range[1]) - timedelta(days=1)
+                start_time_str = datetime.strptime(t_download_range[0], '%Y-%m-%d')
+                end_time_str = datetime.strptime(t_download_range[1], '%Y-%m-%d') - timedelta(days=1)
                 url = streamflow_url.format(usgs_id_lst[ind], start_time_str.year, start_time_str.month,
                                             start_time_str.day, end_time_str.year, end_time_str.month, end_time_str.day)
 
