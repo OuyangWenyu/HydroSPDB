@@ -3,7 +3,12 @@ import os
 import unittest
 
 from data import *
+
+import numpy as np
 import geopandas as gpd
+
+from utils import spatial_join
+from utils.hydro_time import t_range_years
 
 
 class MyTestCase(unittest.TestCase):
@@ -121,6 +126,26 @@ class MyTestCase(unittest.TestCase):
         print(shape_data.columns)
         gages_id = shape_data['GAGE_ID'].values
         print(gages_id)
+
+    def test_spatial_join(self):
+        dir_db_ = self.dir_db
+        points_file = os.path.join(dir_db_, "gagesII_9322_point_shapefile", "gagesII_9322_sept30_2011.shp")
+        polygons_file = os.path.join(dir_db_, "huc4", "HUC4.shp")
+        spatial_join(points_file, polygons_file)
+
+    def test_download_google_drive(self):
+        dir_db_ = self.dir_db
+        google_drive_dir_name = "daymet"
+        download_dir = os.path.join(dir_db_, 'gagesII_forcing', 'daymet')
+        client_secrets_file = os.path.join(dir_db_, "mycreds.txt")
+        download_google_drive(client_secrets_file, google_drive_dir_name, download_dir)
+
+    def test_t_range_years(self):
+        t_range = ['1995-01-01', '2000-01-01']
+        t_list = t_range_years(t_range)
+        t_result = np.array([1995, 1996, 1997, 1998, 1999])
+        # np的数组assert需要调用numnpy自己的assert函数
+        np.testing.assert_equal(t_list, t_result)
 
 
 if __name__ == '__main__':

@@ -73,11 +73,13 @@ def download_kaggle_file(kaggle_json, name_of_dataset, path_download, file_downl
         zip_temp.extractall(path_download)
 
 
-def download_google_drive(google_drive_dir_name, download_dir):
-    """从google drive下载文件，首先要下载好client_secrets.json文件"""
+def download_google_drive(client_secrets_file, google_drive_dir_name, download_dir):
+    """从google drive下载文件，首先要下载好client_secrets.json文件，然后在jupyter里运行下
+    https://github.com/OuyangWenyu/aqualord/blob/master/CloudStor/googledrive.ipynb
+    里的代码，把文件夹下得到的mycreds.txt保存到client_secrets_file，这样就有一个本地的凭证了"""
     # 根据client_secrets.json授权
     gauth = GoogleAuth()
-    gauth.LocalWebserverAuth()
+    gauth.LoadCredentialsFile(client_secrets_file)
     drive = GoogleDrive(gauth)
     # 先从google drive根目录判断是否有dir_name这一文件夹，没有的话就直接报错即可。
     dir_id = None

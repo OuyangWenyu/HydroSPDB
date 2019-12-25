@@ -36,6 +36,13 @@ def t_range_days(t_range, *, step=np.timedelta64(1, 'D')):
     return t_array
 
 
+def t_range_years(t_range):
+    start_year = int(t_range[0].split("-")[0])
+    end_year = int(t_range[1].split("-")[0])
+    year_range_list = np.arange(start_year, end_year)
+    return year_range_list
+
+
 def intersect(t_lst1, t_lst2):
     C, ind1, ind2 = np.intersect1d(t_lst1, t_lst2, return_indices=True)
     return ind1, ind2

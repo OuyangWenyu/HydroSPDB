@@ -12,8 +12,9 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 
+from data.read_config import read_gages_config
+from data.download_data import download_small_file, download_small_zip, download_google_drive
 from utils import *
-from data import *
 
 
 class SourceData(object):
@@ -46,7 +47,7 @@ class SourceData(object):
         attr_url = configs.get('attr_url')
         download_small_zip(attr_url, data_dir)
 
-    def read_gage_info(self, ids_specific=None, screen_basin_area_huc4=False):
+    def read_gage_info(self, ids_specific=None, screen_basin_area_huc4=True):
         """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
         从中选出field_lst中属性名称对应的值，存入dic中。
                     # using shapefile of all basins to check if their basin area satisfy the criteria
@@ -93,9 +94,9 @@ class SourceData(object):
             data = data.iloc[ind1, :]
         for s in gage_fld_lst:
             if s is gage_fld_lst[1]:
-                out[s] = data[gage_fld_lst.index(s)].values.tolist()
+                out[s] = data[s].values.tolist()
             else:
-                out[s] = data[gage_fld_lst.index(s)].values
+                out[s] = data[s].values
         return out, gage_fld_lst
 
     def prepare_forcing_data(self):
@@ -103,13 +104,39 @@ class SourceData(object):
         url_forcing = self.all_configs.get("forcing_url")
         if url_forcing is None:
             print("Downloading dataset from google drive directly...")
-        # 个人定义的：google drive上的forcing数据文件夹名和forcing类型一样的
-        dir_name = self.all_configs.get("forcing_type")
-        download_dir_name = os.path.join(self.all_configs.get("forcing_dir"), dir_name)
-        if not os.path.isdir(download_dir_name):
-            os.mkdir(download_dir_name)
-        # 然后下载数据到这个文件夹下，这里从google drive下载数据
-        download_google_drive(dir_name, download_dir_name)
+            # 个人定义的：google drive上的forcing数据文件夹名和forcing类型一样的
+            dir_name = self.all_configs.get("forcing_type")
+            download_dir_name = self.all_configs.get("forcing_dir")
+            if not os.path.isdir(download_dir_name):
+                os.mkdir(download_dir_name)
+            # 如果已经有了数据，那么就不必再下载了
+            regions = self.all_configs["regions"]
+            regions_shps = [r.split('_')[-1] for r in regions]
+            year_range_list = hydro_time.t_range_years(self.t_range)
+            # 如果有某个文件没有，那么就下载数据
+            shp_files_now = []
+            for f_name in os.listdir(download_dir_name):
+                if f_name.endswith('.csv'):
+                    shp_files_now.append(f_name)
+            is_download = False
+            for r_shp in regions_shps:
+                r_files = [dir_name + "_" + r_shp + "_mean_" + str(t_range_temp) + ".csv" for t_range_temp in
+                           year_range_list]
+                r_file_is_download = []
+                for r_file_temp in r_files:
+                    if r_file_temp not in shp_files_now:
+                        is_download_temp = True
+                        r_file_is_download.append(is_download_temp)
+                if True in r_file_is_download:
+                    is_download = True
+                    break
+
+            if is_download:
+                # 然后下载数据到这个文件夹下，这里从google drive下载数据
+                download_google_drive(dir_name, download_dir_name)
+            else:
+                print("已经下载好了")
+        print("forcing数据准备完毕")
 
     def prepare_flow_data(self, gage_dict, gage_fld_lst):
         """检查数据是否齐全，不够的话进行下载，下载数据的时间范围要设置的大一些，这里暂时例子都是以1980-01-01到2015-12-31
