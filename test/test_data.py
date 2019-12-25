@@ -3,6 +3,7 @@ import os
 import unittest
 
 from data import *
+import geopandas as gpd
 
 
 class MyTestCase(unittest.TestCase):
@@ -111,6 +112,15 @@ class MyTestCase(unittest.TestCase):
         dir_db_ = self.dir_db
         data_url = 'https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_2011.zip'
         download_small_zip(data_url, dir_db_)
+
+    def test_read_gpd_file(self):
+        dir_db_ = self.dir_db
+        gage_region_dir = os.path.join(dir_db_, 'boundaries-shapefiles-by-aggeco')
+        shapefile = os.path.join(gage_region_dir, 'bas_nonref_CntlPlains.shp')
+        shape_data = gpd.read_file(shapefile)
+        print(shape_data.columns)
+        gages_id = shape_data['GAGE_ID'].values
+        print(gages_id)
 
 
 if __name__ == '__main__':

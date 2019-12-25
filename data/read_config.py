@@ -142,7 +142,7 @@ def read_gages_config(config_file):
     # USGS所有站点的文件，gages文件夹下载下来之后文件夹都是固定的
     gage_id_file = os.path.join(attr_dir, 'spreadsheets-in-csv-format', 'conterm_basinid.txt')
     attr_url = data_params.get("attrUrl")
-    # time range
+    # time range, TODO 直接在这里转换为时间对象
     t_range_train = data_params.get("tRangeTrain")
     t_range_test = data_params.get("tRangeTest")
     # regions

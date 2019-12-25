@@ -13,8 +13,7 @@ import pandas as pd
 from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 
 from utils import *
-from data.download_data import download_small_zip, download_small_file, download_google_drive
-from data.read_config import read_gages_config
+from data import *
 
 
 class SourceData(object):
@@ -41,11 +40,11 @@ class SourceData(object):
     def prepare_attr_data(self):
         """根据时间读取数据，没有的数据下载"""
         configs = self.all_configs
-        attr_dir = configs.get('attr_dir')
-        if not os.path.isdir(attr_dir):
-            os.mkdir(attr_dir)
+        data_dir = configs.get('root_dir')
+        if not os.path.isdir(data_dir):
+            os.mkdir(data_dir)
         attr_url = configs.get('attr_url')
-        download_small_zip(attr_url, attr_dir)
+        download_small_zip(attr_url, data_dir)
 
     def read_gage_info(self, ids_specific=None, screen_basin_area_huc4=False):
         """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
@@ -65,7 +64,7 @@ class SourceData(object):
         huc4_shp_file = self.all_configs.get("huc4_shp_file")
         gage_region_dir = self.all_configs.get("gage_region_dir")
         region_shapefiles = self.all_configs.get("regions")
-        data = pd.read_csv(gage_id_file, sep=',', header=None, skiprows=1, dtype={0: str})
+        data = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
         gage_fld_lst = data.columns.values
         out = dict()
         if len(region_shapefiles):
