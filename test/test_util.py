@@ -1,6 +1,8 @@
+import os
 import unittest
 import numpy as np
-from utils.hydro_time import t_range_years, t_range_days
+import pandas as pd
+from utils.hydro_time import t_range_years, t_range_days, get_year
 from datetime import datetime, timedelta
 
 
@@ -15,6 +17,35 @@ def test_numpy():
     print("第0,2行的第3,3列", C_A)
     print(np.arange(5))
     print(np.arange(5).shape[0])
+
+
+def test_get_year():
+    str_time = "1995-01-01"
+    print()
+    year1 = get_year(str_time)
+    print("年份是：", year1)
+    text = '2012-09-20'
+    y = datetime.strptime(text, '%Y-%m-%d')
+    print()
+    year2 = get_year(y)
+    print("年份是：", year2)
+    print("生成年份序列字符串：", np.arange(year1, year2).astype(str))
+    a_time = np.datetime64('1995-01-01T00:00:00.000000')
+    year3 = get_year(a_time)
+    print(type(year3))
+    print("年份是：", year3)
+
+
+def test_os_func():
+    files = os.listdir()
+    print(type(files))
+    print(files)
+
+
+def test_pandas():
+    df = pd.DataFrame(np.arange(16).reshape((4, 4)), columns=['one', 'two', 'three', 'four'],
+                      index=['a', 'b', 'c', 'd'])
+    print(df["one"].values.astype(str))
 
 
 class MyTestCase(unittest.TestCase):

@@ -108,6 +108,8 @@ class DataFuncCase(unittest.TestCase):
                                                          ],
                                             attr_dir=os.path.join(dir_db_, 'basinchar_and_report_sept_2011'),
                                             attr_url='https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_2011.zip',
+                                            gage_files_dir=os.path.join(dir_db_, 'basinchar_and_report_sept_2011',
+                                                                        'spreadsheets-in-csv-format'),
                                             gage_id_file=os.path.join(dir_db_, 'basinchar_and_report_sept_2011',
                                                                       'spreadsheets-in-csv-format',
                                                                       'conterm_basinid.txt'),

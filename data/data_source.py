@@ -339,14 +339,14 @@ class SourceData(object):
         usgs_out = usgs_values[np.where(sites_chosen > 0)]
         gages_chosen_id = [usgs_all_sites[i] for i in range(len(sites_chosen)) if sites_chosen[i] > 0]
 
-        return usgs_out, gages_chosen_id
+        return usgs_out, gages_chosen_id, ts
 
     def read_attr_all(self, gages_ids):
         """读取GAGES-II下的属性数据，目前是将用到的几个属性所属的那个属性大类下的所有属性的统计值都计算一下
         parameters:
             gages_ids:可以指定几个gages站点
         """
-        dir_gage_attr = self.all_configs.get("attr_dir")
+        dir_gage_attr = self.all_configs.get("gage_files_dir")
         dir_db = self.all_configs.get("root_dir")
         f_dict = dict()  # factorize dict
         # 每个key-value对是一个文件（str）下的所有属性（list）
@@ -417,54 +417,55 @@ class SourceData(object):
         out = attr_all[:, ind_var]
         return out
 
-    def read_forcing(self, usgs_id_lst, t_range, var_lst, regions):
+    @my_timer
+    def read_forcing(self, usgs_id_lst, t_range_lst):
         """读取gagesII_forcing文件夹下的驱动数据(data processed from GEE)
         :return
         x: ndarray -- 1d-axis:gages, 2d-axis: day, 3d-axis: forcing vst
         """
-        t0 = time.time()
-        data_folder = os.path.join(self.all_configs.get("root_dir"), self.all_configs.get("forcing_dir"))
+        data_folder = os.path.join(self.all_configs.get("forcing_dir"))
         dataset = self.all_configs.get("forcing_type")
-        forcing_lst = self.all_configs.get("varT")
+        var_lst = self.all_configs.get("forcing_chosen")
+        regions = self.all_configs.get("regions")
         # different files for different years
-        t_start = str(t_range[0])[0:4]
-        t_end = str(t_range[1])[0:4]
-        t_lst_chosen = hydro_time.t_range_days(t_range)
-        t_lst_years = np.arange(t_start, t_end, dtype='datetime64[Y]').astype(str)
+        t_start_year = hydro_time.get_year(t_range_lst[0])
+        t_end_year = hydro_time.get_year(t_range_lst[-1])
+        # arange是左闭右开的，所以+1
+        t_lst_years = np.arange(t_start_year, t_end_year + 1).astype(str)
         data_temps = pd.DataFrame()
         for year in t_lst_years:
             # to match the file of the given year
-            data_dir = os.path.join(data_folder, dataset, regions[0])
             data_file = ''
-            for f_name in os.listdir(data_dir):
-                if fnmatch.fnmatch(f_name, dataset + '_*_mean_' + year + '.csv'):
+            for f_name in os.listdir(data_folder):
+                # 首先判断是不是在给定的region内的，TODO 这里先用一个region
+                region = regions[0].split("_")[-1]
+                if fnmatch.fnmatch(f_name, dataset + '_' + region + '_mean_' + year + '.csv'):
                     print(f_name)
-                    data_file = os.path.join(data_dir, f_name)
+                    data_file = os.path.join(data_folder, f_name)
                     break
-            data_temp = pd.read_csv(data_file, sep=',', dtype={'gage_id': int})
+            data_temp = pd.read_csv(data_file, sep=',', dtype={'gage_id': str})
             frames_temp = [data_temps, data_temp]
             data_temps = pd.concat(frames_temp)
         # choose data in given time and sites. if there is no value for site in usgs_id_lst, just error(because every
         # site should have forcing). using dataframe mostly will make data type easy to handle with
         sites_forcing = data_temps.iloc[:, 0].values
-        sites_index = [i for i in range(sites_forcing.size) if sites_forcing[i] in usgs_id_lst.astype(int)]
+        sites_index = [i for i in range(sites_forcing.size) if sites_forcing[i] in usgs_id_lst]
         data_sites_chosen = data_temps.iloc[sites_index, :]
         t_range_forcing = np.array(data_sites_chosen.iloc[:, 1].values.astype(str), dtype='datetime64[D]')
-        t_index = [j for j in range(t_range_forcing.size) if t_range_forcing[j] in t_lst_chosen]
+        t_index = [j for j in range(t_range_forcing.size) if t_range_forcing[j] in t_range_lst]
         data_chosen = data_sites_chosen.iloc[t_index, :]
         # when year is a leap year, only 365d will be provided by gee datasets. better to fill it with nan
         # number of days are different in different years, so reshape can't be used
-        x = np.empty([len(usgs_id_lst), t_lst_chosen.size, len(var_lst)])
+        x = np.empty([len(usgs_id_lst), t_range_lst.size, len(var_lst)])
         data_chosen_t_length = np.unique(data_chosen.iloc[:, 1].values).size
         for k in range(len(usgs_id_lst)):
             data_k = data_chosen.iloc[k * data_chosen_t_length:(k + 1) * data_chosen_t_length, :]
-            out = np.full([t_lst_chosen.size, len(forcing_lst)], np.nan)
+            out = np.full([t_range_lst.size, len(var_lst)], np.nan)
             # df中的date是字符串，转换为datetime，方可与tLst求交集
             df_date = data_k.iloc[:, 1]
             date = df_date.values.astype('datetime64[D]')
-            c, ind1, ind2 = np.intersect1d(t_lst_chosen, date, return_indices=True)
+            c, ind1, ind2 = np.intersect1d(t_range_lst, date, return_indices=True)
             out[ind1, :] = data_k.iloc[ind2, 2:].values
             x[k, :, :] = out
 
-        print("time of reading usgs forcing data", time.time() - t0)
         return x

@@ -148,7 +148,8 @@ def read_gages_config(config_file):
     attr_chosen = data_params.get("varC")
     attr_dir = os.path.join(dir_db, data_params.get("attrDir"))
     # USGS所有站点的文件，gages文件夹下载下来之后文件夹都是固定的
-    gage_id_file = os.path.join(attr_dir, 'spreadsheets-in-csv-format', 'conterm_basinid.txt')
+    gage_files_dir = os.path.join(attr_dir, 'spreadsheets-in-csv-format')
+    gage_id_file = os.path.join(gage_files_dir, 'conterm_basinid.txt')
     attr_url = data_params.get("attrUrl")
     # time range, TODO 直接在这里转换为时间对象
     t_range_train = data_params.get("tRangeTrain")
@@ -172,8 +173,9 @@ def read_gages_config(config_file):
                                    forcing_chosen=forcing_chosen, forcing_dir=forcing_dir, forcing_type=forcing_type,
                                    forcing_url=forcing_url,
                                    attr_chosen=attr_chosen, attr_dir=attr_dir, attr_url=attr_url,
-                                   gage_id_file=gage_id_file, gage_region_dir=gage_region_dir,
-                                   gage_point_file=gagesii_points_file, huc4_shp_file=huc4_shp_file
+                                   gage_files_dir=gage_files_dir, gage_id_file=gage_id_file,
+                                   gage_region_dir=gage_region_dir, gage_point_file=gagesii_points_file,
+                                   huc4_shp_file=huc4_shp_file
                                    )
 
 

@@ -1,5 +1,5 @@
 """补充时间处理相关函数"""
-import datetime as dt
+import datetime as dt, datetime
 import numpy as np
 
 
@@ -42,6 +42,16 @@ def t_range_years(t_range):
     end_year = int(t_range[1].split("-")[0])
     year_range_list = np.arange(start_year, end_year)
     return year_range_list
+
+
+def get_year(a_time):
+    """返回时间的年份"""
+    if isinstance(a_time, datetime.date):
+        return a_time.year
+    elif isinstance(a_time, np.datetime64):
+        return a_time.astype('datetime64[Y]').astype(int) + 1970
+    else:
+        return int(a_time[0:4])
 
 
 def intersect(t_lst1, t_lst2):
