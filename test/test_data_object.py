@@ -2,7 +2,7 @@
 import os
 import unittest
 from data import *
-import pickle
+from utils import *
 
 
 class MyTestCase(unittest.TestCase):
@@ -21,23 +21,35 @@ class MyTestCase(unittest.TestCase):
         dir_temp = source_data.all_configs["temp_dir"]
         if not os.path.isdir(dir_temp):
             os.mkdir(dir_temp)
-        f = open(os.path.join(dir_temp, 'data_source.txt'), 'wb')
-        pickle.dump(source_data, f)
-        f.close()
+        my_file = os.path.join(dir_temp, 'data_source.txt')
+        serialize_pickle(source_data, my_file)
 
     def test_read_data_source_temp(self):
-        f = open(self.data_source_dump, 'rb')
-        d = pickle.load(f)
+        d = unserialize_pickle(self.data_source_dump)
         print(d)
-        f.close()
 
     def test_data_model(self):
-        f = open(self.data_source_dump, 'rb')
-        source_data = pickle.load(f)
+        source_data = unserialize_pickle(self.data_source_dump)
         print(source_data)
-        f.close()
         data_model = DataModel(source_data)
         print(data_model)
+        # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
+        data_flow = data_model.data_flow
+        data_forcing = data_model.data_forcing
+        data_attr = data_model.data_attr
+        stat_dict = data_model.stat_dict
+        # 序列化保存对象
+        dir_temp = source_data.all_configs["temp_dir"]
+        if not os.path.isdir(dir_temp):
+            os.mkdir(dir_temp)
+        stat_file = os.path.join(dir_temp, 'Statistics.json')
+        flow_file = os.path.join(dir_temp, 'flow')
+        forcing_file = os.path.join(dir_temp, 'forcing')
+        attr_file = os.path.join(dir_temp, 'attr')
+        serialize_json(stat_dict, stat_file)
+        serialize_numpy(data_flow, flow_file)
+        serialize_numpy(data_forcing, forcing_file)
+        serialize_numpy(data_attr, attr_file)
 
 
 if __name__ == '__main__':

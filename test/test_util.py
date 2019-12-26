@@ -2,6 +2,8 @@ import os
 import unittest
 import numpy as np
 import pandas as pd
+from pandas.util.testing import assert_frame_equal
+
 from utils.hydro_time import t_range_years, t_range_days, get_year
 from datetime import datetime, timedelta
 
@@ -46,6 +48,30 @@ def test_pandas():
     df = pd.DataFrame(np.arange(16).reshape((4, 4)), columns=['one', 'two', 'three', 'four'],
                       index=['a', 'b', 'c', 'd'])
     print(df["one"].values.astype(str))
+    df0 = pd.DataFrame(
+        [["A", 1], ["A", 2], ["A", 3], ["B", 1], ["B", 2], ["B", 3], ["C", 1], ["C", 2], ["C", 3],
+         ["A", 4], ["A", 5], ["A", 6], ["A", 7], ["B", 4], ["B", 5], ["B", 6], ["B", 7], ["C", 4], ["C", 5], ["C", 6],
+         ["C", 7],
+         ["A", 8], ["A", 9], ["A", 10], ["B", 8], ["B", 9], ["B", 10], ["C", 8], ["C", 9], ["C", 10]],
+        columns=['gage_id', 'time_start'])
+    # 接下来把df0转为如下形式：
+    np_result = np.array(
+        [[["A", 1], ["A", 2], ["A", 3], ["A", 4], ["A", 5], ["A", 6], ["A", 7], ["A", 8], ["A", 9], ["A", 10]],
+         [["B", 1], ["B", 2], ["B", 3], ["B", 4], ["B", 5], ["B", 6], ["B", 7], ["B", 8], ["B", 9], ["A", 10]],
+         [["C", 1], ["C", 2], ["C", 3], ["C", 4], ["C", 5], ["C", 6], ["C", 7], ["C", 8], ["C", 9], ["A", 9]]])
+    names = ["A", "B", "C"]
+    df2 = pd.DataFrame()
+    for name in names:
+        df_name = df0[df0['gage_id'] == name]
+        print(df_name)
+        df2 = [df2, df_name]
+        df2 = pd.concat(df2)
+    np1 = df2.values
+    np2 = np.expand_dims(np1, axis=0)
+    print(np2)
+    np3 = np2.reshape(3, 10, 2)
+    print(np3)
+    np.testing.assert_equal(np3, np_result)
 
 
 class MyTestCase(unittest.TestCase):

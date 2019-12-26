@@ -3,7 +3,7 @@
 from data import *
 from explore.stat import stat_ind
 from hydroDL.master import *
-from utils import send_email
+from utils import hydro_util
 from visual import *
 
 print('starting hydroDL...')
@@ -25,7 +25,7 @@ dataModel = DataModel(sourceData)
 master_train(dataModel, modelDict)
 # 训练结束，发送email，email中给一个输出文件夹的提示
 out = sourceData.all_configs['out']
-send_email.send_email(subject='Training Done', text=out)
+hydro_util.send_email(subject='Training Done', text=out)
 
 # test
 # 首先构建test时的data和model，然后调用test函数计算

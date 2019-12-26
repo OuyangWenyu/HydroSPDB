@@ -5,6 +5,7 @@ import os
 import numpy as np
 
 from explore.stat import trans_norm, cal_stat
+from utils import unserialize_json, serialize_json
 
 
 class DataModel(object):
@@ -19,8 +20,13 @@ class DataModel(object):
         # data_flow = np.expand_dims(data_flow, axis=2)
         # 根据径流数据过滤掉一些站点，目前给的是示例参数，后面需修改
         data_flow, usgs_id, t_range_list = data_source.usgs_screen_streamflow(data_flow,
-                                                                              usgs_ids=["03144816", "03145000"],
-                                                                              time_range=['1995-01-01', '1996-01-01'])
+                                                                              usgs_ids=['03144816', '03145000',
+                                                                                        '03156000', '03157000',
+                                                                                        '03157500', '03219500',
+                                                                                        '03220000', '03221000',
+                                                                                        '03223000', '03224500',
+                                                                                        '03225500', '03226800'],
+                                                                              time_range=['1995-01-01', '1997-01-01'])
         self.data_flow = data_flow
         self.gages_id = usgs_id
         self.t_range_list = t_range_list
@@ -32,7 +38,7 @@ class DataModel(object):
         data_attr = data_source.read_attr(usgs_id, attr_lst)
         self.data_attr = data_attr
         # 初步计算统计值
-        stat_dict = self.basic_statistic()
+        stat_dict = self.cal_stat_all()
         self.stat_dict = stat_dict
 
     def cal_stat_all(self):
@@ -56,25 +62,6 @@ class DataModel(object):
             var = attr_lst[k]
             print(var)
             stat_dict[var] = cal_stat(attr_data[:, k])
-
-        dir_db = self.data_source.all_configs["root_dir"]
-        stat_file = os.path.join(dir_db, 'Statistics.json')
-        with open(stat_file, 'w') as FP:
-            json.dump(stat_dict, FP, indent=4)
-
-    def basic_statistic(self):
-        """根据读取的数据进行基本统计运算，以便于归一化等运算"""
-        # 为了便于后续的归一化计算，这里需要计算流域attributes、forcings和streamflows统计值。
-        # module variable
-        source_data = self.data_source
-        dir_db = source_data.all_configs.get("root_dir")
-        stat_file = os.path.join(dir_db, 'Statistics.json')
-        # 如果统计值已经计算过了，就没必要再重新计算了
-        if not os.path.isfile(stat_file):
-            self.cal_stat_all()
-        # 计算过了，就从存储的json文件中读取出统计结果
-        with open(stat_file, 'r') as fp:
-            stat_dict = json.load(fp)
         return stat_dict
 
     def get_data_obs(self, rm_nan=True):

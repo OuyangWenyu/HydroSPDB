@@ -1,5 +1,5 @@
 import utils.dataset_format
-import utils.geo
+import utils.hydro_geo
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -135,7 +135,7 @@ key = 'RMSE'
 [lat, lon] = df.getGeo()
 fig, axes = plt.subplots(1, 3, figsize=[12, 5])
 for k in range(3):
-    grid, uy, ux = utils.geo.array2grid(
+    grid, uy, ux = utils.hydro_geo.array2grid(
         cropRate[:, indCrop[k]], lat=lat, lon=lon)
     plot.plotMap(
         grid, ax=axes[k], lat=uy, lon=ux, title=labCrop[k] + ' percentage')

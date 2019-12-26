@@ -175,8 +175,7 @@ def read_gages_config(config_file):
                                    attr_chosen=attr_chosen, attr_dir=attr_dir, attr_url=attr_url,
                                    gage_files_dir=gage_files_dir, gage_id_file=gage_id_file,
                                    gage_region_dir=gage_region_dir, gage_point_file=gagesii_points_file,
-                                   huc4_shp_file=huc4_shp_file
-                                   )
+                                   huc4_shp_file=huc4_shp_file)
 
 
 def wrap_master(opt_data, opt_model, opt_loss, opt_train):

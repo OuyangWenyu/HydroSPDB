@@ -1,5 +1,5 @@
 import utils.dataset_format
-import utils.geo
+import utils.hydro_geo
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -144,7 +144,7 @@ dataLst = [cropRate[:, 0], cropRate[:, 22], cropRate[:, 23], cropRate[:, 2]]
 cRangeLst = [[0, 40], [0, 10], [0, 20], [0, 2]]
 for k in range(4):
     iy, ix = utils.dataset_format.index2d(k, 2, 2)
-    grid, uy, ux = utils.geo.array2grid(dataLst[k], lat=lat, lon=lon)
+    grid, uy, ux = utils.hydro_geo.array2grid(dataLst[k], lat=lat, lon=lon)
     plot.plotMap(
         grid,
         ax=axes[iy][ix],

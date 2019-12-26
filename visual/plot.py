@@ -10,7 +10,7 @@ import string
 import os
 import sys
 
-import utils.geo
+import utils.hydro_geo
 
 projectionPath = "/home/owen/anaconda3/pkgs/proj4-5.2.0-he6710b0_1/share/proj"
 print(sys.platform)
@@ -310,7 +310,7 @@ def plotTsMap(dataMap,
         if isGrid is False:
             plotMap(data, lat=lat, lon=lon, ax=ax, cRange=cRange, title=title)
         else:
-            grid, uy, ux = utils.geo.array2grid(data, lat=lat, lon=lon)
+            grid, uy, ux = utils.hydro_geo.array2grid(data, lat=lat, lon=lon)
             plotMap(grid, lat=uy, lon=ux, ax=ax, cRange=cRange, title=title)
 
     # plot ts

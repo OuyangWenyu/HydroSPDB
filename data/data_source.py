@@ -345,9 +345,11 @@ class SourceData(object):
         """读取GAGES-II下的属性数据，目前是将用到的几个属性所属的那个属性大类下的所有属性的统计值都计算一下
         parameters:
             gages_ids:可以指定几个gages站点
+        :return
+            out：ndarray
         """
         dir_gage_attr = self.all_configs.get("gage_files_dir")
-        dir_db = self.all_configs.get("root_dir")
+        dir_out = self.all_configs.get("out_dir")
         f_dict = dict()  # factorize dict
         # 每个key-value对是一个文件（str）下的所有属性（list）
         var_dict = dict()
@@ -400,10 +402,10 @@ class SourceData(object):
             out_lst.append(out_temp)
         out = np.concatenate(out_lst, 1)
         # dictFactorize.json is the explanation of value of categorical variables
-        file_name = os.path.join(dir_db, 'dictFactorize.json')
+        file_name = os.path.join(dir_out, 'dictFactorize.json')
         with open(file_name, 'w') as fp:
             json.dump(f_dict, fp, indent=4)
-        file_name = os.path.join(dir_db, 'dictAttribute.json')
+        file_name = os.path.join(dir_out, 'dictAttribute.json')
         with open(file_name, 'w') as fp:
             json.dump(var_dict, fp, indent=4)
         return out, var_lst
