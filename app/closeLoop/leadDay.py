@@ -1,5 +1,6 @@
 import data.data_input
 import data.read_config
+import utils.geo
 from hydroDL import pathSMAP, master
 import utils
 from data import read_config
@@ -162,7 +163,7 @@ fig, axes = plt.subplots(3, len(fLst), figsize=[8, 6])
 for j in range(3):
     for i in range(len(fLst)):
         data = statLst2[j][i][key]
-        grid, uy, ux = utils.grid.array2grid(data, lat=lat, lon=lon)
+        grid, uy, ux = utils.geo.array2grid(data, lat=lat, lon=lon)
         plot.plotMap(
             grid,
             ax=axes[i][j],

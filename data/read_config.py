@@ -14,12 +14,15 @@ def init_path(config_file):
     sections = cfg.sections()
     data_input = cfg.get(sections[0], 'download')
     data_output = cfg.get(sections[0], 'output')
+    data_temp = cfg.get(sections[0], 'temp')
     root = os.path.expanduser('~')
     data_input = os.path.join(root, data_input[2:])
     data_output = os.path.join(root, data_output[2:])
+    data_temp = os.path.join(root, data_temp[2:])
     path_data = collections.OrderedDict(
         DB=os.path.join(data_input, cfg.get(sections[0], 'data')),
-        Out=os.path.join(data_output, cfg.get(sections[0], 'data')))
+        Out=os.path.join(data_output, cfg.get(sections[0], 'data')),
+        Temp=os.path.join(data_temp, cfg.get(sections[0], 'data')))
     print(path_data)
     return path_data
 
@@ -124,6 +127,8 @@ def read_gages_config(config_file):
     """读取gages数据项的配置，整理gages数据的独特配置，然后一起返回到一个dict中"""
     dir_db_dict = init_path(config_file)
     dir_db = dir_db_dict.get("DB")
+    dir_out = dir_db_dict.get("Out")
+    dir_temp = dir_db_dict.get("Temp")
 
     data_params = init_data_param(config_file)
     # 径流数据配置
@@ -158,7 +163,7 @@ def read_gages_config(config_file):
     kaggle_src = os.path.join(dir_db, 'kaggle.json')
     name_of_dataset = "owenyy/wbdhu4-a-us-september2019-shpfile"
     download_kaggle_file(kaggle_src, name_of_dataset, huc4_shp_dir, huc4_shp_file)
-    return collections.OrderedDict(root_dir=dir_db,
+    return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
                                    t_range_train=t_range_train, t_range_test=t_range_test, regions=ref_nonref_regions,
                                    flow_dir=flow_dir, flow_url=flow_url,
                                    forcing_chosen=forcing_chosen, forcing_dir=forcing_dir, forcing_type=forcing_type,

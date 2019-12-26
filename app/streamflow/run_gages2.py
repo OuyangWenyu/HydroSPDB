@@ -8,30 +8,30 @@ from visual import *
 
 print('starting hydroDL...')
 # TODO：多GPU计算
-config_file = r"../../data/config.ini"
+configFile = r"../../data/config.ini"
 
 # 读取模型配置文件
-optTrain, optData, optModel, optLoss = init_model_param(config_file)
-model_dict = wrap_master(optData, optModel, optLoss, optTrain)
+optTrain, optData, optModel, optLoss = init_model_param(configFile)
+modelDict = wrap_master(optData, optModel, optLoss, optTrain)
 
 # 准备训练数据
-source_data = SourceData(config_file, optData.get("tRangeTrain"), ['1980-01-01', '2015-01-01'])
+sourceData = SourceData(configFile, optData.get("tRangeTrain"), ['1980-01-01', '2015-01-01'])
 
 # 构建输入数据类对象
-data_model = DataModel(source_data)
+dataModel = DataModel(sourceData)
 
 # 进行模型训练
 # train model
-master_train(data_model, model_dict)
+master_train(dataModel, modelDict)
 # 训练结束，发送email，email中给一个输出文件夹的提示
-out = source_data.all_configs['out']
+out = sourceData.all_configs['out']
 send_email.send_email(subject='Training Done', text=out)
 
 # test
 # 首先构建test时的data和model，然后调用test函数计算
-source_data_test = SourceData(config_file, optTrain.get("tRangeTest"))
-test_data_model = DataModel(source_data_test)
-df, pred, obs = master_test(test_data_model, model_dict)
+sourceDataTest = SourceData(configFile, optTrain.get("tRangeTest"))
+testDataModel = DataModel(sourceDataTest)
+df, pred, obs = master_test(testDataModel, modelDict)
 
 # 统计性能指标
 inds = stat_ind(obs, pred)

@@ -1,21 +1,20 @@
 import collections
 import os
 import unittest
-from datetime import datetime, timedelta
 
 from data import *
 
-import numpy as np
 import geopandas as gpd
 
 from utils import spatial_join
-from utils.hydro_time import t_range_years
 
 
-class MyTestCase(unittest.TestCase):
+class DataFuncCase(unittest.TestCase):
     config_file = r"../data/config.ini"
     root = os.path.expanduser('~')
     dir_db = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages')
+    dir_out = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages')
+    dir_temp = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages')
 
     def setUp(self):
         print('setUp...')
@@ -28,7 +27,8 @@ class MyTestCase(unittest.TestCase):
         root_ = self.root
         test_data = collections.OrderedDict(
             DB=os.path.join(root_, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages'),
-            Out=os.path.join(root_, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages'))
+            Out=os.path.join(root_, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages'),
+            Temp=os.path.join(root_, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages'))
         self.assertEqual(path_data, test_data)
 
     def test_init_data_param(self):
@@ -74,7 +74,7 @@ class MyTestCase(unittest.TestCase):
     def test_read_gages_config(self):
         gages_data = read_gages_config(self.config_file)
         dir_db_ = self.dir_db
-        test_data = collections.OrderedDict(root_dir=dir_db_,
+        test_data = collections.OrderedDict(root_dir=dir_db_, out_dir=self.dir_out, temp_dir=self.dir_temp,
                                             t_range_train=['1995-01-01', '2000-01-01'],
                                             t_range_test=['2000-01-01', '2005-01-01'],
                                             regions=['bas_nonref_CntlPlains'],
@@ -140,22 +140,6 @@ class MyTestCase(unittest.TestCase):
         download_dir = os.path.join(dir_db_, 'gagesII_forcing', 'daymet')
         client_secrets_file = os.path.join(dir_db_, "mycreds.txt")
         download_google_drive(client_secrets_file, google_drive_dir_name, download_dir)
-
-    def test_t_range_years(self):
-        t_range = ['1995-01-01', '2000-01-01']
-        t_list = t_range_years(t_range)
-        t_result = np.array([1995, 1996, 1997, 1998, 1999])
-        # np的数组assert需要调用numnpy自己的assert函数
-        np.testing.assert_equal(t_list, t_result)
-
-    def test_temp(self):
-        t_range = ['1995-01-01', '2000-01-01']
-        start_time_str = datetime.strptime(t_range[0], '%Y-%m-%d')
-        end_time_str = datetime.strptime(t_range[1], '%Y-%m-%d') - timedelta(days=1)
-        streamflow_url = 'https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{}'
-        url = streamflow_url.format('03010101', start_time_str.year, start_time_str.month,
-                                    start_time_str.day, end_time_str.year, end_time_str.month, end_time_str.day)
-        print(url)
 
 
 if __name__ == '__main__':

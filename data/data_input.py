@@ -15,7 +15,7 @@ class DataModel(object):
         self.data_source = data_source
         # 调用SourceData的read_xxx型函数读取forcing，flow，attributes等数据
         # read flow
-        data_flow = data_source.read_usgs(data_source.gage_dict, data_source.gage_fld_lst, data_source.t_range)
+        data_flow = data_source.read_usgs()
         data_flow = np.expand_dims(data_flow, axis=2)
         # 根据径流数据过滤掉一些站点，目前给的是示例参数，后面需修改
         data_flow, usgs_id = data_source.usgs_screen_streamflow(data_flow, ["02349000", "08168797"],

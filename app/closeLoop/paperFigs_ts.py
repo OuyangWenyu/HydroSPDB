@@ -1,4 +1,5 @@
 import utils.dataset_format
+import utils.geo
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -129,7 +130,7 @@ lat, lon = df.getGeo()
 pts = [lat[indLst], lon[indLst]]
 diff = abs(yp - yf).mean(axis=1)
 fig, ax = plt.subplots(1, 1, figsize=(6, 3))
-grid, uy, ux = utils.grid.array2grid(diff, lat=lat, lon=lon)
+grid, uy, ux = utils.geo.array2grid(diff, lat=lat, lon=lon)
 plot.plotMap(
     grid,
     ax=ax,

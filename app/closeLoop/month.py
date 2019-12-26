@@ -1,4 +1,5 @@
 import utils.dataset_format
+import utils.geo
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -117,9 +118,9 @@ key = 'RMSE'
 [lat, lon] = df.getGeo()
 diff = statP[key] - statF[key]
 fig, axes = plt.subplots(1, 2, figsize=[8, 4])
-grid, uy, ux = utils.grid.array2grid(diff, lat=lat, lon=lon)
+grid, uy, ux = utils.geo.array2grid(diff, lat=lat, lon=lon)
 plot.plotMap(grid, ax=axes[0], lat=uy, lon=ux)
-grid, uy, ux = utils.grid.array2grid(cropRate[:, 22], lat=lat, lon=lon)
+grid, uy, ux = utils.geo.array2grid(cropRate[:, 22], lat=lat, lon=lon)
 plot.plotMap(grid, ax=axes[1], lat=uy, lon=ux, cRange=[0, 10])
 fig.show()
 

@@ -1,4 +1,5 @@
 import utils.dataset_format
+import utils.geo
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -95,7 +96,7 @@ for i in range(len(keyLst)):
     for j in range(len(fLst)):
         data = statLstF[j][key]
         titleStr = key + ' of {}d Forecast'.format(fLst[j])
-        grid, uy, ux = utils.grid.array2grid(data, lat=lat, lon=lon)
+        grid, uy, ux = utils.geo.array2grid(data, lat=lat, lon=lon)
         plot.plotMap(
             grid, ax=axes[j][i], lat=uy, lon=ux, title=titleStr, cRange=cRange)
 plt.tight_layout()
@@ -112,7 +113,7 @@ for i in range(len(keyLst)):
     cRange = cRangeLst[i]
     data = statP[key]
     titleStr = 'Projection ' + key
-    grid, uy, ux = utils.grid.array2grid(data, lat=lat, lon=lon)
+    grid, uy, ux = utils.geo.array2grid(data, lat=lat, lon=lon)
     plot.plotMap(
         grid, ax=axes[i], lat=uy, lon=ux, title=titleStr, cRange=cRange)
 plt.tight_layout()
@@ -132,7 +133,7 @@ for i in range(len(keyLst)):
     elif key == 'Corr':
         data = (statF[key] - statP[key]) * 100
     titleStr = 'Improvement in ' + key + ' (%)'
-    grid, uy, ux = utils.grid.array2grid(data, lat=lat, lon=lon)
+    grid, uy, ux = utils.geo.array2grid(data, lat=lat, lon=lon)
     plot.plotMap(
         grid, ax=axes[i], lat=uy, lon=ux, title=titleStr, cRange=cRangeLst[i])
 plt.tight_layout()

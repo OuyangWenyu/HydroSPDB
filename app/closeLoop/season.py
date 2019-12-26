@@ -1,4 +1,5 @@
 import utils.dataset_format
+import utils.geo
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -102,7 +103,7 @@ for k in range(4):
     keyLeg = 'RMSE(Proj)-RMSE(Fore)'
     titleStr = tLeg[k] + ' ' + keyLeg
     j, i = utils.dataset_format.index2d(k, 2, 2)
-    grid, uy, ux = utils.grid.array2grid(data, lat=lat, lon=lon)
+    grid, uy, ux = utils.geo.array2grid(data, lat=lat, lon=lon)
     plot.plotMap(
         grid, ax=axes[j][i], lat=uy, lon=ux, title=titleStr, cRange=cRange)
 # plt.tight_layout()
@@ -180,9 +181,9 @@ cropRate = pd.read_csv(cropFile, dtype=np.float, header=None).values
 key = 'RMSE'
 diff = statP[key] - statF[key]
 fig, axes = plt.subplots(1, 2, figsize=[8, 4])
-grid, uy, ux = utils.grid.array2grid(cropRate[:, 4], lat=lat, lon=lon)
+grid, uy, ux = utils.geo.array2grid(cropRate[:, 4], lat=lat, lon=lon)
 plot.plotMap(grid, ax=axes[0], lat=uy, lon=ux, title='Percentage of soybean')
-grid, uy, ux = utils.grid.array2grid(cropRate[:, 22], lat=lat, lon=lon)
+grid, uy, ux = utils.geo.array2grid(cropRate[:, 22], lat=lat, lon=lon)
 plot.plotMap(
     grid, ax=axes[1], lat=uy, lon=ux, title='Percentage of spring wheat')
 fig.show()
@@ -254,14 +255,14 @@ cropRate = pd.read_csv(cropFile, dtype=np.float, header=None).values
 key = 'Corr'
 diff = statPTemp[key] - statFTemp[key]
 fig, axes = plt.subplots(1, 2, figsize=[8, 4])
-grid, uy, ux = utils.grid.array2grid(diff, lat=lat, lon=lon)
+grid, uy, ux = utils.geo.array2grid(diff, lat=lat, lon=lon)
 plot.plotMap(
     grid,
     ax=axes[0],
     lat=uy,
     lon=ux,
     title='RMSE diff ' + trLab)
-grid, uy, ux = utils.grid.array2grid(cropRate[:, 23], lat=lat, lon=lon)
+grid, uy, ux = utils.geo.array2grid(cropRate[:, 23], lat=lat, lon=lon)
 plot.plotMap(
     grid,
     ax=axes[1],

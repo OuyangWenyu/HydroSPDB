@@ -136,7 +136,7 @@ class SourceData(object):
                 # 然后下载数据到这个文件夹下，这里从google drive下载数据
                 download_google_drive(dir_name, download_dir_name)
             else:
-                print("已经下载好了")
+                print("forcing数据已经下载好了")
         print("forcing数据准备完毕")
 
     def prepare_flow_data(self, gage_dict, gage_fld_lst):
@@ -176,10 +176,11 @@ class SourceData(object):
                 temp_file = os.path.join(dir_huc_02, str(usgs_id_lst[ind]) + '.txt')
                 download_small_file(url, temp_file)
                 print("成功写入 " + temp_file + " 径流数据！")
+        print("径流量数据准备好了...")
 
-    def read_usge_gage(self, huc, usgs_id, t_range, read_qc=False):
+    def read_usge_gage(self, huc, usgs_id, t_lst, read_qc=False):
         """读取各个径流站的径流数据"""
-        print(usgs_id)
+        print("读取站点 ", usgs_id, " 的径流")
         dir_gage_flow = self.all_configs.get("flow_dir")
         # 首先找到要读取的那个txt
         usgs_file = os.path.join(dir_gage_flow, str(huc), usgs_id + '.txt')
@@ -229,32 +230,29 @@ class SourceData(object):
             print(np.argwhere(np.isnan(obs)))
         obs[obs < 0] = np.nan
         if read_qc is True:
+            # TODO：我暂时把非平均值的径流数据的读取取出了，所以read_qc暂时没用
             qc_dict = {'A': 1, 'A:e': 2, 'M': 3}
             qc = np.array([qc_dict[x] for x in data_temp[4]])
-        # 如果时间序列长度和径流数据长度不一致，说明有missing值，先补充nan值
-        t_lst = hydro_time.t_range_days(t_range)
+        # 首先判断时间范围是否一致，读取的径流数据的时间序列和要读取的径流数据时间序列交集，获取径流数据，剩余没有数据的要读取的径流数据时间序列是nan
         nt = len(t_lst)
-        if len(obs) != nt:
-            out = np.full([nt], np.nan)
-            # df中的date是字符串，转换为datetime，方可与tLst求交集
-            df_date = data_temp['datetime']
-            date = pd.to_datetime(df_date).values.astype('datetime64[D]')
-            c, ind1, ind2 = np.intersect1d(date, t_lst, return_indices=True)
-            out[ind2] = obs
-            if read_qc is True:
-                out_qc = np.full([nt], np.nan)
-                out_qc[ind2] = qc
-        else:
-            out = obs
-            if read_qc is True:
-                out_qc = qc
+        out = np.full([nt], np.nan)
+        # df中的date是字符串，转换为datetime，方可与tLst求交集
+        df_date = data_temp['datetime']
+        date = pd.to_datetime(df_date).values.astype('datetime64[D]')
+        c, ind1, ind2 = np.intersect1d(date, t_lst, return_indices=True)
+        out[ind2] = obs[ind1]
+        if read_qc is True:
+            out_qc = np.full([nt], np.nan)
+            out_qc[ind2] = qc
 
         if read_qc is True:
             return out, out_qc
         else:
             return out
 
-    def read_usgs(self, gage_dict, gage_fld_lst, t_range):
+    @my_logger
+    @my_timer
+    def read_usgs(self):
         """读取USGS的daily average 径流数据 according to id and time,
             首先判断哪些径流站点的数据已经读取并存入本地，如果没有，就从网上下载并读入txt文件。
         Parameter:
@@ -263,17 +261,18 @@ class SourceData(object):
         Return：
             y: ndarray--各个站点的径流数据, 1d-axis: gages, 2d-axis: day
         """
+        gage_dict = self.gage_dict
+        gage_fld_lst = self.gage_fld_lst
+        t_range = self.t_range
         t_lst = hydro_time.t_range_days(t_range)
         nt = len(t_lst)
-        t0 = time.time()
         usgs_id_lst = gage_dict[gage_fld_lst[0]]
         huc_02s = gage_dict[gage_fld_lst[3]]
         y = np.empty([len(usgs_id_lst), nt])
         for k in range(len(usgs_id_lst)):
             huc_02 = huc_02s[k]
-            data_obs = self.read_usge_gage(huc_02, usgs_id_lst[k], t_range)
+            data_obs = self.read_usge_gage(huc_02, usgs_id_lst[k], t_lst)
             y[k, :] = data_obs
-        print("time of reading usgs streamflow: ", time.time() - t0)
         return y
 
     def usgs_screen_streamflow(self, usgs, usgs_ids=None, time_range=None, **kwargs):

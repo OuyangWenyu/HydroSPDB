@@ -32,6 +32,7 @@ def t_range_days(t_range, *, step=np.timedelta64(1, 'D')):
     """将给定的一个区间，转换为每日一个值的数组"""
     sd = dt.datetime.strptime(t_range[0], '%Y-%m-%d')
     ed = dt.datetime.strptime(t_range[1], '%Y-%m-%d')
+    # arange函数结果是左闭右开区间
     t_array = np.arange(sd, ed, step)
     return t_array
 

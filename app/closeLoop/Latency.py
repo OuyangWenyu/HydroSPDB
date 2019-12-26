@@ -1,4 +1,5 @@
 import utils.dataset_format
+import utils.geo
 from hydroDL import pathSMAP, master
 import utils
 from hydroDL import stat
@@ -91,7 +92,7 @@ for key in ['ubRMSE', 'Corr']:
             titleStr = 'R({}d)/R(1d)'.format(dLst[k])
             data = statLst[k][key] / statLst[0][key]
             cRange = [0.8, 1.2]
-        grid, uy, ux = utils.grid.array2grid(data, lat=lat, lon=lon)
+        grid, uy, ux = utils.geo.array2grid(data, lat=lat, lon=lon)
         plot.plotMap(
             grid,
             ax=axes[ix][iy],
@@ -113,7 +114,7 @@ for k in [0, 1, 2, 3, 4, 5]:
     titleStr = 'RMSE(proj)- RMSE({}d)'.format(dLst[k])
     data = statP[key] - statLst[k][key]
     cRange = [0,0.03]
-    grid, uy, ux = utils.grid.array2grid(data, lat=lat, lon=lon)
+    grid, uy, ux = utils.geo.array2grid(data, lat=lat, lon=lon)
     iy, ix = utils.dataset_format.index2d(k, 2, 3)
     print(iy, ix)
     plot.plotMap(
