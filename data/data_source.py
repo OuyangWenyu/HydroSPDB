@@ -180,7 +180,6 @@ class SourceData(object):
 
     def read_usge_gage(self, huc, usgs_id, t_lst, read_qc=False):
         """读取各个径流站的径流数据"""
-        print("读取站点 ", usgs_id, " 的径流")
         dir_gage_flow = self.all_configs.get("flow_dir")
         # 首先找到要读取的那个txt
         usgs_file = os.path.join(dir_gage_flow, str(huc), usgs_id + '.txt')
@@ -275,12 +274,12 @@ class SourceData(object):
             y[k, :] = data_obs
         return y
 
-    def usgs_screen_streamflow(self, usgs, usgs_ids=None, time_range=None, **kwargs):
+    def usgs_screen_streamflow(self, streamflow, usgs_ids=None, time_range=None):
         """according to the criteria and its ancillary condition--thresh of streamflow data,
             choose appropriate ones from all usgs sites
             Parameters
             ----------
-            usgs : pd.DataFrame -- all usgs sites' data, its index are 'sites', its columns are 'day',
+            streamflow : numpy ndarray -- all usgs sites(config)' data, its index are 'sites', its columns are 'day',
                                    if there is some missing value, usgs should already be filled by nan
             usgs_ids: list -- chosen sites' ids
             time_range: list -- chosen time range
@@ -293,33 +292,32 @@ class SourceData(object):
 
             Examples
             --------
-            usgs_screen(usgs, ["02349000","08168797"], [19950101,20150101],
-            {'missing_data_ratio':0.1,'zero_value_ratio':0.005,'basin_area_ceil':'HUC4'})
+            usgs_screen(usgs, ["02349000","08168797"], [‘1995-01-01’,‘2015-01-01’])
         """
-        sites_chosen = np.zeros(usgs.shape[0])
+        kwargs = self.all_configs["flow_screen_param"]
+        sites_chosen = np.zeros(streamflow.shape[0])
         # choose the given sites
-        usgs_all_sites = usgs.index.values
+        usgs_all_sites = self.gage_dict[self.gage_fld_lst[0]]
         if usgs_ids:
             sites_index = np.where(np.in1d(usgs_ids, usgs_all_sites))[0]
             sites_chosen[sites_index] = 1
         else:
-            sites_index = np.arange(usgs.shape[0])
-            sites_chosen = np.ones(usgs.shape[0])
+            sites_index = np.arange(streamflow.shape[0])
+            sites_chosen = np.ones(streamflow.shape[0])
         # choose data in given time range
-        all_t_list = usgs.columns.values
+        all_t_list = hydro_time.t_range_days(self.t_range)
         t_lst = all_t_list
         if time_range:
             # calculate the day length
             t_lst = hydro_time.t_range_days(time_range)
-        else:
-            time_range = self.t_range
-            t_lst = hydro_time.t_range_days(time_range)
         ts, ind1, ind2 = np.intersect1d(all_t_list, t_lst, return_indices=True)
-        usgs_values = usgs.iloc[sites_index, ind1]
+        # 取某几行的某几列数据稍微麻烦一点点
+        streamflow_temp = streamflow[sites_index]  # 先取出想要的行数据
+        usgs_values = streamflow_temp[:, ind1]  # 再取出要求的列数据
 
         for site_index in sites_index:
             # loop for every site
-            runoff = usgs_values.iloc[site_index, :]
+            runoff = usgs_values[site_index, :]
             for criteria in kwargs:
                 # if any criteria is not matched, we can filter this site
                 if sites_chosen[site_index] == 0:
@@ -338,7 +336,7 @@ class SourceData(object):
                 else:
                     print("Oops!  That is not valid value.  Try again...")
         # get discharge data of chosen sites, and change to ndarray
-        usgs_out = usgs_values.iloc[np.where(sites_chosen > 0)].values
+        usgs_out = usgs_values[np.where(sites_chosen > 0)]
         gages_chosen_id = [usgs_all_sites[i] for i in range(len(sites_chosen)) if sites_chosen[i] > 0]
 
         return usgs_out, gages_chosen_id

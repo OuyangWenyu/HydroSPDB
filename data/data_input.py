@@ -16,12 +16,10 @@ class DataModel(object):
         # 调用SourceData的read_xxx型函数读取forcing，flow，attributes等数据
         # read flow
         data_flow = data_source.read_usgs()
-        data_flow = np.expand_dims(data_flow, axis=2)
+        # data_flow = np.expand_dims(data_flow, axis=2)
         # 根据径流数据过滤掉一些站点，目前给的是示例参数，后面需修改
-        data_flow, usgs_id = data_source.usgs_screen_streamflow(data_flow, ["02349000", "08168797"],
-                                                                [19950101, 20150101],
-                                                                {'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005,
-                                                                 'basin_area_ceil': 'HUC4'})
+        data_flow, usgs_id = data_source.usgs_screen_streamflow(data_flow, usgs_ids=["03144816", "03145000"],
+                                                                time_range=['1995-01-01', '2015-01-01'])
         self.data_flow = data_flow
         # read forcing
         var_lst = data_source.all_configs.get("forcing_chosen")

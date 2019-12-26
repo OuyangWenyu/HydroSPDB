@@ -56,22 +56,24 @@ def init_data_param(config_file):
     # streamflow数据
     streamflow_dir = cfg.get(section, options[10])
     streamflow_url = cfg.get(section, options[11])
+    streamflow_screen_param = eval(cfg.get(section, options[12]))
 
     # attribute数据
-    attr_dir = cfg.get(section, options[12])
-    attr_url = cfg.get(section, options[13])
-    attrBasin = eval(cfg.get(section, options[15]))
-    attrLandcover = eval(cfg.get(section, options[16]))
-    attrSoil = eval(cfg.get(section, options[17]))
-    attrGeol = eval(cfg.get(section, options[18]))
-    attrHydro = eval(cfg.get(section, options[19]))
-    attrHydroModDams = eval(cfg.get(section, options[20]))
-    attr_str_sel = eval(cfg.get(section, options[14]))
+    attr_dir = cfg.get(section, options[13])
+    attr_url = cfg.get(section, options[14])
+    attrBasin = eval(cfg.get(section, options[16]))
+    attrLandcover = eval(cfg.get(section, options[17]))
+    attrSoil = eval(cfg.get(section, options[18]))
+    attrGeol = eval(cfg.get(section, options[19]))
+    attrHydro = eval(cfg.get(section, options[20]))
+    attrHydroModDams = eval(cfg.get(section, options[21]))
+    attr_str_sel = eval(cfg.get(section, options[15]))
 
     opt_data = collections.OrderedDict(varT=forcing_lst, forcingDir=forcing_dir, forcingType=forcing_type,
                                        forcingUrl=forcing_url,
                                        varC=attr_str_sel, attrDir=attr_dir, attrUrl=attr_url,
                                        streamflowDir=streamflow_dir, streamflowUrl=streamflow_url,
+                                       streamflowScreenParam=streamflow_screen_param,
                                        tRangeTrain=t_range_train, tRangeTest=t_range_test, regions=regions,
                                        doNorm=do_norm, rmNan=rm_nan, daObs=da_obs)
     return opt_data
@@ -134,6 +136,7 @@ def read_gages_config(config_file):
     # 径流数据配置
     flow_dir = os.path.join(dir_db, data_params.get("streamflowDir"))
     flow_url = data_params.get("streamflowUrl")
+    flow_screen_param = data_params.get("streamflowScreenParam")
     # 所选forcing
     forcing_chosen = data_params.get("varT")
     forcing_dir = os.path.join(dir_db, data_params.get("forcingDir"))
@@ -165,7 +168,7 @@ def read_gages_config(config_file):
     download_kaggle_file(kaggle_src, name_of_dataset, huc4_shp_dir, huc4_shp_file)
     return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
                                    t_range_train=t_range_train, t_range_test=t_range_test, regions=ref_nonref_regions,
-                                   flow_dir=flow_dir, flow_url=flow_url,
+                                   flow_dir=flow_dir, flow_url=flow_url, flow_screen_param=flow_screen_param,
                                    forcing_chosen=forcing_chosen, forcing_dir=forcing_dir, forcing_type=forcing_type,
                                    forcing_url=forcing_url,
                                    attr_chosen=attr_chosen, attr_dir=attr_dir, attr_url=attr_url,

@@ -7,7 +7,7 @@ import pickle
 
 class MyTestCase(unittest.TestCase):
     config_file = r"../data/config.ini"
-    data_source_dump = '/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/temp/gages/dump.txt'
+    data_source_dump = '/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/temp/gages/data_source.txt'
 
     def test_data_source(self):
         config_file = self.config_file
@@ -21,7 +21,7 @@ class MyTestCase(unittest.TestCase):
         dir_temp = source_data.all_configs["temp_dir"]
         if not os.path.isdir(dir_temp):
             os.mkdir(dir_temp)
-        f = open(os.path.join(dir_temp, 'dump.txt'), 'wb')
+        f = open(os.path.join(dir_temp, 'data_source.txt'), 'wb')
         pickle.dump(source_data, f)
         f.close()
 

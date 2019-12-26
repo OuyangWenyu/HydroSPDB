@@ -4,6 +4,19 @@ from utils.hydro_time import t_range_years, t_range_days
 from datetime import datetime, timedelta
 
 
+def test_numpy():
+    date = np.arange(1996, 2012).reshape(4, 4)
+    print("------------------")
+    print(date[0, 1])
+    print(date[0][1])
+    print("对应坐标(0,0)和(1,1)的数字：", date[[0, 1], [0, 1]])
+    C_A = date[[0, 2]]  # 先取出想要的行数据
+    C_A = C_A[:, [2, 3]]  # 再取出要求的列数据
+    print("第0,2行的第3,3列", C_A)
+    print(np.arange(5))
+    print(np.arange(5).shape[0])
+
+
 class MyTestCase(unittest.TestCase):
     t_range = ['1995-01-01', '2000-01-01']
 
@@ -46,7 +59,7 @@ class MyTestCase(unittest.TestCase):
         out[ind2] = obs[ind1]
         print(out)
         result = np.array([np.nan, 1, 2, np.nan, 3])
-        self.assertEqual(out, result)
+        np.testing.assert_equal(out, result)
 
 
 if __name__ == '__main__':
