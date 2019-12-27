@@ -2,8 +2,8 @@ import os
 import unittest
 import numpy as np
 import pandas as pd
-from pandas.util.testing import assert_frame_equal
 
+from utils.dataset_format import trans_daymet_forcing_file_to_camels
 from utils.hydro_time import t_range_years, t_range_days, get_year
 from datetime import datetime, timedelta
 
@@ -120,6 +120,12 @@ class MyTestCase(unittest.TestCase):
         print(out)
         result = np.array([np.nan, 1, 2, np.nan, 3])
         np.testing.assert_equal(out, result)
+
+    def test_trans_daymet_forcing_file_to_camels(self):
+        daymet_dir = ''
+        output_dir = ''
+        result = pd.read_csv(output_dir)
+        self.assertEqual(trans_daymet_forcing_file_to_camels(daymet_dir, output_dir), result)
 
 
 if __name__ == '__main__':

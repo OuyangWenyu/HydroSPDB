@@ -56,26 +56,30 @@ def init_data_param(config_file):
     # streamflow数据
     streamflow_dir = cfg.get(section, options[10])
     streamflow_url = cfg.get(section, options[11])
-    streamflow_screen_param = eval(cfg.get(section, options[12]))
+    gage_id_screen = eval(cfg.get(section, options[12]))
+    t_range_screen = eval(cfg.get(section, options[13]))
+    streamflow_screen_param = eval(cfg.get(section, options[14]))
 
     # attribute数据
-    attr_dir = cfg.get(section, options[13])
-    attr_url = cfg.get(section, options[14])
-    attrBasin = eval(cfg.get(section, options[16]))
-    attrLandcover = eval(cfg.get(section, options[17]))
-    attrSoil = eval(cfg.get(section, options[18]))
-    attrGeol = eval(cfg.get(section, options[19]))
-    attrHydro = eval(cfg.get(section, options[20]))
-    attrHydroModDams = eval(cfg.get(section, options[21]))
-    attr_str_sel = eval(cfg.get(section, options[15]))
+    attr_dir = cfg.get(section, options[15])
+    attr_url = cfg.get(section, options[16])
+    attrBasin = eval(cfg.get(section, options[18]))
+    attrLandcover = eval(cfg.get(section, options[19]))
+    attrSoil = eval(cfg.get(section, options[20]))
+    attrGeol = eval(cfg.get(section, options[21]))
+    attrHydro = eval(cfg.get(section, options[22]))
+    attrHydroModDams = eval(cfg.get(section, options[23]))
+    attr_str_sel = eval(cfg.get(section, options[17]))
 
+    t_range_all = eval(cfg.get(section, options[-1]))
     opt_data = collections.OrderedDict(varT=forcing_lst, forcingDir=forcing_dir, forcingType=forcing_type,
                                        forcingUrl=forcing_url,
                                        varC=attr_str_sel, attrDir=attr_dir, attrUrl=attr_url,
                                        streamflowDir=streamflow_dir, streamflowUrl=streamflow_url,
+                                       gageIdScreen=gage_id_screen, tRangeScreen=t_range_screen,
                                        streamflowScreenParam=streamflow_screen_param,
                                        tRangeTrain=t_range_train, tRangeTest=t_range_test, regions=regions,
-                                       doNorm=do_norm, rmNan=rm_nan, daObs=da_obs)
+                                       doNorm=do_norm, rmNan=rm_nan, daObs=da_obs, tRangeAll=t_range_all)
     return opt_data
 
 
@@ -142,6 +146,8 @@ def read_gages_config(config_file):
     # 径流数据配置
     flow_dir = os.path.join(dir_db, data_params.get("streamflowDir"))
     flow_url = data_params.get("streamflowUrl")
+    flow_screen_gage_id = data_params.get("gageIdScreen")
+    flow_screen_t_range = data_params.get("tRangeScreen")
     flow_screen_param = data_params.get("streamflowScreenParam")
     # 所选forcing
     forcing_chosen = data_params.get("varT")
@@ -173,15 +179,17 @@ def read_gages_config(config_file):
     kaggle_src = os.path.join(dir_db, 'kaggle.json')
     name_of_dataset = "owenyy/wbdhu4-a-us-september2019-shpfile"
     download_kaggle_file(kaggle_src, name_of_dataset, huc4_shp_dir, huc4_shp_file)
+    t_range_all = data_params.get("tRangeAll")
     return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
                                    t_range_train=t_range_train, t_range_test=t_range_test, regions=ref_nonref_regions,
-                                   flow_dir=flow_dir, flow_url=flow_url, flow_screen_param=flow_screen_param,
+                                   flow_dir=flow_dir, flow_url=flow_url, flow_screen_gage_id=flow_screen_gage_id,
+                                   flow_screen_t_range=flow_screen_t_range, flow_screen_param=flow_screen_param,
                                    forcing_chosen=forcing_chosen, forcing_dir=forcing_dir, forcing_type=forcing_type,
                                    forcing_url=forcing_url,
                                    attr_chosen=attr_chosen, attr_dir=attr_dir, attr_url=attr_url,
                                    gage_files_dir=gage_files_dir, gage_id_file=gage_id_file,
                                    gage_region_dir=gage_region_dir, gage_point_file=gagesii_points_file,
-                                   huc4_shp_file=huc4_shp_file)
+                                   huc4_shp_file=huc4_shp_file, t_range_all=t_range_all)
 
 
 def wrap_master(opt_data, opt_model, opt_loss, opt_train):

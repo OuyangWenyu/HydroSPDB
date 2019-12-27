@@ -16,7 +16,7 @@ class MyTestCase(unittest.TestCase):
         opt_train, opt_data, opt_model, opt_loss = init_model_param(config_file)
 
         # 准备训练数据
-        source_data = SourceData(config_file, opt_data.get("tRangeTrain"), ['1980-01-01', '2015-01-01'])
+        source_data = SourceData(config_file, opt_data.get("tRangeTrain"), opt_data['tRangeAll'])
         # 序列化保存对象
         dir_temp = source_data.all_configs["temp_dir"]
         if not os.path.isdir(dir_temp):

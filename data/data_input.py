@@ -11,37 +11,39 @@ from utils import unserialize_json, serialize_json
 class DataModel(object):
     """数据格式化类，通过 SourceData 类对象函数实现 数据读取以及归一化处理等"""
 
-    def __init__(self, data_source):
+    def __init__(self, data_source, *args):
         """:parameter data_source: SourceData 类对象"""
         self.data_source = data_source
         # 调用SourceData的read_xxx型函数读取forcing，flow，attributes等数据
         # read flow
-        data_flow = data_source.read_usgs()
-        # data_flow = np.expand_dims(data_flow, axis=2)
-        # 根据径流数据过滤掉一些站点，目前给的是示例参数，后面需修改
-        data_flow, usgs_id, t_range_list = data_source.usgs_screen_streamflow(data_flow,
-                                                                              usgs_ids=['03144816', '03145000',
-                                                                                        '03156000', '03157000',
-                                                                                        '03157500', '03219500',
-                                                                                        '03220000', '03221000',
-                                                                                        '03223000', '03224500',
-                                                                                        '03225500', '03226800'],
-                                                                              time_range=['1995-01-01', '1997-01-01'])
-        self.data_flow = data_flow
-        self.gages_id = usgs_id
-        self.t_range_list = t_range_list
-        # read forcing
-        data_forcing = data_source.read_forcing(usgs_id, t_range_list)
-        self.data_forcing = data_forcing
-        # read attributes
-        attr_lst = data_source.all_configs.get("attr_chosen")
-        data_attr, var_dict, f_dict = data_source.read_attr(usgs_id, attr_lst)
-        self.data_attr = data_attr
-        self.var_dict = var_dict
-        self.f_dict = f_dict
-        # 初步计算统计值
-        stat_dict = self.cal_stat_all()
-        self.stat_dict = stat_dict
+        if len(args) == 0:
+            data_flow = data_source.read_usgs()
+            # data_flow = np.expand_dims(data_flow, axis=2)
+            # 根据径流数据过滤掉一些站点，目前给的是示例参数，后面需修改
+            usgs_id = data_source.all_configs["flow_screen_gage_id"]
+            time_range = data_source.all_configs["flow_screen_t_range"]
+            data_flow, usgs_id, t_range_list = data_source.usgs_screen_streamflow(data_flow, usgs_ids=usgs_id,
+                                                                                  time_range=time_range)
+            self.data_flow = data_flow
+            # read forcing
+            data_forcing = data_source.read_forcing(usgs_id, t_range_list)
+            self.data_forcing = data_forcing
+            # read attributes
+            attr_lst = data_source.all_configs.get("attr_chosen")
+            data_attr, var_dict, f_dict = data_source.read_attr(usgs_id, attr_lst)
+            self.data_attr = data_attr
+            self.var_dict = var_dict
+            self.f_dict = f_dict
+            # 初步计算统计值
+            stat_dict = self.cal_stat_all()
+            self.stat_dict = stat_dict
+        else:
+            self.data_flow = args[0]
+            self.data_forcing = args[1]
+            self.data_attr = args[2]
+            self.var_dict = args[3]
+            self.f_dict = args[4]
+            self.stat_dict = [5]
 
     def cal_stat_all(self):
         """计算统计值，便于后面归一化处理。"""

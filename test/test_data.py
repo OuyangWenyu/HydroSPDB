@@ -54,7 +54,13 @@ class DataFuncCase(unittest.TestCase):
                                             attrDir='basinchar_and_report_sept_2011',
                                             attrUrl='https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_2011.zip',
                                             streamflowDir='gages_streamflow',
-                                            streamflowUrl='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{}',
+                                            streamflowUrl='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
+                                                          '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
+                                                          '}&end_date={}-{}-{}',
+                                            gageIdScreen=['03144816', '03145000', '03156000', '03157000', '03157500',
+                                                          '03219500', '03220000', '03221000', '03223000', '03224500',
+                                                          '03225500', '03226800'],
+                                            tRangeScreen=['1995-01-01', '1997-01-01'],
                                             streamflowScreenParam={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005,
                                                                    'basin_area_ceil': 'HUC4'},
                                             tRangeTrain=['1995-01-01', '2000-01-01'],
@@ -62,8 +68,9 @@ class DataFuncCase(unittest.TestCase):
                                             regions=['bas_nonref_CntlPlains'],
                                             doNorm=[True, True],
                                             rmNan=[True, False],
-                                            daObs=0)
-        self.assertEqual(opt_data, test_data)
+                                            daObs=0,
+                                            tRangeAll=['1980-01-01', '2015-01-01'])
+        self.assertEqual(test_data, opt_data)
 
     def test_download_kaggle_file(self):
         dir_db_ = self.dir_db
@@ -81,7 +88,15 @@ class DataFuncCase(unittest.TestCase):
                                             t_range_test=['2000-01-01', '2005-01-01'],
                                             regions=['bas_nonref_CntlPlains'],
                                             flow_dir=os.path.join(dir_db_, 'gages_streamflow'),
-                                            flow_url='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{}',
+                                            flow_url='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
+                                                     '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
+                                                     '}&end_date={}-{}-{}',
+                                            flow_screen_gage_id=['03144816', '03145000', '03156000', '03157000',
+                                                                 '03157500',
+                                                                 '03219500', '03220000', '03221000', '03223000',
+                                                                 '03224500',
+                                                                 '03225500', '03226800'],
+                                            flow_screen_t_range=['1995-01-01', '1997-01-01'],
                                             flow_screen_param={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005,
                                                                'basin_area_ceil': 'HUC4'},
                                             forcing_chosen=['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp'],
@@ -116,9 +131,9 @@ class DataFuncCase(unittest.TestCase):
                                             gage_region_dir=os.path.join(dir_db_, 'boundaries-shapefiles-by-aggeco'),
                                             gage_point_file=os.path.join(dir_db_, "gagesII_9322_point_shapefile",
                                                                          "gagesII_9322_sept30_2011.shp"),
-                                            huc4_shp_file=os.path.join(dir_db_, "huc4", "HUC4.shp")
-                                            )
-        self.assertEqual(gages_data, test_data)
+                                            huc4_shp_file=os.path.join(dir_db_, "huc4", "HUC4.shp"),
+                                            t_range_all=['1980-01-01', '2015-01-01'])
+        self.assertEqual(test_data, gages_data)
 
     def test_download_small_zip(self):
         dir_db_ = self.dir_db
