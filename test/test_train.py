@@ -11,6 +11,9 @@ from utils import *
 class MyTestCase(unittest.TestCase):
     config_file = r"../data/config.ini"
     dir_temp = '/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/temp/gages'
+
+    model_dict_file = os.path.join(dir_temp, 'master.json')
+
     data_source_dump = os.path.join(dir_temp, 'data_source.txt')
     stat_file = os.path.join(dir_temp, 'Statistics.json')
     flow_file = os.path.join(dir_temp, 'flow.npy')
@@ -21,6 +24,15 @@ class MyTestCase(unittest.TestCase):
 
     def setUp(self):
         print('setUp...读取datamodel')
+
+        if not os.path.isfile(self.model_dict_file):
+            opt_train, opt_data, opt_model, opt_loss = init_model_param(self.config_file)
+            self.model_dict = wrap_master(opt_data, opt_model, opt_loss, opt_train)
+            serialize_json(self.model_dict, self.model_dict_file)
+        else:
+            """如果参数直接给出了json配置文件，则读取json文件"""
+            self.model_dict = unserialize_json_ordered(self.model_dict_file)
+
         self.source_data = unserialize_pickle(self.data_source_dump)
         # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
         self.stat_dict = unserialize_json(self.stat_file)
@@ -40,10 +52,8 @@ class MyTestCase(unittest.TestCase):
 
     def test_train(self):
         print("测试开始：")
-        config_file = self.config_file
         # 读取模型配置文件
-        opt_train, opt_data, opt_model, opt_loss = init_model_param(config_file)
-        model_dict = wrap_master(opt_data, opt_model, opt_loss, opt_train)
+        model_dict = self.model_dict
         data_model = self.data_model
         hydroDL.master_train(data_model, model_dict)
         self.assertEqual(True, False)

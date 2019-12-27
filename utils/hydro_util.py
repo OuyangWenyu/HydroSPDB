@@ -1,8 +1,10 @@
 """各类日用工具"""
 import json
+import os
 import pickle
 import smtplib
 import ssl
+from collections import OrderedDict
 
 import numpy as np
 
@@ -27,6 +29,14 @@ def serialize_json(my_dict, my_file):
     """
     with open(my_file, 'w') as FP:
         json.dump(my_dict, FP, indent=4)
+
+
+def unserialize_json_ordered(my_file):
+    """读取json格式的配置文件为object_pairs_hook=OrderedDict的dict"""
+    # m_file = os.path.join(my_file, 'master.json')
+    with open(my_file, 'r') as fp:
+        m_dict = json.load(fp, object_pairs_hook=OrderedDict)
+    return m_dict
 
 
 def unserialize_json(my_file):

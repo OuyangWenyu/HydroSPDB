@@ -1,10 +1,10 @@
 import collections
-import json
 import os
 from collections import OrderedDict
 from configparser import ConfigParser
 
 from data.download_data import download_kaggle_file
+from utils import unserialize_json_ordered
 
 
 def init_path(config_file):
@@ -101,13 +101,13 @@ def init_model_param(config_file):
 
     # 接着是模型输入输出的相关参数。根据opt_data判断输入输出变量个数，确定模型基本结构
     model_name = cfg.get(section, options[3])
-    # 变量名不要修改
+    # 变量名不要修改!!!!!!!!!!!!!!!!!!!!!!!!!!，因为后面eval执行会用到varT和varC这两个变量名。 除非修改配置文件
     varT = opt_data["varT"]
     varC = opt_data["varC"]
     nx = eval(cfg.get(section, options[4]))
-    ny = cfg.get(section, options[5])
-    hidden_size = cfg.get(section, options[6])
-    do_relu = cfg.get(section, options[7])
+    ny = eval(cfg.get(section, options[5]))
+    hidden_size = eval(cfg.get(section, options[6]))
+    do_relu = eval(cfg.get(section, options[7]))
     opt_model = collections.OrderedDict(name=model_name, nx=nx, ny=ny, hiddenSize=hidden_size, doReLU=do_relu)
 
     # 最后是loss的配置
@@ -198,34 +198,13 @@ def wrap_master(opt_data, opt_model, opt_loss, opt_train):
     return m_dict
 
 
-def read_master_file(out):
-    """json格式的配置文件"""
-    m_file = os.path.join(out, 'master.json')
-    with open(m_file, 'r') as fp:
-        m_dict = json.load(fp, object_pairs_hook=OrderedDict)
-    print('read master file ' + m_file)
-    return m_dict
-
-
-def write_master_file(m_dict):
-    """将配置内容写入json格式的配置文件"""
-    out = m_dict['out']
-    if not os.path.isdir(out):
-        os.makedirs(out)
-    m_file = os.path.join(out, 'master.json')
-    with open(m_file, 'w') as fp:
-        json.dump(m_dict, fp, indent=4)
-    print('write master file ' + m_file)
-    return out
-
-
 def namePred(out, tRange, subset, epoch=None, doMC=False, suffix=None):
     """训练过程输出"""
     if not os.path.exists(out):
         os.makedirs(out)
     if not os.path.exists(os.path.join(out, 'master.json')):
         return ['None']
-    mDict = read_master_file(out)
+    mDict = unserialize_json_ordered(out)
     target = mDict['data']['target']
     if type(target) is not list:
         target = [target]

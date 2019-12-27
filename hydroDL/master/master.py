@@ -3,7 +3,8 @@ import os
 import numpy as np
 import pandas as pd
 
-from data.read_config import read_master_file, write_master_file, namePred
+from data.read_config import namePred
+from utils import unserialize_json_ordered
 from explore import stat
 from hydroDL.model import *
 
@@ -14,16 +15,13 @@ def load_model(out, epoch=None):
     :parameter
         out: model_dict"""
     if epoch is None:
-        m_dict = read_master_file(out)
+        m_dict = unserialize_json_ordered(out)
         epoch = m_dict['train']['nEpoch']
     model = model_run.model_load(out, epoch)
     return model
 
 
 def master_train(data_model, model_dict):
-    if model_dict is str:
-        """如果参数直接给出了json配置文件，则读取json文件"""
-        model_dict = read_master_file(model_dict)
     out = model_dict['data']
     opt_model = model_dict['model']
     opt_loss = model_dict['loss']
@@ -62,7 +60,6 @@ def master_train(data_model, model_dict):
         opt_train['saveEpoch'] = opt_train['nEpoch']
 
     # train model
-    write_master_file(model_dict)
     model = model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'], mini_batch=opt_train['miniBatch'],
                         save_epoch=opt_train['saveEpoch'], save_folder=out)
 
@@ -100,7 +97,7 @@ def master_test(data_model, model_dict):
         print('Loaded previous results')
 
     # load previous result
-    m_dict = read_master_file(out)
+    m_dict = unserialize_json_ordered(out)
     data_pred = np.ndarray([obs.shape[0], obs.shape[1], len(file_path_lst)])
     for k in range(len(file_path_lst)):
         file_path = file_path_lst[k]
