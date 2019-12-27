@@ -131,7 +131,13 @@ def read_gages_config(config_file):
     dir_db = dir_db_dict.get("DB")
     dir_out = dir_db_dict.get("Out")
     dir_temp = dir_db_dict.get("Temp")
-
+    # 几个根目录文件夹，没有的话就建立
+    if not os.path.isdir(dir_db):
+        os.mkdir(dir_db)
+    if not os.path.isdir(dir_out):
+        os.mkdir(dir_out)
+    if not os.path.isdir(dir_temp):
+        os.mkdir(dir_temp)
     data_params = init_data_param(config_file)
     # 径流数据配置
     flow_dir = os.path.join(dir_db, data_params.get("streamflowDir"))

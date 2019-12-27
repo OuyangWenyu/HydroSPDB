@@ -55,15 +55,15 @@ def test_pandas():
          ["A", 8], ["A", 9], ["A", 10], ["B", 8], ["B", 9], ["B", 10], ["C", 8], ["C", 9], ["C", 10]],
         columns=['gage_id', 'time_start'])
     # 接下来把df0转为如下形式：
-    np_result = np.array(
-        [[["A", 1], ["A", 2], ["A", 3], ["A", 4], ["A", 5], ["A", 6], ["A", 7], ["A", 8], ["A", 9], ["A", 10]],
-         [["B", 1], ["B", 2], ["B", 3], ["B", 4], ["B", 5], ["B", 6], ["B", 7], ["B", 8], ["B", 9], ["A", 10]],
-         [["C", 1], ["C", 2], ["C", 3], ["C", 4], ["C", 5], ["C", 6], ["C", 7], ["C", 8], ["C", 9], ["A", 9]]])
+    df_result = pd.DataFrame(
+        [["A", 1], ["A", 2], ["A", 3], ["A", 4], ["A", 5], ["A", 6], ["A", 7], ["A", 8], ["A", 9], ["A", 10],
+         ["B", 1], ["B", 2], ["B", 3], ["B", 4], ["B", 5], ["B", 6], ["B", 7], ["B", 8], ["B", 9], ["B", 10],
+         ["C", 1], ["C", 2], ["C", 3], ["C", 4], ["C", 5], ["C", 6], ["C", 7], ["C", 8], ["C", 9], ["C", 10]])
     names = ["A", "B", "C"]
     df2 = pd.DataFrame()
     for name in names:
         df_name = df0[df0['gage_id'] == name]
-        print(df_name)
+        print("目前的名称：", name, df_name)
         df2 = [df2, df_name]
         df2 = pd.concat(df2)
     np1 = df2.values
@@ -71,7 +71,10 @@ def test_pandas():
     print(np2)
     np3 = np2.reshape(3, 10, 2)
     print(np3)
-    np.testing.assert_equal(np3, np_result)
+    np11 = df_result.values
+    np21 = np.expand_dims(np11, axis=0)
+    np31 = np21.reshape(3, 10, 2)
+    np.testing.assert_equal(np3, np31)
 
 
 class MyTestCase(unittest.TestCase):

@@ -35,8 +35,10 @@ class DataModel(object):
         self.data_forcing = data_forcing
         # read attributes
         attr_lst = data_source.all_configs.get("attr_chosen")
-        data_attr = data_source.read_attr(usgs_id, attr_lst)
+        data_attr, var_dict, f_dict = data_source.read_attr(usgs_id, attr_lst)
         self.data_attr = data_attr
+        self.var_dict = var_dict
+        self.f_dict = f_dict
         # 初步计算统计值
         stat_dict = self.cal_stat_all()
         self.stat_dict = stat_dict

@@ -1,0 +1,78 @@
+{
+    "STANAME": [
+        "Clear Creek near Rockbridge OH",
+        "Hocking River at Enterprise OH",
+        "Mill Creek near Bellepoint OH",
+        "Olentangy River at Claridon OH",
+        "Olentangy River near Delaware OH",
+        "Scioto River below O Shaughnessy Dam nr Dublin OH",
+        "Scioto River near Prospect OH",
+        "South Fork Licking River near Hebron OH"
+    ],
+    "HUC02": [
+        "05"
+    ],
+    "STATE": [
+        "OH"
+    ],
+    "HCDN-2009": [],
+    "HBN36": [],
+    "OLD_HCDN": [
+        "yes"
+    ],
+    "NSIP_SENTINEL": [
+        "yes"
+    ],
+    "COUNTYNAME_SITE": [
+        "Delaware",
+        "Hocking",
+        "Licking",
+        "Marion"
+    ],
+    "NAWQA_SUID": [],
+    "CLASS": [
+        "Non-ref"
+    ],
+    "AGGECOREGION": [
+        "CntlPlains"
+    ],
+    "HUC10_CHECK": [
+        "good",
+        "reasonable"
+    ],
+    "FLOW_PCT_EST_VALUES": [
+        "0.0",
+        "0.6",
+        "0.8",
+        "1.2",
+        "1.6",
+        "1.8",
+        "2.2",
+        "3.6"
+    ],
+    "ACTIVE09": [
+        "yes"
+    ],
+    "GEOL_REEDBUSH_DOM": [
+        "sedimentary"
+    ],
+    "GEOL_REEDBUSH_SITE": [
+        "sedimentary"
+    ],
+    "GEOL_HUNT_DOM_CODE": [
+        "co/ss,sh",
+        "ts"
+    ],
+    "GEOL_HUNT_DOM_DESC": [
+        "Ice-laid deposits, like tg but mostly sand and silt",
+        "Sandy and stony colluvium derived mostly from sandstone and shale"
+    ],
+    "GEOL_HUNT_SITE_CODE": [
+        "co/ss,sh",
+        "ts"
+    ],
+    "USDA_LRR_SITE": [
+        "M",
+        "N"
+    ]
+}

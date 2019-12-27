@@ -401,23 +401,16 @@ class SourceData(object):
                 k = k + 1
             out_lst.append(out_temp)
         out = np.concatenate(out_lst, 1)
-        # dictFactorize.json is the explanation of value of categorical variables
-        file_name = os.path.join(dir_out, 'dictFactorize.json')
-        with open(file_name, 'w') as fp:
-            json.dump(f_dict, fp, indent=4)
-        file_name = os.path.join(dir_out, 'dictAttribute.json')
-        with open(file_name, 'w') as fp:
-            json.dump(var_dict, fp, indent=4)
-        return out, var_lst
+        return out, var_lst, var_dict, f_dict
 
     def read_attr(self, usgs_id_lst, var_lst):
         """指定读取某些站点的某些属性"""
-        attr_all, var_lst_all = self.read_attr_all(usgs_id_lst)
+        attr_all, var_lst_all, var_dict, f_dict = self.read_attr_all(usgs_id_lst)
         ind_var = list()
         for var in var_lst:
             ind_var.append(var_lst_all.index(var))
         out = attr_all[:, ind_var]
-        return out
+        return out, var_dict, f_dict
 
     @my_timer
     def read_forcing(self, usgs_id_lst, t_range_lst):
@@ -459,9 +452,8 @@ class SourceData(object):
         # when year is a leap year, only 365d will be provided by gee datasets. better to fill it with nan
         # number of days are different in different years, so reshape can't be used
         x = np.empty([len(usgs_id_lst), t_range_lst.size, len(var_lst)])
-        data_chosen_t_length = np.unique(data_chosen.iloc[:, 1].values).size
         for k in range(len(usgs_id_lst)):
-            data_k = data_chosen.iloc[k * data_chosen_t_length:(k + 1) * data_chosen_t_length, :]
+            data_k = data_chosen[data_chosen['gage_id'] == usgs_id_lst[k]]
             out = np.full([t_range_lst.size, len(var_lst)], np.nan)
             # df中的date是字符串，转换为datetime，方可与tLst求交集
             df_date = data_k.iloc[:, 1]
