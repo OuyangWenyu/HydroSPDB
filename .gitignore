@@ -65,7 +65,7 @@ fabric.properties
 # Editor-based Rest Client
 .idea/httpRequests
 
-# Android studio 3.1+ serialized cache file
+# Android studio 3.1+ serialized temp file
 .idea/caches/build_file_checksums.ser
 
 ### VisualStudioCode template
@@ -218,3 +218,4 @@ pip-selfcheck.json
 /example/data/gages/
 /example/data/camels/
 /example/output/
+/example/temp/

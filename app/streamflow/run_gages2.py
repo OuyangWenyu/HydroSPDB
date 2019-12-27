@@ -25,12 +25,12 @@ dataModel = DataModel(sourceData)
 # train model
 master_train(dataModel, modelDict)
 # 训练结束，发送email，email中给一个输出文件夹的提示
-out = sourceData.all_configs['out']
+out = modelDict['dir']['Out']
 hydro_util.send_email(subject='Training Done', text=out)
 
 # test
 # 首先构建test时的data和model，然后调用test函数计算
-sourceDataTest = SourceData(configFile, optTrain.get("tRangeTest"))
+sourceDataTest = SourceData(configFile, optTrain.get("tRangeTest"), optData['tRangeAll'])
 testDataModel = DataModel(sourceDataTest)
 df, pred, obs = master_test(testDataModel, modelDict)
 

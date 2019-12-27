@@ -1,14 +1,17 @@
 import unittest
 import hydroDL
 
-from data import DataModel, init_model_param, wrap_master, init_path
+from data import DataModel
 
 from utils import *
 
 
-class MyTestCase(unittest.TestCase):
+class TestTrainCase(unittest.TestCase):
     config_file = r"../data/config.ini"
-    dir_temp = '/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/temp/gages'
+    root = os.path.expanduser('~')
+    dir_db = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages')
+    dir_out = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages')
+    dir_temp = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages')
 
     model_dict_file = os.path.join(dir_temp, 'master.json')
 
@@ -48,7 +51,6 @@ class MyTestCase(unittest.TestCase):
         model_dict = self.model_dict
         data_model = self.data_model
         hydroDL.master_train(data_model, model_dict)
-        self.assertEqual(True, False)
 
 
 if __name__ == '__main__':

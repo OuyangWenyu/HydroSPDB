@@ -69,9 +69,8 @@ def master_test(data_model, model_dict):
         data_model：测试使用的数据
         model_dict：测试时的模型配置
     """
-    m_dict = model_dict
-    opt_data = m_dict['data']
-    opt_test = m_dict['test']
+    opt_data = model_dict['data']
+    opt_test = model_dict['test']
     batch_size, rho = opt_test['miniBatch']
 
     df, x, obs, c = data_model.load_data(opt_data)
@@ -92,18 +91,18 @@ def master_test(data_model, model_dict):
     if re_test is True:
         print('Runing new results')
         model = load_model(model_dict, epoch=epoch)
-        model_test(model, x, c, batch_size=batch_size, file_path_lst=file_path_lst)
+        model_run.model_test(model, x, c, batch_size=batch_size, file_path_lst=file_path_lst)
     else:
         print('Loaded previous results')
 
     # load previous result
-    m_dict = unserialize_json_ordered(out)
+    model_dict = unserialize_json_ordered(out)
     data_pred = np.ndarray([obs.shape[0], obs.shape[1], len(file_path_lst)])
     for k in range(len(file_path_lst)):
         file_path = file_path_lst[k]
         data_pred[:, :, k] = pd.read_csv(file_path, dtype=np.float, header=None).values
     is_sigma_x = False
-    if m_dict['loss']['name'] == 'hydroDL.model.crit.SigmaLoss':
+    if model_dict['loss']['name'] == 'hydroDL.model.crit.SigmaLoss':
         is_sigma_x = True
         pred = data_pred[:, :, ::2]
         sigma_x = data_pred[:, :, 1::2]

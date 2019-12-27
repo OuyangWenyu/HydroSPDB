@@ -5,9 +5,12 @@ from data import *
 from utils import *
 
 
-class MyTestCase(unittest.TestCase):
+class TestDataClassCase(unittest.TestCase):
     config_file = r"../data/config.ini"
-    dir_temp = '/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/temp/gages'
+    root = os.path.expanduser('~')
+    dir_db = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages')
+    dir_out = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages')
+    dir_temp = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages')
     model_dict_file = os.path.join(dir_temp, 'master.json')
     data_source_dump = os.path.join(dir_temp, 'data_source.txt')
 

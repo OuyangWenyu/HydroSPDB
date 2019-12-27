@@ -9,7 +9,7 @@ import geopandas as gpd
 from utils import spatial_join
 
 
-class DataFuncCase(unittest.TestCase):
+class TestDataFuncCase(unittest.TestCase):
     config_file = r"../data/config.ini"
     root = os.path.expanduser('~')
     dir_db = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages')
