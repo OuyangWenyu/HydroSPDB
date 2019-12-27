@@ -1,4 +1,9 @@
 {
+    "dir": {
+        "DB": "/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/data/gages",
+        "Out": "/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/output/gages",
+        "Temp": "/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/temp/gages"
+    },
     "data": {
         "varT": [
             "dayl",

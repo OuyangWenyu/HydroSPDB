@@ -1,9 +1,7 @@
 import unittest
 import hydroDL
-import os
-import utils
 
-from data import DataModel, init_model_param, wrap_master
+from data import DataModel, init_model_param, wrap_master, init_path
 
 from utils import *
 
@@ -25,13 +23,7 @@ class MyTestCase(unittest.TestCase):
     def setUp(self):
         print('setUp...读取datamodel')
 
-        if not os.path.isfile(self.model_dict_file):
-            opt_train, opt_data, opt_model, opt_loss = init_model_param(self.config_file)
-            self.model_dict = wrap_master(opt_data, opt_model, opt_loss, opt_train)
-            serialize_json(self.model_dict, self.model_dict_file)
-        else:
-            """如果参数直接给出了json配置文件，则读取json文件"""
-            self.model_dict = unserialize_json_ordered(self.model_dict_file)
+        self.model_dict = unserialize_json_ordered(self.model_dict_file)
 
         self.source_data = unserialize_pickle(self.data_source_dump)
         # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5

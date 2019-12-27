@@ -3,10 +3,9 @@ import numpy as np
 import torch
 import time
 import os
-import hydroDL
-# import * 的时候就体现出__init__.py文件的作用了
-from hydroDL.model import *
 import pandas as pd
+
+from . import rnn
 
 
 def model_train(model,
@@ -167,7 +166,7 @@ def model_test(model, x, c, *, batch_size=None, file_path_lst=None):
             y_p = model(x_test)
         if type(model) in [rnn.LstmCloseModel, rnn.AnnCloseModel]:
             y_p = model(x_test, z_test)
-        if type(model) in [hydroDL.model.rnn.LstmCnnForcast]:
+        if type(model) in [rnn.LstmCnnForcast]:
             y_p = model(x_test, z_test)
         y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
 

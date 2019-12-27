@@ -1,3 +1,3 @@
-from .model_run import model_train, model_test
-from . import rnn
+from . import model_run
 from . import crit
+from . import rnn

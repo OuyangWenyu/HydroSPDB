@@ -22,7 +22,6 @@ def load_model(out, epoch=None):
 
 
 def master_train(data_model, model_dict):
-    out = model_dict['data']
     opt_model = model_dict['model']
     opt_loss = model_dict['loss']
     opt_train = model_dict['train']
@@ -60,8 +59,9 @@ def master_train(data_model, model_dict):
         opt_train['saveEpoch'] = opt_train['nEpoch']
 
     # train model
-    model = model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'], mini_batch=opt_train['miniBatch'],
-                        save_epoch=opt_train['saveEpoch'], save_folder=out)
+    out = model_dict['dir']['Out']
+    model = model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
+                                  mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'], save_folder=out)
 
 
 def master_test(data_model, model_dict):

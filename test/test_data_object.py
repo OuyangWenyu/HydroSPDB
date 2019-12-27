@@ -7,13 +7,18 @@ from utils import *
 
 class MyTestCase(unittest.TestCase):
     config_file = r"../data/config.ini"
-    data_source_dump = '/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/temp/gages/data_source.txt'
+    dir_temp = '/home/owen/Documents/Code/hydro-anthropogenic-lstm/example/temp/gages'
+    model_dict_file = os.path.join(dir_temp, 'master.json')
+    data_source_dump = os.path.join(dir_temp, 'data_source.txt')
 
     def test_data_source(self):
         config_file = self.config_file
 
-        # 读取模型配置文件
+        # 读取模型配置文件，并写入json
+        opt_dir = init_path(config_file)
         opt_train, opt_data, opt_model, opt_loss = init_model_param(config_file)
+        model_dict = wrap_master(opt_dir, opt_data, opt_model, opt_loss, opt_train)
+        serialize_json(model_dict, self.model_dict_file)
 
         # 准备训练数据
         source_data = SourceData(config_file, opt_data.get("tRangeTrain"), opt_data['tRangeAll'])

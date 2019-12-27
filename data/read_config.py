@@ -192,9 +192,9 @@ def read_gages_config(config_file):
                                    huc4_shp_file=huc4_shp_file, t_range_all=t_range_all)
 
 
-def wrap_master(opt_data, opt_model, opt_loss, opt_train):
+def wrap_master(opt_dir, opt_data, opt_model, opt_loss, opt_train):
     """model的相关参数整合"""
-    m_dict = OrderedDict(data=opt_data, model=opt_model, loss=opt_loss, train=opt_train)
+    m_dict = OrderedDict(dir=opt_dir, data=opt_data, model=opt_model, loss=opt_loss, train=opt_train)
     return m_dict
 
 

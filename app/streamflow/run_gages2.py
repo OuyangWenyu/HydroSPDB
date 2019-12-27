@@ -11,8 +11,9 @@ print('starting hydroDL...')
 configFile = r"../../data/config.ini"
 
 # 读取模型配置文件
+optDir = init_path(configFile)
 optTrain, optData, optModel, optLoss = init_model_param(configFile)
-modelDict = wrap_master(optData, optModel, optLoss, optTrain)
+modelDict = wrap_master(optDir, optData, optModel, optLoss, optTrain)
 
 # 准备训练数据
 sourceData = SourceData(configFile, optData.get("tRangeTrain"), optData['tRangeAll'])
