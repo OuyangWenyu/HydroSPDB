@@ -59,7 +59,12 @@ def cal_stat(x):
 
 
 def trans_norm(x, var_lst, stat_dict, *, to_norm):
-    """归一化计算方法，包括反向的计算过程，测试的时候需要还原数据"""
+    """归一化计算方法，包括反向的计算过程，测试的时候需要还原数据
+    :parameter
+        x：可以是二维，也可以是三维数据，都能处理。
+            二维：第一维代表站点，第二维代表变量类型
+            三维：第一维代表站点，第二维代表时间，第三维度代表变量类型
+    """
     if type(var_lst) is str:
         var_lst = [var_lst]
     out = np.zeros(x.shape)

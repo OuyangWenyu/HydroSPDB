@@ -24,13 +24,13 @@ def master_train(data_model, model_dict):
     if model_dict is str:
         """如果参数直接给出了json配置文件，则读取json文件"""
         model_dict = read_master_file(model_dict)
-    out = model_dict['out']
+    out = model_dict['data']
     opt_model = model_dict['model']
     opt_loss = model_dict['loss']
     opt_train = model_dict['train']
 
     # data
-    x, y, c = data_model.load_data()
+    x, y, c = data_model.load_data(model_dict)
     nx = x.shape[-1] + c.shape[-1]
     ny = y.shape[-1]
 

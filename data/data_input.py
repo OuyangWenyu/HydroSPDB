@@ -43,7 +43,7 @@ class DataModel(object):
             self.data_attr = args[2]
             self.var_dict = args[3]
             self.f_dict = args[4]
-            self.stat_dict = [5]
+            self.stat_dict = args[5]
 
     def cal_stat_all(self):
         """计算统计值，便于后面归一化处理。"""
@@ -68,45 +68,57 @@ class DataModel(object):
             stat_dict[var] = cal_stat(attr_data[:, k])
         return stat_dict
 
-    def get_data_obs(self, rm_nan=True):
-        """径流数据读取及归一化处理"""
+    def get_data_obs(self, rm_nan=True, to_norm=True):
+        """径流数据读取及归一化处理，会处理成三维，最后一维长度为1，表示径流变量"""
         stat_dict = self.stat_dict
         data = self.data_flow
-        data = trans_norm(data, 'flow', stat_dict, to_norm=True)
+        # 为了调用trans_norm函数进行归一化，这里先把径流变为三维数据
+        data = np.expand_dims(data, axis=2)
+        data = trans_norm(data, 'usgsFlow', stat_dict, to_norm=to_norm)
         if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data
 
-    def get_data_ts(self, rm_nan=True):
+    def get_data_ts(self, rm_nan=True, to_norm=True):
         """时间序列数据，主要是驱动数据读取 and choose data in the given time interval 及归一化处理"""
         stat_dict = self.stat_dict
         var_lst = self.data_source.all_configs.get("forcing_chosen")
         data = self.data_forcing
-        data = trans_norm(data, var_lst, stat_dict, to_norm=True)
+        data = trans_norm(data, var_lst, stat_dict, to_norm=to_norm)
         if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data
 
-    def get_data_const(self, rm_nan=True):
+    def get_data_const(self, rm_nan=True, to_norm=True):
         """属性数据读取及归一化处理"""
         stat_dict = self.stat_dict
         var_lst = self.data_source.all_configs.get("attr_chosen")
         data = self.data_attr
-        data = trans_norm(data, var_lst, stat_dict, to_norm=True)
+        data = trans_norm(data, var_lst, stat_dict, to_norm=to_norm)
         if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data
 
-    def load_data(self):
-        """读取数据为模型输入的形式，完成归一化运算"""
+    def load_data(self, model_dict):
+        """读取数据为模型输入的形式，完成归一化运算
+        :parameter
+            model_dict: 载入数据需要模型相关参数
+        :return  np.array
+            x: 3-d  gages_num*time_num*var_num
+            y: 3-d  gages_num*time_num*1
+            c: 2-d  gages_num*var_num
+        """
         # 如果读取到统计数据的json文件，则不需要再次计算。
-        opt_data = self.data_source.all_configs
+        opt_data = model_dict["data"]
         rm_nan_x = opt_data['rmNan'][0]
         rm_nan_y = opt_data['rmNan'][1]
         rm_nan_c = opt_data['rmNan'][0]
-        x = self.get_data_ts(rm_nan=rm_nan_x)
-        y = self.get_data_obs(rm_nan=rm_nan_y)
-        c = self.get_data_const(rm_nan=rm_nan_c)
+        to_norm_x = opt_data['doNorm'][0]
+        to_norm_y = opt_data['doNorm'][1]
+        to_norm_c = opt_data['doNorm'][0]
+        x = self.get_data_ts(rm_nan=rm_nan_x, to_norm=to_norm_x)
+        y = self.get_data_obs(rm_nan=rm_nan_y, to_norm=to_norm_y)
+        c = self.get_data_const(rm_nan=rm_nan_c, to_norm=to_norm_c)
         if opt_data['daObs'] > 0:
             nday = opt_data['daObs']
             obs = self.get_data_obs(rm_nan=True)
