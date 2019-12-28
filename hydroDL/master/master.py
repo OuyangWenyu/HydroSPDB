@@ -3,22 +3,10 @@ import os
 import numpy as np
 import pandas as pd
 
-from data.read_config import namePred
+from data.read_config import name_pred
 from utils import unserialize_json_ordered
 from explore import stat
 from hydroDL.model import *
-
-
-def load_model(out, epoch=None):
-    """
-    根据out配置项读取
-    :parameter
-        out: model_dict"""
-    if epoch is None:
-        m_dict = unserialize_json_ordered(out)
-        epoch = m_dict['train']['nEpoch']
-    model = model_run.model_load(out, epoch)
-    return model
 
 
 def master_train(data_model, model_dict):
@@ -70,44 +58,40 @@ def master_test(data_model, model_dict):
         model_dict：测试时的模型配置
     """
     opt_data = model_dict['data']
-    opt_test = model_dict['test']
-    batch_size, rho = opt_test['miniBatch']
+    # 测试和训练使用的batch_size, rho是一样的
+    batch_size, rho = model_dict['train']['miniBatch']
 
-    df, x, obs, c = data_model.load_data(opt_data)
+    x, obs, c = data_model.load_data(model_dict)
 
     # generate file names and run model
-    out = data_model.data_source.all_configs['out']
+    out = model_dict['dir']['Out']
     t_range = data_model.data_source.t_range
-    epoch = model_dict["epoch"]
-    do_mc = model_dict["do_mc"]
-    suffix = model_dict["suffix"]
-    file_path_lst = namePred(out, t_range, epoch=epoch, doMC=do_mc, suffix=suffix)
-    print('output files:', file_path_lst)
+    epoch = model_dict['train']["nEpoch"]
+    # do_mc = model_dict["do_mc"]  TODO： 明确do_mc参数是什么用的
+    file_path = name_pred(model_dict, out, t_range, epoch)
+    print('output files:', file_path)
     # 如果没有测试结果，那么就重新运行测试代码
     re_test = False
-    for file_path in file_path_lst:
-        if not os.path.isfile(file_path):
-            re_test = True
-    if re_test is True:
+    if not os.path.isfile(file_path):
+        re_test = True
+    if re_test:
         print('Runing new results')
-        model = load_model(model_dict, epoch=epoch)
-        model_run.model_test(model, x, c, batch_size=batch_size, file_path_lst=file_path_lst)
+        model = model_run.model_load(out, epoch)
+        model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
     else:
         print('Loaded previous results')
 
     # load previous result
-    model_dict = unserialize_json_ordered(out)
-    data_pred = np.ndarray([obs.shape[0], obs.shape[1], len(file_path_lst)])
-    for k in range(len(file_path_lst)):
-        file_path = file_path_lst[k]
-        data_pred[:, :, k] = pd.read_csv(file_path, dtype=np.float, header=None).values
+    data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
     is_sigma_x = False
-    if model_dict['loss']['name'] == 'hydroDL.model.crit.SigmaLoss':
+    if model_dict['loss']['name'] == 'SigmaLoss':
+        # TODO：sigmaloss下的情况都没做
         is_sigma_x = True
         pred = data_pred[:, :, ::2]
         sigma_x = data_pred[:, :, 1::2]
     else:
-        pred = data_pred
+        # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
+        pred = np.expand_dims(data_pred, axis=2)
 
     if opt_data['doNorm'][1] is True:
         stat_dict = data_model.stat_dict
@@ -116,6 +100,6 @@ def master_test(data_model, model_dict):
         obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
     if is_sigma_x is True:
-        return df, pred, obs, sigma_x
+        return pred, obs, sigma_x
     else:
-        return df, pred, obs
+        return pred, obs

@@ -18,12 +18,9 @@ class DataModel(object):
         # read flow
         if len(args) == 0:
             data_flow = data_source.read_usgs()
-            # data_flow = np.expand_dims(data_flow, axis=2)
             # 根据径流数据过滤掉一些站点，目前给的是示例参数，后面需修改
             usgs_id = data_source.all_configs["flow_screen_gage_id"]
-            time_range = data_source.all_configs["flow_screen_t_range"]
-            data_flow, usgs_id, t_range_list = data_source.usgs_screen_streamflow(data_flow, usgs_ids=usgs_id,
-                                                                                  time_range=time_range)
+            data_flow, usgs_id, t_range_list = data_source.usgs_screen_streamflow(data_flow, usgs_ids=usgs_id)
             self.data_flow = data_flow
             # read forcing
             data_forcing = data_source.read_forcing(usgs_id, t_range_list)

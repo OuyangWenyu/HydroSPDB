@@ -47,6 +47,7 @@ class SourceData(object):
             os.mkdir(data_dir)
         attr_url = configs.get('attr_url')
         download_small_zip(attr_url, data_dir)
+        print("属性数据准备好了...")
 
     def read_gage_info(self, ids_specific=None, screen_basin_area_huc4=True):
         """根据配置读取所需的gages-ii站点信息及流域基本location等信息。

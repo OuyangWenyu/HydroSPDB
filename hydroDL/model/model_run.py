@@ -116,7 +116,7 @@ def model_load(out_folder, epoch, model_name='model'):
     return model
 
 
-def model_test(model, x, c, *, batch_size=None, file_path_lst=None):
+def model_test(model, x, c, *, file_path, batch_size=None):
     if type(x) is tuple or type(x) is list:
         x, z = x
     else:
@@ -138,14 +138,9 @@ def model_test(model, x, c, *, batch_size=None, file_path_lst=None):
     i_e = np.append(i_s[1:], ngrid)
 
     # deal with file name to save
-    if file_path_lst is None:
-        file_path_lst = ['out' + str(x) for x in range(ny)]
-    f_lst = list()
-    for filePath in file_path_lst:
-        if os.path.exists(filePath):
-            os.remove(filePath)
-        f = open(filePath, 'a')
-        f_lst.append(f)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    f = open(file_path, 'a')
 
     # forward for each batch
     for i in range(0, len(i_s)):
@@ -170,15 +165,12 @@ def model_test(model, x, c, *, batch_size=None, file_path_lst=None):
             y_p = model(x_test, z_test)
         y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
 
-        # save output
-        for k in range(ny):
-            f = f_lst[k]
-            pd.DataFrame(y_out[:, :, k]).to_csv(f, header=False, index=False)
+        # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
+        pd.DataFrame(y_out[:, :, 0]).to_csv(f, header=False, index=False)
 
         model.zero_grad()
         torch.cuda.empty_cache()
 
-    for f in f_lst:
         f.close()
 
     y_out = torch.from_numpy(y_out)

@@ -16,6 +16,9 @@ class TestDataFuncCase(unittest.TestCase):
     dir_out = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages')
     dir_temp = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages')
 
+    t_train = ['1995-01-01', '1997-01-01']
+    t_test = ['1997-01-01', '1999-01-01']
+
     def setUp(self):
         print('setUp...')
 
@@ -60,11 +63,10 @@ class TestDataFuncCase(unittest.TestCase):
                                             gageIdScreen=['03144816', '03145000', '03156000', '03157000', '03157500',
                                                           '03219500', '03220000', '03221000', '03223000', '03224500',
                                                           '03225500', '03226800'],
-                                            tRangeScreen=['1995-01-01', '1997-01-01'],
                                             streamflowScreenParam={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005,
                                                                    'basin_area_ceil': 'HUC4'},
-                                            tRangeTrain=['1995-01-01', '2000-01-01'],
-                                            tRangeTest=['2000-01-01', '2005-01-01'],
+                                            tRangeTrain=self.t_train,
+                                            tRangeTest=self.t_test,
                                             regions=['bas_nonref_CntlPlains'],
                                             doNorm=[True, True],
                                             rmNan=[True, False],
@@ -84,8 +86,8 @@ class TestDataFuncCase(unittest.TestCase):
         gages_data = read_gages_config(self.config_file)
         dir_db_ = self.dir_db
         test_data = collections.OrderedDict(root_dir=dir_db_, out_dir=self.dir_out, temp_dir=self.dir_temp,
-                                            t_range_train=['1995-01-01', '2000-01-01'],
-                                            t_range_test=['2000-01-01', '2005-01-01'],
+                                            t_range_train=self.t_train,
+                                            t_range_test=self.t_test,
                                             regions=['bas_nonref_CntlPlains'],
                                             flow_dir=os.path.join(dir_db_, 'gages_streamflow'),
                                             flow_url='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
@@ -96,7 +98,6 @@ class TestDataFuncCase(unittest.TestCase):
                                                                  '03219500', '03220000', '03221000', '03223000',
                                                                  '03224500',
                                                                  '03225500', '03226800'],
-                                            flow_screen_t_range=['1995-01-01', '1997-01-01'],
                                             flow_screen_param={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005,
                                                                'basin_area_ceil': 'HUC4'},
                                             forcing_chosen=['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp'],

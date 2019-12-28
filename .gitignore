@@ -219,3 +219,4 @@ pip-selfcheck.json
 /example/data/camels/
 /example/output/
 /example/temp/
+/example/logs/

@@ -57,27 +57,25 @@ def init_data_param(config_file):
     streamflow_dir = cfg.get(section, options[10])
     streamflow_url = cfg.get(section, options[11])
     gage_id_screen = eval(cfg.get(section, options[12]))
-    t_range_screen = eval(cfg.get(section, options[13]))
-    streamflow_screen_param = eval(cfg.get(section, options[14]))
+    streamflow_screen_param = eval(cfg.get(section, options[13]))
 
     # attribute数据
-    attr_dir = cfg.get(section, options[15])
-    attr_url = cfg.get(section, options[16])
-    attrBasin = eval(cfg.get(section, options[18]))
-    attrLandcover = eval(cfg.get(section, options[19]))
-    attrSoil = eval(cfg.get(section, options[20]))
-    attrGeol = eval(cfg.get(section, options[21]))
-    attrHydro = eval(cfg.get(section, options[22]))
-    attrHydroModDams = eval(cfg.get(section, options[23]))
-    attr_str_sel = eval(cfg.get(section, options[17]))
+    attr_dir = cfg.get(section, options[14])
+    attr_url = cfg.get(section, options[15])
+    attrBasin = eval(cfg.get(section, options[17]))
+    attrLandcover = eval(cfg.get(section, options[18]))
+    attrSoil = eval(cfg.get(section, options[19]))
+    attrGeol = eval(cfg.get(section, options[20]))
+    attrHydro = eval(cfg.get(section, options[21]))
+    attrHydroModDams = eval(cfg.get(section, options[22]))
+    attr_str_sel = eval(cfg.get(section, options[16]))
 
     t_range_all = eval(cfg.get(section, options[-1]))
     opt_data = collections.OrderedDict(varT=forcing_lst, forcingDir=forcing_dir, forcingType=forcing_type,
                                        forcingUrl=forcing_url,
                                        varC=attr_str_sel, attrDir=attr_dir, attrUrl=attr_url,
                                        streamflowDir=streamflow_dir, streamflowUrl=streamflow_url,
-                                       gageIdScreen=gage_id_screen, tRangeScreen=t_range_screen,
-                                       streamflowScreenParam=streamflow_screen_param,
+                                       gageIdScreen=gage_id_screen, streamflowScreenParam=streamflow_screen_param,
                                        tRangeTrain=t_range_train, tRangeTest=t_range_test, regions=regions,
                                        doNorm=do_norm, rmNan=rm_nan, daObs=da_obs, tRangeAll=t_range_all)
     return opt_data
@@ -114,6 +112,7 @@ def init_model_param(config_file):
     loss_name = cfg.get(section, options[8])
     prior = cfg.get(section, options[9])
     opt_loss = collections.OrderedDict(name=loss_name, prior=prior)
+
     return opt_train, opt_data, opt_model, opt_loss
 
 
@@ -147,7 +146,6 @@ def read_gages_config(config_file):
     flow_dir = os.path.join(dir_db, data_params.get("streamflowDir"))
     flow_url = data_params.get("streamflowUrl")
     flow_screen_gage_id = data_params.get("gageIdScreen")
-    flow_screen_t_range = data_params.get("tRangeScreen")
     flow_screen_param = data_params.get("streamflowScreenParam")
     # 所选forcing
     forcing_chosen = data_params.get("varT")
@@ -183,7 +181,7 @@ def read_gages_config(config_file):
     return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
                                    t_range_train=t_range_train, t_range_test=t_range_test, regions=ref_nonref_regions,
                                    flow_dir=flow_dir, flow_url=flow_url, flow_screen_gage_id=flow_screen_gage_id,
-                                   flow_screen_t_range=flow_screen_t_range, flow_screen_param=flow_screen_param,
+                                   flow_screen_param=flow_screen_param,
                                    forcing_chosen=forcing_chosen, forcing_dir=forcing_dir, forcing_type=forcing_type,
                                    forcing_url=forcing_url,
                                    attr_chosen=attr_chosen, attr_dir=attr_dir, attr_url=attr_url,
@@ -198,37 +196,13 @@ def wrap_master(opt_dir, opt_data, opt_model, opt_loss, opt_train):
     return m_dict
 
 
-def namePred(out, tRange, subset, epoch=None, doMC=False, suffix=None):
+def name_pred(m_dict, out, t_range, epoch, subset=None, suffix=None):
     """训练过程输出"""
-    if not os.path.exists(out):
-        os.makedirs(out)
-    if not os.path.exists(os.path.join(out, 'master.json')):
-        return ['None']
-    mDict = unserialize_json_ordered(out)
-    target = mDict['data']['target']
-    if type(target) is not list:
-        target = [target]
-    nt = len(target)
-    lossName = mDict['loss']['name']
-    if epoch is None:
-        epoch = mDict['train']['nEpoch']
-
-    fileNameLst = list()
-    for k in range(nt):
-        testName = '_'.join(
-            [subset, str(tRange[0]),
-             str(tRange[1]), 'ep' + str(epoch)])
-        fileName = '_'.join([target[k], testName])
-        fileNameLst.append(fileName)
-        if lossName == 'hydroDL.model.crit.SigmaLoss':
-            fileName = '_'.join([target[k] + 'SigmaX', testName])
-            fileNameLst.append(fileName)
-
-    # sum up to file path list
-    filePathLst = list()
-    for fileName in fileNameLst:
-        if suffix is not None:
-            fileName = fileName + '_' + suffix
-        filePath = os.path.join(out, fileName + '.csv')
-        filePathLst.append(filePath)
-    return filePathLst
+    loss_name = m_dict['loss']['name']
+    file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(epoch)])
+    if loss_name == 'SigmaLoss':
+        file_name = '_'.join('SigmaX', file_name)
+    if suffix is not None:
+        file_name = file_name + '_' + suffix
+    file_path = os.path.join(out, file_name + '.csv')
+    return file_path

@@ -58,8 +58,7 @@ class TestForecastCase(unittest.TestCase):
         var_dict = unserialize_json(self.var_dict_file)
         f_dict = unserialize_json(self.f_dict_file)
         data_model_test = DataModel(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict)
-        df, pred, obs = hydroDL.master_test(data_model_test, model_dict)
-        print(df)
+        pred, obs = hydroDL.master_test(data_model_test, model_dict)
         print(pred)
         print(obs)
 
