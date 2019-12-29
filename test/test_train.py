@@ -22,6 +22,7 @@ class TestTrainCase(unittest.TestCase):
     attr_file = os.path.join(dir_temp, 'attr.npy')
     f_dict_file = os.path.join(dir_temp, 'dictFactorize.json')
     var_dict_file = os.path.join(dir_temp, 'dictAttribute.json')
+    t_s_dict_file = os.path.join(dir_temp, 'dictTimeSpace.json')
 
     def setUp(self):
         print('setUp...读取datamodel')
@@ -37,8 +38,9 @@ class TestTrainCase(unittest.TestCase):
         # dictFactorize.json is the explanation of value of categorical variables
         self.var_dict = unserialize_json(self.var_dict_file)
         self.f_dict = unserialize_json(self.f_dict_file)
+        self.t_s_dict = unserialize_json(self.t_s_dict_file)
         self.data_model = DataModel(self.source_data, self.data_flow, self.data_forcing, self.data_attr, self.var_dict,
-                                    self.f_dict, self.stat_dict)
+                                    self.f_dict, self.stat_dict, self.t_s_dict)
 
         print(self.data_model)
 

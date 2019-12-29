@@ -81,7 +81,7 @@ def master_test(data_model, model_dict):
     else:
         print('Loaded previous results')
 
-    # load previous result
+    # load previous result并反归一化为标准量纲
     data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
     is_sigma_x = False
     if model_dict['loss']['name'] == 'SigmaLoss':
@@ -92,7 +92,6 @@ def master_test(data_model, model_dict):
     else:
         # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
         pred = np.expand_dims(data_pred, axis=2)
-
     if opt_data['doNorm'][1] is True:
         stat_dict = data_model.stat_dict
         # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来

@@ -1,10 +1,11 @@
 """target：利用GAGES-II数据训练LSTM，并进行流域径流模拟。
    procedure： 标准机器学习pipeline，数据前处理——统计分析——模型训练及测试——可视化结果——参数调优"""
 from data import *
-from explore.stat import stat_ind
+from explore.stat import statError
 from hydroDL.master import *
 from utils import hydro_util
 from visual import *
+import numpy as np
 
 print('starting hydroDL...')
 # TODO：多GPU计算
@@ -35,10 +36,14 @@ testDataModel = DataModel(sourceDataTest)
 df, pred, obs = master_test(testDataModel, modelDict)
 
 # 统计性能指标
-inds = stat_ind(obs, pred)
-
+pred = pred.reshape(pred.shape[0], pred.shape[1])
+obs = obs.reshape(pred.shape[0], pred.shape[1])
+inds = statError(obs, pred)
 # plot box，使用seaborn库
 plot_box_inds(inds)
-
 # plot time series
-plot_ts_obs_pred(obs, pred)
+show_me_num = 5
+t_s_dict = testDataModel.t_s_dict
+sites = np.array(t_s_dict["sites_id"])
+t_range = np.array(t_s_dict["t_final_range"])
+plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)

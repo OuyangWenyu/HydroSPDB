@@ -1,27 +1,23 @@
 """使用seaborn库绘制各类统计相关的图形"""
-
-import numpy as np
-import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
 
 
-def plot_boxs(data):
+def plot_boxs(data, x_name, y_name):
     """绘制箱型图"""
     sns.set(style="ticks", palette="pastel")
 
     # Draw a nested boxplot to show bills by day and time
-    sns.boxplot(x="day", y="total_bill",
-                hue="smoker", palette=["m", "g"],
-                data=data)
+    sns.boxplot(x=x_name, y=y_name, data=data)
     sns.despine(offset=10, trim=True)
+    plt.show()
 
 
-def plot_ts(data):
-    """绘制时间序列图
-    :parameter
-        data: pd.DataFrame(values, dates, columns=["A", "B", "C", "D"])"""
+def plot_ts(data, row_name, col_name, x_name, y_name):
+    """绘制时间序列对比图"""
     sns.set(style="whitegrid")
+    g = sns.FacetGrid(data, row=row_name, col=col_name, margin_titles=True)
+    g.map(plt.plot, x_name, y_name, color="steelblue")
 
-    data = data.rolling(7).mean()
-
-    sns.lineplot(data=data, palette="tab10", linewidth=2.5)
+    plt.show()

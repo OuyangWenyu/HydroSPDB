@@ -1,6 +1,7 @@
 """一个处理数据的模板方法"""
 import json
 import os
+from collections import OrderedDict
 
 import numpy as np
 
@@ -34,6 +35,10 @@ class DataModel(object):
             # 初步计算统计值
             stat_dict = self.cal_stat_all()
             self.stat_dict = stat_dict
+            # 把站点（space）和时间（time）范围打包到一个dict中，便于后面使用，与前面使用不一样的名称，以免犯错
+            self.t_s_dict = OrderedDict(sites_id=usgs_id, t_final_range=[np.datetime_as_string(t_range_list[0]),
+                                                                         np.datetime_as_string(t_range_list[-1])])
+
         else:
             self.data_flow = args[0]
             self.data_forcing = args[1]
@@ -41,6 +46,7 @@ class DataModel(object):
             self.var_dict = args[3]
             self.f_dict = args[4]
             self.stat_dict = args[5]
+            self.t_s_dict = args[6]
 
     def cal_stat_all(self):
         """计算统计值，便于后面归一化处理。"""

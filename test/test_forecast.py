@@ -24,6 +24,10 @@ class TestForecastCase(unittest.TestCase):
     attr_npy_file = os.path.join(dir_temp, 'attr_test.npy')
     f_dict_file = os.path.join(dir_temp, 'dictFactorize_test.json')
     var_dict_file = os.path.join(dir_temp, 'dictAttribute_test.json')
+    t_s_dict_file = os.path.join(dir_temp, 'dictTimeSpace_test.json')
+
+    flow_pred_file = os.path.join(dir_temp, 'flow_pred')
+    flow_obs_file = os.path.join(dir_temp, 'flow_obs')
 
     def test_data_source_test(self):
         config_file = self.config_file
@@ -45,6 +49,7 @@ class TestForecastCase(unittest.TestCase):
         # dictFactorize.json is the explanation of value of categorical variables
         serialize_json(data_model.f_dict, self.f_dict_file)
         serialize_json(data_model.var_dict, self.var_dict_file)
+        serialize_json(data_model.t_s_dict, self.t_s_dict_file)
 
     def test_forecast(self):
         model_dict = unserialize_json_ordered(self.model_dict_file)
@@ -57,10 +62,14 @@ class TestForecastCase(unittest.TestCase):
         # dictFactorize.json is the explanation of value of categorical variables
         var_dict = unserialize_json(self.var_dict_file)
         f_dict = unserialize_json(self.f_dict_file)
-        data_model_test = DataModel(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict)
+        t_s_dict = unserialize_json(self.t_s_dict_file)
+        data_model_test = DataModel(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
+                                    t_s_dict)
         pred, obs = hydroDL.master_test(data_model_test, model_dict)
         print(pred)
         print(obs)
+        serialize_numpy(pred, self.flow_pred_file)
+        serialize_numpy(obs, self.flow_obs_file)
 
 
 if __name__ == '__main__':

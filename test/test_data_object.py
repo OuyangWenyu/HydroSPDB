@@ -50,6 +50,7 @@ class TestDataClassCase(unittest.TestCase):
         attr_file = os.path.join(dir_temp, 'attr')
         f_dict_file = os.path.join(dir_temp, 'dictFactorize.json')
         var_dict_file = os.path.join(dir_temp, 'dictAttribute.json')
+        t_s_dict_file = os.path.join(dir_temp, 'dictTimeSpace.json')
 
         # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
         serialize_json(data_model.stat_dict, stat_file)
@@ -59,6 +60,7 @@ class TestDataClassCase(unittest.TestCase):
         # dictFactorize.json is the explanation of value of categorical variables
         serialize_json(data_model.f_dict, f_dict_file)
         serialize_json(data_model.var_dict, var_dict_file)
+        serialize_json(data_model.t_s_dict, t_s_dict_file)
 
 
 if __name__ == '__main__':

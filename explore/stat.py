@@ -5,20 +5,24 @@ from hydroeval import evaluator, nse
 keyLst = ['Bias', 'RMSE', 'Corr', 'NSE']
 
 
-def statError(pred, target):
+def statError(target, pred):
     ngrid, nt = pred.shape
     # Bias
     Bias = np.nanmean(pred - target, axis=1)
     # RMSE
     RMSE = np.sqrt(np.nanmean((pred - target) ** 2, axis=1))
-    # # ubRMSE
-    # predMean = np.tile(np.nanmean(pred, axis=1), (nt, 1)).transpose()
-    # targetMean = np.tile(np.nanmean(target, axis=1), (nt, 1)).transpose()
-    # predAnom = pred - predMean
-    # targetAnom = target - targetMean
-    # ubRMSE = np.sqrt(np.nanmean((predAnom - targetAnom) ** 2, axis=1))
-    # rho
+    # ubRMSE
+    predMean = np.tile(np.nanmean(pred, axis=1), (nt, 1)).transpose()
+    targetMean = np.tile(np.nanmean(target, axis=1), (nt, 1)).transpose()
+    predAnom = pred - predMean
+    targetAnom = target - targetMean
+    ubRMSE = np.sqrt(np.nanmean((predAnom - targetAnom) ** 2, axis=1))
+    # rho R2 NSE
     Corr = np.full(ngrid, np.nan)
+    R2 = np.full(ngrid, np.nan)
+    NSE = np.full(ngrid, np.nan)
+    PBiaslow = np.full(ngrid, np.nan)
+    PBiashigh = np.full(ngrid, np.nan)
     for k in range(0, ngrid):
         x = pred[k, :]
         y = target[k, :]
@@ -27,10 +31,25 @@ def statError(pred, target):
             xx = x[ind]
             yy = y[ind]
             Corr[k] = scipy.stats.pearsonr(xx, yy)[0]
-
-    # nse
-    nse_ = np.array([evaluator(nse, pred[i], target[i]) for i in range(pred.shape[0])]).squeeze()
-    outDict = dict(Bias=Bias, RMSE=RMSE, Corr=Corr, NSE=nse_)
+            yymean = yy.mean()
+            SST = np.sum((yy - yymean) ** 2)
+            SSReg = np.sum((xx - yymean) ** 2)
+            SSRes = np.sum((yy - xx) ** 2)
+            R2[k] = 1 - SSRes / SST
+            NSE[k] = 1 - SSRes / SST
+            # FHV the peak flows bias 2%
+            # FLV the low flows bias bottom 30%, log space
+            pred_sort = np.sort(xx)
+            target_sort = np.sort(yy)
+            indexlow = round(0.3 * len(pred_sort))
+            indexhigh = round(0.98 * len(pred_sort))
+            lowpred = pred_sort[:indexlow]
+            highpred = pred_sort[indexhigh:]
+            lowtarget = target_sort[:indexlow]
+            hightarget = target_sort[indexhigh:]
+            PBiaslow[k] = np.sum(lowpred - lowtarget) / np.sum(lowtarget) * 100
+            PBiashigh[k] = np.sum(highpred - hightarget) / np.sum(hightarget) * 100
+            outDict = dict(Bias=Bias, RMSE=RMSE, ubRMSE=ubRMSE, Corr=Corr, R2=R2, NSE=NSE, FLV=PBiaslow, FHV=PBiashigh)
     return outDict
 
 
@@ -82,92 +101,3 @@ def trans_norm(x, var_lst, stat_dict, *, to_norm):
             elif len(x.shape) == 2:
                 out[:, k] = x[:, k] * stat[3] + stat[2]
     return out
-
-
-def stat_ind(obs, pred):
-    # 30% bottom 数据的分析，每个站点的<30分位数的径流数据和同时间的预测径流数据比较，计算box的几个指标
-    obs2d = obs.squeeze()
-    pred2d = pred.squeeze()
-    obs2d[np.where(np.isnan(obs2d))] = 0
-    pred2d[np.where(np.isnan(pred2d))] = 0
-
-    # 每个站点的分位数对应的数据量是不同的，因此不能直接调用二维的计算公式，得每个站点分别计算
-    obsBotIndex = [np.where(obs2di < np.percentile(obs2di, 30)) for obs2di in obs2d]
-    obsBot = np.array([obs2d[i][obsBotIndex[i]] for i in range(obs2d.shape[0])])
-    predBot = np.array([pred2d[j][obsBotIndex[j]] for j in range(pred2d.shape[0])])
-
-    statDictBot = np.array([statError1d(predBot[i], obsBot[i]) for i in range(obsBot.shape[0])]).T
-    statDictBot[np.where(np.isnan(statDictBot))] = 0
-    keysBot = ["Bias", "RMSE", "NSE"]
-    stateBotPercentile = {keysBot[i]: np.percentile(statDictBot[i], [0, 25, 50, 75, 100]) for i in
-                          range(statDictBot.shape[0])}
-    print(stateBotPercentile)
-
-    # top 10%的数据分析，同理
-    obs2d = obs.squeeze()
-    pred2d = pred.squeeze()
-    obs2d[np.where(np.isnan(obs2d))] = 0
-    pred2d[np.where(np.isnan(pred2d))] = 0
-
-    # 每个站点的分位数对应的数据量是不同的，因此不能直接调用二维的计算公式，得每个站点分别计算
-    obsBotIndex = [np.where(obs2di > np.percentile(obs2di, 90)) for obs2di in obs2d]
-    obsBot = np.array([obs2d[i][obsBotIndex[i]] for i in range(obs2d.shape[0])])
-    predBot = np.array([pred2d[j][obsBotIndex[j]] for j in range(pred2d.shape[0])])
-
-    statDictBot = np.array([statError1d(predBot[i], obsBot[i]) for i in range(obsBot.shape[0])]).T
-    statDictBot[np.where(np.isnan(statDictBot))] = 0
-    keysBot = ["Bias", "RMSE", "NSE"]
-    stateBotPercentile = {keysBot[i]: np.percentile(statDictBot[i], [0, 25, 50, 75, 100]) for i in
-                          range(statDictBot.shape[0])}
-    print(stateBotPercentile)
-
-    # plot box
-    statDictLst = [statError(x.squeeze(), obs.squeeze()) for x in predLst]
-    # 输出几组统计值的最值、中位数和四分位数
-    statePercentile = {key: np.percentile(value, [0, 25, 50, 75, 100]) for key, value in statDictLst[0].items()}
-    print(statePercentile)
-    return
-
-
-if __name__ == "__main__":
-    print("main")
-    arrays = {"a": [1, 2, 3, 4, 5, 6, 7, 8, 9], "b": [1, 2, 3, 4, 5, 6, 7, 8, 9]}
-    print(arrays)
-    a_percentile_keys = [key for key in arrays.keys()]
-    a_percentile_values = [np.percentile(value, [0, 25, 50, 75, 100]) for value in arrays.values()]
-    a_percentile = {a_percentile_keys[k]: a_percentile_values[k] for k in range(len(a_percentile_keys))}
-    print(a_percentile)
-
-    b_percentile = {key: np.percentile(value, [0, 25, 50, 75, 100]) for key, value in arrays.items()}
-    print(b_percentile)
-
-    # 取一个数组小于30%分位数的所有值
-    a = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])
-    b = a[np.where(a < np.percentile(a, 30))]
-    print(b)
-
-    a = np.array([2, 6, 3, 8, 4, 1, 5, 7, 9])
-    print(np.where(a < np.percentile(a, 30)))
-    b = a[np.where(a < np.percentile(a, 30))]
-    print(b)
-
-    c = np.array([[[3], [1]], [[2], [4]]])
-    print(c.squeeze().shape)
-    print(c.shape)
-    print(c)
-    print(c.reshape(c.shape[0], c.shape[1]).shape)
-
-    a = np.array([[2, 6, 3, 8, 4, 1, 5, 7, 9], [2, 3, 4, np.nan, 6, 7, 8, 9, 10]])
-    print(a.shape)
-    a[np.where(np.isnan(a))] = 0
-    b = a[np.where(a < np.percentile(a, 30))]
-    print(b)
-
-    a_index = [np.where(a_i < np.percentile(a_i, 30)) for a_i in a]
-    print(a_index)
-    b = [a[i][a_index[i]].tolist() for i in range(a.shape[0])]
-    print(type(b))
-    c = np.array(b)
-    print(c.shape)
-
-    print(statError1d(np.array([1, 2, 3]), np.array([4, 5, 6])))
