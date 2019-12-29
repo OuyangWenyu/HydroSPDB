@@ -4,7 +4,6 @@ from collections import OrderedDict
 from configparser import ConfigParser
 
 from data.download_data import download_kaggle_file
-from utils import unserialize_json_ordered
 
 
 def init_path(config_file):
