@@ -1,7 +1,7 @@
 import os
 import unittest
 import hydroDL
-from data import SourceData, DataModel
+from data import DataModel, GagesSource, GagesConfig
 from utils import unserialize_json, serialize_pickle, unserialize_pickle, serialize_json, serialize_numpy, \
     unserialize_json_ordered, unserialize_numpy
 
@@ -9,9 +9,10 @@ from utils import unserialize_json, serialize_pickle, unserialize_pickle, serial
 class TestForecastCase(unittest.TestCase):
     config_file = r"../data/config.ini"
     root = os.path.expanduser('~')
-    dir_db = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages')
-    dir_out = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages')
-    dir_temp = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages')
+    project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
+    dir_db = os.path.join(root, project_dir, 'example/data/gages')
+    dir_out = os.path.join(root, project_dir, 'example/output/gages')
+    dir_temp = os.path.join(root, project_dir, 'example/temp/gages')
     model_dict_file = os.path.join(dir_temp, 'master.json')
     data_source_test_file = os.path.join(dir_temp, 'data_source_test.txt')
 
@@ -30,11 +31,9 @@ class TestForecastCase(unittest.TestCase):
     flow_obs_file = os.path.join(dir_temp, 'flow_obs')
 
     def test_data_source_test(self):
-        config_file = self.config_file
-        self.model_dict = unserialize_json(self.model_dict_file)
+        config_data = GagesConfig(self.config_file)
         # 准备训练数据
-        source_data = SourceData(config_file, self.model_dict["data"]["tRangeTest"],
-                                 self.model_dict["data"]['tRangeAll'])
+        source_data = GagesSource(config_data, config_data.model_dict["data"]["tRangeTest"])
         # 序列化保存对象
         serialize_pickle(source_data, self.data_source_test_file)
 
@@ -52,7 +51,6 @@ class TestForecastCase(unittest.TestCase):
         serialize_json(data_model.t_s_dict, self.t_s_dict_file)
 
     def test_forecast(self):
-        model_dict = unserialize_json_ordered(self.model_dict_file)
         source_data = unserialize_pickle(self.data_source_test_file)
         # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
         stat_dict = unserialize_json(self.stat_file)
@@ -65,7 +63,7 @@ class TestForecastCase(unittest.TestCase):
         t_s_dict = unserialize_json(self.t_s_dict_file)
         data_model_test = DataModel(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
                                     t_s_dict)
-        pred, obs = hydroDL.master_test(data_model_test, model_dict)
+        pred, obs = hydroDL.master_test(data_model_test)
         print(pred)
         print(obs)
         serialize_numpy(pred, self.flow_pred_file)

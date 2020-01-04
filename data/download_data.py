@@ -12,25 +12,47 @@ from six.moves import urllib
 from utils.dataset_format import unzip_file
 
 
-def download_small_zip(data_url, data_dir):
-    """下载文件较小的zip文件并解压"""
+def zip_file_name_from_url(data_url, data_dir):
     data_url_str = data_url.split('/')
     filename = parse.unquote(data_url_str[-1])
     zipfile_path = os.path.join(data_dir, filename)
     unzip_dir = os.path.join(data_dir, filename[0:-4])
+    return zipfile_path, unzip_dir
+
+
+def is_there_file(zipfile_path, unzip_dir):
+    """if a file has existed"""
     if os.path.isfile(zipfile_path):
         # 如果存在zip文件就不用下载了，直接解压即可
         if os.path.isdir(unzip_dir):
             # 如果已经解压了就啥也不用做了
-            return
+            return True
         unzip_file(zipfile_path, unzip_dir)
-        return
-    if not os.path.isdir(unzip_dir):
-        os.mkdir(unzip_dir)
-    zipfile_path, _ = urllib.request.urlretrieve(data_url, zipfile_path)
+        return True
 
-    with zipfile.ZipFile(zipfile_path, 'r') as _zip:
-        _zip.extractall(unzip_dir)
+
+def download_one_zip(data_url, data_dir):
+    """download one zip file from url as data_file"""
+    zipfile_path, unzip_dir = zip_file_name_from_url(data_url, data_dir)
+    if not is_there_file(zipfile_path, unzip_dir):
+        if not os.path.isdir(unzip_dir):
+            os.mkdir(unzip_dir)
+        r = requests.get(data_url, stream=True)
+        with open(zipfile_path, "wb") as py_file:
+            for chunk in r.iter_content(chunk_size=1024):  # 1024 bytes
+                if chunk:
+                    py_file.write(chunk)
+        unzip_file(zipfile_path, unzip_dir)
+
+
+def download_small_zip(data_url, data_dir):
+    """下载文件较小的zip文件并解压"""
+    zipfile_path, unzip_dir = zip_file_name_from_url(data_url, data_dir)
+    if not is_there_file(zipfile_path, unzip_dir):
+        if not os.path.isdir(unzip_dir):
+            os.mkdir(unzip_dir)
+        zipfile_path, _ = urllib.request.urlretrieve(data_url, zipfile_path)
+        unzip_file(zipfile_path, unzip_dir)
 
 
 def download_small_file(data_url, temp_file):
@@ -80,6 +102,17 @@ def download_google_drive(client_secrets_file, google_drive_dir_name, download_d
     # 根据client_secrets.json授权
     gauth = GoogleAuth()
     gauth.LoadCredentialsFile(client_secrets_file)
+    if gauth.credentials is None:
+        # Authenticate if they're not there
+        gauth.LocalWebserverAuth()
+    elif gauth.access_token_expired:
+        # Refresh them if expired
+        gauth.Refresh()
+    else:
+        # Initialize the saved creds
+        gauth.Authorize()
+    # Save the current credentials to a file
+    gauth.SaveCredentialsFile(client_secrets_file)
     drive = GoogleDrive(gauth)
     # 先从google drive根目录判断是否有dir_name这一文件夹，没有的话就直接报错即可。
     dir_id = None

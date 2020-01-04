@@ -1,7 +1,7 @@
 import data.data_input
-import data.read_config
+import data.data_config
 from hydroDL import pathSMAP, master
-from data import read_config
+from data import data_config
 import os
 
 # training
@@ -34,33 +34,33 @@ for k in range(len(tLst)):
     # master.runTrain(masterDict, cudaID=k % 3, screen='LSTM' + yrLst[k])
 
     # k=0
-    optData = read_config.update(
-        read_config.optDataSMAP,
+    optData = data_config.update(
+        data_config.optDataSMAP,
         rootDB=pathSMAP['DB_L3_NA'],
         subset='CONUSv2f1',
         tRange=tLst[k])
-    optModel = read_config.update(
-        read_config.optLstmClose, name='hydroDL.model.rnn.AnnModel')
-    optLoss = read_config.optLossRMSE
-    optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
+    optModel = data_config.update(
+        data_config.optLstmClose, name='hydroDL.model.rnn.AnnModel')
+    optLoss = data_config.optLossRMSE
+    optTrain = data_config.update(data_config.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                         'CONUSv2f1_NN' + yrLst[k])
-    masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.data_config.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=k % 3, screen='NN' + yrLst[k])
     # master.train(masterDict)
 
-    optData = read_config.update(
-        read_config.optDataSMAP,
+    optData = data_config.update(
+        data_config.optDataSMAP,
         rootDB=pathSMAP['DB_L3_NA'],
         subset='CONUSv2f1',
         tRange=tLst[k],
         daObs=1)
-    optModel = read_config.update(
-        read_config.optLstmClose, name='hydroDL.model.rnn.AnnCloseModel')
-    optLoss = read_config.optLossRMSE
-    optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
+    optModel = data_config.update(
+        data_config.optLstmClose, name='hydroDL.model.rnn.AnnCloseModel')
+    optLoss = data_config.optLossRMSE
+    optTrain = data_config.update(data_config.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                        'CONUSv2f1_DANN' + yrLst[k])
-    masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.data_config.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=k % 3, screen='DANN' + yrLst[k])
     # master.train(masterDict)

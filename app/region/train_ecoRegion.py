@@ -1,4 +1,4 @@
-import data.read_config
+import data.data_config
 import data.data_input
 from hydroDL import pathSMAP, master
 import os
@@ -15,17 +15,17 @@ for case in caseLst:
         varLst = dbCsv.varForcing
     else:
         varLst = dbCsv.varSoilM
-    optData = data.read_config.update(
-        data.read_config.optDataSMAP,
+    optData = data.data_config.update(
+        data.data_config.optDataSMAP,
         rootDB=pathSMAP['DB_L3_NA'],
         subset='CONUSv2f1',
         tRange=[20150401, 20160401],
         varT=varLst)
-    optModel = data.read_config.optLstm
-    optLoss = data.read_config.optLossRMSE
-    optTrain = data.read_config.optTrainSMAP
+    optModel = data.data_config.optLstm
+    optLoss = data.data_config.optLossRMSE
+    optTrain = data.data_config.optTrainSMAP
     out = os.path.join(pathSMAP['Out_L3_NA'], 'CONUSv2f1_' + case)
-    masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.data_config.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=cid % 3, screen=case)
     cid = cid + 1
 
@@ -37,18 +37,18 @@ for k in range(len(subsetLst)):
             varLst = dbCsv.varForcing
         else:
             varLst = dbCsv.varSoilM
-        optData = data.read_config.update(
-            data.read_config.optDataSMAP,
+        optData = data.data_config.update(
+            data.data_config.optDataSMAP,
             rootDB=pathSMAP['DB_L3_NA'],
             subset=subsetLst[k],
             tRange=[20150401, 20160401],
             varT=varLst)
-        optModel = data.read_config.optLstm
-        optLoss = data.read_config.optLossRMSE
-        optTrain = data.read_config.optTrainSMAP
+        optModel = data.data_config.optLstm
+        optLoss = data.data_config.optLossRMSE
+        optTrain = data.data_config.optTrainSMAP
         out = os.path.join(pathSMAP['Out_L3_NA'], 'ecoRegion',
                            subsetLst[k] + '_' + case)
-        masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss,
+        masterDict = data.data_config.wrap_master(out, optData, optModel, optLoss,
                                                   optTrain)
         # master.runTrain(masterDict, cudaID=cid % 3, screen=subsetLst[k])
         cid = cid + 1
@@ -64,18 +64,18 @@ cid = 0
 for kk in range(len(rtEcoLst)):
     k = rtEcoLst[kk] - 1
     case = rtCaseLst[kk]
-    optData = data.read_config.update(
-        data.read_config.optDataSMAP,
+    optData = data.data_config.update(
+        data.data_config.optDataSMAP,
         rootDB=pathSMAP['DB_L3_NA'],
         subset=subsetLst[k],
         tRange=[20150401, 20160401],
         varT=varLst)
-    optModel = data.read_config.optLstm
-    optLoss = data.read_config.optLossRMSE
-    optTrain = data.read_config.optTrainSMAP
+    optModel = data.data_config.optLstm
+    optLoss = data.data_config.optLossRMSE
+    optTrain = data.data_config.optTrainSMAP
     out = os.path.join(pathSMAP['Out_L3_NA'], 'ecoRegion',
                        subsetLst[k] + '_' + case)
-    masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.data_config.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=cid % 3, screen=subsetLst[k])
     cid = cid + 1
     # master.train(masterDict)

@@ -3,13 +3,14 @@ import os
 import numpy as np
 import pandas as pd
 
-from data.read_config import name_pred
+from data.data_config import name_pred
 from utils import unserialize_json_ordered
 from explore import stat
 from hydroDL.model import *
 
 
-def master_train(data_model, model_dict):
+def master_train(data_model):
+    model_dict = data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_loss = model_dict['loss']
     opt_train = model_dict['train']
@@ -18,7 +19,7 @@ def master_train(data_model, model_dict):
     x, y, c = data_model.load_data(model_dict)
     nx = x.shape[-1] + c.shape[-1]
     ny = y.shape[-1]
-
+    opt_model['nx'] = nx
     # loss
     if opt_loss['name'] == 'SigmaLoss':
         loss_fun = crit.SigmaLoss(prior=opt_loss['prior'])
@@ -28,9 +29,6 @@ def master_train(data_model, model_dict):
         opt_model['ny'] = ny
 
     # model
-    if opt_model['nx'] != nx:
-        print('updated nx by input data')
-        opt_model['nx'] = nx
     if opt_model['name'] == 'CudnnLstmModel':
         model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
     elif opt_model['name'] == 'LstmCloseModel':
@@ -52,11 +50,12 @@ def master_train(data_model, model_dict):
                                   mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'], save_folder=out)
 
 
-def master_test(data_model, model_dict):
+def master_test(data_model):
     """:parameter
         data_model：测试使用的数据
         model_dict：测试时的模型配置
     """
+    model_dict = data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
     # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']

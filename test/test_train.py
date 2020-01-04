@@ -9,9 +9,10 @@ from utils import *
 class TestTrainCase(unittest.TestCase):
     config_file = r"../data/config.ini"
     root = os.path.expanduser('~')
-    dir_db = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages')
-    dir_out = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages')
-    dir_temp = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages')
+    project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
+    dir_db = os.path.join(root, project_dir, 'example/data/gages')
+    dir_out = os.path.join(root, project_dir, 'example/output/gages')
+    dir_temp = os.path.join(root, project_dir, 'example/temp/gages')
 
     model_dict_file = os.path.join(dir_temp, 'master.json')
 
@@ -50,9 +51,8 @@ class TestTrainCase(unittest.TestCase):
     def test_train(self):
         print("测试开始：")
         # 读取模型配置文件
-        model_dict = self.model_dict
         data_model = self.data_model
-        hydroDL.master_train(data_model, model_dict)
+        hydroDL.master_train(data_model)
 
 
 if __name__ == '__main__':

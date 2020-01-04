@@ -2,29 +2,29 @@
 import os
 import unittest
 from data import *
+
 from utils import *
 
 
 class TestDataClassCase(unittest.TestCase):
     config_file = r"../data/config.ini"
     root = os.path.expanduser('~')
-    dir_db = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages')
-    dir_out = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages')
-    dir_temp = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages')
+    project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
+    dir_db = os.path.join(root, project_dir, 'example/data/gages')
+    dir_out = os.path.join(root, project_dir, 'example/output/gages')
+    dir_temp = os.path.join(root, project_dir, 'example/temp/gages')
     model_dict_file = os.path.join(dir_temp, 'master.json')
     data_source_dump = os.path.join(dir_temp, 'data_source.txt')
 
+    def setUp(self):
+        self.config_data = GagesConfig(self.config_file)
+        print('setUp...')
+
     def test_data_source(self):
-        config_file = self.config_file
-
         # 读取模型配置文件，并写入json
-        opt_dir = init_path(config_file)
-        opt_train, opt_data, opt_model, opt_loss = init_model_param(config_file)
-        model_dict = wrap_master(opt_dir, opt_data, opt_model, opt_loss, opt_train)
-        serialize_json(model_dict, self.model_dict_file)
-
+        serialize_json(self.config_data.model_dict, self.model_dict_file)
         # 准备训练数据
-        source_data = SourceData(config_file, opt_data.get("tRangeTrain"), opt_data['tRangeAll'])
+        source_data = GagesSource(self.config_data, self.config_data.model_dict["data"]["tRangeTrain"])
         # 序列化保存对象
         dir_temp = source_data.all_configs["temp_dir"]
         if not os.path.isdir(dir_temp):

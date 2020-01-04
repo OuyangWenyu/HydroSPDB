@@ -9,7 +9,7 @@ import os
 import argparse
 
 import data.data_input
-import data.read_config
+import data.data_config
 import utils.hydro_util
 from hydroDL import master
 from utils import hydro_util

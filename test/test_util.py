@@ -80,9 +80,6 @@ def test_pandas():
 class MyTestCase(unittest.TestCase):
     t_range = ['1995-01-01', '2000-01-01']
 
-    def test_something(self):
-        self.assertEqual(True, False)
-
     def test_t_range_years(self):
         t_range = self.t_range
         t_list = t_range_years(t_range)
@@ -121,11 +118,11 @@ class MyTestCase(unittest.TestCase):
         result = np.array([np.nan, 1, 2, np.nan, 3])
         np.testing.assert_equal(out, result)
 
-    def test_trans_daymet_forcing_file_to_camels(self):
-        daymet_dir = ''
-        output_dir = ''
-        result = pd.read_csv(output_dir)
-        self.assertEqual(trans_daymet_forcing_file_to_camels(daymet_dir, output_dir), result)
+    # def test_trans_daymet_forcing_file_to_camels(self):
+    #     daymet_dir = ''
+    #     output_dir = ''
+    #     result = pd.read_csv(output_dir)
+    #     self.assertEqual(trans_daymet_forcing_file_to_camels(daymet_dir, output_dir), result)
 
 
 if __name__ == '__main__':

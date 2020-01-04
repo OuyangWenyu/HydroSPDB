@@ -1,9 +1,9 @@
 import data.data_input
-import data.read_config
+import data.data_config
 import utils.hydro_geo
 from hydroDL import pathSMAP, master
 import utils
-from data import read_config
+from data import data_config
 from hydroDL import stat
 from visual import plot
 import os
@@ -22,33 +22,33 @@ saveDir = os.path.join(pathSMAP['dirResult'], 'DA')
 if 'train' in doLst:
     cid = 0
     for nd in dLst:
-        optData = read_config.update(
-            read_config.optDataSMAP,
+        optData = data_config.update(
+            data_config.optDataSMAP,
             rootDB=pathSMAP['DB_L3_NA'],
             subset='CONUSv2f1',
             tRange=[20150501, 20160501],
             daObs=nd)
-        optModel = read_config.optLstmClose
-        optLoss = read_config.optLossRMSE
-        optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
+        optModel = data_config.optLstmClose
+        optLoss = data_config.optLossRMSE
+        optTrain = data_config.update(data_config.optTrainSMAP, nEpoch=300)
         out = os.path.join(pathSMAP['Out_L3_NA'], 'DA',
                            'CONUSv2f1_d' + str(nd))
-        masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss,
+        masterDict = data.data_config.wrap_master(out, optData, optModel, optLoss,
                                                   optTrain)
         master.run_train(masterDict, cudaID=cid % 3, screen='d' + str(nd))
         # master.train(masterDict)
         cid = cid + 1
     # vanila LSTM
-    optData = read_config.update(
-        read_config.optDataSMAP,
+    optData = data_config.update(
+        data_config.optDataSMAP,
         rootDB=pathSMAP['DB_L3_NA'],
         subset='CONUSv2f1',
         tRange=[20150501, 20160501])
-    optModel = read_config.optLstm
-    optLoss = read_config.optLossRMSE
-    optTrain = read_config.update(read_config.optTrainSMAP, nEpoch=300)
+    optModel = data_config.optLstm
+    optLoss = data_config.optLossRMSE
+    optTrain = data_config.update(data_config.optTrainSMAP, nEpoch=300)
     out = os.path.join(pathSMAP['Out_L3_NA'], 'DA', 'CONUSv2f1')
-    masterDict = data.read_config.wrap_master(out, optData, optModel, optLoss, optTrain)
+    masterDict = data.data_config.wrap_master(out, optData, optModel, optLoss, optTrain)
     master.run_train(masterDict, cudaID=0, screen='LSTM')
 
 # test

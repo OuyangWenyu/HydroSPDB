@@ -12,30 +12,29 @@ from utils import spatial_join
 class TestDataFuncCase(unittest.TestCase):
     config_file = r"../data/config.ini"
     root = os.path.expanduser('~')
-    dir_db = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages')
-    dir_out = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages')
-    dir_temp = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages')
+    project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
+    dataset = 'gages'
+    # dataset = 'camels'
+    dir_db = os.path.join(root, project_dir, 'example/data', dataset)
+    dir_out = os.path.join(root, project_dir, 'example/output', dataset)
+    dir_temp = os.path.join(root, project_dir, 'example/temp', dataset)
 
     t_train = ['1995-01-01', '1997-01-01']
     t_test = ['1997-01-01', '1999-01-01']
 
     def setUp(self):
+        self.config_data = GagesConfig(self.config_file)
         print('setUp...')
 
     def tearDown(self):
         print('tearDown...')
 
     def test_init_path(self):
-        path_data = init_path(self.config_file)
-        root_ = self.root
-        test_data = collections.OrderedDict(
-            DB=os.path.join(root_, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages'),
-            Out=os.path.join(root_, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages'),
-            Temp=os.path.join(root_, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages'))
-        self.assertEqual(path_data, test_data)
+        test_data = collections.OrderedDict(DB=self.dir_db, Out=self.dir_out, Temp=self.dir_temp)
+        self.assertEqual(self.config_data.data_path, test_data)
 
     def test_init_data_param(self):
-        opt_data = init_data_param(self.config_file)
+        opt_data = self.config_data.init_data_param()
         test_data = collections.OrderedDict(varT=['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp'],
                                             forcingDir='gagesII_forcing',
                                             forcingType='daymet',
@@ -63,14 +62,8 @@ class TestDataFuncCase(unittest.TestCase):
                                             gageIdScreen=['03144816', '03145000', '03156000', '03157000', '03157500',
                                                           '03219500', '03220000', '03221000', '03223000', '03224500',
                                                           '03225500', '03226800'],
-                                            streamflowScreenParam={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005,
-                                                                   'basin_area_ceil': 'HUC4'},
-                                            tRangeTrain=self.t_train,
-                                            tRangeTest=self.t_test,
+                                            streamflowScreenParam={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005},
                                             regions=['bas_nonref_CntlPlains'],
-                                            doNorm=[True, True],
-                                            rmNan=[True, False],
-                                            daObs=0,
                                             tRangeAll=['1980-01-01', '2015-01-01'])
         self.assertEqual(test_data, opt_data)
 
@@ -83,11 +76,9 @@ class TestDataFuncCase(unittest.TestCase):
         download_kaggle_file(kaggle_json, name_of_dataset, path_download, file_download)
 
     def test_read_gages_config(self):
-        gages_data = read_gages_config(self.config_file)
+        gages_data = self.config_data.read_data_config()
         dir_db_ = self.dir_db
         test_data = collections.OrderedDict(root_dir=dir_db_, out_dir=self.dir_out, temp_dir=self.dir_temp,
-                                            t_range_train=self.t_train,
-                                            t_range_test=self.t_test,
                                             regions=['bas_nonref_CntlPlains'],
                                             flow_dir=os.path.join(dir_db_, 'gages_streamflow'),
                                             flow_url='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
@@ -98,8 +89,7 @@ class TestDataFuncCase(unittest.TestCase):
                                                                  '03219500', '03220000', '03221000', '03223000',
                                                                  '03224500',
                                                                  '03225500', '03226800'],
-                                            flow_screen_param={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005,
-                                                               'basin_area_ceil': 'HUC4'},
+                                            flow_screen_param={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005},
                                             forcing_chosen=['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp'],
                                             forcing_dir=os.path.join(dir_db_, 'gagesII_forcing', 'daymet'),
                                             forcing_type='daymet',
