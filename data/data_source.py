@@ -40,17 +40,15 @@ class DataSource(object):
 
     def read_site_info(self, ids_specific=None, screen_basin_area_huc4=True):
         """read basic information of sites"""
-        pass
+        print("get infomation of sites...")
 
     def prepare_forcing_data(self):
         """DOWNLOAD forcing data from website"""
         print("forcing data Ready! ...")
-        pass
 
     def prepare_flow_data(self, gage_dict, gage_fld_lst):
         """download streamflow data"""
         print("streamflow data Ready! ...")
-        pass
 
     def read_usgs(self):
         """read streamflow data"""

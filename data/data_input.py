@@ -49,14 +49,14 @@ class DataModel(object):
             self.t_s_dict = args[6]
 
     def cal_stat_all(self):
-        """计算统计值，便于后面归一化处理。"""
-        forcing_lst = self.data_source.all_configs["forcing_chosen"]
+        """calculate statistics of streamflow, forcing and attributes. 计算统计值，便于后面归一化处理。"""
+        # streamflow
         flow = self.data_flow
         stat_dict = dict()
-        # 计算统计值
         stat_dict['usgsFlow'] = cal_stat(flow)
 
-        # forcing数据
+        # forcing
+        forcing_lst = self.data_source.all_configs["forcing_chosen"]
         x = self.data_forcing
         for k in range(len(forcing_lst)):
             var = forcing_lst[k]

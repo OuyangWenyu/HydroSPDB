@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 import geopandas as gpd
-import pandas as pd
 from data import DataSource
 from data.download_data import download_small_file, download_google_drive
 from utils import *
