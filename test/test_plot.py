@@ -54,9 +54,12 @@ def test_stat():
 class MyTestCase(unittest.TestCase):
     config_file = r"../data/config.ini"
     root = os.path.expanduser('~')
-    dir_db = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/data/gages')
-    dir_out = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/output/gages')
-    dir_temp = os.path.join(root, 'Documents/Code/hydro-anthropogenic-lstm/example/temp/gages')
+    project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
+    # dataset = 'gages'
+    dataset = 'camels'
+    dir_db = os.path.join(root, project_dir, 'example/data', dataset)
+    dir_out = os.path.join(root, project_dir, 'example/output', dataset)
+    dir_temp = os.path.join(root, project_dir, 'example/temp', dataset)
     flow_pred_file = os.path.join(dir_temp, 'flow_pred.npy')
     flow_obs_file = os.path.join(dir_temp, 'flow_obs.npy')
     t_s_dict_file = os.path.join(dir_temp, 'dictTimeSpace_test.json')

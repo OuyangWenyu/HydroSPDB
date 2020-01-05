@@ -1,7 +1,7 @@
 import os
 import unittest
 import hydroDL
-from data import DataModel, GagesSource, GagesConfig
+from data import DataModel, CamelsSource, CamelsConfig
 from utils import unserialize_json, serialize_pickle, unserialize_pickle, serialize_json, serialize_numpy, \
     unserialize_json_ordered, unserialize_numpy
 
@@ -10,9 +10,10 @@ class TestForecastCase(unittest.TestCase):
     config_file = r"../data/config.ini"
     root = os.path.expanduser('~')
     project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
-    dir_db = os.path.join(root, project_dir, 'example/data/gages')
-    dir_out = os.path.join(root, project_dir, 'example/output/gages')
-    dir_temp = os.path.join(root, project_dir, 'example/temp/gages')
+    dataset = 'camels'
+    dir_db = os.path.join(root, project_dir, 'example/data', dataset)
+    dir_out = os.path.join(root, project_dir, 'example/output', dataset)
+    dir_temp = os.path.join(root, project_dir, 'example/temp', dataset)
     model_dict_file = os.path.join(dir_temp, 'master.json')
     data_source_test_file = os.path.join(dir_temp, 'data_source_test.txt')
 
@@ -31,9 +32,9 @@ class TestForecastCase(unittest.TestCase):
     flow_obs_file = os.path.join(dir_temp, 'flow_obs')
 
     def test_data_source_test(self):
-        config_data = GagesConfig(self.config_file)
+        config_data = CamelsConfig(self.config_file)
         # 准备训练数据
-        source_data = GagesSource(config_data, config_data.model_dict["data"]["tRangeTest"])
+        source_data = CamelsSource(config_data, config_data.model_dict["data"]["tRangeTest"])
         # 序列化保存对象
         serialize_pickle(source_data, self.data_source_test_file)
 
