@@ -48,12 +48,7 @@ class CamelsConfig(DataConfig):
         dir_db = self.data_path.get("DB")
         dir_out = self.data_path.get("Out")
         dir_temp = self.data_path.get("Temp")
-        if not os.path.isdir(dir_db):
-            os.mkdir(dir_db)
-        if not os.path.isdir(dir_out):
-            os.mkdir(dir_out)
-        if not os.path.isdir(dir_temp):
-            os.mkdir(dir_temp)
+
         data_params = self.init_data_param()
 
         # 径流数据配置

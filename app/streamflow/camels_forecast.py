@@ -11,10 +11,11 @@ from hydroDL.master import *
 from utils import hydro_util
 from visual import *
 import numpy as np
+import definitions
 
 print('Starting ...')
-# TODO：多GPU计算
-configFile = r"../../data/config.ini"
+
+configFile = definitions.CONFIG_FILE
 
 # 读取模型配置文件
 configData = CamelsConfig(configFile)

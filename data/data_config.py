@@ -1,5 +1,6 @@
 import collections
 import os
+import definitions
 from collections import OrderedDict
 from configparser import ConfigParser
 
@@ -24,14 +25,20 @@ def init_path(config_file):
     data_input = cfg.get(sections[0], 'download')
     data_output = cfg.get(sections[0], 'output')
     data_temp = cfg.get(sections[0], 'temp')
-    root = os.path.expanduser('~')
-    data_input = os.path.join(root, data_input[2:])
-    data_output = os.path.join(root, data_output[2:])
-    data_temp = os.path.join(root, data_temp[2:])
+    root = eval(cfg.get(sections[0], 'prefix'))
+    data_input = os.path.join(root, data_input)
+    data_output = os.path.join(root, data_output)
+    data_temp = os.path.join(root, data_temp)
     path_data = collections.OrderedDict(
         DB=os.path.join(data_input, cfg.get(sections[0], 'data')),
         Out=os.path.join(data_output, cfg.get(sections[0], 'data')),
         Temp=os.path.join(data_temp, cfg.get(sections[0], 'data')))
+    if not os.path.isdir(path_data["DB"]):
+        os.mkdir(path_data["DB"])
+    if not os.path.isdir(path_data["Out"]):
+        os.mkdir(path_data["Out"])
+    if not os.path.isdir(path_data["Temp"]):
+        os.mkdir(path_data["Temp"])
     print(path_data)
     return path_data
 

@@ -1,7 +1,7 @@
 import os
 import unittest
 import numpy as np
-
+import definitions
 from explore.stat import statError, statError1d
 from utils import unserialize_numpy, unserialize_json
 from visual import plot_box_inds, plot_ts_obs_pred
@@ -52,14 +52,13 @@ def test_stat():
 
 
 class MyTestCase(unittest.TestCase):
-    config_file = r"../data/config.ini"
-    root = os.path.expanduser('~')
-    project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
+    config_file = definitions.CONFIG_FILE
+    project_dir = definitions.ROOT_DIR
     # dataset = 'gages'
     dataset = 'camels'
-    dir_db = os.path.join(root, project_dir, 'example/data', dataset)
-    dir_out = os.path.join(root, project_dir, 'example/output', dataset)
-    dir_temp = os.path.join(root, project_dir, 'example/temp', dataset)
+    dir_db = os.path.join(project_dir, 'example/data', dataset)
+    dir_out = os.path.join(project_dir, 'example/output', dataset)
+    dir_temp = os.path.join(project_dir, 'example/temp', dataset)
     flow_pred_file = os.path.join(dir_temp, 'flow_pred.npy')
     flow_obs_file = os.path.join(dir_temp, 'flow_obs.npy')
     t_s_dict_file = os.path.join(dir_temp, 'dictTimeSpace_test.json')

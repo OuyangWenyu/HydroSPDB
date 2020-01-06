@@ -1,7 +1,7 @@
 import collections
 import os
 import unittest
-
+import definitions
 from data import *
 
 import geopandas as gpd
@@ -10,14 +10,13 @@ from utils import spatial_join
 
 
 class TestDataFuncCase(unittest.TestCase):
-    config_file = r"../data/config.ini"
-    root = os.path.expanduser('~')
-    project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
+    config_file = definitions.CONFIG_FILE
+    project_dir = definitions.ROOT_DIR
     dataset = 'gages'
     # dataset = 'camels'
-    dir_db = os.path.join(root, project_dir, 'example/data', dataset)
-    dir_out = os.path.join(root, project_dir, 'example/output', dataset)
-    dir_temp = os.path.join(root, project_dir, 'example/temp', dataset)
+    dir_db = os.path.join(project_dir, 'example/data', dataset)
+    dir_out = os.path.join(project_dir, 'example/output', dataset)
+    dir_temp = os.path.join(project_dir, 'example/temp', dataset)
 
     t_train = ['1995-01-01', '1997-01-01']
     t_test = ['1997-01-01', '1999-01-01']

@@ -1,20 +1,19 @@
 import unittest
 import hydroDL
-
+import definitions
 from data import DataModel
 
 from utils import *
 
 
 class TestTrainCase(unittest.TestCase):
-    config_file = r"../data/config.ini"
-    root = os.path.expanduser('~')
-    project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
+    config_file = definitions.CONFIG_FILE
+    project_dir = definitions.ROOT_DIR
     dataset = 'gages'
     # dataset = 'camels'
-    dir_db = os.path.join(root, project_dir, 'example/data', dataset)
-    dir_out = os.path.join(root, project_dir, 'example/output', dataset)
-    dir_temp = os.path.join(root, project_dir, 'example/temp', dataset)
+    dir_db = os.path.join(project_dir, 'example/data', dataset)
+    dir_out = os.path.join(project_dir, 'example/output', dataset)
+    dir_temp = os.path.join(project_dir, 'example/temp', dataset)
 
     model_dict_file = os.path.join(dir_temp, 'master.json')
 

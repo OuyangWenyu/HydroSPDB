@@ -3,16 +3,16 @@ import os
 import unittest
 from data import *
 from utils import *
+import definitions
 
 
 class TestDataClassCase(unittest.TestCase):
-    config_file = r"../data/config.ini"
-    root = os.path.expanduser('~')
-    project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
+    config_file = definitions.CONFIG_FILE
+    project_dir = definitions.ROOT_DIR
     dataset = 'camels'
-    dir_db = os.path.join(root, project_dir, 'example/data', dataset)
-    dir_out = os.path.join(root, project_dir, 'example/output', dataset)
-    dir_temp = os.path.join(root, project_dir, 'example/temp', dataset)
+    dir_db = os.path.join(project_dir, 'example/data', dataset)
+    dir_out = os.path.join(project_dir, 'example/output', dataset)
+    dir_temp = os.path.join(project_dir, 'example/temp', dataset)
     model_dict_file = os.path.join(dir_temp, 'master.json')
     data_source_dump = os.path.join(dir_temp, 'data_source.txt')
 
