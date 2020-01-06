@@ -10,8 +10,8 @@ class TestTrainCase(unittest.TestCase):
     config_file = r"../data/config.ini"
     root = os.path.expanduser('~')
     project_dir = 'Documents/Code/hydro-anthropogenic-lstm'
-    # dataset = 'gages'
-    dataset = 'camels'
+    dataset = 'gages'
+    # dataset = 'camels'
     dir_db = os.path.join(root, project_dir, 'example/data', dataset)
     dir_out = os.path.join(root, project_dir, 'example/output', dataset)
     dir_temp = os.path.join(root, project_dir, 'example/temp', dataset)

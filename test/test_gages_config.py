@@ -61,9 +61,13 @@ class TestDataFuncCase(unittest.TestCase):
                                                           '}&end_date={}-{}-{}',
                                             gageIdScreen=['03144816', '03145000', '03156000', '03157000', '03157500',
                                                           '03219500', '03220000', '03221000', '03223000', '03224500',
-                                                          '03225500', '03226800'],
-                                            streamflowScreenParam={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005},
-                                            regions=['bas_nonref_CntlPlains'],
+                                                          '03225500', '03226800',
+                                                          '02383000', '02383500', '02384500', '02385170', '02385500',
+                                                          '02385800', '02387000', '02387500', '02387600', '02388300',
+                                                          '02388320', '02388350', '02388500'],
+                                            streamflowScreenParam={'missing_data_ratio': 0.1,
+                                                                   'zero_value_ratio': 0.005},
+                                            regions=['bas_nonref_CntlPlains', 'bas_nonref_EastHghlnds'],
                                             tRangeAll=['1980-01-01', '2015-01-01'])
         self.assertEqual(test_data, opt_data)
 
@@ -79,7 +83,7 @@ class TestDataFuncCase(unittest.TestCase):
         gages_data = self.config_data.read_data_config()
         dir_db_ = self.dir_db
         test_data = collections.OrderedDict(root_dir=dir_db_, out_dir=self.dir_out, temp_dir=self.dir_temp,
-                                            regions=['bas_nonref_CntlPlains'],
+                                            regions=['bas_nonref_CntlPlains', 'bas_nonref_EastHghlnds'],
                                             flow_dir=os.path.join(dir_db_, 'gages_streamflow'),
                                             flow_url='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
                                                      '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
@@ -88,7 +92,12 @@ class TestDataFuncCase(unittest.TestCase):
                                                                  '03157500',
                                                                  '03219500', '03220000', '03221000', '03223000',
                                                                  '03224500',
-                                                                 '03225500', '03226800'],
+                                                                 '03225500', '03226800',
+                                                                 '02383000', '02383500', '02384500', '02385170',
+                                                                 '02385500',
+                                                                 '02385800', '02387000', '02387500', '02387600',
+                                                                 '02388300',
+                                                                 '02388320', '02388350', '02388500'],
                                             flow_screen_param={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005},
                                             forcing_chosen=['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp'],
                                             forcing_dir=os.path.join(dir_db_, 'gagesII_forcing', 'daymet'),

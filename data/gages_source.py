@@ -30,38 +30,39 @@ class GagesSource(DataSource):
         huc4_shp_file = self.all_configs.get("huc4_shp_file")
         gage_region_dir = self.all_configs.get("gage_region_dir")
         region_shapefiles = self.all_configs.get("regions")
-        data = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
-        gage_fld_lst = data.columns.values
+        data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
+        gage_fld_lst = data_all.columns.values
         out = dict()
         if len(region_shapefiles):
+            # using shapefile of all basins to check if their basin area satisfy the criteria
+            # remove stations with catchment areas greater than the HUC4 basins in which they are located
+            # firstly, get the HUC4 basin's area of the site
+            join_points = spatial_join(points_file, huc4_shp_file)
+            # get "AREASQKM" attribute data to filter
+            join_points = join_points[join_points["DRAIN_SQKM"] < join_points["AREASQKM"]]
+            gages_huc4_id = join_points['STAID'].values
             # read sites from shapefile of region, get id from it.
-            # Read file using gpd.read_file() TODO:多个regins情况还未完成
-            shapefile = os.path.join(gage_region_dir, region_shapefiles[0] + '.shp')
-            shape_data = gpd.read_file(shapefile)
-            print(shape_data.columns)
-            gages_id = shape_data['GAGE_ID'].values
-            if screen_basin_area_huc4:
-                # using shapefile of all basins to check if their basin area satisfy the criteria
-                # remove stations with catchment areas greater than the HUC4 basins in which they are located
-                # firstly, get the HUC4 basin's area of the site
-                print("screen big area basins")
-                join_points = spatial_join(points_file, huc4_shp_file)
-                # get "AREASQKM" attribute data to filter
-                join_points = join_points[join_points["DRAIN_SQKM"] < join_points["AREASQKM"]]
-                gages_huc4_id = join_points['STAID'].values
-                gages_id, ind1, ind2 = np.intersect1d(gages_id, gages_huc4_id, return_indices=True)
-            df_id_region = data.iloc[:, 0].values
-            c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
-            data = data.iloc[ind1, :]
+            shapefiles = [os.path.join(gage_region_dir, region_shapefile + '.shp') for region_shapefile in
+                          region_shapefiles]
+            data = pd.DataFrame()
+            df_id_region = data_all.iloc[:, 0].values
+            for shapefile in shapefiles:
+                shape_data = gpd.read_file(shapefile)
+                gages_id = shape_data['GAGE_ID'].values
+                if screen_basin_area_huc4:
+                    gages_id, ind1, ind2 = np.intersect1d(gages_id, gages_huc4_id, return_indices=True)
+                c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+                data = pd.concat([data, data_all.iloc[ind1, :]])
+            data_all = data
         if ids_specific:
-            df_id_test = data.iloc[:, 0].values
+            df_id_test = data_all.iloc[:, 0].values
             c, ind1, ind2 = np.intersect1d(df_id_test, ids_specific, return_indices=True)
-            data = data.iloc[ind1, :]
+            data_all = data_all.iloc[ind1, :]
         for s in gage_fld_lst:
             if s is gage_fld_lst[1]:
-                out[s] = data[s].values.tolist()
+                out[s] = data_all[s].values.tolist()
             else:
-                out[s] = data[s].values
+                out[s] = data_all[s].values
         return out, gage_fld_lst
 
     def prepare_forcing_data(self):
@@ -98,10 +99,11 @@ class GagesSource(DataSource):
 
             if is_download:
                 # 然后下载数据到这个文件夹下，这里从google drive下载数据
-                download_google_drive(dir_name, download_dir_name)
+                client_secrets_file = os.path.join(self.all_configs["root_dir"], "mycreds.txt")
+                download_google_drive(client_secrets_file, dir_name, download_dir_name)
             else:
-                print("forcing数据已经下载好了")
-        print("forcing数据准备完毕")
+                print("forcing downloading finished")
+        print("forcing data Ready!")
 
     def prepare_flow_data(self, gage_dict, gage_fld_lst):
         """检查数据是否齐全，不够的话进行下载，下载数据的时间范围要设置的大一些，这里暂时例子都是以1980-01-01到2015-12-31
@@ -140,7 +142,7 @@ class GagesSource(DataSource):
                 temp_file = os.path.join(dir_huc_02, str(usgs_id_lst[ind]) + '.txt')
                 download_small_file(url, temp_file)
                 print("成功写入 " + temp_file + " 径流数据！")
-        print("径流量数据准备好了...")
+        print("streamflow data Ready! ...")
 
     def read_usge_gage(self, huc, usgs_id, t_lst, read_qc=False):
         """读取各个径流站的径流数据"""
@@ -321,19 +323,17 @@ class GagesSource(DataSource):
         # arange是左闭右开的，所以+1
         t_lst_years = np.arange(t_start_year, t_end_year + 1).astype(str)
         data_temps = pd.DataFrame()
+        region_names = [region_temp.split("_")[-1] for region_temp in regions]
         for year in t_lst_years:
             # to match the file of the given year
-            data_file = ''
             for f_name in os.listdir(data_folder):
-                # 首先判断是不是在给定的region内的，TODO 这里先用一个region
-                region = regions[0].split("_")[-1]
-                if fnmatch.fnmatch(f_name, dataset + '_' + region + '_mean_' + year + '.csv'):
-                    print(f_name)
-                    data_file = os.path.join(data_folder, f_name)
-                    break
-            data_temp = pd.read_csv(data_file, sep=',', dtype={'gage_id': str})
-            frames_temp = [data_temps, data_temp]
-            data_temps = pd.concat(frames_temp)
+                # 首先判断是不是在给定的region内的
+                for region_name in region_names:
+                    if fnmatch.fnmatch(f_name, dataset + '_' + region_name + '_mean_' + year + '.csv'):
+                        data_file = os.path.join(data_folder, f_name)
+                        data_temp = pd.read_csv(data_file, sep=',', dtype={'gage_id': str})
+                        frames_temp = [data_temps, data_temp]
+                        data_temps = pd.concat(frames_temp)
         # choose data in given time and sites. if there is no value for site in usgs_id_lst, just error(because every
         # site should have forcing). using dataframe mostly will make data type easy to handle with
         sites_forcing = data_temps.iloc[:, 0].values

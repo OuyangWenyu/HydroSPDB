@@ -71,7 +71,7 @@ def download_kaggle_file(kaggle_json, name_of_dataset, path_download, file_downl
     """
     # 如果已经有了shp文件，就不需要再下载了
     if os.path.isfile(file_download):
-        print("File is ready!")
+        print("Kaggle File is ready!")
         return
     home_dir = os.environ['HOME']
     kaggle_dir = os.path.join(home_dir, '.kaggle')
