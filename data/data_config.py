@@ -29,6 +29,12 @@ def init_path(config_file):
     data_input = os.path.join(root, data_input)
     data_output = os.path.join(root, data_output)
     data_temp = os.path.join(root, data_temp)
+    if not os.path.isdir(data_input):
+        os.mkdir(data_input)
+    if not os.path.isdir(data_output):
+        os.mkdir(data_output)
+    if not os.path.isdir(data_temp):
+        os.mkdir(data_temp)
     path_data = collections.OrderedDict(
         DB=os.path.join(data_input, cfg.get(sections[0], 'data')),
         Out=os.path.join(data_output, cfg.get(sections[0], 'data')),
