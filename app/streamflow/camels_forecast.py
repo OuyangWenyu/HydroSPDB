@@ -36,7 +36,7 @@ hydro_util.send_email(subject='Training Done', text=configData.model_dict['dir']
 # 首先构建test时的data和model，然后调用test函数计算
 sourceDataTest = CamelsSource(configData, configData.model_dict["data"]["tRangeTest"])
 testDataModel = DataModel(sourceDataTest)
-df, pred, obs = master_test(testDataModel)
+pred, obs = master_test(testDataModel)
 
 # 统计性能指标
 pred = pred.reshape(pred.shape[0], pred.shape[1])
