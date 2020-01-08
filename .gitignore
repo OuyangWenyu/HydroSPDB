@@ -221,3 +221,5 @@ pip-selfcheck.json
 /example/temp/
 /example/logs/
 /example/User/
+/data/kaggle.json
+/data/mycreds.txt

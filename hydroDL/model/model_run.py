@@ -140,36 +140,35 @@ def model_test(model, x, c, *, file_path, batch_size=None):
     # deal with file name to save
     if os.path.exists(file_path):
         os.remove(file_path)
-    f = open(file_path, 'a')
-
-    # forward for each batch
-    for i in range(0, len(i_s)):
-        print('batch {}'.format(i))
-        x_temp = x[i_s[i]:i_e[i], :, :]
-        c_temp = np.repeat(
-            np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
-        x_test = torch.from_numpy(
-            np.swapaxes(np.concatenate([x_temp, c_temp], 2), 1, 0)).float()
-        if torch.cuda.is_available():
-            x_test = x_test.cuda()
-        if z is not None:
-            z_temp = z[i_s[i]:i_e[i], :, :]
-            z_test = torch.from_numpy(np.swapaxes(z_temp, 1, 0)).float()
+    with open(file_path, 'a') as f:
+        # forward for each batch
+        for i in range(0, len(i_s)):
+            print('batch {}'.format(i))
+            x_temp = x[i_s[i]:i_e[i], :, :]
+            c_temp = np.repeat(
+                np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
+            x_test = torch.from_numpy(
+                np.swapaxes(np.concatenate([x_temp, c_temp], 2), 1, 0)).float()
             if torch.cuda.is_available():
-                z_test = z_test.cuda()
-        if type(model) in [rnn.CudnnLstmModel, rnn.AnnModel]:
-            y_p = model(x_test)
-        if type(model) in [rnn.LstmCloseModel, rnn.AnnCloseModel]:
-            y_p = model(x_test, z_test)
-        if type(model) in [rnn.LstmCnnForcast]:
-            y_p = model(x_test, z_test)
-        y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
+                x_test = x_test.cuda()
+            if z is not None:
+                z_temp = z[i_s[i]:i_e[i], :, :]
+                z_test = torch.from_numpy(np.swapaxes(z_temp, 1, 0)).float()
+                if torch.cuda.is_available():
+                    z_test = z_test.cuda()
+            if type(model) in [rnn.CudnnLstmModel, rnn.AnnModel]:
+                y_p = model(x_test)
+            if type(model) in [rnn.LstmCloseModel, rnn.AnnCloseModel]:
+                y_p = model(x_test, z_test)
+            if type(model) in [rnn.LstmCnnForcast]:
+                y_p = model(x_test, z_test)
+            y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
 
-        # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
-        pd.DataFrame(y_out[:, :, 0]).to_csv(f, header=False, index=False)
+            # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
+            pd.DataFrame(y_out[:, :, 0]).to_csv(f, header=False, index=False)
 
-        model.zero_grad()
-        torch.cuda.empty_cache()
+            model.zero_grad()
+            torch.cuda.empty_cache()
 
         f.close()
 

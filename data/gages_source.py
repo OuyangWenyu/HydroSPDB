@@ -1,7 +1,8 @@
+import shutil
 from datetime import datetime, timedelta
 import geopandas as gpd
 from data import DataSource
-from data.download_data import download_small_file, download_google_drive
+from data.download_data import download_small_file, download_google_drive, download_one_zip
 from utils import *
 import fnmatch
 import pandas as pd
@@ -11,6 +12,16 @@ from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 class GagesSource(DataSource):
     def __init__(self, config_data, t_range):
         super().__init__(config_data, t_range)
+
+    def prepare_attr_data(self):
+        """根据时间读取数据，没有的数据下载"""
+        configs = self.all_configs
+        data_dir = configs.get('root_dir')
+        if not os.path.isdir(data_dir):
+            os.mkdir(data_dir)
+        attr_urls = configs.get('attr_url')
+        [download_one_zip(attr_url, data_dir) for attr_url in attr_urls]
+        print("attribute data Ready! ...")
 
     def read_site_info(self, ids_specific=None, screen_basin_area_huc4=True):
         """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
@@ -69,7 +80,6 @@ class GagesSource(DataSource):
         """如果没有给url或者查到没有数据，就只能报错了，提示需要手动下载. 可以使用google drive下载数据"""
         url_forcing = self.all_configs.get("forcing_url")
         if url_forcing is None:
-            print("Downloading dataset from google drive directly...")
             # 个人定义的：google drive上的forcing数据文件夹名和forcing类型一样的
             dir_name = self.all_configs.get("forcing_type")
             download_dir_name = self.all_configs.get("forcing_dir")
@@ -99,6 +109,8 @@ class GagesSource(DataSource):
 
             if is_download:
                 # 然后下载数据到这个文件夹下，这里从google drive下载数据
+                print("Downloading dataset from google drive ...")
+                # Firstly, move the creds file to the following directory manually
                 client_secrets_file = os.path.join(self.all_configs["root_dir"], "mycreds.txt")
                 download_google_drive(client_secrets_file, dir_name, download_dir_name)
             else:

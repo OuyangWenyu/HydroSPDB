@@ -1,6 +1,8 @@
 import collections
 import os
+import shutil
 
+import definitions
 from data.data_config import DataConfig, wrap_master
 from configparser import ConfigParser
 from data.download_data import download_kaggle_file
@@ -42,7 +44,7 @@ class GagesConfig(DataConfig):
 
         # attribute
         attr_dir = cfg.get(section, options[10])
-        attr_url = cfg.get(section, options[11])
+        attr_url = eval(cfg.get(section, options[11]))
         attrBasin = eval(cfg.get(section, options[13]))
         attrLandcover = eval(cfg.get(section, options[14]))
         attrSoil = eval(cfg.get(section, options[15]))
@@ -67,27 +69,19 @@ class GagesConfig(DataConfig):
         dir_db = dir_db_dict.get("DB")
         dir_out = dir_db_dict.get("Out")
         dir_temp = dir_db_dict.get("Temp")
-        # 几个根目录文件夹，没有的话就建立
-        if not os.path.isdir(dir_db):
-            os.mkdir(dir_db)
-        if not os.path.isdir(dir_out):
-            os.mkdir(dir_out)
-        if not os.path.isdir(dir_temp):
-            os.mkdir(dir_temp)
         data_params = self.init_data_param()
 
         t_range_all = data_params.get("tRangeAll")
         # regions
         ref_nonref_regions = data_params.get("regions")
         # region文件夹
-        gage_region_dir = os.path.join(dir_db, 'boundaries-shapefiles-by-aggeco')
+        gage_region_dir = os.path.join(dir_db, 'boundaries_shapefiles_by_aggeco', 'boundaries-shapefiles-by-aggeco')
         # 站点的point文件文件夹
         gagesii_points_file = os.path.join(dir_db, "gagesII_9322_point_shapefile", "gagesII_9322_sept30_2011.shp")
         # 调用download_kaggle_file从kaggle上下载,
         huc4_shp_dir = os.path.join(dir_db, "huc4")
         huc4_shp_file = os.path.join(huc4_shp_dir, "HUC4.shp")
-        # 这步暂时需要手动放置到指定文件夹下
-        kaggle_src = os.path.join(dir_db, 'kaggle.json')
+        kaggle_src = definitions.KAGGLE_FILE
         name_of_dataset = "owenyy/wbdhu4-a-us-september2019-shpfile"
         download_kaggle_file(kaggle_src, name_of_dataset, huc4_shp_dir, huc4_shp_file)
 
@@ -99,6 +93,8 @@ class GagesConfig(DataConfig):
         # 所选forcing
         forcing_chosen = data_params.get("varT")
         forcing_dir = os.path.join(dir_db, data_params.get("forcingDir"))
+        if not os.path.isdir(forcing_dir):
+            os.mkdir(forcing_dir)
         forcing_type = data_params.get("forcingType")
         # 有了forcing type之后，确定到真正的forcing数据文件夹
         forcing_dir = os.path.join(forcing_dir, forcing_type)
@@ -110,7 +106,7 @@ class GagesConfig(DataConfig):
         gage_files_dir = os.path.join(attr_dir, 'spreadsheets-in-csv-format')
         gage_id_file = os.path.join(gage_files_dir, 'conterm_basinid.txt')
         attr_url = data_params.get("attrUrl")
-        
+
         return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
                                        regions=ref_nonref_regions,
                                        flow_dir=flow_dir, flow_url=flow_url, flow_screen_gage_id=flow_screen_gage_id,

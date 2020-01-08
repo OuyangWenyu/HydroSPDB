@@ -3,7 +3,7 @@ Define 数据处理所需的一些基础类型工具类型的函数
 """
 import fnmatch
 import zipfile
-
+import re
 import numpy as np
 import pandas as pd
 import glob
@@ -149,9 +149,21 @@ def trans_daymet_forcing_file_to_camels(daymet_dir, output_dir):
 
 
 def unzip_file(dataset_zip, path_unzip):
-    """TODO 递归操作（文件夹内的压缩文件也要解压）：把zip文件 dataset_zip 解压到 path_unzip 文件夹下"""
+    """extract a zip file"""
     with zipfile.ZipFile(dataset_zip, 'r') as zip_temp:
         zip_temp.extractall(path_unzip)
+
+
+def unzip_nested_zip(dataset_zip, path_unzip):
+    """ Extract a zip file including any nested zip files"""
+    with zipfile.ZipFile(dataset_zip, 'r') as zfile:
+        zfile.extractall(path=path_unzip)
+    for root, dirs, files in os.walk(path_unzip):
+        for filename in files:
+            if re.search(r'\.zip$', filename):
+                file_spec = os.path.join(root, filename)
+                new_dir = os.path.join(root, filename[0:-4])
+                unzip_nested_zip(file_spec, new_dir)
 
 
 def index2d(ind, ny, nx):

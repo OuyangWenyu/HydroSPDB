@@ -9,7 +9,7 @@ from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 from six.moves import urllib
 
-from utils.dataset_format import unzip_file
+from utils.dataset_format import unzip_nested_zip
 
 
 def zip_file_name_from_url(data_url, data_dir):
@@ -27,7 +27,7 @@ def is_there_file(zipfile_path, unzip_dir):
         if os.path.isdir(unzip_dir):
             # 如果已经解压了就啥也不用做了
             return True
-        unzip_file(zipfile_path, unzip_dir)
+        unzip_nested_zip(zipfile_path, unzip_dir)
         return True
 
 
@@ -42,7 +42,7 @@ def download_one_zip(data_url, data_dir):
             for chunk in r.iter_content(chunk_size=1024):  # 1024 bytes
                 if chunk:
                     py_file.write(chunk)
-        unzip_file(zipfile_path, unzip_dir)
+        unzip_nested_zip(zipfile_path, unzip_dir)
 
 
 def download_small_zip(data_url, data_dir):
@@ -52,7 +52,7 @@ def download_small_zip(data_url, data_dir):
         if not os.path.isdir(unzip_dir):
             os.mkdir(unzip_dir)
         zipfile_path, _ = urllib.request.urlretrieve(data_url, zipfile_path)
-        unzip_file(zipfile_path, unzip_dir)
+        unzip_nested_zip(zipfile_path, unzip_dir)
 
 
 def download_small_file(data_url, temp_file):

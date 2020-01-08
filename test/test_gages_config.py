@@ -1,5 +1,6 @@
 import collections
 import os
+import shutil
 import unittest
 import definitions
 from data import *
@@ -17,7 +18,12 @@ class TestDataFuncCase(unittest.TestCase):
     dir_db = os.path.join(project_dir, 'example/data', dataset)
     dir_out = os.path.join(project_dir, 'example/output', dataset)
     dir_temp = os.path.join(project_dir, 'example/temp', dataset)
-
+    gages_screen_ids = ['03144816', '03145000', '03156000', '03157000', '03157500',
+                        '03219500', '03220000', '03221000', '03223000', '03224500',
+                        '03225500', '03226800',
+                        '02383000', '02383500', '02384500', '02385170', '02385500',
+                        '02385800', '02387000', '02387500', '02387600', '02388300',
+                        '02388320', '02388350', '02388500']
     t_train = ['1995-01-01', '1997-01-01']
     t_test = ['1997-01-01', '1999-01-01']
 
@@ -53,17 +59,15 @@ class TestDataFuncCase(unittest.TestCase):
                                                   'RAW_DIS_NEAREST_MAJ_DAM', 'RAW_AVG_DIS_ALL_MAJ_DAMS'
                                                   ],
                                             attrDir='basinchar_and_report_sept_2011',
-                                            attrUrl='https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_2011.zip',
+                                            attrUrl=["https://water.usgs.gov/GIS/dsdl/gagesII_9322_point_shapefile.zip",
+                                                     "https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_2011.zip",
+                                                     "https://water.usgs.gov/GIS/dsdl/boundaries_shapefiles_by_aggeco.zip",
+                                                     "https://water.usgs.gov/GIS/dsdl/mainstem_line_covers.zip"],
                                             streamflowDir='gages_streamflow',
                                             streamflowUrl='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
                                                           '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
                                                           '}&end_date={}-{}-{}',
-                                            gageIdScreen=['03144816', '03145000', '03156000', '03157000', '03157500',
-                                                          '03219500', '03220000', '03221000', '03223000', '03224500',
-                                                          '03225500', '03226800',
-                                                          '02383000', '02383500', '02384500', '02385170', '02385500',
-                                                          '02385800', '02387000', '02387500', '02387600', '02388300',
-                                                          '02388320', '02388350', '02388500'],
+                                            gageIdScreen=None,
                                             streamflowScreenParam={'missing_data_ratio': 0.1,
                                                                    'zero_value_ratio': 0.005},
                                             regions=['bas_nonref_CntlPlains', 'bas_nonref_EastHghlnds'],
@@ -72,7 +76,7 @@ class TestDataFuncCase(unittest.TestCase):
 
     def test_download_kaggle_file(self):
         dir_db_ = self.dir_db
-        kaggle_json = os.path.join(dir_db_, 'kaggle.json')
+        kaggle_json = definitions.KAGGLE_FILE
         name_of_dataset = "owenyy/wbdhu4-a-us-september2019-shpfile"
         path_download = os.path.join(dir_db_, "huc4")
         file_download = os.path.join(path_download, "HUC4.shp")
@@ -87,16 +91,7 @@ class TestDataFuncCase(unittest.TestCase):
                                             flow_url='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
                                                      '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
                                                      '}&end_date={}-{}-{}',
-                                            flow_screen_gage_id=['03144816', '03145000', '03156000', '03157000',
-                                                                 '03157500',
-                                                                 '03219500', '03220000', '03221000', '03223000',
-                                                                 '03224500',
-                                                                 '03225500', '03226800',
-                                                                 '02383000', '02383500', '02384500', '02385170',
-                                                                 '02385500',
-                                                                 '02385800', '02387000', '02387500', '02387600',
-                                                                 '02388300',
-                                                                 '02388320', '02388350', '02388500'],
+                                            flow_screen_gage_id=None,
                                             flow_screen_param={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005},
                                             forcing_chosen=['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp'],
                                             forcing_dir=os.path.join(dir_db_, 'gagesII_forcing', 'daymet'),
@@ -121,13 +116,18 @@ class TestDataFuncCase(unittest.TestCase):
                                                          'RAW_DIS_NEAREST_MAJ_DAM', 'RAW_AVG_DIS_ALL_MAJ_DAMS'
                                                          ],
                                             attr_dir=os.path.join(dir_db_, 'basinchar_and_report_sept_2011'),
-                                            attr_url='https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_2011.zip',
+                                            attr_url=[
+                                                "https://water.usgs.gov/GIS/dsdl/gagesII_9322_point_shapefile.zip",
+                                                "https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_2011.zip",
+                                                "https://water.usgs.gov/GIS/dsdl/boundaries_shapefiles_by_aggeco.zip",
+                                                "https://water.usgs.gov/GIS/dsdl/mainstem_line_covers.zip"],
                                             gage_files_dir=os.path.join(dir_db_, 'basinchar_and_report_sept_2011',
                                                                         'spreadsheets-in-csv-format'),
                                             gage_id_file=os.path.join(dir_db_, 'basinchar_and_report_sept_2011',
                                                                       'spreadsheets-in-csv-format',
                                                                       'conterm_basinid.txt'),
-                                            gage_region_dir=os.path.join(dir_db_, 'boundaries-shapefiles-by-aggeco'),
+                                            gage_region_dir=os.path.join(dir_db_, 'boundaries_shapefiles_by_aggeco',
+                                                                         'boundaries-shapefiles-by-aggeco'),
                                             gage_point_file=os.path.join(dir_db_, "gagesII_9322_point_shapefile",
                                                                          "gagesII_9322_sept30_2011.shp"),
                                             huc4_shp_file=os.path.join(dir_db_, "huc4", "HUC4.shp"),
