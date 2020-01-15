@@ -19,6 +19,8 @@ torchvision = "==0.4.0"
 matplotlib = "*"
 statsmodels = "*"
 seaborn = "*"
+netcdf4 = "*"
+wget = "*"
 
 [requires]
 python_version = "3.7"
