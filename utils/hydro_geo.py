@@ -137,6 +137,7 @@ def trans_shp_coord(input_folder, input_shp_file, output_folder,
     # crs_proj4 = CRS(data.crs).to_proj4()
     crs_proj4 = CRS(data.crs)
     # crs_final = CRS.from_proj4(output_crs_proj4_str)
+    # 注意一定要用Proj，否则可能出现x和y在不一样的坐标系代表的含义不同的情况，比如一个x代表经度，另一却代表纬度，那就会出错了。
     crs_final = Proj(init='epsg:' + output_crs_epsg_or_proj4_str)
     # crs_final = CRS.from_epsg(output_crs_epsg_or_proj4_str)
     all_columns = data.columns.values  # ndarray type
@@ -158,7 +159,7 @@ def trans_shp_coord(input_folder, input_shp_file, output_folder,
                 newdata.at[0, column] = data.iloc[i, :][column]
         print("转换该流域的坐标完成！")
         print(newdata)
-        # 貌似必须转到wkt才能用来创建shapefile
+        # 必须得使用fiona的crs才能保证后面转出来的结果是正确的
         newdata.crs = fiona.crs.from_epsg(int(output_crs_epsg_or_proj4_str))
         print("坐标系: ", newdata.crs)
         new_datas.append(newdata)
