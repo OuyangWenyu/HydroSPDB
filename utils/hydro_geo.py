@@ -12,6 +12,8 @@ from netCDF4._netCDF4 import Dataset
 from pyproj import transform, CRS, Proj
 from shapely.geometry import Polygon, Point
 
+from utils import hydro_util
+
 
 def spatial_join(points_file, polygons_file):
     """join polygons layer to point layer, add polygon which the point is in to the point """
@@ -193,7 +195,7 @@ def create_mask(poly, xs, ys, lons, lats, crs_from, crs_to):
     # 注意y是倒序的
     range_x = [index_min[0], index_max[0]]
     range_y = [index_max[1], index_min[1]]
-    # 注意在nc文件中，lat和lon的坐标都是(y,x)range_y[1] + 1
+    # 注意在nc文件中，lat和lon的坐标都是(y,x)，所以顺着lons和lats的坐标轴循环，第一个先循环y到range_y[1] + 1（range_x,range_y都是闭区间）
     for i in range(range_y[0], range_y[1] + 1):
         for j in range(range_x[0], range_x[1] + 1):
             if is_point_in_boundary(lons[i][j], lats[i][j], poly):
@@ -248,24 +250,21 @@ def shps_trans_coord(input_folder, output_folder):
         new_datas = trans_shp_coord(input_folder, shp_file, output_folder)
 
 
-def basin_avg_netcdf(netcdf_file, shp_file):
+def basin_avg_netcdf(netcdf_file, shp_file, mask_file):
     data_netcdf = Dataset(netcdf_file, 'r')  # reads the netCDF file
     # 看看netcdf的格式具体是什么样的，便于后面判断坐标之间的空间关系
     print(data_netcdf)
-    print(data_netcdf.variables.keys())  # get all variable names
+    # get all variable names
+    print(data_netcdf.variables.keys())
     temp_lat = data_netcdf.variables['lat']  # temperature variable
-    print(temp_lat)
     temp_lon = data_netcdf.variables['lon']  # temperature variable
-    print(temp_lon)
     for d in data_netcdf.dimensions.items():
         print(d)
     x, y = data_netcdf.variables['x'], data_netcdf.variables['y']
-    print(x)
-    print(y)
     # x，y是其他变量的坐标：lat(y,x), lon(y,x), prcp(time,y,x)。所以先看看x和y的数据的规律
     x = data_netcdf.variables['x'][:]
     y = data_netcdf.variables['y'][:]
-    # 判断x和y是否递增,x是递增的，y是递减的
+    # 判断x和y是否递增，根据下面的all函数判断可知：x是递增的，y是递减的，因为只有递增递减的，才能先根据边界把区域定好，然后再分析mask，这样会很快
     lx = list(x)
     ly = list(y)
     print(all(ix < jx for ix, jx in zip(lx, lx[1:])))
@@ -273,10 +272,11 @@ def basin_avg_netcdf(netcdf_file, shp_file):
     lons = data_netcdf.variables['lon'][:]
     lats = data_netcdf.variables['lat'][:]
 
-    # 投影坐标系
+    # 投影坐标系（从官网得到的daymet坐标信息）
     crs_pro_str = '+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
-    # 地理坐标系
+    # 地理坐标系（epsg 4326 对应的str）
     crs_geo_str = '+proj=longlat +datum=WGS84 +no_defs'
+    # 后面create_mask时候需要将经纬度坐标转换为投影坐标，所以这里是crs_geo_str作crs_from
     crs_from = CRS.from_proj4(crs_geo_str)
     crs_to = CRS.from_proj4(crs_pro_str)
 
@@ -287,13 +287,16 @@ def basin_avg_netcdf(netcdf_file, shp_file):
     mask = create_mask(polygon, x, y, lons, lats, crs_from, crs_to)
     end = time.time()
     print('生成mask耗时：', '%.7f' % (end - start))
-    print(np.array(mask))
-    var_types = ['prcp']
+    hydro_util.serialize_numpy(np.array(mask), mask_file)
+    var_types = ['tmax']
     # var_types = ['tmax', 'tmin', 'prcp', 'srad', 'vp', 'swe', 'dayl']
-
+    avgs = []
     for var_type in var_types:
         start = time.time()
         avg = calc_avg(mask, data_netcdf, var_type)
         end = time.time()
         print('计算耗时：', '%.7f' % (end - start))
         print('平均值：', avg)
+        avgs.append(avg)
+
+    return avgs
