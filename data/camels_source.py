@@ -203,7 +203,7 @@ class CamelsSource(DataSource):
                 json.dump(var_dict, fp, indent=4)
         return out, var_lst, var_dict, f_dict
 
-    def read_attr(self, usgs_id_lst, var_lst):
+    def read_attr(self, usgs_id_lst, var_lst, is_return_dict=True):
         attr_all, var_lst_all, var_dict, f_dict = self.read_attr_all()
         ind_var = list()
         for var in var_lst:
@@ -213,4 +213,7 @@ class CamelsSource(DataSource):
         c, ind_grid, ind2 = np.intersect1d(id_lst_all, usgs_id_lst, return_indices=True)
         temp = attr_all[ind_grid, :]
         out = temp[:, ind_var]
-        return out, var_dict, f_dict
+        if is_return_dict:
+            return out, var_dict, f_dict
+        else:
+            return out

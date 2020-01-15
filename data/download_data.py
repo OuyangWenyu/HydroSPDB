@@ -128,8 +128,11 @@ def download_google_drive(client_secrets_file, google_drive_dir_name, download_d
     else:
         # Auto-iterate through all files that matches this query
         file_list = drive.ListFile({'q': "'" + dir_id + "' in parents and trashed=false"}).GetList()
+        downloaded_files = os.listdir(download_dir)
         for file in file_list:
             print('title: %s, id: %s' % (file['title'], file['id']))
+            if file['title'] in downloaded_files:
+                continue
             file_dl = drive.CreateFile({'id': file['id']})
             print('Downloading file %s from Google Drive' % file_dl['title'])
             file_dl.GetContentFile(os.path.join(download_dir, file_dl['title']))

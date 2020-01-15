@@ -1,6 +1,5 @@
 import collections
 import os
-import shutil
 import unittest
 import definitions
 from data import *
@@ -24,8 +23,11 @@ class TestDataFuncCase(unittest.TestCase):
                         '02383000', '02383500', '02384500', '02385170', '02385500',
                         '02385800', '02387000', '02387500', '02387600', '02388300',
                         '02388320', '02388350', '02388500']
-    t_train = ['1995-01-01', '1997-01-01']
-    t_test = ['1997-01-01', '1999-01-01']
+    t_train = ['1995-10-01', '2000-10-01']
+    t_test = ['2000-10-01', '2005-10-01']
+
+    # t_train = ['1995-10-01', '1997-10-01']
+    # t_test = ['1997-10-01', '1999-01-01']
 
     def setUp(self):
         self.config_data = GagesConfig(self.config_file)
@@ -67,7 +69,7 @@ class TestDataFuncCase(unittest.TestCase):
                                             streamflowUrl='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
                                                           '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
                                                           '}&end_date={}-{}-{}',
-                                            gageIdScreen=None,
+                                            gageIdScreen=None,  # self.gages_screen_ids,
                                             streamflowScreenParam={'missing_data_ratio': 0.1,
                                                                    'zero_value_ratio': 0.005},
                                             regions=['bas_nonref_CntlPlains', 'bas_nonref_EastHghlnds'],
@@ -91,7 +93,7 @@ class TestDataFuncCase(unittest.TestCase):
                                             flow_url='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
                                                      '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
                                                      '}&end_date={}-{}-{}',
-                                            flow_screen_gage_id=None,
+                                            flow_screen_gage_id=None,  # self.gages_screen_ids,
                                             flow_screen_param={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005},
                                             forcing_chosen=['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp'],
                                             forcing_dir=os.path.join(dir_db_, 'gagesII_forcing', 'daymet'),
@@ -141,7 +143,7 @@ class TestDataFuncCase(unittest.TestCase):
 
     def test_read_gpd_file(self):
         dir_db_ = self.dir_db
-        gage_region_dir = os.path.join(dir_db_, 'boundaries-shapefiles-by-aggeco')
+        gage_region_dir = os.path.join(dir_db_, 'boundaries_shapefiles_by_aggeco', 'boundaries-shapefiles-by-aggeco')
         shapefile = os.path.join(gage_region_dir, 'bas_nonref_CntlPlains.shp')
         shape_data = gpd.read_file(shapefile)
         print(shape_data.columns)

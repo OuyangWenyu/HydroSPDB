@@ -4,7 +4,6 @@
 # 定义选择哪些源数据
 
 from data.download_data import download_one_zip
-from utils import *
 
 
 class DataSource(object):

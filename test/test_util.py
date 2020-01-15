@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from utils.dataset_format import trans_daymet_forcing_file_to_camels
+from utils.dataset_format import trans_daymet_forcing_file_to_camels, subset_of_dict
 from utils.hydro_time import t_range_years, t_range_days, get_year
 from datetime import datetime, timedelta
 
@@ -77,6 +77,18 @@ def test_pandas():
     np.testing.assert_equal(np3, np31)
 
 
+def test_subset_of_dict():
+    prices = {
+        'ACME': 45.23,
+        'AAPL': 612.78,
+        'IBM': 205.55,
+        'HPQ': 37.20,
+        'FB': 10.75
+    }
+    tech_names = ['AAPL', 'IBM', 'HPQ', 'MSFT']
+    print(subset_of_dict(prices, tech_names))
+
+
 class MyTestCase(unittest.TestCase):
     t_range = ['1995-01-01', '2000-01-01']
 
@@ -86,6 +98,9 @@ class MyTestCase(unittest.TestCase):
         t_result = np.array([1995, 1996, 1997, 1998, 1999])
         # np的数组assert需要调用numnpy自己的assert函数
         np.testing.assert_equal(t_list, t_result)
+        t_range_another = ['1995-01-01', '2000-11-01']
+        t_result_another = np.array([1995, 1996, 1997, 1998, 1999, 2000])
+        np.testing.assert_equal(t_range_years(t_range_another), t_result_another)
 
     def test_url(self):
         t_range = self.t_range

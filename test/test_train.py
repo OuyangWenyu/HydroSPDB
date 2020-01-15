@@ -1,8 +1,8 @@
 import unittest
 import hydroDL
 import definitions
-from data import DataModel
-
+from data import *
+import os
 from utils import *
 
 

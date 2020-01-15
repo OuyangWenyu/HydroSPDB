@@ -1,25 +1,21 @@
 """一个处理数据的模板方法"""
-import json
-import os
 from collections import OrderedDict
 
 import numpy as np
 
-from explore.stat import trans_norm, cal_stat
-from utils import unserialize_json, serialize_json
+from explore import *
 
 
 class DataModel(object):
-    """数据格式化类，通过 SourceData 类对象函数实现 数据读取以及归一化处理等"""
+    """data formatter， utilizing function of DataSource object to read data and transform"""
 
     def __init__(self, data_source, *args):
-        """:parameter data_source: SourceData 类对象"""
+        """:parameter data_source: DataSource object"""
         self.data_source = data_source
-        # 调用SourceData的read_xxx型函数读取forcing，flow，attributes等数据
-        # read flow
+        # call "read_xxx" functions of DataSource to read forcing，flow，attributes data
         if len(args) == 0:
+            # read flow
             data_flow = data_source.read_usgs()
-            # 根据径流数据过滤掉一些站点，目前给的是示例参数，后面需修改
             usgs_id = data_source.all_configs["flow_screen_gage_id"]
             data_flow, usgs_id, t_range_list = data_source.usgs_screen_streamflow(data_flow, usgs_ids=usgs_id)
             self.data_flow = data_flow
@@ -32,12 +28,16 @@ class DataModel(object):
             self.data_attr = data_attr
             self.var_dict = var_dict
             self.f_dict = f_dict
-            # 初步计算统计值
+            # wrap gauges and time range to a dict.
+            # To guarantee the time range is a left-closed and right-open interval, t_range_list[-1] + 1 day
+            self.t_s_dict = OrderedDict(sites_id=usgs_id,
+                                        t_final_range=[np.datetime_as_string(t_range_list[0], unit='D'),
+                                                       np.datetime_as_string(
+                                                           t_range_list[-1] + np.timedelta64(1, 'D'), unit='D')])
+            # statistics
             stat_dict = self.cal_stat_all()
             self.stat_dict = stat_dict
-            # 把站点（space）和时间（time）范围打包到一个dict中，便于后面使用，与前面使用不一样的名称，以免犯错
-            self.t_s_dict = OrderedDict(sites_id=usgs_id, t_final_range=[np.datetime_as_string(t_range_list[0]),
-                                                                         np.datetime_as_string(t_range_list[-1])])
+
 
         else:
             self.data_flow = args[0]
@@ -49,7 +49,7 @@ class DataModel(object):
             self.t_s_dict = args[6]
 
     def cal_stat_all(self):
-        """calculate statistics of streamflow, forcing and attributes. 计算统计值，便于后面归一化处理。"""
+        """calculate statistics of streamflow, forcing and attributes"""
         # streamflow
         flow = self.data_flow
         stat_dict = dict()
@@ -67,7 +67,6 @@ class DataModel(object):
         attr_lst = self.data_source.all_configs["attr_chosen"]
         for k in range(len(attr_lst)):
             var = attr_lst[k]
-            print(var)
             stat_dict[var] = cal_stat(attr_data[:, k])
         return stat_dict
 
@@ -127,3 +126,67 @@ class DataModel(object):
             obs = self.get_data_obs(rm_nan=True)
             x = np.concatenate([x, obs], axis=2)
         return x, y, c
+
+
+class GagesModel(DataModel):
+    def __init__(self, data_source, *args):
+        super().__init__(data_source, *args)
+
+    def cal_stat_all(self):
+        """calculate statistics of streamflow, forcing and attributes of Gages"""
+        # streamflow
+        flow = self.data_flow
+        stat_dict = dict()
+        basin_area = self.data_source.read_attr(self.t_s_dict["sites_id"], ['DRAIN_SQKM'], is_return_dict=False)
+        mean_prep = self.data_source.read_attr(self.t_s_dict["sites_id"], ['PPTAVG_BASIN'], is_return_dict=False)
+        stat_dict['usgsFlow'] = cal_stat_basin_norm(flow, basin_area, mean_prep)
+
+        # forcing
+        forcing_lst = self.data_source.all_configs["forcing_chosen"]
+        x = self.data_forcing
+        for k in range(len(forcing_lst)):
+            var = forcing_lst[k]
+            if var == 'prcp':
+                stat_dict[var] = cal_stat_gamma(x[:, :, k])
+            else:
+                stat_dict[var] = cal_stat(x[:, :, k])
+
+        # const attribute
+        attr_data = self.data_attr
+        attr_lst = self.data_source.all_configs["attr_chosen"]
+        for k in range(len(attr_lst)):
+            var = attr_lst[k]
+            stat_dict[var] = cal_stat(attr_data[:, k])
+        return stat_dict
+
+
+class CamelsModel(DataModel):
+    def __init__(self, data_source, *args):
+        super().__init__(data_source, *args)
+
+    def cal_stat_all(self):
+        """calculate statistics of streamflow, forcing and attributes. 计算统计值，便于后面归一化处理。"""
+        # streamflow
+        flow = self.data_flow
+        stat_dict = dict()
+        basin_area = self.data_source.read_attr(self.t_s_dict["sites_id"], ['area_gages2'], is_return_dict=False)
+        mean_prep = self.data_source.read_attr(self.t_s_dict["sites_id"], ['p_mean'], is_return_dict=False)
+        stat_dict['usgsFlow'] = cal_stat_basin_norm(flow, basin_area, mean_prep)
+
+        # forcing
+        forcing_lst = self.data_source.all_configs["forcing_chosen"]
+        x = self.data_forcing
+        for k in range(len(forcing_lst)):
+            var = forcing_lst[k]
+            if var == 'prcp':
+                stat_dict[var] = cal_stat_gamma(x[:, :, k])
+            else:
+                stat_dict[var] = cal_stat(x[:, :, k])
+
+        # const attribute
+        attr_data = self.data_attr
+        attr_lst = self.data_source.all_configs["attr_chosen"]
+        for k in range(len(attr_lst)):
+            var = attr_lst[k]
+            stat_dict[var] = cal_stat(attr_data[:, k])
+        return stat_dict

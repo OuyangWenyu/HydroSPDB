@@ -176,3 +176,8 @@ def fillNan(mat, mask):
     temp = mat.copy()
     temp[~mask] = np.nan
     return temp
+
+
+def subset_of_dict(dict, chosen_keys):
+    """make a new dict from key-values of chosen keys in a list"""
+    return {key: value for key, value in dict.items() if key in chosen_keys}

@@ -2,9 +2,8 @@ import os
 import unittest
 import hydroDL
 import definitions
-from data import DataModel, GagesSource, GagesConfig
-from utils import unserialize_json, serialize_pickle, unserialize_pickle, serialize_json, serialize_numpy, \
-    unserialize_json_ordered, unserialize_numpy
+from data import *
+from utils import *
 
 
 class TestForecastCase(unittest.TestCase):

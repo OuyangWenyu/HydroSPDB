@@ -1,8 +1,8 @@
 """模块测试"""
-import os
+import definitions
 import unittest
 from data import *
-import definitions
+import os
 from utils import *
 
 

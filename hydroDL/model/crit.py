@@ -22,13 +22,13 @@ class SigmaLoss(torch.nn.Module):
             s = s0[mask]
             t = t0[mask]
             if self.prior[0] == 'gauss':
-                loss = torch.exp(-s).mul((p - t)**2) / 2 + s / 2
+                loss = torch.exp(-s).mul((p - t) ** 2) / 2 + s / 2
             elif self.prior[0] == 'invGamma':
                 c1 = float(self.prior[1])
                 c2 = float(self.prior[2])
                 nt = p.shape[0]
                 loss = torch.exp(-s).mul(
-                    (p - t)**2 + c2 / nt) / 2 + (1 / 2 + c1 / nt) * s
+                    (p - t) ** 2 + c2 / nt) / 2 + (1 / 2 + c1 / nt) * s
             lossMean = lossMean + torch.mean(loss)
         return lossMean
 
@@ -46,6 +46,32 @@ class RmseLoss(torch.nn.Module):
             mask = t0 == t0
             p = p0[mask]
             t = t0[mask]
-            temp = torch.sqrt(((p - t)**2).mean())
+            temp = torch.sqrt(((p - t) ** 2).mean())
             loss = loss + temp
+        return loss
+
+
+class NSELosstest(torch.nn.Module):
+    # Same as Fredrick 2019
+    def __init__(self):
+        super(NSELosstest, self).__init__()
+
+    def forward(self, output, target):
+        Ngage = target.shape[1]
+        losssum = 0
+        nsample = 0
+        for ii in range(Ngage):
+            p0 = output[:, ii, 0]
+            t0 = target[:, ii, 0]
+            mask = t0 == t0
+            if len(mask[mask == True]) > 0:
+                p = p0[mask]
+                t = t0[mask]
+                tmean = t.mean()
+                SST = torch.sum((t - tmean) ** 2)
+                SSRes = torch.sum((t - p) ** 2)
+                temp = SSRes / ((torch.sqrt(SST) + 0.1) ** 2)
+                losssum = losssum + temp
+                nsample = nsample + 1
+        loss = losssum / nsample
         return loss

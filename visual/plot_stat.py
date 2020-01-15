@@ -9,7 +9,7 @@ def plot_boxs(data, x_name, y_name):
     sns.set(style="ticks", palette="pastel")
 
     # Draw a nested boxplot to show bills by day and time
-    sns.boxplot(x=x_name, y=y_name, data=data)
+    sns.boxplot(x=x_name, y=y_name, data=data, showfliers=False)
     sns.despine(offset=10, trim=True)
     plt.show()
 

@@ -38,9 +38,15 @@ def t_range_days(t_range, *, step=np.timedelta64(1, 'D')):
 
 
 def t_range_years(t_range):
+    """t_range is a left-closed and right-open interval, if t_range[1] is not Jan.1 then end_year should be included"""
     start_year = int(t_range[0].split("-")[0])
     end_year = int(t_range[1].split("-")[0])
-    year_range_list = np.arange(start_year, end_year)
+    end_month = int(t_range[1].split("-")[1])
+    end_day = int(t_range[1].split("-")[2])
+    if end_month == 1 and end_day == 1:
+        year_range_list = np.arange(start_year, end_year)
+    else:
+        year_range_list = np.arange(start_year, end_year + 1)
     return year_range_list
 
 

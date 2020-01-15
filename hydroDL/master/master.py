@@ -20,6 +20,7 @@ def master_train(data_model):
     nx = x.shape[-1] + c.shape[-1]
     ny = y.shape[-1]
     opt_model['nx'] = nx
+    opt_model['ny'] = ny
     # loss
     if opt_loss['name'] == 'SigmaLoss':
         loss_fun = crit.SigmaLoss(prior=opt_loss['prior'])
@@ -27,6 +28,11 @@ def master_train(data_model):
     elif opt_loss['name'] == 'RmseLoss':
         loss_fun = crit.RmseLoss()
         opt_model['ny'] = ny
+    elif opt_loss['name'] == 'NSELosstest':
+        loss_fun = crit.NSELosstest()
+        opt_model['ny'] = ny
+    else:
+        print("Please specify the loss function!!!")
 
     # model
     if opt_model['name'] == 'CudnnLstmModel':

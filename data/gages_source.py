@@ -1,10 +1,11 @@
-import shutil
+import os
 from datetime import datetime, timedelta
 import geopandas as gpd
-from data import DataSource
-from data.download_data import download_small_file, download_google_drive, download_one_zip
+from data import *
+from data.download_data import download_one_zip
 from utils import *
 import fnmatch
+import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 
@@ -431,11 +432,14 @@ class GagesSource(DataSource):
         out = np.concatenate(out_lst, 1)
         return out, var_lst, var_dict, f_dict
 
-    def read_attr(self, usgs_id_lst, var_lst):
+    def read_attr(self, usgs_id_lst, var_lst, is_return_dict=True):
         """指定读取某些站点的某些属性"""
         attr_all, var_lst_all, var_dict, f_dict = self.read_attr_all(usgs_id_lst)
         ind_var = list()
         for var in var_lst:
             ind_var.append(var_lst_all.index(var))
         out = attr_all[:, ind_var]
-        return out, var_dict, f_dict
+        if is_return_dict:
+            return out, var_dict, f_dict
+        else:
+            return out

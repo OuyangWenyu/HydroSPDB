@@ -64,10 +64,7 @@ def statError1d(pred, target):
     return [Bias, RMSE, nse_]
 
 
-def cal_stat(x):
-    a = x.flatten()
-    print(~np.isnan(a))
-    b = a[~np.isnan(a)]
+def cal_4_stat_inds(b):
     p10 = np.percentile(b, 10).astype(float)
     p90 = np.percentile(b, 90).astype(float)
     mean = np.mean(b).astype(float)
@@ -75,6 +72,33 @@ def cal_stat(x):
     if std < 0.001:
         std = 1
     return [p10, p90, mean, std]
+
+
+def cal_stat(x):
+    a = x.flatten()
+    b = a[~np.isnan(a)]
+    return cal_4_stat_inds(b)
+
+
+def cal_stat_gamma(x):
+    """for daily streamflow and precipitation"""
+    a = x.flatten()
+    b = a[~np.isnan(a)]  # kick out Nan
+    b = np.log10(np.sqrt(b) + 0.1)  # do some tranformation to change gamma characteristics
+    return cal_4_stat_inds(b)
+
+
+def cal_stat_basin_norm(x, basinarea, meanprep):
+    """for daily streamflow normalized by basin area and precipitation
+    basinarea = readAttr(gageDict['id'], ['area_gages2'])
+    meanprep = readAttr(gageDict['id'], ['p_mean'])
+    """
+    # meanprep = readAttr(gageDict['id'], ['q_mean'])
+    temparea = np.tile(basinarea, (1, x.shape[1]))
+    tempprep = np.tile(meanprep, (1, x.shape[1]))
+    flowua = (x * 0.0283168 * 3600 * 24) / (
+            (temparea * (10 ** 6)) * (tempprep * 10 ** (-3)))  # unit (m^3/day)/(m^3/day)
+    return cal_stat_gamma(flowua)
 
 
 def trans_norm(x, var_lst, stat_dict, *, to_norm):
