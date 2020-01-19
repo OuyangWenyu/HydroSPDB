@@ -42,7 +42,7 @@ def download_one_zip(data_url, data_dir):
             for chunk in r.iter_content(chunk_size=1024):  # 1024 bytes
                 if chunk:
                     py_file.write(chunk)
-        unzip_nested_zip(zipfile_path, unzip_dir)
+        unzip_nested_zip(zipfile_path, unzip_dir), download_small_file
 
 
 def download_small_zip(data_url, data_dir):

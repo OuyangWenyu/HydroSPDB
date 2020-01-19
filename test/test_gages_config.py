@@ -25,7 +25,13 @@ class TestDataFuncCase(unittest.TestCase):
                         '02388320', '02388350', '02388500']
     t_train = ['1995-10-01', '2000-10-01']
     t_test = ['2000-10-01', '2005-10-01']
+    regions = ['bas_ref_all']
+    hydroDams = ['NDAMS_2009', 'DDENS_2009',
+                 'STOR_NID_2009', 'STOR_NOR_2009', 'MAJ_NDAMS_2009', 'MAJ_DDENS_2009',
+                 'RAW_DIS_NEAREST_DAM', 'RAW_AVG_DIS_ALLDAMS',
+                 'RAW_DIS_NEAREST_MAJ_DAM', 'RAW_AVG_DIS_ALL_MAJ_DAMS']
 
+    # regions = ['bas_nonref_CntlPlains', 'bas_nonref_EastHghlnds']
     # t_train = ['1995-10-01', '1997-10-01']
     # t_test = ['1997-10-01', '1999-01-01']
 
@@ -55,10 +61,7 @@ class TestDataFuncCase(unittest.TestCase):
                                                   'STREAMS_KM_SQ_KM', 'STRAHLER_MAX', 'MAINSTEM_SINUOUSITY',
                                                   'REACHCODE', 'ARTIFPATH_PCT',
                                                   'ARTIFPATH_MAINSTEM_PCT', 'HIRES_LENTIC_PCT', 'BFI_AVE', 'PERDUN',
-                                                  'PERHOR', 'TOPWET', 'CONTACT', 'NDAMS_2009', 'DDENS_2009',
-                                                  'STOR_NID_2009', 'STOR_NOR_2009', 'MAJ_NDAMS_2009', 'MAJ_DDENS_2009',
-                                                  'RAW_DIS_NEAREST_DAM', 'RAW_AVG_DIS_ALLDAMS',
-                                                  'RAW_DIS_NEAREST_MAJ_DAM', 'RAW_AVG_DIS_ALL_MAJ_DAMS'
+                                                  'PERHOR', 'TOPWET', 'CONTACT'
                                                   ],
                                             attrDir='basinchar_and_report_sept_2011',
                                             attrUrl=["https://water.usgs.gov/GIS/dsdl/gagesII_9322_point_shapefile.zip",
@@ -72,7 +75,7 @@ class TestDataFuncCase(unittest.TestCase):
                                             gageIdScreen=None,  # self.gages_screen_ids,
                                             streamflowScreenParam={'missing_data_ratio': 0.1,
                                                                    'zero_value_ratio': 0.005},
-                                            regions=['bas_nonref_CntlPlains', 'bas_nonref_EastHghlnds'],
+                                            regions=self.regions,
                                             tRangeAll=['1980-01-01', '2015-01-01'])
         self.assertEqual(test_data, opt_data)
 
@@ -88,7 +91,7 @@ class TestDataFuncCase(unittest.TestCase):
         gages_data = self.config_data.read_data_config()
         dir_db_ = self.dir_db
         test_data = collections.OrderedDict(root_dir=dir_db_, out_dir=self.dir_out, temp_dir=self.dir_temp,
-                                            regions=['bas_nonref_CntlPlains', 'bas_nonref_EastHghlnds'],
+                                            regions=self.regions,
                                             flow_dir=os.path.join(dir_db_, 'gages_streamflow'),
                                             flow_url='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
                                                      '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
@@ -111,12 +114,7 @@ class TestDataFuncCase(unittest.TestCase):
                                                          'REACHCODE', 'ARTIFPATH_PCT',
                                                          'ARTIFPATH_MAINSTEM_PCT', 'HIRES_LENTIC_PCT', 'BFI_AVE',
                                                          'PERDUN',
-                                                         'PERHOR', 'TOPWET', 'CONTACT', 'NDAMS_2009', 'DDENS_2009',
-                                                         'STOR_NID_2009', 'STOR_NOR_2009', 'MAJ_NDAMS_2009',
-                                                         'MAJ_DDENS_2009',
-                                                         'RAW_DIS_NEAREST_DAM', 'RAW_AVG_DIS_ALLDAMS',
-                                                         'RAW_DIS_NEAREST_MAJ_DAM', 'RAW_AVG_DIS_ALL_MAJ_DAMS'
-                                                         ],
+                                                         'PERHOR', 'TOPWET', 'CONTACT'],
                                             attr_dir=os.path.join(dir_db_, 'basinchar_and_report_sept_2011'),
                                             attr_url=[
                                                 "https://water.usgs.gov/GIS/dsdl/gagesII_9322_point_shapefile.zip",

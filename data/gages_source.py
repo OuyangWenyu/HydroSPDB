@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 import geopandas as gpd
 from data import *
-from data.download_data import download_one_zip
+from data.download_data import download_one_zip, download_google_drive, download_small_file
 from utils import *
 import fnmatch
 import numpy as np
@@ -89,6 +89,8 @@ class GagesSource(DataSource):
             # 如果已经有了数据，那么就不必再下载了
             regions = self.all_configs["regions"]
             regions_shps = [r.split('_')[-1] for r in regions]
+            # forcing data file generated is named as "allref", so rename the "all"
+            regions_shps = ["allref" if r == "all" else r for r in regions_shps]
             year_range_list = hydro_time.t_range_years(self.t_range)
             # 如果有某个文件没有，那么就下载数据
             shp_files_now = []
@@ -302,7 +304,7 @@ class GagesSource(DataSource):
                 if sites_chosen[site_index] == 0:
                     break
                 if criteria == 'missing_data_ratio':
-                    nan_length = len(runoff[np.isnan(runoff)])
+                    nan_length = runoff[np.isnan(runoff)].size
                     # then calculate the length of consecutive nan
                     thresh = kwargs[criteria]
                     if nan_length / runoff.size > thresh:
@@ -311,7 +313,12 @@ class GagesSource(DataSource):
                         sites_chosen[site_index] = 1
 
                 elif criteria == 'zero_value_ratio':
-                    sites_chosen[site_index] = 1
+                    zero_length = runoff.size - np.count_nonzero(runoff)
+                    thresh = kwargs[criteria]
+                    if zero_length / runoff.size > thresh:
+                        sites_chosen[site_index] = 0
+                    else:
+                        sites_chosen[site_index] = 1
                 else:
                     print("Oops!  That is not valid value.  Try again...")
         # get discharge data of chosen sites, and change to ndarray
@@ -337,6 +344,8 @@ class GagesSource(DataSource):
         t_lst_years = np.arange(t_start_year, t_end_year + 1).astype(str)
         data_temps = pd.DataFrame()
         region_names = [region_temp.split("_")[-1] for region_temp in regions]
+        # forcing data file generated is named as "allref", so rename the "all"
+        region_names = ["allref" if r == "all" else r for r in region_names]
         for year in t_lst_years:
             # to match the file of the given year
             for f_name in os.listdir(data_folder):

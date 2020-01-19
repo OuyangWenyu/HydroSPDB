@@ -5,4 +5,4 @@ from .data_config import DataConfig, wrap_master
 from .gages_config import GagesConfig
 from .camels_config import CamelsConfig
 from .data_input import DataModel, GagesModel
-from .download_data import download_kaggle_file, download_small_zip, download_google_drive, download_small_file
+from .download_data import download_kaggle_file, download_small_zip
