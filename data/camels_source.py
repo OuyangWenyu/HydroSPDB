@@ -108,7 +108,7 @@ class CamelsSource(DataSource):
         # choose the given sites
         usgs_all_sites = self.gage_dict[self.gage_fld_lst[1]]
         if usgs_ids:
-            sites_index = np.where(np.in1d(usgs_ids, usgs_all_sites))[0]
+            sites_index = np.where(np.in1d(usgs_all_sites, usgs_ids))[0]
             sites_chosen[sites_index] = 1
         else:
             sites_index = np.arange(streamflow.shape[0])

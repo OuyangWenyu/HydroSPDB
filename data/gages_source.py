@@ -280,7 +280,7 @@ class GagesSource(DataSource):
         # choose the given sites
         usgs_all_sites = self.gage_dict[self.gage_fld_lst[0]]
         if usgs_ids:
-            sites_index = np.where(np.in1d(usgs_ids, usgs_all_sites))[0]
+            sites_index = np.where(np.in1d(usgs_all_sites, usgs_ids))[0]
             sites_chosen[sites_index] = 1
         else:
             sites_index = np.arange(streamflow.shape[0])
@@ -296,33 +296,33 @@ class GagesSource(DataSource):
         streamflow_temp = streamflow[sites_index]  # 先取出想要的行数据
         usgs_values = streamflow_temp[:, ind1]  # 再取出要求的列数据
 
-        for site_index in sites_index:
+        for i in range(sites_index.size):
             # loop for every site
-            runoff = usgs_values[site_index, :]
+            runoff = usgs_values[i, :]
             for criteria in kwargs:
                 # if any criteria is not matched, we can filter this site
-                if sites_chosen[site_index] == 0:
+                if sites_chosen[sites_index[i]] == 0:
                     break
                 if criteria == 'missing_data_ratio':
                     nan_length = runoff[np.isnan(runoff)].size
                     # then calculate the length of consecutive nan
                     thresh = kwargs[criteria]
                     if nan_length / runoff.size > thresh:
-                        sites_chosen[site_index] = 0
+                        sites_chosen[sites_index[i]] = 0
                     else:
-                        sites_chosen[site_index] = 1
+                        sites_chosen[sites_index[i]] = 1
 
                 elif criteria == 'zero_value_ratio':
                     zero_length = runoff.size - np.count_nonzero(runoff)
                     thresh = kwargs[criteria]
                     if zero_length / runoff.size > thresh:
-                        sites_chosen[site_index] = 0
+                        sites_chosen[sites_index[i]] = 0
                     else:
-                        sites_chosen[site_index] = 1
+                        sites_chosen[sites_index[i]] = 1
                 else:
                     print("Oops!  That is not valid value.  Try again...")
         # get discharge data of chosen sites, and change to ndarray
-        usgs_out = usgs_values[np.where(sites_chosen > 0)]
+        usgs_out = np.array([usgs_values[i] for i in range(sites_index.size) if sites_chosen[sites_index[i]] > 0])
         gages_chosen_id = [usgs_all_sites[i] for i in range(len(sites_chosen)) if sites_chosen[i] > 0]
 
         return usgs_out, gages_chosen_id, ts
@@ -374,7 +374,8 @@ class GagesSource(DataSource):
             df_date = data_k.iloc[:, 1]
             date = df_date.values.astype('datetime64[D]')
             c, ind1, ind2 = np.intersect1d(t_range_lst, date, return_indices=True)
-            out[ind1, :] = data_k.iloc[ind2, 2:].values
+            data_chosen_var = data_k[var_lst]
+            out[ind1, :] = data_chosen_var.iloc[ind2, :].values
             x[k, :, :] = out
 
         return x

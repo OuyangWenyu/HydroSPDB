@@ -62,6 +62,22 @@ class TestDataClassCase(unittest.TestCase):
         serialize_json(data_model.var_dict, var_dict_file)
         serialize_json(data_model.t_s_dict, t_s_dict_file)
 
+    def test_usgs_screen_streamflow(self):
+        source_data = unserialize_pickle(self.data_source_dump)
+        data_flow = source_data.read_usgs()
+        usgs_id = source_data.all_configs["flow_screen_gage_id"]
+        data_flow, usgs_id, t_range_list = source_data.usgs_screen_streamflow(data_flow, usgs_ids=usgs_id)
+        print(data_flow)
+        print(usgs_id)
+        print(t_range_list)
+
+    def test_read_forcing(self):
+        source_data = unserialize_pickle(self.data_source_dump)
+        usgs_id = source_data.all_configs["flow_screen_gage_id"]
+        t_range_list = hydro_time.t_range_days(["1995-10-01", "2000-10-01"])
+        forcing_data = source_data.read_forcing(usgs_id, t_range_list)
+        print(forcing_data)
+
 
 if __name__ == '__main__':
     unittest.main()

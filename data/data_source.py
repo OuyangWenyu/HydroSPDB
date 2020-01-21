@@ -2,6 +2,7 @@
 
 # 数据类型包括：径流数据（从usgs下载），forcing数据（从daymet或者nldas下载），属性数据（从usgs属性表读取）
 # 定义选择哪些源数据
+import os
 
 from data.download_data import download_one_zip
 
