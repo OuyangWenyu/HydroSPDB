@@ -12,7 +12,8 @@ class TestDataFuncCase(unittest.TestCase):
     dir_db = os.path.join(project_dir, 'example/data', dataset)
     dir_out = os.path.join(project_dir, 'example/output', dataset)
     dir_temp = os.path.join(project_dir, 'example/temp', dataset)
-
+    # gages_screen = ['01013500', '01022500', '01030500', '01031500', '01047000', '01052500']
+    gages_screen = None
     t_train = ['1995-01-01', '1997-01-01']
     t_test = ['1997-01-01', '1999-01-01']
 
@@ -42,8 +43,7 @@ class TestDataFuncCase(unittest.TestCase):
                                             attrDir='camels_attributes_v2.0/camels_attributes_v2.0',
                                             attrUrl="https://ral.ucar.edu/sites/default/files/public/product-tool/camels-catchment-attributes-and-meteorology-for-large-sample-studies-dataset-downloads/camels_attributes_v2.0.zip",
                                             streamflowDir='basin_timeseries_v1p2_metForcing_obsFlow/basin_dataset_public_v1p2/usgs_streamflow',
-                                            gageIdScreen=['01013500', '01022500', '01030500', '01031500', '01047000',
-                                                          '01052500'])
+                                            gageIdScreen=self.gages_screen)
         self.assertEqual(test_data, opt_data)
 
     def test_read_gages_config(self):
@@ -52,8 +52,7 @@ class TestDataFuncCase(unittest.TestCase):
         test_data = collections.OrderedDict(root_dir=dir_db_, out_dir=self.dir_out, temp_dir=self.dir_temp,
                                             flow_dir=os.path.join(dir_db_,
                                                                   'basin_timeseries_v1p2_metForcing_obsFlow/basin_dataset_public_v1p2/usgs_streamflow'),
-                                            flow_screen_gage_id=['01013500', '01022500', '01030500', '01031500',
-                                                                 '01047000', '01052500'],
+                                            flow_screen_gage_id=self.gages_screen,
                                             forcing_chosen=['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp'],
                                             forcing_dir=os.path.join(dir_db_,
                                                                      'basin_timeseries_v1p2_metForcing_obsFlow/basin_dataset_public_v1p2/basin_mean_forcing',
