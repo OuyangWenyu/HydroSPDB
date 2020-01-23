@@ -129,6 +129,7 @@ class DataModel(object):
 
 
 class GagesModel(DataModel):
+    # TODO: cal_stat_basin_norm and  cal_stat_gamma still not completed in get_data_xx functions;  trans_norm still not completed for this case
     def __init__(self, data_source, *args):
         super().__init__(data_source, *args)
 
@@ -161,6 +162,7 @@ class GagesModel(DataModel):
 
 
 class CamelsModel(DataModel):
+    # TODO: cal_stat_basin_norm and  cal_stat_gamma still not completed in get_data_xx functions
     def __init__(self, data_source, *args):
         super().__init__(data_source, *args)
 

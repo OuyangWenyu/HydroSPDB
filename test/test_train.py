@@ -53,6 +53,7 @@ class TestTrainCase(unittest.TestCase):
         print("测试开始：")
         # 读取模型配置文件
         data_model = self.data_model
+        os.environ["CUDA_VISIBLE_DEVICES"] = "2"
         hydroDL.master_train(data_model)
 
 

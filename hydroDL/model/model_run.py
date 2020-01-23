@@ -43,7 +43,7 @@ def model_train(model,
     optim = torch.optim.Adadelta(model.parameters())
     model.zero_grad()
     if save_folder is not None:
-        run_file = os.path.join(save_folder, 'run.csv')
+        run_file = os.path.join(save_folder, str(n_epoch) + 'epoch_run.csv')
         rf = open(run_file, 'a+')
     for iEpoch in range(1, n_epoch + 1):
         loss_ep = 0

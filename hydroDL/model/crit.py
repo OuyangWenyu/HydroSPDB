@@ -75,3 +75,24 @@ class NSELosstest(torch.nn.Module):
                 nsample = nsample + 1
         loss = losssum / nsample
         return loss
+
+
+class NSELoss(torch.nn.Module):
+    def __init__(self):
+        super(NSELoss, self).__init__()
+
+    def forward(self, output, target):
+        seq_length = target.shape[0]
+        Ngage = target.shape[1]
+        p = output[:, :, 0]
+        t = target[:, :, 0]
+        tmean = torch.mean(t, dim=0)
+        tmeans = tmean.repeat(seq_length, 1)
+        SST = torch.sum((t - tmeans) ** 2, dim=0)
+        SSRes = torch.sum((t - p) ** 2, dim=0)
+        # Same as Fredrick 2019
+        temp = SSRes / ((torch.sqrt(SST) + 0.1) ** 2)
+        # original NSE
+        # temp = SSRes / SST
+        loss = torch.sum(temp) / Ngage
+        return loss

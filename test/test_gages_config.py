@@ -697,7 +697,8 @@ class TestDataFuncCase(unittest.TestCase):
                  'STOR_NID_2009', 'STOR_NOR_2009', 'MAJ_NDAMS_2009', 'MAJ_DDENS_2009',
                  'RAW_DIS_NEAREST_DAM', 'RAW_AVG_DIS_ALLDAMS',
                  'RAW_DIS_NEAREST_MAJ_DAM', 'RAW_AVG_DIS_ALL_MAJ_DAMS']
-
+    # screen_params={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005}
+    screen_params={'missing_data_ratio': 0, 'zero_value_ratio': 0.005}
     # regions = ['bas_nonref_CntlPlains', 'bas_nonref_EastHghlnds']
     # t_train = ['1995-10-01', '1997-10-01']
     # t_test = ['1997-10-01', '1999-01-01']
@@ -740,8 +741,7 @@ class TestDataFuncCase(unittest.TestCase):
                                                           '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
                                                           '}&end_date={}-{}-{}',
                                             gageIdScreen=self.gages_screen_ids,
-                                            streamflowScreenParam={'missing_data_ratio': 0.1,
-                                                                   'zero_value_ratio': 0.005},
+                                            streamflowScreenParam=self.screen_params,
                                             regions=self.regions,
                                             tRangeAll=['1980-01-01', '2015-01-01'])
         self.assertEqual(test_data, opt_data)
@@ -764,7 +764,7 @@ class TestDataFuncCase(unittest.TestCase):
                                                      '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
                                                      '}&end_date={}-{}-{}',
                                             flow_screen_gage_id=self.gages_screen_ids,  # self.gages_screen_ids,
-                                            flow_screen_param={'missing_data_ratio': 0.1, 'zero_value_ratio': 0.005},
+                                            flow_screen_param=self.screen_params,
                                             forcing_chosen=['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp'],
                                             forcing_dir=os.path.join(dir_db_, 'gagesII_forcing', 'daymet'),
                                             forcing_type='daymet',

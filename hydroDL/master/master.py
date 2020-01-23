@@ -31,6 +31,9 @@ def master_train(data_model):
     elif opt_loss['name'] == 'NSELosstest':
         loss_fun = crit.NSELosstest()
         opt_model['ny'] = ny
+    elif opt_loss['name'] == 'NSELoss':
+        loss_fun = crit.NSELoss()
+        opt_model['ny'] = ny
     else:
         print("Please specify the loss function!!!")
 
