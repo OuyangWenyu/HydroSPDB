@@ -21,18 +21,34 @@ class SimNatureFlowConfig(DataConfig):
         section = cfg.get(sections[0], 'data')
         options = cfg.options(section)
 
-        t_range_all = cfg.get(section, options[0])
-        ref_regions = cfg.get(section, options[1])
-        nonref_regions = cfg.get(section, options[2])
+        t_range_all = eval(cfg.get(section, options[0]))
+        ref_regions = eval(cfg.get(section, options[1]))
+        nonref_regions = eval(cfg.get(section, options[2]))
         streamflow_dir = cfg.get(section, options[3])
         streamflow_url = cfg.get(section, options[4])
         gage_id_of_ref_screen = eval(cfg.get(section, options[5]))
         gage_id_of_non_ref_screen = eval(cfg.get(section, options[6]))
 
+        sim_dir = cfg.get(section, options[7])
+        sim_source_data_file = cfg.get(section, options[8])
+        sim_data_flow_file = cfg.get(section, options[9])
+        sim_data_forcing_file = cfg.get(section, options[10])
+        sim_data_attr_file = cfg.get(section, options[11])
+        sim_f_dict_file = cfg.get(section, options[12])
+        sim_var_dict_file = cfg.get(section, options[13])
+        sim_t_s_dict_file = cfg.get(section, options[14])
+        sim_stat_dict_file = cfg.get(section, options[15])
+
         opt_data = collections.OrderedDict(streamflowUrl=streamflow_url, tRangeAll=t_range_all, refRegions=ref_regions,
                                            nonrefRegions=nonref_regions, streamflowDir=streamflow_dir,
                                            gageIdOfRefScreen=gage_id_of_ref_screen,
-                                           gageIdOfNonRefScreen=gage_id_of_non_ref_screen)
+                                           gageIdOfNonRefScreen=gage_id_of_non_ref_screen, sim_dir=sim_dir,
+                                           sim_source_data_file=sim_source_data_file,
+                                           sim_data_flow_file=sim_data_flow_file,
+                                           sim_data_forcing_file=sim_data_forcing_file,
+                                           sim_data_attr_file=sim_data_attr_file, sim_f_dict_file=sim_f_dict_file,
+                                           sim_var_dict_file=sim_var_dict_file, sim_t_s_dict_file=sim_t_s_dict_file,
+                                           sim_stat_dict_file=sim_stat_dict_file)
 
         return opt_data
 
@@ -47,7 +63,30 @@ class SimNatureFlowConfig(DataConfig):
         flow_dir = os.path.join(dir_db, data_params.get("streamflowDir"))
         flow_screen_gage_id_ref_screen = data_params.get("gageIdOfRefScreen")
         flow_screen_gage_id_non_ref_screen = data_params.get("gageIdOfNonRefScreen")
+        # config of input
+        model_dict = self.model_dict
+        t_range = model_dict["data"]["tRangeTrain"]
+        epoch = model_dict["train"]["nEpoch"]
+        file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(epoch)])
+        natural_flow_file = os.path.join(dir_out, file_name) + '.csv'
+        sim_dir = os.path.join(dir_temp, data_params["sim_dir"])
+        if not os.path.isdir(sim_dir):
+            os.mkdir(sim_dir)
+        sim_source_data_file = os.path.join(sim_dir, data_params["sim_source_data_file"])
+        sim_data_flow_file = os.path.join(sim_dir, data_params["sim_data_flow_file"])
+        sim_data_forcing_file = os.path.join(sim_dir, data_params["sim_data_forcing_file"])
+        sim_data_attr_file = os.path.join(sim_dir, data_params["sim_data_attr_file"])
+        sim_f_dict_file = os.path.join(sim_dir, data_params["sim_f_dict_file"])
+        sim_var_dict_file = os.path.join(sim_dir, data_params["sim_var_dict_file"])
+        sim_t_s_dict_file = os.path.join(sim_dir, data_params["sim_t_s_dict_file"])
+        sim_stat_dict_file = os.path.join(sim_dir, data_params["sim_stat_dict_file"])
 
         return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
                                        flow_dir=flow_dir, flow_screen_gage_id_ref_screen=flow_screen_gage_id_ref_screen,
-                                       flow_screen_gage_id_non_ref_screen=flow_screen_gage_id_non_ref_screen)
+                                       flow_screen_gage_id_non_ref_screen=flow_screen_gage_id_non_ref_screen,
+                                       natural_flow_file=natural_flow_file, sim_source_data_file=sim_source_data_file,
+                                       sim_data_flow_file=sim_data_flow_file,
+                                       sim_data_forcing_file=sim_data_forcing_file,
+                                       sim_data_attr_file=sim_data_attr_file, sim_f_dict_file=sim_f_dict_file,
+                                       sim_var_dict_file=sim_var_dict_file, sim_t_s_dict_file=sim_t_s_dict_file,
+                                       sim_stat_dict_file=sim_stat_dict_file)

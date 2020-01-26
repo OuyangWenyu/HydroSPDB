@@ -75,8 +75,8 @@ class MyTestCase(unittest.TestCase):
     def test_plot_box(self):
         """测试可视化代码"""
         # plot box，使用seaborn库
-        keys = ["Bias", "RMSE"]
-        # keys = ["NSE"]
+        # keys = ["Bias", "RMSE"]
+        keys = ["NSE"]
         inds_test = subset_of_dict(self.inds, keys)
         plot_box_inds(inds_test)
 
