@@ -6,6 +6,46 @@ import os
 import pandas as pd
 
 from . import rnn
+from visual.plot_model import plot_classes_preds
+
+
+def train_dataloader(net, trainloader, criterion, n_epoch, batch_size):
+    """train a model using data from dataloader"""
+    print("Start Training...")
+    optimizer = torch.optim.Adadelta(net.parameters())
+    running_loss = 0.0
+
+    # default `log_dir` is "runs" - we'll be more specific here
+    # writer = SummaryWriter('runs/visual_experiment_1')
+    for epoch in range(n_epoch):  # loop over the dataset multiple times
+        for step, (batch_xs, batch_ys) in enumerate(trainloader, 0):
+            # get the inputs; data is a list of [inputs, labels]
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            outputs = net(batch_xs)
+            loss = criterion(outputs, batch_ys)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+            print('Epoch: ', epoch, '| Step: ', step, '| batch x: ',
+                  batch_xs.numpy(), '| batch y: ', batch_ys.numpy())
+            if step % batch_size == batch_size-1:  # every batch_size mini-batches...
+
+                # ...log the running loss
+                # writer.add_scalar('training loss',
+                #                   running_loss / 1000,
+                #                   epoch * len(trainloader) + step)
+
+                # ...log a Matplotlib Figure showing the model's predictions on a
+                # random mini-batch
+                # writer.add_figure('predictions vs. actuals',
+                #                   plot_classes_preds(net, batch_xs, batch_ys),
+                #                   global_step=epoch * len(trainloader) + step)
+                running_loss = 0.0
+    print('Finished Training')
 
 
 def model_train(model,
@@ -171,7 +211,7 @@ def model_test(model, x, c, *, file_path, batch_size=None):
             torch.cuda.empty_cache()
 
         f.close()
-
+    # TODO: y_out is not all output
     y_out = torch.from_numpy(y_out)
     return y_out
 

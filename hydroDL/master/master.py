@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import pandas as pd
+from torch.utils.data import DataLoader
 
 from data.data_config import name_pred
 from utils import unserialize_json_ordered
@@ -112,23 +113,20 @@ def master_test(data_model):
         return pred, obs
 
 
-def train_natural_flow(data_model):
-    model_dict = data_model.data_source.data_config.model_dict
+def train_natural_flow(dataset):
+    model_dict = dataset.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_loss = model_dict['loss']
     opt_train = model_dict['train']
 
     # data
-    x, y, c = data_model.load_data(model_dict)
-    nx = x.shape[-1] + c.shape[-1]
-    ny = y.shape[-1]
+    trainloader = DataLoader(dataset, batch_size=opt_train["miniBatch"][0], shuffle=True, num_workers=4)
+    nx = 1
+    ny = 1
     opt_model['nx'] = nx
     opt_model['ny'] = ny
     # loss
-    if opt_loss['name'] == 'SigmaLoss':
-        loss_fun = crit.SigmaLoss(prior=opt_loss['prior'])
-        opt_model['ny'] = ny * 2
-    elif opt_loss['name'] == 'RmseLoss':
+    if opt_loss['name'] == 'RmseLoss':
         loss_fun = crit.RmseLoss()
         opt_model['ny'] = ny
     elif opt_loss['name'] == 'NSELosstest':
@@ -146,11 +144,8 @@ def train_natural_flow(data_model):
     elif opt_model['name'] == 'LstmCloseModel':
         model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
                                    fillObs=True)
-    elif opt_model['name'] == 'AnnModel':
-        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
-    elif opt_model['name'] == 'AnnCloseModel':
-        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
-                                  fillObs=True)
+    else:
+        print("Please specify the model!!!")
 
     # train
     if opt_train['saveEpoch'] > opt_train['nEpoch']:
@@ -158,5 +153,4 @@ def train_natural_flow(data_model):
 
     # train model
     out = model_dict['dir']['Out']
-    model = model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
-                                  mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'], save_folder=out)
+    model_run.train_dataloader(model, trainloader, loss_fun, opt_train['nEpoch'], opt_train["miniBatch"][0])
