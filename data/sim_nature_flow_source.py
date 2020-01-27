@@ -3,6 +3,7 @@ import numpy as np
 import torch
 
 from data import GagesConfig, GagesSource, DataModel
+from explore import trans_norm
 from hydroDL.model import model_run
 from utils import serialize_numpy, serialize_pickle, serialize_json, unserialize_pickle, unserialize_json, \
     unserialize_numpy
@@ -23,17 +24,17 @@ class SimNatureFlowSource(object):
 
     def prepare_flow_data(self):
         """generate flow from model, reshape to a 3d array, and transform to tensor:
-        1d: gauge
-        2d: time sequence
-        3d: time length, that is miniBatch[1]
+        1d: nx * ny_per_nx
+        2d: miniBatch[1]
+        3d: length of time sequence, now also miniBatch[1]
         """
         # read data for model of allref
         sim_model_data = self.sim_model_data
         sim_config_data = sim_model_data.data_source.data_config
         batch_size = sim_config_data.model_dict["train"]["miniBatch"][0]
         x, y, c = sim_model_data.load_data(sim_config_data.model_dict)
-        # read model
-        out_folder = sim_config_data.data_path["Out"]
+        # read model, TODO: model file need to be copied to out folder mannually
+        out_folder = self.data_config.data_path["Out"]
         epoch = sim_config_data.model_dict["train"]["nEpoch"]
         model = model_run.model_load(out_folder, epoch, model_name='model')
         # run the model
@@ -45,11 +46,17 @@ class SimNatureFlowSource(object):
         all_time_length = np_natural_flow.shape[1]
         np_natural_flow_2d = np_natural_flow.reshape(nx, all_time_length)
         rho = self.data_config.model_dict["train"]["miniBatch"][1]
-        x_tensor = torch.zeros([nx, all_time_length - rho + 1, rho], requires_grad=False)
+        x_np = np.zeros([nx, all_time_length - rho + 1, rho])
         for i in range(nx):
             for j in range(all_time_length - rho + 1):
-                temp = np_natural_flow_2d[i][j:j + rho]
-                x_tensor[i, j, :] = torch.from_numpy(temp)
+                x_np[i, j, :] = np_natural_flow_2d[i][j:j + rho]
+        ny_per_nx = x_np.shape[1] - rho + 1
+        x_tensor = torch.zeros([nx * ny_per_nx, rho, rho], requires_grad=False)
+        for i in range(nx):
+            per_x_np = np.zeros([ny_per_nx, rho, rho])
+            for j in range(ny_per_nx):
+                per_x_np[j, :, :] = x_np[i, j:j + rho, :]
+            x_tensor[(i * ny_per_nx):((i + 1) * ny_per_nx), :, :] = torch.from_numpy(per_x_np)
         print("streamflow data Ready! ...")
         return x_tensor
 
@@ -85,10 +92,21 @@ class SimNatureFlowSource(object):
 
     def read_outflow(self):
         """read streamflow data as observation data, transform array to tensor"""
-        # TODO: normalization
         print("reading outflow:")
         sim_model_data = self.sim_model_data
         data_flow = sim_model_data.data_flow
         data = np.expand_dims(data_flow, axis=2)
-        outflow = torch.from_numpy(data)
-        return outflow
+        stat_dict = sim_model_data.stat_dict
+        data = trans_norm(data, 'usgsFlow', stat_dict, to_norm=True)
+        # cut the first rho data to match generated flow time series
+        rho = self.data_config.model_dict["train"]["miniBatch"][1]
+        data_chosen = data[:, rho - 1:, :]
+        nx = data_chosen.shape[0]
+        ny_per_nx = data_chosen.shape[1] - rho + 1
+        x_tensor = torch.zeros([nx * ny_per_nx, rho, 1], requires_grad=False)
+        for i in range(nx):
+            per_x_np = np.zeros([ny_per_nx, rho, 1])
+            for j in range(ny_per_nx):
+                per_x_np[j, :, :] = data_chosen[i, j:j + rho, :]
+            x_tensor[(i * ny_per_nx):((i + 1) * ny_per_nx), :, :] = torch.from_numpy(per_x_np)
+        return x_tensor

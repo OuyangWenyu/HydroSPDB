@@ -2,9 +2,9 @@
 import os
 import numpy as np
 import pandas as pd
-from torch.utils.data import DataLoader
 
 from data.data_config import name_pred
+from data.sim_input_dataset import get_loader
 from utils import unserialize_json_ordered
 from explore import stat
 from hydroDL.model import *
@@ -120,21 +120,16 @@ def train_natural_flow(dataset):
     opt_train = model_dict['train']
 
     # data
-    trainloader = DataLoader(dataset, batch_size=opt_train["miniBatch"][0], shuffle=True, num_workers=4)
-    nx = 1
-    ny = 1
-    opt_model['nx'] = nx
-    opt_model['ny'] = ny
+    trainloader = get_loader(dataset, opt_train["miniBatch"][0])
+    opt_model['nx'] = opt_train["miniBatch"][1]
+    opt_model['ny'] = 1
     # loss
     if opt_loss['name'] == 'RmseLoss':
         loss_fun = crit.RmseLoss()
-        opt_model['ny'] = ny
     elif opt_loss['name'] == 'NSELosstest':
         loss_fun = crit.NSELosstest()
-        opt_model['ny'] = ny
     elif opt_loss['name'] == 'NSELoss':
         loss_fun = crit.NSELoss()
-        opt_model['ny'] = ny
     else:
         print("Please specify the loss function!!!")
 

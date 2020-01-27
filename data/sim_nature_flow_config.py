@@ -54,10 +54,22 @@ class SimNatureFlowConfig(DataConfig):
 
     def read_data_config(self):
         dir_db = self.data_path.get("DB")
-        dir_out = self.data_path.get("Out")
-        dir_temp = self.data_path.get("Temp")
 
         data_params = self.init_data_param()
+
+        # except for raw data, others are all in "simulate" subdir
+        dir_out = self.data_path.get("Out")
+        dir_out = os.path.join(dir_out, data_params["sim_dir"])
+        if not os.path.isdir(dir_out):
+            os.mkdir(dir_out)
+        dir_temp = self.data_path.get("Temp")
+        dir_temp = os.path.join(dir_temp, data_params["sim_dir"])
+        if not os.path.isdir(dir_temp):
+            os.mkdir(dir_temp)
+
+        # update model dict
+        self.model_dict['dir']['Out'] = dir_out
+        self.model_dict['dir']['Temp'] = dir_temp
 
         # 径流数据配置
         flow_dir = os.path.join(dir_db, data_params.get("streamflowDir"))
@@ -69,17 +81,14 @@ class SimNatureFlowConfig(DataConfig):
         epoch = model_dict["train"]["nEpoch"]
         file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(epoch)])
         natural_flow_file = os.path.join(dir_out, file_name) + '.csv'
-        sim_dir = os.path.join(dir_temp, data_params["sim_dir"])
-        if not os.path.isdir(sim_dir):
-            os.mkdir(sim_dir)
-        sim_source_data_file = os.path.join(sim_dir, data_params["sim_source_data_file"])
-        sim_data_flow_file = os.path.join(sim_dir, data_params["sim_data_flow_file"])
-        sim_data_forcing_file = os.path.join(sim_dir, data_params["sim_data_forcing_file"])
-        sim_data_attr_file = os.path.join(sim_dir, data_params["sim_data_attr_file"])
-        sim_f_dict_file = os.path.join(sim_dir, data_params["sim_f_dict_file"])
-        sim_var_dict_file = os.path.join(sim_dir, data_params["sim_var_dict_file"])
-        sim_t_s_dict_file = os.path.join(sim_dir, data_params["sim_t_s_dict_file"])
-        sim_stat_dict_file = os.path.join(sim_dir, data_params["sim_stat_dict_file"])
+        sim_source_data_file = os.path.join(dir_temp, data_params["sim_source_data_file"])
+        sim_data_flow_file = os.path.join(dir_temp, data_params["sim_data_flow_file"])
+        sim_data_forcing_file = os.path.join(dir_temp, data_params["sim_data_forcing_file"])
+        sim_data_attr_file = os.path.join(dir_temp, data_params["sim_data_attr_file"])
+        sim_f_dict_file = os.path.join(dir_temp, data_params["sim_f_dict_file"])
+        sim_var_dict_file = os.path.join(dir_temp, data_params["sim_var_dict_file"])
+        sim_t_s_dict_file = os.path.join(dir_temp, data_params["sim_t_s_dict_file"])
+        sim_stat_dict_file = os.path.join(dir_temp, data_params["sim_stat_dict_file"])
 
         return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
                                        flow_dir=flow_dir, flow_screen_gage_id_ref_screen=flow_screen_gage_id_ref_screen,
