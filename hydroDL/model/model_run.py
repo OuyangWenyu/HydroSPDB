@@ -6,21 +6,27 @@ import os
 import pandas as pd
 
 from . import rnn
-from visual.plot_model import plot_classes_preds
+from torch.utils.tensorboard import SummaryWriter
 
 
-def train_dataloader(net, trainloader, criterion, n_epoch, batch_size):
+def train_dataloader(net, trainloader, criterion, n_epoch, out_folder, save_model_folder, save_epoch):
     """train a model using data from dataloader"""
     print("Start Training...")
     if torch.cuda.is_available():
         criterion = criterion.cuda()
         net = net.cuda()
     optimizer = torch.optim.Adadelta(net.parameters())
-    running_loss = 0.0
-
     # default `log_dir` is "runs" - we'll be more specific here
-    # writer = SummaryWriter('runs/visual_experiment_1')
+    writer = SummaryWriter(os.path.join(out_folder, 'runs', 'experiment_1'))
+    # print structure of net
+    dataiter = iter(trainloader)
+    inputs4graph, outputs4graph = dataiter.next()
+    if torch.cuda.is_available():
+        writer.add_graph(net, inputs4graph.cuda())
+
     for epoch in range(n_epoch):  # loop over the dataset multiple times
+        running_loss = 0.0
+        steps_num = 0
         for step, (batch_xs, batch_ys) in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
             # zero the parameter gradients
@@ -35,21 +41,17 @@ def train_dataloader(net, trainloader, criterion, n_epoch, batch_size):
             optimizer.step()
 
             running_loss += loss.item()
-            print('Epoch: ', epoch, '| Step: ', step, '| batch x: ',
-                  batch_xs.numpy(), '| batch y: ', batch_ys.numpy())
-            if step % batch_size == batch_size - 1:  # every batch_size mini-batches...
+            steps_num = steps_num + 1
+            print('Epoch: ', epoch, '| Step: ', step, '| loss_avg: ', running_loss / steps_num)
 
-                # ...log the running loss
-                # writer.add_scalar('training loss',
-                #                   running_loss / 1000,
-                #                   epoch * len(trainloader) + step)
-
-                # ...log a Matplotlib Figure showing the model's predictions on a
-                # random mini-batch
-                # writer.add_figure('predictions vs. actuals',
-                #                   plot_classes_preds(net, batch_xs, batch_ys),
-                #                   global_step=epoch * len(trainloader) + step)
-                running_loss = 0.0
+        # log the running loss
+        writer.add_scalar('training loss', running_loss / steps_num, epoch * len(trainloader) + steps_num)
+        # save model
+        if epoch % save_epoch == save_epoch - 1:
+            # save model, epoch count from 0, I wanna saved model counted from 1
+            model_file = os.path.join(save_model_folder, 'model_Ep' + str(epoch + 1) + '.pt')
+            torch.save(net, model_file)
+    writer.close()
     print('Finished Training')
 
 

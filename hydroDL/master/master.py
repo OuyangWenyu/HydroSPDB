@@ -147,5 +147,9 @@ def train_natural_flow(dataset):
         opt_train['saveEpoch'] = opt_train['nEpoch']
 
     # train model
-    out = model_dict['dir']['Out']
-    model_run.train_dataloader(model, trainloader, loss_fun, opt_train['nEpoch'], opt_train["miniBatch"][0])
+    output_dir = model_dict['dir']['Out']
+    model_save_dir = os.path.join(output_dir, 'model')
+    if not os.path.isdir(model_save_dir):
+        os.mkdir(model_save_dir)
+    model_run.train_dataloader(model, trainloader, loss_fun, opt_train['nEpoch'], output_dir, model_save_dir,
+                               opt_train['saveEpoch'])

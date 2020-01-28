@@ -21,6 +21,8 @@ statsmodels = "*"
 seaborn = "*"
 netcdf4 = "*"
 wget = "*"
+tensorboard = "*"
+future = "*"
 
 [requires]
 python_version = "3.7"
