@@ -9,6 +9,23 @@ from . import rnn
 from torch.utils.tensorboard import SummaryWriter
 
 
+def test_dataloader(net, testloader):
+    test_obs = []
+    test_preds = []
+    if torch.cuda.is_available():
+        net = net.cuda()
+    with torch.no_grad():
+        for data in testloader:
+            xs, ys = data
+            if torch.cuda.is_available():
+                xs = xs.cuda()
+                ys = ys.cuda()
+            output = net(xs)
+            test_obs.append(ys.cpu().numpy())
+            test_preds.append(output.cpu().numpy())
+    return test_preds, test_obs
+
+
 def train_dataloader(net, trainloader, criterion, n_epoch, out_folder, save_model_folder, save_epoch):
     """train a model using data from dataloader"""
     print("Start Training...")

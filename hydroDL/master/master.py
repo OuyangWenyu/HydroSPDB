@@ -2,6 +2,8 @@
 import os
 import numpy as np
 import pandas as pd
+import torch
+from functools import reduce
 
 from data.data_config import name_pred
 from data.sim_input_dataset import get_loader
@@ -120,7 +122,7 @@ def train_natural_flow(dataset):
     opt_train = model_dict['train']
 
     # data
-    trainloader = get_loader(dataset, opt_train["miniBatch"][0])
+    trainloader = get_loader(dataset, opt_train["miniBatch"][0], shuffle=True)
     opt_model['nx'] = opt_train["miniBatch"][1]
     opt_model['ny'] = 1
     # loss
@@ -153,3 +155,48 @@ def train_natural_flow(dataset):
         os.mkdir(model_save_dir)
     model_run.train_dataloader(model, trainloader, loss_fun, opt_train['nEpoch'], output_dir, model_save_dir,
                                opt_train['saveEpoch'])
+
+
+def test_natural_flow(dataset):
+    model_dict = dataset.data_source.data_config.model_dict
+    # 测试和训练使用的batch_size, rho是一样的
+    batch_size, rho = model_dict['train']['miniBatch']
+
+    # data
+    testloader = get_loader(dataset, batch_size)
+
+    # model
+    out_folder = model_dict['dir']['Out']
+    opt_train = model_dict['train']
+    model_file = os.path.join(out_folder, 'model', 'model' + '_Ep' + str(opt_train['nEpoch']) + '.pt')
+    model = torch.load(model_file)
+    test_preds, test_obs = model_run.test_dataloader(model, testloader)
+
+    num_gauge = len(dataset.data_source.sim_model_data.t_s_dict["sites_id"])
+
+    # transform to original format
+    def restore(test_data, x_num, z_num):
+        data_stack = reduce(lambda a, b: np.vstack((a, b)),
+                            list(map(lambda x: x.reshape(x.shape[0], x.shape[1]).T, test_data)))
+        data_split = data_stack.reshape(x_num, -1, z_num)
+        temp_list = []
+        for datum in data_split:
+            row_first = datum[0, :][:-1]
+            column_final = datum[:, -1]
+            new_row = np.hstack((row_first, column_final))
+            temp_list.append(new_row)
+        data_result = np.array(temp_list)
+        return data_result
+
+    pred = restore(test_preds, num_gauge, rho)
+    obs = restore(test_obs, num_gauge, rho)
+
+    # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
+    pred = np.expand_dims(pred, axis=2)
+    obs = np.expand_dims(obs, axis=2)
+    stat_dict = dataset.data_source.sim_model_data.stat_dict
+    # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
+    pred = stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+    obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+
+    return pred, obs
