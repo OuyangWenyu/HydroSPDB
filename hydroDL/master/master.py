@@ -200,3 +200,40 @@ def test_natural_flow(dataset):
     obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
     return pred, obs
+
+
+def train_stacked_lstm(dataset):
+    """training main function for stacked lstm"""
+    model_dict = dataset.data_source.data_config.model_dict
+    opt_model = model_dict['model']
+    opt_loss = model_dict['loss']
+    opt_train = model_dict['train']
+
+    # data
+    trainloader = get_loader(dataset, opt_train["miniBatch"][0], shuffle=True)
+    opt_model['nx'] = opt_train["miniBatch"][1]
+    opt_model['ny'] = 1
+    # loss
+    if opt_loss['name'] == 'RmseLoss':
+        loss_fun = crit.RmseLoss()
+    elif opt_loss['name'] == 'NSELosstest':
+        loss_fun = crit.NSELosstest()
+    elif opt_loss['name'] == 'NSELoss':
+        loss_fun = crit.NSELoss()
+    else:
+        print("Please specify the loss function!!!")
+
+    # model
+    model = easy_lstm.LSTM(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+
+    # train
+    if opt_train['saveEpoch'] > opt_train['nEpoch']:
+        opt_train['saveEpoch'] = opt_train['nEpoch']
+
+    # train model
+    output_dir = model_dict['dir']['Out']
+    model_save_dir = os.path.join(output_dir, 'model')
+    if not os.path.isdir(model_save_dir):
+        os.mkdir(model_save_dir)
+    model_run.train_dataloader(model, trainloader, loss_fun, opt_train['nEpoch'], output_dir, model_save_dir,
+                                 opt_train['saveEpoch'])

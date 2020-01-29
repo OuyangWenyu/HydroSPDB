@@ -12,7 +12,8 @@ class VariationalDropout(nn.Module):
     Note that this is not applied to the recurrent activations in the LSTM like the above paper.
     Instead, it is applied to the inputs and outputs of the recurrent layer.
     """
-    def __init__(self, dropout: float, batch_first: Optional[bool]=False):
+
+    def __init__(self, dropout: float, batch_first: Optional[bool] = False):
         super().__init__()
         self.dropout = dropout
         self.batch_first = batch_first
@@ -41,9 +42,10 @@ class VariationalDropout(nn.Module):
         else:
             return x
 
+
 class LSTM(nn.LSTM):
-    def __init__(self, *args, dropouti: float=0.,
-                 dropoutw: float=0., dropouto: float=0.,
+    def __init__(self, *args, dropouti: float = 0.,
+                 dropoutw: float = 0., dropouto: float = 0.,
                  batch_first=True, unit_forget_bias=True, **kwargs):
         super().__init__(*args, **kwargs, batch_first=batch_first)
         self.unit_forget_bias = unit_forget_bias
