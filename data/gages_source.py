@@ -14,6 +14,25 @@ class GagesSource(DataSource):
     def __init__(self, config_data, t_range):
         super().__init__(config_data, t_range)
 
+    @classmethod
+    def choose_some_basins(cls, config_data, t_range, basin_area):
+        """choose some basins according to given conditions"""
+        new_data_source = cls(config_data, t_range)
+        new_data_source.small_basins_chosen(basin_area)
+        return new_data_source
+
+    def small_basins_chosen(self, basin_area):
+        """choose small basins"""
+        # set self.all_configs["flow_screen_gage_id"]
+        all_points_file = self.all_configs.get("gage_point_file")
+        all_points = gpd.read_file(all_points_file)
+        all_points_chosen = all_points[all_points["DRAIN_SQKM"] < basin_area]
+        small_gages_chosen_id = all_points_chosen['STAID'].values
+        if self.all_configs["flow_screen_gage_id"]: # TODO: check
+            small_gages_chosen_id, ind1, ind2 = np.intersect1d(self.all_configs["flow_screen_gage_id"],
+                                                               small_gages_chosen_id, return_indices=True)
+        self.all_configs["flow_screen_gage_id"] = small_gages_chosen_id.tolist()
+
     def prepare_attr_data(self):
         """根据时间读取数据，没有的数据下载"""
         configs = self.all_configs
