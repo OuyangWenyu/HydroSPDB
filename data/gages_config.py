@@ -22,9 +22,9 @@ class GagesConfig(DataConfig):
         new_data_config.data_path["Out"] = os.path.join(new_data_config.data_path["Out"], subdir)
         new_data_config.data_path["Temp"] = os.path.join(new_data_config.data_path["Temp"], subdir)
         if not os.path.isdir(new_data_config.data_path["Out"]):
-            os.mkdir(new_data_config.data_path["Out"])
+            os.makedirs(new_data_config.data_path["Out"])
         if not os.path.isdir(new_data_config.data_path["Temp"]):
-            os.mkdir(new_data_config.data_path["Temp"])
+            os.makedirs(new_data_config.data_path["Temp"])
         new_data_config.model_dict["dir"]["Out"] = new_data_config.data_path["Out"]
         new_data_config.model_dict["dir"]["Temp"] = new_data_config.data_path["Temp"]
         return new_data_config

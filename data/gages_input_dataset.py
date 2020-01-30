@@ -68,7 +68,32 @@ class GagesInputDataset(Dataset):
         return len(self.data_input)
 
 
-def collate_fn(data):
+class GagesInvDataset(Dataset):
+    """Dataset for inv model"""
+
+    def __init__(self, data_model1, data_model2):
+        self.data_input = self.prepare_input_inv(data_model1, data_model2)
+        self.data_target = self.prepare_output(data_model2)
+
+    def __getitem__(self, index):
+        x = self.data_input[index]
+        y = self.data_target[index]
+        return x, y
+
+    def __len__(self):
+        return len(self.data_input)
+
+    def prepare_input_inv(self, data_model1, data_model2):
+        """prepare input for lstm-inv"""
+        print("prepare input")
+        return []
+
+    def prepare_output(self, data_model):
+        print("prepare target")
+        return []
+
+
+def collate_fn_inv(data):
     """
     Args:
         data: list of tuple (src_seq, trg_seq).
@@ -94,7 +119,7 @@ def collate_fn(data):
     return src_seqs, trg_seqs
 
 
-def get_loader(dataset, batch_size=100, shuffle=False, num_workers=0):
+def get_loader_inv(dataset, batch_size=100, shuffle=False, num_workers=0):
     """Returns data loader for custom dataset.
     Args:
         dataset: dataset
@@ -108,8 +133,8 @@ def get_loader(dataset, batch_size=100, shuffle=False, num_workers=0):
     # this will return (src_seqs, src_lengths, trg_seqs, trg_lengths) for each iteration
     # please see collate_fn for details
     if num_workers < 1:
-        data_loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn)
+        data_loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn_inv)
     else:
-        data_loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn,
+        data_loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn_inv,
                                  num_workers=num_workers)
     return data_loader

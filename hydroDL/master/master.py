@@ -6,6 +6,7 @@ import torch
 from functools import reduce
 
 from data.data_config import name_pred
+from data.gages_input_dataset import get_loader_inv
 from data.sim_input_dataset import get_loader
 from utils import unserialize_json_ordered
 from explore import stat
@@ -236,4 +237,28 @@ def train_stacked_lstm(dataset):
     if not os.path.isdir(model_save_dir):
         os.mkdir(model_save_dir)
     model_run.train_dataloader(model, trainloader, loss_fun, opt_train['nEpoch'], output_dir, model_save_dir,
-                                 opt_train['saveEpoch'])
+                               opt_train['saveEpoch'])
+
+
+def train_lstm_inv(dataset):
+    """call lstm inv model to train"""
+    model_dict = dataset.data_source.data_config.model_dict
+    opt_model = model_dict['model']
+    opt_train = model_dict['train']
+
+    # data
+    trainloader = get_loader_inv(dataset, opt_train["miniBatch"][0], shuffle=True)
+    opt_model['nx'] = opt_train["miniBatch"][1]
+    opt_model['ny'] = 1
+    # loss
+    loss_fun = crit.RmseLoss()
+    # model
+    model_inv = rnn.CudnnLstmModelInv(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=256)
+
+    # train model
+    output_dir = model_dict['dir']['Out']
+    model_save_dir = os.path.join(output_dir, 'model')
+    if not os.path.isdir(model_save_dir):
+        os.mkdir(model_save_dir)
+    model_run.train_dataloader(model_inv, trainloader, loss_fun, opt_train['nEpoch'], output_dir, model_save_dir,
+                               opt_train['saveEpoch'])
