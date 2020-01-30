@@ -13,6 +13,37 @@ from explore import stat
 from hydroDL.model import *
 
 
+def train_lstm_without_first_linear(data_model):
+    model_dict = data_model.data_source.data_config.model_dict
+    opt_model = model_dict['model']
+    opt_loss = model_dict['loss']
+    opt_train = model_dict['train']
+
+    # data
+    x, y, c = data_model.load_data(model_dict)
+    nx = x.shape[-1] + c.shape[-1]
+    ny = y.shape[-1]
+    opt_model['nx'] = nx
+    opt_model['ny'] = ny
+    # loss
+
+    if opt_loss['name'] == 'RmseLoss':
+        loss_fun = crit.RmseLoss()
+        opt_model['ny'] = ny
+    else:
+        print("Please specify the loss function!!!")
+
+    # model
+    model = rnn.CudnnLstmModelWithout1stLinear(nx=opt_model['nx'], ny=opt_model['ny'],
+                                               hidden_size=opt_model['hiddenSize'])
+
+    # train model
+    out = model_dict['dir']['Out']
+    model = model_run.model_train_for_lstm_without_1stlinear(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
+                                                             mini_batch=opt_train['miniBatch'],
+                                                             save_epoch=opt_train['saveEpoch'], save_folder=out)
+
+
 def master_train(data_model):
     model_dict = data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
