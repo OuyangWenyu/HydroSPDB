@@ -2,6 +2,7 @@ import unittest
 
 import definitions
 from data import GagesConfig, GagesSource, DataModel
+from data.data_config import add_model_param
 from data.gages_input_dataset import GagesInvDataModel
 from hydroDL.master.master import train_lstm_inv
 
@@ -69,6 +70,7 @@ class MyTestCase(unittest.TestCase):
         self.subdir = r"inv/exp1"
         self.config_data_1 = GagesConfig.set_subdir(self.config_file_1, self.subdir)
         self.config_data_2 = GagesConfig.set_subdir(self.config_file_2, self.subdir)
+        add_model_param(self.config_data_1, "model", seqLength=7)
 
     def test_inv_data_temp(self):
         # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM

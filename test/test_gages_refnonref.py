@@ -13,8 +13,6 @@ import numpy as np
 import definitions
 from visual.plot_model import plot_boxes_inds
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # cuda is geforce 2
-
 
 class MyTestCaseGagesNonref(unittest.TestCase):
     def setUp(self) -> None:
@@ -25,9 +23,6 @@ class MyTestCaseGagesNonref(unittest.TestCase):
         self.subdir = r"refnonref/exp1"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
 
-        x_test_test = torch.tensor([1., 2.]).cuda()
-        print(x_test_test)
-
     def test_gages_nonref_train(self):
         print('Starting ...')
         config_data = self.config_data
@@ -37,6 +32,7 @@ class MyTestCaseGagesNonref(unittest.TestCase):
         data_model = DataModel(source_data)
         # 进行模型训练
         # train model
+        os.environ["CUDA_VISIBLE_DEVICES"] = "2"
         master_train(data_model)
 
     def test_gages_nonref_test(self):

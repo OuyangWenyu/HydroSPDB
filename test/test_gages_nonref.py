@@ -25,6 +25,7 @@ class MyTestCaseGagesNonref(unittest.TestCase):
 
     def test_gages_nonref_train(self):
         print('Starting ...')
+        os.environ["CUDA_VISIBLE_DEVICES"] = "2"
         config_data = self.config_data
         # 准备训练数据
         source_data = GagesSource(config_data, config_data.model_dict["data"]["tRangeTrain"])

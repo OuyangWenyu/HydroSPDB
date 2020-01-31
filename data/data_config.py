@@ -5,6 +5,13 @@ from collections import OrderedDict
 from configparser import ConfigParser
 
 
+def add_model_param(data_config, model_dict_item, **kwargs):
+    """model_dict has 5 items: dir, data, model, loss, train"""
+    dict_chosen = data_config.model_dict[model_dict_item]
+    for key in kwargs:
+        dict_chosen[key] = kwargs[key]
+
+
 def update(opt, **kw):
     for key in kw:
         if key in opt:

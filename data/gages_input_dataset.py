@@ -61,7 +61,8 @@ class GagesInvDataModel(object):
     """DataModel for inv model"""
 
     def __init__(self, data_model1, data_model2):
-        self.model_dict = data_model2.data_source.data_config.model_dict
+        self.model_dict1 = data_model1.data_source.data_config.model_dict
+        self.model_dict2 = data_model2.data_source.data_config.model_dict
         all_data = self.prepare_input(data_model1, data_model2)
         input_keys = ['xh', 'ch', 'qh', 'xt', 'ct']
         output_keys = ['qt']
@@ -78,4 +79,42 @@ class GagesInvDataModel(object):
         return {'xh': xh, 'ch': ch, 'qh': qh, 'xt': xt, 'ct': ct, 'qt': qt}
 
     def load_data(self):
-        return self.data_input, self.data_target
+        data_input = self.data_input
+        data_inflow_h = data_input['qh']
+        data_inflow_h = data_inflow_h.reshape(data_inflow_h.shape[0], data_inflow_h.shape[1])
+        # transform x to 3d, the final dim's length is the seq_length
+        seq_length = self.model_dict1["model"]["seqLength"]
+        data_inflow_h_new = np.zeros([data_inflow_h.shape[0], data_inflow_h.shape[1] - seq_length + 1, seq_length])
+        for i in range(data_inflow_h_new.shape[1]):
+            data_inflow_h_new[:, i, :] = data_inflow_h[:, i:i + seq_length]
+
+        def concat_two_3darray(arr1, arr2):
+            arr3 = np.zeros([arr1.shape[0], arr1.shape[1], arr1.shape[2] + arr2.shape[2]])
+            for j in range(arr1.shape[0]):
+                arr3[j] = np.concatenate((arr1[j], arr2[j]), axis=1)
+            return arr3
+
+        # because data_inflow_h_new is assimilated, time sequence length has changed
+        data_forcing_h = data_input['xh'][:, seq_length - 1:, :]
+        xqh = concat_two_3darray(data_inflow_h_new, data_forcing_h)
+
+        def copy_attr_array_in2d(arr1, len_of_2d):
+            arr2 = np.zeros([arr1.shape[0], len_of_2d, arr1.shape[1]])
+            for k in range(arr1.shape[0]):
+                arr2[k] = np.tile(arr1[k], arr2.shape[1]).reshape(arr2.shape[1], arr1.shape[1])
+            return arr2
+
+        attr_h = data_input['ch']
+        attr_h_new = copy_attr_array_in2d(attr_h, xqh.shape[1])
+
+        # concatenate xqh with ch
+        xqch = concat_two_3darray(xqh, attr_h_new)
+
+        # concatenate xt with ct
+        data_forcing_t = data_input['xt']
+        attr_t = data_input['ct']
+        attr_t_new = copy_attr_array_in2d(attr_t, data_forcing_t.shape[1])
+        xct = concat_two_3darray(data_forcing_t, attr_t_new)
+
+        qt = self.data_target["qt"]
+        return xqch, xct, qt

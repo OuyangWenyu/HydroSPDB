@@ -621,26 +621,17 @@ class MLPModel(nn.Module):
 class CudnnLstmModelInv(torch.nn.Module):
     def __init__(self, nx, ny, hidden_size, dr=0.5):
         super(CudnnLstmModelInv, self).__init__()
-        self.nx = nx  # (xh+qh+ch, xt+ct, theta)
+        self.nx = nx  # (xqch, xct, theta)
         self.ny = ny
         self.hiddenSize = hidden_size
         self.lstm_inv = CudnnLstmModel(nx=nx[0], ny=nx[2], hidden_size=int(hidden_size / 4),
                                        dr=dr)  # Input is forcing + Q + attr,
-        self.lstm = CudnnLstmModel(nx=nx[1], ny=ny, hidden_size=hidden_size, dr=dr)
+        self.lstm = CudnnLstmModel(nx=nx[1] + nx[2], ny=ny, hidden_size=hidden_size, dr=dr)
         self.gpu = 2
 
-    def forward(self, x):
-        forcing_h = x["xh"]
-        flow_h = x["qh"]
-        attr_h = x["ch"]
-        forcing_t = x["xt"]
-        attr_t = x["ct"]
-        x_inv = torch.cat((forcing_h, flow_h, attr_h), dim=len(forcing_h.shape) - 1)
-        gen = self.lstm_inv(x_inv)
-        dim = gen.shape
-        nt = dim[0]
-        param = gen[-1, :, 0:dim[2] - 2].repeat(nt, 1, 1)
-        x1 = torch.cat((forcing_t, attr_t, param), dim=len(param.shape) - 1)  # by default cat along dim=0
+    def forward(self, xh, xt):
+        param = self.lstm_inv(xh)
+        x1 = torch.cat((xt, param), dim=len(param.shape) - 1)  # by default cat along dim=0
         out_lstm = self.lstm(x1)
         return out_lstm, param
 

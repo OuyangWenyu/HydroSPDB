@@ -448,14 +448,11 @@ def select_subset(x, i_grid, i_t, rho, *, c=None, tuple_out=False):
     return out
 
 
-def model_train_inv(model, x, y, lossFun, *, n_epoch=500, mini_batch=[100, 30], save_epoch=100, save_folder=None):
+def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[100, 30], save_epoch=100,
+                    save_folder=None):
     batchSize, rho = mini_batch
-    # x- input; z - additional input; y - target; c - constant input
-    if type(x) is tuple or type(x) is list:
-        x, z = x
-    ngrid, nt, nx = x.shape
-    nIterEp = int(
-        np.ceil(np.log(0.01) / np.log(1 - batchSize * rho / ngrid / nt)))
+    ngrid, nt, nx = xqch.shape
+    nIterEp = int(np.ceil(np.log(0.01) / np.log(1 - batchSize * rho / ngrid / nt)))
 
     if torch.cuda.is_available():
         lossFun = lossFun.cuda()
@@ -464,17 +461,18 @@ def model_train_inv(model, x, y, lossFun, *, n_epoch=500, mini_batch=[100, 30], 
     optim = torch.optim.Adadelta(model.parameters())
     model.zero_grad()
     if save_folder is not None:
-        runFile = os.path.join(save_folder, 'run.csv')
+        runFile = os.path.join(save_folder, str(n_epoch) + 'epoch_run.csv')
         rf = open(runFile, 'w+')
     for iEpoch in range(1, n_epoch + 1):
         lossEp = 0
         t0 = time.time()
         for iIter in range(0, nIterEp):
-            # training iterations
+            # training iterations # TODO: iGrid, iT maybe not same between xhTrain and  (xtTrain,yTrain)
             iGrid, iT = random_index(ngrid, nt, [batchSize, rho])
-            xTrain = select_subset(x, iGrid, iT, rho, c=None, tuple_out=True)
-            yTrain = select_subset(y, iGrid, iT, rho)
-            yP, Param_Inv = model(xTrain)  # will also send in the y for inversion generator
+            xhTrain = select_subset(xqch, iGrid, iT, rho)
+            xtTrain = select_subset(xct, iGrid, iT, rho)
+            yTrain = select_subset(qt, iGrid, iT, rho)
+            yP, Param_Inv = model(xhTrain, xtTrain)  # will also send in the y for inversion generator
             loss = lossFun(yP, yTrain)
             loss.backward()
             optim.step()

@@ -339,15 +339,15 @@ def train_stacked_lstm(dataset):
 
 def train_lstm_inv(data_model):
     """call lstm inv model to train"""
-    model_dict = data_model.model_dict
+    model_dict = data_model.model_dict1
     opt_model = model_dict['model']
     opt_train = model_dict['train']
 
     # data
-    x, y = data_model.load_data()
-    opt_model['nx'] = (
-    x['xh'].shape[-1] + x['qh'].shape[-1] + x['ch'].shape[-1], x['xt'].shape[-1] + x['ct'].shape[-1], 10)
-    opt_model['ny'] = 1
+    xqch, xct, qt = data_model.load_data()
+    theta_length = 10
+    opt_model['nx'] = (xqch.shape[-1], xct.shape[-1], theta_length)
+    opt_model['ny'] = qt.shape[-1]
     # loss
     loss_fun = crit.RmseLoss()
     # model
@@ -355,9 +355,6 @@ def train_lstm_inv(data_model):
 
     # train model
     output_dir = model_dict['dir']['Out']
-    model_save_dir = os.path.join(output_dir, 'model')
-    if not os.path.isdir(model_save_dir):
-        os.mkdir(model_save_dir)
-    model_run.model_train_inv(model_inv, x, y, loss_fun, n_epoch=opt_train['nEpoch'],
+    model_run.model_train_inv(model_inv, xqch, xct, qt, loss_fun, n_epoch=opt_train['nEpoch'],
                               mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
                               save_folder=output_dir)
