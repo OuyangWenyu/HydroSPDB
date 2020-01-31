@@ -9,6 +9,60 @@ from . import rnn
 from torch.utils.tensorboard import SummaryWriter
 
 
+def model_test_for_lstm_without_1stlinear(model, x, c, *, file_path, batch_size=None):
+    if type(x) is tuple or type(x) is list:
+        x, z = x
+    else:
+        z = None
+    ngrid, nt, nx = x.shape
+    nc = c.shape[-1]
+    ny = model.ny
+    if batch_size is None:
+        batch_size = ngrid
+    if torch.cuda.is_available():
+        model = model.cuda()
+
+    model.train(mode=False)
+    if hasattr(model, 'ctRm'):
+        if model.ctRm is True:
+            nt = nt - model.ct
+    # y_p = torch.zeros([nt, ngrid, ny])
+    i_s = np.arange(0, ngrid, batch_size)
+    i_e = np.append(i_s[1:], ngrid)
+
+    # deal with file name to save
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    with open(file_path, 'a') as f:
+        # forward for each batch
+        for i in range(0, len(i_s)):
+            print('batch {}'.format(i))
+            x_temp = x[i_s[i]:i_e[i], :, :]
+            c_temp = np.repeat(
+                np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
+            x_test = torch.from_numpy(
+                np.swapaxes(np.concatenate([x_temp, c_temp], 2), 1, 0)).float()
+            if torch.cuda.is_available():
+                x_test = x_test.cuda()
+            if z is not None:
+                z_temp = z[i_s[i]:i_e[i], :, :]
+                z_test = torch.from_numpy(np.swapaxes(z_temp, 1, 0)).float()
+                if torch.cuda.is_available():
+                    z_test = z_test.cuda()
+            y_p = model(x_test)
+            y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
+
+            # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
+            pd.DataFrame(y_out[:, :, 0]).to_csv(f, header=False, index=False)
+
+            model.zero_grad()
+            torch.cuda.empty_cache()
+
+        f.close()
+    y_out = torch.from_numpy(y_out)
+    return y_out
+
+
 def model_train_for_lstm_without_1stlinear(model, x, y, c, loss_fun, *, n_epoch=500, mini_batch=[100, 30],
                                            save_epoch=100, save_folder=None, mode='seq2seq'):
     batch_size, rho = mini_batch
@@ -152,14 +206,10 @@ def model_train(model,
     if c is not None:
         nx = nx + c.shape[-1]
     # batch_size * rho must be bigger than ngrid * nt, if not, the value logged will be negative  that is wrong
-    n_iter_ep = int(
-        np.ceil(np.log(0.01) / np.log(1 - batch_size * rho / ngrid / nt)))
+    n_iter_ep = int(np.ceil(np.log(0.01) / np.log(1 - batch_size * rho / ngrid / nt)))
     if hasattr(model, 'ctRm'):
         if model.ctRm is True:
-            n_iter_ep = int(
-                np.ceil(
-                    np.log(0.01) / np.log(1 - batch_size *
-                                          (rho - model.ct) / ngrid / nt)))
+            n_iter_ep = int(np.ceil(np.log(0.01) / np.log(1 - batch_size * (rho - model.ct) / ngrid / nt)))
 
     if torch.cuda.is_available():
         loss_fun = loss_fun.cuda()
@@ -357,18 +407,17 @@ def random_subset(x, y, dim_subset):
 def random_index(ngrid, nt, dim_subset):
     batch_size, rho = dim_subset
     i_grid = np.random.randint(0, ngrid, [batch_size])
-    if nt <= rho:
-        i_t = np.random.randint(0, 1, [batch_size])
-    else:
-        i_t = np.random.randint(0, nt - rho, [batch_size])
+    i_t = np.random.randint(0, nt - rho, [batch_size])
     return i_grid, i_t
 
 
 def select_subset(x, i_grid, i_t, rho, *, c=None, tuple_out=False):
     nx = x.shape[-1]
+    nt = x.shape[1]
     if x.shape[0] == len(i_grid):  # hack
         i_grid = np.arange(0, len(i_grid))  # hack
-        i_t.fill(0)
+        if nt <= rho:
+            i_t.fill(0)
     if i_t is not None:
         batch_size = i_grid.shape[0]
         x_tensor = torch.zeros([rho, batch_size, nx], requires_grad=False)
@@ -376,12 +425,14 @@ def select_subset(x, i_grid, i_t, rho, *, c=None, tuple_out=False):
             temp = x[i_grid[k]:i_grid[k] + 1, np.arange(i_t[k], i_t[k] + rho), :]
             x_tensor[:, k:k + 1, :] = torch.from_numpy(np.swapaxes(temp, 1, 0))
     else:
-        x_tensor = torch.from_numpy(np.swapaxes(x[i_grid, :, :], 1, 0)).float()
-        rho = x_tensor.shape[1]
+        if len(x.shape) == 2:
+            x_tensor = torch.from_numpy(x[i_grid, :]).float()
+        else:
+            x_tensor = torch.from_numpy(np.swapaxes(x[i_grid, :, :], 1, 0)).float()
+            rho = x_tensor.shape[0]
     if c is not None:
         nc = c.shape[-1]
-        temp = np.repeat(
-            np.reshape(c[i_grid, :], [batch_size, 1, nc]), rho, axis=1)
+        temp = np.repeat(np.reshape(c[i_grid, :], [batch_size, 1, nc]), rho, axis=1)
         c_tensor = torch.from_numpy(np.swapaxes(temp, 1, 0)).float()
         if tuple_out:
             if torch.cuda.is_available():
@@ -395,3 +446,51 @@ def select_subset(x, i_grid, i_t, rho, *, c=None, tuple_out=False):
     if torch.cuda.is_available() and type(out) is not tuple:
         out = out.cuda()
     return out
+
+
+def model_train_inv(model, x, y, lossFun, *, n_epoch=500, mini_batch=[100, 30], save_epoch=100, save_folder=None):
+    batchSize, rho = mini_batch
+    # x- input; z - additional input; y - target; c - constant input
+    if type(x) is tuple or type(x) is list:
+        x, z = x
+    ngrid, nt, nx = x.shape
+    nIterEp = int(
+        np.ceil(np.log(0.01) / np.log(1 - batchSize * rho / ngrid / nt)))
+
+    if torch.cuda.is_available():
+        lossFun = lossFun.cuda()
+        model = model.cuda()
+
+    optim = torch.optim.Adadelta(model.parameters())
+    model.zero_grad()
+    if save_folder is not None:
+        runFile = os.path.join(save_folder, 'run.csv')
+        rf = open(runFile, 'w+')
+    for iEpoch in range(1, n_epoch + 1):
+        lossEp = 0
+        t0 = time.time()
+        for iIter in range(0, nIterEp):
+            # training iterations
+            iGrid, iT = random_index(ngrid, nt, [batchSize, rho])
+            xTrain = select_subset(x, iGrid, iT, rho, c=None, tuple_out=True)
+            yTrain = select_subset(y, iGrid, iT, rho)
+            yP, Param_Inv = model(xTrain)  # will also send in the y for inversion generator
+            loss = lossFun(yP, yTrain)
+            loss.backward()
+            optim.step()
+            model.zero_grad()
+            lossEp = lossEp + loss.item()
+        # print loss
+        lossEp = lossEp / nIterEp
+        logStr = 'Epoch {} Loss {:.3f} time {:.2f}'.format(iEpoch, lossEp, time.time() - t0)
+        print(logStr)
+        # save model and loss
+        if save_folder is not None:
+            rf.write(logStr + '\n')
+            if iEpoch % save_epoch == 0:
+                # save model
+                modelFile = os.path.join(save_folder, 'model_Ep' + str(iEpoch) + '.pt')
+                torch.save(model, modelFile)
+    if save_folder is not None:
+        rf.close()
+    return model

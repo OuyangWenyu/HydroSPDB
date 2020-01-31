@@ -7,10 +7,55 @@ from data import DataConfig, wrap_master
 
 
 class SimNatureFlowConfig(DataConfig):
-    def __init__(self, config_file):
+    def __init__(self, config_file, subdir=None):
         super().__init__(config_file)
         opt_data, opt_train, opt_model, opt_loss = self.init_model_param()
         self.model_dict = wrap_master(self.data_path, opt_data, opt_model, opt_loss, opt_train)
+        if subdir:
+            self.data_path["Out"] = os.path.join(self.data_path["Out"], subdir)
+            self.data_path["Temp"] = os.path.join(self.data_path["Temp"], subdir)
+            if not os.path.isdir(self.data_path["Out"]):
+                os.makedirs(self.data_path["Out"])
+            if not os.path.isdir(self.data_path["Temp"]):
+                os.makedirs(self.data_path["Temp"])
+
+    def init_model_param(self):
+        config_file = self.config_file
+        cfg = ConfigParser()
+        cfg.read(config_file)
+        section = 'model'
+        options = cfg.options(section)
+        # train and test time range
+        t_range_train = eval(cfg.get(section, options[0]))
+        t_range_test = eval(cfg.get(section, options[1]))
+        # data processing parameter
+        do_norm = eval(cfg.get(section, options[2]))
+        rm_nan = eval(cfg.get(section, options[3]))
+        da_obs = eval(cfg.get(section, options[4]))
+        opt_data = collections.OrderedDict(tRangeTrain=t_range_train, tRangeTest=t_range_test, doNorm=do_norm,
+                                           rmNan=rm_nan, daObs=da_obs)
+
+        # model parameters. 首先读取几个训练使用的基本模型参数，主要是epoch和batch
+        mini_batch = eval(cfg.get(section, options[5]))
+        n_epoch = eval(cfg.get(section, options[6]))
+        save_epoch = eval(cfg.get(section, options[7]))
+        opt_train = collections.OrderedDict(miniBatch=mini_batch, nEpoch=n_epoch, saveEpoch=save_epoch)
+
+        # 接着是模型输入输出的相关参数。根据opt_data判断输入输出变量个数，确定模型基本结构
+        model_name = cfg.get(section, options[8])
+        # 变量名不要修改!!!!!!!!!!!!!!!!!!!!!!!!!!，因为后面eval执行会用到varT和varC这两个变量名。 除非修改配置文件
+        hidden_size = eval(cfg.get(section, options[9]))
+        do_relu = eval(cfg.get(section, options[10]))
+        seq_length = eval(cfg.get(section, options[11]))
+        opt_model = collections.OrderedDict(name=model_name, hiddenSize=hidden_size, doReLU=do_relu,
+                                            seqLength=seq_length)
+
+        # 最后是loss的配置
+        loss_name = cfg.get(section, options[12])
+        prior = cfg.get(section, options[13])
+        opt_loss = collections.OrderedDict(name=loss_name, prior=prior)
+
+        return opt_data, opt_train, opt_model, opt_loss
 
     def init_data_param(self):
         """read camels or gages dataset configuration"""
@@ -29,20 +74,19 @@ class SimNatureFlowConfig(DataConfig):
         gage_id_of_ref_screen = eval(cfg.get(section, options[5]))
         gage_id_of_non_ref_screen = eval(cfg.get(section, options[6]))
 
-        sim_dir = cfg.get(section, options[7])
-        sim_source_data_file = cfg.get(section, options[8])
-        sim_data_flow_file = cfg.get(section, options[9])
-        sim_data_forcing_file = cfg.get(section, options[10])
-        sim_data_attr_file = cfg.get(section, options[11])
-        sim_f_dict_file = cfg.get(section, options[12])
-        sim_var_dict_file = cfg.get(section, options[13])
-        sim_t_s_dict_file = cfg.get(section, options[14])
-        sim_stat_dict_file = cfg.get(section, options[15])
+        sim_source_data_file = cfg.get(section, options[7])
+        sim_data_flow_file = cfg.get(section, options[8])
+        sim_data_forcing_file = cfg.get(section, options[9])
+        sim_data_attr_file = cfg.get(section, options[10])
+        sim_f_dict_file = cfg.get(section, options[11])
+        sim_var_dict_file = cfg.get(section, options[12])
+        sim_t_s_dict_file = cfg.get(section, options[13])
+        sim_stat_dict_file = cfg.get(section, options[14])
 
         opt_data = collections.OrderedDict(streamflowUrl=streamflow_url, tRangeAll=t_range_all, refRegions=ref_regions,
                                            nonrefRegions=nonref_regions, streamflowDir=streamflow_dir,
                                            gageIdOfRefScreen=gage_id_of_ref_screen,
-                                           gageIdOfNonRefScreen=gage_id_of_non_ref_screen, sim_dir=sim_dir,
+                                           gageIdOfNonRefScreen=gage_id_of_non_ref_screen,
                                            sim_source_data_file=sim_source_data_file,
                                            sim_data_flow_file=sim_data_flow_file,
                                            sim_data_forcing_file=sim_data_forcing_file,
@@ -54,22 +98,10 @@ class SimNatureFlowConfig(DataConfig):
 
     def read_data_config(self):
         dir_db = self.data_path.get("DB")
+        dir_out = self.data_path.get("Out")
+        dir_temp = self.data_path.get("Temp")
 
         data_params = self.init_data_param()
-
-        # except for raw data, others are all in "simulate" subdir
-        dir_out = self.data_path.get("Out")
-        dir_out = os.path.join(dir_out, data_params["sim_dir"])
-        if not os.path.isdir(dir_out):
-            os.mkdir(dir_out)
-        dir_temp = self.data_path.get("Temp")
-        dir_temp = os.path.join(dir_temp, data_params["sim_dir"])
-        if not os.path.isdir(dir_temp):
-            os.mkdir(dir_temp)
-
-        # update model dict
-        self.model_dict['dir']['Out'] = dir_out
-        self.model_dict['dir']['Temp'] = dir_temp
 
         # 径流数据配置
         flow_dir = os.path.join(dir_db, data_params.get("streamflowDir"))

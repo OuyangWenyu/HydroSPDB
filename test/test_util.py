@@ -2,6 +2,7 @@ import os
 import unittest
 import numpy as np
 import pandas as pd
+import torch
 
 from utils.dataset_format import trans_daymet_forcing_file_to_camels, subset_of_dict
 from utils.hydro_time import t_range_years, t_range_days, get_year
@@ -138,6 +139,15 @@ class MyTestCase(unittest.TestCase):
     #     output_dir = ''
     #     result = pd.read_csv(output_dir)
     #     self.assertEqual(trans_daymet_forcing_file_to_camels(daymet_dir, output_dir), result)
+    def test_gpu(self):
+        # os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cuda is TITAN
+        os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # cuda is geforce 0
+        # os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # cuda is geforce 2
+        x = torch.tensor([1., 2.]).cuda()
+        # x.device is device(type='cuda', index=0)
+        y = torch.tensor([1., 2.]).cuda()
+        print(x)
+        print(y)
 
 
 if __name__ == '__main__':

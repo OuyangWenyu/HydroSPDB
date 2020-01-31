@@ -4,6 +4,7 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from data import GagesSource, DataModel
 from explore import trans_norm
+from utils.dataset_format import subset_of_dict
 
 
 class GagesSourceDataset(GagesSource):
@@ -35,19 +36,7 @@ class GagesSourceDataset(GagesSource):
         data = np.expand_dims(data_flow, axis=2)
         stat_dict = gages_model_data.stat_dict
         data = trans_norm(data, 'usgsFlow', stat_dict, to_norm=True)
-        # cut the first rho data to match generated flow time series
-        rho = self.data_config.model_dict["train"]["miniBatch"][1]
-        data_chosen = data[:, rho - 1:, :]
-        nx = data_chosen.shape[0]
-        ny_per_nx = data_chosen.shape[1] - rho + 1
-        x_tensor = torch.zeros([nx * ny_per_nx, rho, 1], requires_grad=False)
-        for i in range(nx):
-            per_x_np = np.zeros([ny_per_nx, rho, 1])
-            for j in range(ny_per_nx):
-                per_x_np[j, :, :] = data_chosen[i, j:j + rho, :]
-            x_tensor[(i * ny_per_nx):((i + 1) * ny_per_nx), :, :] = torch.from_numpy(per_x_np)
-        print("outflow ready!")
-        return x_tensor
+        return data
 
 
 class GagesInputDataset(Dataset):
@@ -68,73 +57,25 @@ class GagesInputDataset(Dataset):
         return len(self.data_input)
 
 
-class GagesInvDataset(Dataset):
-    """Dataset for inv model"""
+class GagesInvDataModel(object):
+    """DataModel for inv model"""
 
     def __init__(self, data_model1, data_model2):
-        self.data_input = self.prepare_input_inv(data_model1, data_model2)
-        self.data_target = self.prepare_output(data_model2)
+        self.model_dict = data_model2.data_source.data_config.model_dict
+        all_data = self.prepare_input(data_model1, data_model2)
+        input_keys = ['xh', 'ch', 'qh', 'xt', 'ct']
+        output_keys = ['qt']
+        self.data_input = subset_of_dict(all_data, input_keys)
+        self.data_target = subset_of_dict(all_data, output_keys)
 
-    def __getitem__(self, index):
-        x = self.data_input[index]
-        y = self.data_target[index]
-        return x, y
-
-    def __len__(self):
-        return len(self.data_input)
-
-    def prepare_input_inv(self, data_model1, data_model2):
+    def prepare_input(self, data_model1, data_model2):
         """prepare input for lstm-inv"""
         print("prepare input")
-        return []
+        model_dict1 = data_model1.data_source.data_config.model_dict
+        xh, qh, ch = data_model1.load_data(model_dict1)
+        model_dict2 = data_model2.data_source.data_config.model_dict
+        xt, qt, ct = data_model2.load_data(model_dict2)
+        return {'xh': xh, 'ch': ch, 'qh': qh, 'xt': xt, 'ct': ct, 'qt': qt}
 
-    def prepare_output(self, data_model):
-        print("prepare target")
-        return []
-
-
-def collate_fn_inv(data):
-    """
-    Args:
-        data: list of tuple (src_seq, trg_seq).
-            - src_seq: torch tensor of shape
-            - trg_seq: torch tensor of shape
-    Returns:
-        src_seqs: torch tensor of shape (time_seq_length ,batch_size, one_unit_length).
-        trg_seqs: torch tensor of shape (time_seq_length ,batch_size, one_unit_length).
-    """
-
-    def merge(sequences):
-        padded_seqs = torch.zeros(sequences[0].shape[0], len(sequences), sequences[0].shape[1])
-        for i, seq in enumerate(sequences):
-            padded_seqs[:, i, :] = seq
-        return padded_seqs
-
-    # seperate source and target sequences
-    src_seqs, trg_seqs = zip(*data)
-
-    # transform sequences (from 2D tensor to 3D tensor)
-    src_seqs = merge(src_seqs)
-    trg_seqs = merge(trg_seqs)
-    return src_seqs, trg_seqs
-
-
-def get_loader_inv(dataset, batch_size=100, shuffle=False, num_workers=0):
-    """Returns data loader for custom dataset.
-    Args:
-        dataset: dataset
-        batch_size: mini-batch size.
-        shuffle: is shuffle?
-        num_workers: num of cpu core
-    Returns:
-        data_loader: data loader for custom dataset.
-    """
-    # data loader for custome dataset
-    # this will return (src_seqs, src_lengths, trg_seqs, trg_lengths) for each iteration
-    # please see collate_fn for details
-    if num_workers < 1:
-        data_loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn_inv)
-    else:
-        data_loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn_inv,
-                                 num_workers=num_workers)
-    return data_loader
+    def load_data(self):
+        return self.data_input, self.data_target

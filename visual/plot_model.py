@@ -5,11 +5,11 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-from visual.plot_stat import plot_ts, plot_boxs
+from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes
 
 
 def plot_box_inds(indicators):
-    """绘制观测值和预测值比较的时间序列图"""
+    """plot boxplots in one coordination"""
     data = pd.DataFrame(indicators)
     # 将数据转换为tidy data格式，首先，增加一列名称列，然后剩下的所有值重组到var_name和value_name两列中
     indict_name = "indicator"
@@ -18,7 +18,15 @@ def plot_box_inds(indicators):
     data_t = pd.concat([indicts, data_t], axis=1)
     formatted_data = pd.melt(data_t, [indict_name])
     formatted_data = formatted_data.sort_values(by=[indict_name])
-    plot_boxs(formatted_data, x_name=indict_name, y_name='value')
+    box_fig = plot_boxs(formatted_data, x_name=indict_name, y_name='value')
+    return box_fig
+
+
+def plot_boxes_inds(indicators):
+    """plot boxplots in different coordination"""
+    data = pd.DataFrame(indicators)
+    box_fig = plot_diff_boxes(data)
+    return box_fig
 
 
 def plot_ts_obs_pred(obs, pred, sites, t_range, num):
@@ -51,4 +59,5 @@ def plot_ts_obs_pred(obs, pred, sites, t_range, num):
     pred_tag = pd.DataFrame({tag_column: np.full([pred_format.shape[0]], tag_pred)})
     pred_formatted = pd.concat([pred_tag, pred_format], axis=1)
     tidy_data = pd.concat([obs_formatted, pred_formatted])
-    plot_ts(tidy_data, sites_column, tag_column, time_column, flow_column)
+    ts_fig = plot_ts(tidy_data, sites_column, tag_column, time_column, flow_column)
+    return ts_fig

@@ -6,6 +6,7 @@ from explore.stat import statError, statError1d
 from utils import unserialize_numpy, unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual import plot_box_inds, plot_ts_obs_pred
+from visual.plot_model import plot_boxes_inds
 
 
 def test_stat():
@@ -75,10 +76,9 @@ class MyTestCase(unittest.TestCase):
     def test_plot_box(self):
         """测试可视化代码"""
         # plot box，使用seaborn库
-        # keys = ["Bias", "RMSE"]
-        keys = ["NSE"]
+        keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(self.inds, keys)
-        plot_box_inds(inds_test)
+        plot_boxes_inds(inds_test)
 
     def test_plot_ts(self):
         """测试可视化代码"""

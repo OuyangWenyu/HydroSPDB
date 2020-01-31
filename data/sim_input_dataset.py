@@ -1,5 +1,8 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
+import numpy as np
+
+from explore import trans_norm
 
 
 class SimInputDataset(Dataset):
@@ -68,3 +71,45 @@ def get_loader(dataset, batch_size=100, shuffle=False, num_workers=0):
         data_loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=collate_fn,
                                  num_workers=num_workers)
     return data_loader
+
+
+class SimNatureFlowInput(object):
+    def __init__(self, data_source):
+        self.data_source = data_source
+        self.data_flow = data_source.read_natural_inflow()
+        self.data_target = data_source.read_obs_outflow()
+
+    def get_data_inflow(self, rm_nan=True):
+        """径流数据读取及归一化处理，会处理成三维，最后一维长度为1，表示径流变量"""
+        data = self.data_flow
+        if rm_nan is True:
+            data[np.where(np.isnan(data))] = 0
+        # transform x to 3d, the final dim's length is the seq_length
+        seq_length = self.data_source.data_config.model_dict["model"]["seqLength"]
+        data_inflow = np.zeros([data.shape[0], data.shape[1] - seq_length + 1, seq_length])
+        for i in range(data_inflow.shape[1]):
+            data_inflow[:, i, :] = data[:, i:i + seq_length]
+        return data_inflow
+
+    def get_data_outflow(self, rm_nan=True, to_norm=True):
+        """径流数据读取及归一化处理，会处理成三维，最后一维长度为1，表示径流变量, cut to size same as inflow's"""
+        stat_dict = self.data_source.sim_model_data.stat_dict
+        data = self.data_target
+        # 为了调用trans_norm函数进行归一化，这里先把径流变为三维数据
+        seq_length = self.data_source.data_config.model_dict["model"]["seqLength"]
+        data_temp = data[:, seq_length - 1:]
+        data_outflow = np.expand_dims(data_temp, axis=2)
+        data_outflow = trans_norm(data_outflow, 'usgsFlow', stat_dict, to_norm=to_norm)
+        if rm_nan is True:
+            data_outflow[np.where(np.isnan(data_outflow))] = 0
+        return data_outflow
+
+    def load_data(self, model_dict):
+        """transform x to 3d, the final dim's length is the seq_length"""
+        opt_data = model_dict["data"]
+        rm_nan_x = opt_data['rmNan'][0]
+        rm_nan_y = opt_data['rmNan'][1]
+        to_norm_y = opt_data['doNorm'][1]
+        x = self.get_data_inflow(rm_nan=rm_nan_x)
+        y = self.get_data_outflow(rm_nan=rm_nan_y, to_norm=to_norm_y)
+        return x, y
