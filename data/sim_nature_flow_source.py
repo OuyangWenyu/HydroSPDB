@@ -21,8 +21,8 @@ class SimNatureFlowSource(object):
                 sim_config_data = GagesConfig.set_subdir(sim_config_file, subdir)
             else:
                 sim_config_data = GagesConfig(sim_config_file)
-            source_data = GagesSource(sim_config_data, t_range)
-            self.sim_model_data = DataModel(source_data)
+            sim_source_data = GagesSource(sim_config_data, t_range)
+            self.sim_model_data = DataModel(sim_source_data)
         else:
             self.all_configs = args[0]
             self.sim_model_data = args[1]

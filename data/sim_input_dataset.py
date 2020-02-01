@@ -76,6 +76,7 @@ def get_loader(dataset, batch_size=100, shuffle=False, num_workers=0):
 class SimNatureFlowInput(object):
     def __init__(self, data_source):
         self.data_source = data_source
+
         self.data_flow = data_source.read_natural_inflow()
         self.data_target = data_source.read_obs_outflow()
 
