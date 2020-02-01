@@ -43,8 +43,11 @@ class SimNatureFlowSource(object):
         epoch = sim_config_data.model_dict["train"]["nEpoch"]
         model = model_run.model_load(out_folder, epoch, model_name='model')
         # run the model
-        all_configs = self.all_configs
-        file_path = all_configs["natural_flow_file"]
+        model_dict = self.data_config.model_dict
+        t_range = self.t_range
+        epoch = model_dict["train"]["nEpoch"]
+        file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(epoch)])
+        file_path = os.path.join(out_folder, file_name) + '.csv'
         model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
         # read natural_flow from file
         np_natural_flow = pd.read_csv(file_path, dtype=np.float, header=None).values
@@ -173,8 +176,11 @@ class SimNatureFlowSource(object):
         epoch = sim_config_data.model_dict["train"]["nEpoch"]
         model = model_run.model_load(out_folder, epoch, model_name='model')
         # run the model
-        all_configs = self.all_configs
-        file_path = all_configs["natural_flow_file"]
+        model_dict = self.data_config.model_dict
+        t_range = self.t_range
+        epoch = model_dict["train"]["nEpoch"]
+        file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(epoch)])
+        file_path = os.path.join(out_folder, file_name) + '.csv'
         model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
         # read natural_flow from file
         np_natural_flow = pd.read_csv(file_path, dtype=np.float, header=None).values

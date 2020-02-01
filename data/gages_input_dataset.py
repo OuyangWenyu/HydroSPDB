@@ -70,8 +70,19 @@ class GagesInvDataModel(object):
         self.data_target = subset_of_dict(all_data, output_keys)
 
     def prepare_input(self, data_model1, data_model2):
-        """prepare input for lstm-inv"""
+        """prepare input for lstm-inv, gages_id may be different, fix it here"""
         print("prepare input")
+        sites_id1 = data_model1.t_s_dict['sites_id']
+        sites_id2 = data_model2.t_s_dict['sites_id']
+        sites_id, ind1, ind2 = np.intersect1d(sites_id1, sites_id2, return_indices=True)
+        data_model1.data_attr = data_model1.data_attr[ind1, :]
+        data_model1.data_flow = data_model1.data_flow[ind1, :]
+        data_model1.data_forcing = data_model1.data_forcing[ind1, :]
+        data_model2.data_attr = data_model2.data_attr[ind2, :]
+        data_model2.data_flow = data_model2.data_flow[ind2, :]
+        data_model2.data_forcing = data_model2.data_forcing[ind2, :]
+        data_model1.t_s_dict['sites_id'] = sites_id
+        data_model2.t_s_dict['sites_id'] = sites_id
         model_dict1 = data_model1.data_source.data_config.model_dict
         xh, qh, ch = data_model1.load_data(model_dict1)
         model_dict2 = data_model2.data_source.data_config.model_dict

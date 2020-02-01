@@ -297,7 +297,8 @@ def model_test(model, x, c, *, file_path, batch_size=None):
     else:
         z = None
     ngrid, nt, nx = x.shape
-    nc = c.shape[-1]
+    if c is not None:
+        nc = c.shape[-1]
     ny = model.ny
     if batch_size is None:
         batch_size = ngrid
@@ -320,10 +321,11 @@ def model_test(model, x, c, *, file_path, batch_size=None):
         for i in range(0, len(i_s)):
             print('batch {}'.format(i))
             x_temp = x[i_s[i]:i_e[i], :, :]
-            c_temp = np.repeat(
-                np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
-            x_test = torch.from_numpy(
-                np.swapaxes(np.concatenate([x_temp, c_temp], 2), 1, 0)).float()
+            if c is not None:
+                c_temp = np.repeat(np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
+                x_test = torch.from_numpy(np.swapaxes(np.concatenate([x_temp, c_temp], 2), 1, 0)).float()
+            else:
+                x_test = torch.from_numpy(np.swapaxes(x_temp, 1, 0)).float()
             if torch.cuda.is_available():
                 x_test = x_test.cuda()
             if z is not None:
@@ -467,7 +469,7 @@ def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[1
         lossEp = 0
         t0 = time.time()
         for iIter in range(0, nIterEp):
-            # training iterations # TODO: iGrid, iT maybe not same between xhTrain and  (xtTrain,yTrain)
+            # training iterations # TODO: iT maybe not same between xhTrain and  (xtTrain,yTrain)
             iGrid, iT = random_index(ngrid, nt, [batchSize, rho])
             xhTrain = select_subset(xqch, iGrid, iT, rho)
             xtTrain = select_subset(xct, iGrid, iT, rho)

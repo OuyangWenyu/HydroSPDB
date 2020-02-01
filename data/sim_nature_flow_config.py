@@ -108,11 +108,6 @@ class SimNatureFlowConfig(DataConfig):
         flow_screen_gage_id_ref_screen = data_params.get("gageIdOfRefScreen")
         flow_screen_gage_id_non_ref_screen = data_params.get("gageIdOfNonRefScreen")
         # config of input
-        model_dict = self.model_dict
-        t_range = model_dict["data"]["tRangeTrain"]
-        epoch = model_dict["train"]["nEpoch"]
-        file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(epoch)])
-        natural_flow_file = os.path.join(dir_out, file_name) + '.csv'
         sim_source_data_file = os.path.join(dir_temp, data_params["sim_source_data_file"])
         sim_data_flow_file = os.path.join(dir_temp, data_params["sim_data_flow_file"])
         sim_data_forcing_file = os.path.join(dir_temp, data_params["sim_data_forcing_file"])
@@ -125,7 +120,7 @@ class SimNatureFlowConfig(DataConfig):
         return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
                                        flow_dir=flow_dir, flow_screen_gage_id_ref_screen=flow_screen_gage_id_ref_screen,
                                        flow_screen_gage_id_non_ref_screen=flow_screen_gage_id_non_ref_screen,
-                                       natural_flow_file=natural_flow_file, sim_source_data_file=sim_source_data_file,
+                                       sim_source_data_file=sim_source_data_file,
                                        sim_data_flow_file=sim_data_flow_file,
                                        sim_data_forcing_file=sim_data_forcing_file,
                                        sim_data_attr_file=sim_data_attr_file, sim_f_dict_file=sim_f_dict_file,
