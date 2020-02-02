@@ -275,14 +275,15 @@ def test_natural_flow(dataset):
     return pred, obs
 
 
-def master_train_natural_flow(data_model):
+def master_train_natural_flow(model_input):
+    data_model = model_input.data_source.model_data
     model_dict = data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_train = model_dict['train']
 
     # data
-    x, y = data_model.load_data(model_dict)
-    nx = x.shape[-1]
+    x, y, c = model_input.load_data(model_dict)
+    nx = x.shape[-1] + c.shape[-1]
     ny = y.shape[-1]
     opt_model['nx'] = nx
     opt_model['ny'] = ny
@@ -296,21 +297,22 @@ def master_train_natural_flow(data_model):
     out = os.path.join(model_dict['dir']['Out'], "model")
     if not os.path.isdir(out):
         os.mkdir(out)
-    model_run.model_train(model, x, y, None, loss_fun, n_epoch=opt_train['nEpoch'],
+    model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
                           mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'], save_folder=out)
 
 
-def master_test_natural_flow(data_model):
+def master_test_natural_flow(model_input):
     """:parameter
         data_model：测试使用的数据
         model_dict：测试时的模型配置
     """
+    data_model = model_input.data_source.model_data
     model_dict = data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
     # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
 
-    x, obs = data_model.load_data(model_dict)
+    x, obs, c = model_input.load_data(model_dict)
 
     # generate file names and run model
     out = os.path.join(model_dict['dir']['Out'], "model")
@@ -325,7 +327,7 @@ def master_test_natural_flow(data_model):
     if re_test:
         print('Runing new results')
         model = model_run.model_load(out, epoch)
-        model_run.model_test(model, x, None, file_path=file_path, batch_size=batch_size)
+        model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
     else:
         print('Loaded previous results')
 
@@ -335,7 +337,7 @@ def master_test_natural_flow(data_model):
     # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
     pred = np.expand_dims(data_pred, axis=2)
     if opt_data['doNorm'][1] is True:
-        stat_dict = data_model.data_source.sim_model_data.stat_dict
+        stat_dict = data_model.stat_dict
         # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)

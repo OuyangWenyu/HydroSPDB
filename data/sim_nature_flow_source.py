@@ -6,26 +6,157 @@ import torch
 
 from data import GagesConfig, GagesSource, DataModel
 from explore import trans_norm
+from hydroDL import master_train
 from hydroDL.model import model_run
 from utils import serialize_numpy, serialize_pickle, serialize_json, unserialize_pickle, unserialize_json, \
     unserialize_numpy
 
 
 class SimNatureFlowSource(object):
-    def __init__(self, config_data, t_range, sim_config_file, subdir=None, *args):
-        self.data_config = config_data
+    def __init__(self, t_range, config_data, sim_config_file, subdir=None, *args):
         self.t_range = t_range
         if len(args) == 0:
-            self.all_configs = config_data.read_data_config()
             if subdir:
                 sim_config_data = GagesConfig.set_subdir(sim_config_file, subdir)
             else:
                 sim_config_data = GagesConfig(sim_config_file)
             sim_source_data = GagesSource(sim_config_data, t_range)
+            source_data = GagesSource(config_data, t_range)
             self.sim_model_data = DataModel(sim_source_data)
+            self.model_data = DataModel(source_data)
+
         else:
-            self.all_configs = args[0]
-            self.sim_model_data = args[1]
+            self.sim_model_data = args[0]
+            self.model_data = args[1]
+
+    def write_temp_source(self, is_test=False):
+        """wirte source object to some temp files"""
+
+        def save_datamodel(data_model, num_str, **kwargs):
+            dir_temp = os.path.join(data_model.data_source.data_config.data_path["Temp"], num_str)
+            if not os.path.isdir(dir_temp):
+                os.makedirs(dir_temp)
+            data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
+            stat_file = os.path.join(dir_temp, kwargs['stat_file_name'])
+            flow_file = os.path.join(dir_temp, kwargs['flow_file_name'])
+            forcing_file = os.path.join(dir_temp, kwargs['forcing_file_name'])
+            attr_file = os.path.join(dir_temp, kwargs['attr_file_name'])
+            f_dict_file = os.path.join(dir_temp, kwargs['f_dict_file_name'])
+            var_dict_file = os.path.join(dir_temp, kwargs['var_dict_file_name'])
+            t_s_dict_file = os.path.join(dir_temp, kwargs['t_s_dict_file_name'])
+            serialize_pickle(data_model.data_source, data_source_file)
+            serialize_json(data_model.stat_dict, stat_file)
+            serialize_numpy(data_model.data_flow, flow_file)
+            serialize_numpy(data_model.data_forcing, forcing_file)
+            serialize_numpy(data_model.data_attr, attr_file)
+            # dictFactorize.json is the explanation of value of categorical variables
+            serialize_json(data_model.f_dict, f_dict_file)
+            serialize_json(data_model.var_dict, var_dict_file)
+            serialize_json(data_model.t_s_dict, t_s_dict_file)
+
+        if is_test:
+            save_datamodel(self.sim_model_data, "1", data_source_file_name='test_data_source.txt',
+                           stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+                           forcing_file_name='test_forcing', attr_file_name='test_attr',
+                           f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+                           t_s_dict_file_name='test_dictTimeSpace.json')
+            save_datamodel(self.model_data, "2", data_source_file_name='test_data_source.txt',
+                           stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+                           forcing_file_name='test_forcing', attr_file_name='test_attr',
+                           f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+                           t_s_dict_file_name='test_dictTimeSpace.json')
+        else:
+            save_datamodel(self.sim_model_data, "1", data_source_file_name='data_source.txt',
+                           stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
+                           attr_file_name='attr', f_dict_file_name='dictFactorize.json',
+                           var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
+            save_datamodel(self.model_data, "2", data_source_file_name='data_source.txt',
+                           stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
+                           attr_file_name='attr', f_dict_file_name='dictFactorize.json',
+                           var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
+
+    @classmethod
+    def get_sim_nature_flow_source(cls, config_data, t_range, sim_config_file, subdir=None, is_test=False):
+        def load_datamodel(dir_temp_orgin, num_str, **kwargs):
+            dir_temp = os.path.join(dir_temp_orgin, num_str)
+            data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
+            stat_file = os.path.join(dir_temp, kwargs['stat_file_name'])
+            flow_npy_file = os.path.join(dir_temp, kwargs['flow_file_name'])
+            forcing_npy_file = os.path.join(dir_temp, kwargs['forcing_file_name'])
+            attr_npy_file = os.path.join(dir_temp, kwargs['attr_file_name'])
+            f_dict_file = os.path.join(dir_temp, kwargs['f_dict_file_name'])
+            var_dict_file = os.path.join(dir_temp, kwargs['var_dict_file_name'])
+            t_s_dict_file = os.path.join(dir_temp, kwargs['t_s_dict_file_name'])
+            source_data = unserialize_pickle(data_source_file)
+            # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
+            stat_dict = unserialize_json(stat_file)
+            data_flow = unserialize_numpy(flow_npy_file)
+            data_forcing = unserialize_numpy(forcing_npy_file)
+            data_attr = unserialize_numpy(attr_npy_file)
+            # dictFactorize.json is the explanation of value of categorical variables
+            var_dict = unserialize_json(var_dict_file)
+            f_dict = unserialize_json(f_dict_file)
+            t_s_dict = unserialize_json(t_s_dict_file)
+            data_model = DataModel(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
+                                   t_s_dict)
+            return data_model
+
+        temp_dir = config_data.data_path["Temp"]
+        if is_test:
+            sim_model_data = load_datamodel(temp_dir, "1", data_source_file_name='test_data_source.txt',
+                                            stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                            forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                            f_dict_file_name='test_dictFactorize.json',
+                                            var_dict_file_name='test_dictAttribute.json',
+                                            t_s_dict_file_name='test_dictTimeSpace.json')
+            model_data = load_datamodel(temp_dir, "2", data_source_file_name='test_data_source.txt',
+                                        stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                        forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                        f_dict_file_name='test_dictFactorize.json',
+                                        var_dict_file_name='test_dictAttribute.json',
+                                        t_s_dict_file_name='test_dictTimeSpace.json')
+        else:
+            sim_model_data = load_datamodel(temp_dir, "1", data_source_file_name='data_source.txt',
+                                            stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                            forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                            f_dict_file_name='dictFactorize.json',
+                                            var_dict_file_name='dictAttribute.json',
+                                            t_s_dict_file_name='dictTimeSpace.json')
+            model_data = load_datamodel(temp_dir, "2", data_source_file_name='data_source.txt',
+                                        stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                        forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                        f_dict_file_name='dictFactorize.json',
+                                        var_dict_file_name='dictAttribute.json',
+                                        t_s_dict_file_name='dictTimeSpace.json')
+
+        sim_nature_flow_source = cls(t_range, config_data, sim_config_file, subdir, sim_model_data, model_data)
+        return sim_nature_flow_source
+
+    def read_natural_inflow(self):
+        sim_model_data = self.sim_model_data
+        sim_config_data = sim_model_data.data_source.data_config
+        # read model
+        # firstly, check if the model used to generate natural flow has existed
+        out_folder = sim_config_data.data_path["Out"]
+        epoch = sim_config_data.model_dict["train"]["nEpoch"]
+        model_file = os.path.join(out_folder, 'model_Ep' + str(epoch) + '.pt')
+        if not os.path.isfile(model_file):
+            master_train(sim_model_data)
+        model = torch.load(model_file)
+        # run the model
+        batch_size = sim_config_data.model_dict["train"]["miniBatch"][0]
+        model_data = self.model_data
+        config_data = model_data.data_source.data_config
+        model_dict = config_data.model_dict
+        x, y, c = model_data.load_data(model_dict)
+        t_range = self.t_range
+        epoch = model_dict["train"]["nEpoch"]
+        file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(epoch)])
+        file_path = os.path.join(out_folder, file_name) + '.csv'
+        model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
+        # read natural_flow from file
+        np_natural_flow = pd.read_csv(file_path, dtype=np.float, header=None).values
+        return np_natural_flow
 
     def prepare_flow_data(self):
         """generate flow from model, reshape to a 3d array, and transform to tensor:
@@ -70,81 +201,6 @@ class SimNatureFlowSource(object):
         print("streamflow data Ready! ...")
         return x_tensor
 
-    def write_temp_source(self, is_test=False):
-        """wirte source object to some temp files"""
-        sim_source_data_file = self.all_configs["sim_source_data_file"]
-        sim_stat_dict_file = self.all_configs["sim_stat_dict_file"]
-        sim_data_flow_file = self.all_configs["sim_data_flow_file"]
-        sim_data_forcing_file = self.all_configs["sim_data_forcing_file"]
-        sim_data_attr_file = self.all_configs["sim_data_attr_file"]
-        # dictFactorize.json is the explanation of value of categorical variables
-        sim_f_dict_file = self.all_configs["sim_f_dict_file"]
-        sim_var_dict_file = self.all_configs["sim_var_dict_file"]
-        sim_t_s_dict_file = self.all_configs["sim_t_s_dict_file"]
-        if is_test:
-            prefix_str = 'test_'
-            temp_list = sim_source_data_file.split('/')
-            prefix_dir = '/'.join(temp_list[:-1])
-            sim_source_data_file = os.path.join(prefix_dir, prefix_str + sim_source_data_file.split('/')[-1])
-            sim_stat_dict_file = os.path.join(prefix_dir, prefix_str + sim_stat_dict_file.split('/')[-1])
-            sim_data_flow_file = os.path.join(prefix_dir, prefix_str + sim_data_flow_file.split('/')[-1])
-            sim_data_forcing_file = os.path.join(prefix_dir, prefix_str + sim_data_forcing_file.split('/')[-1])
-            sim_data_attr_file = os.path.join(prefix_dir, prefix_str + sim_data_attr_file.split('/')[-1])
-            # dictFactorize.json is the explanation of value of categorical variables
-            sim_f_dict_file = os.path.join(prefix_dir, prefix_str + sim_f_dict_file.split('/')[-1])
-            sim_var_dict_file = os.path.join(prefix_dir, prefix_str + sim_var_dict_file.split('/')[-1])
-            sim_t_s_dict_file = os.path.join(prefix_dir, prefix_str + sim_t_s_dict_file.split('/')[-1])
-
-        serialize_pickle(self.sim_model_data.data_source, sim_source_data_file)
-        serialize_json(self.sim_model_data.stat_dict, sim_stat_dict_file)
-        serialize_numpy(self.sim_model_data.data_flow, sim_data_flow_file)
-        serialize_numpy(self.sim_model_data.data_forcing, sim_data_forcing_file)
-        serialize_numpy(self.sim_model_data.data_attr, sim_data_attr_file)
-        # dictFactorize.json is the explanation of value of categorical variables
-        serialize_json(self.sim_model_data.f_dict, sim_f_dict_file)
-        serialize_json(self.sim_model_data.var_dict, sim_var_dict_file)
-        serialize_json(self.sim_model_data.t_s_dict, sim_t_s_dict_file)
-
-    @classmethod
-    def get_sim_nature_flow_source(cls, config_data, t_range, sim_config_file, subdir=None, is_test=False):
-        all_configs = config_data.read_data_config()
-        sim_source_data_file = all_configs["sim_source_data_file"]
-        sim_stat_dict_file = all_configs["sim_stat_dict_file"]
-        sim_data_flow_file = all_configs["sim_data_flow_file"]
-        sim_data_forcing_file = all_configs["sim_data_forcing_file"]
-        sim_data_attr_file = all_configs["sim_data_attr_file"]
-        # dictFactorize.json is the explanation of value of categorical variables
-        sim_f_dict_file = all_configs["sim_f_dict_file"]
-        sim_var_dict_file = all_configs["sim_var_dict_file"]
-        sim_t_s_dict_file = all_configs["sim_t_s_dict_file"]
-        if is_test:
-            prefix_str = 'test_'
-            temp_list = sim_source_data_file.split('/')
-            prefix_dir = '/'.join(temp_list[:-1])
-            sim_source_data_file = os.path.join(prefix_dir, prefix_str + sim_source_data_file.split('/')[-1])
-            sim_stat_dict_file = os.path.join(prefix_dir, prefix_str + sim_stat_dict_file.split('/')[-1])
-            sim_data_flow_file = os.path.join(prefix_dir, prefix_str + sim_data_flow_file.split('/')[-1])
-            sim_data_forcing_file = os.path.join(prefix_dir, prefix_str + sim_data_forcing_file.split('/')[-1])
-            sim_data_attr_file = os.path.join(prefix_dir, prefix_str + sim_data_attr_file.split('/')[-1])
-            # dictFactorize.json is the explanation of value of categorical variables
-            sim_f_dict_file = os.path.join(prefix_dir, prefix_str + sim_f_dict_file.split('/')[-1])
-            sim_var_dict_file = os.path.join(prefix_dir, prefix_str + sim_var_dict_file.split('/')[-1])
-            sim_t_s_dict_file = os.path.join(prefix_dir, prefix_str + sim_t_s_dict_file.split('/')[-1])
-        source_data = unserialize_pickle(sim_source_data_file)
-        # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
-        stat_dict = unserialize_json(sim_stat_dict_file)
-        data_flow = unserialize_numpy(sim_data_flow_file + ".npy")
-        data_forcing = unserialize_numpy(sim_data_forcing_file + ".npy")
-        data_attr = unserialize_numpy(sim_data_attr_file + ".npy")
-        # dictFactorize.json is the explanation of value of categorical variables
-        var_dict = unserialize_json(sim_var_dict_file)
-        f_dict = unserialize_json(sim_f_dict_file)
-        t_s_dict = unserialize_json(sim_t_s_dict_file)
-        sim_model_data = DataModel(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
-                                   t_s_dict)
-        sim_nature_flow_source = cls(config_data, t_range, sim_config_file, subdir, all_configs, sim_model_data)
-        return sim_nature_flow_source
-
     def read_outflow(self):
         """read streamflow data as observation data, transform array to tensor"""
         sim_model_data = self.sim_model_data
@@ -165,28 +221,3 @@ class SimNatureFlowSource(object):
             x_tensor[(i * ny_per_nx):((i + 1) * ny_per_nx), :, :] = torch.from_numpy(per_x_np)
         print("outflow ready!")
         return x_tensor
-
-    def read_natural_inflow(self):
-        sim_model_data = self.sim_model_data
-        sim_config_data = sim_model_data.data_source.data_config
-        batch_size = sim_config_data.model_dict["train"]["miniBatch"][0]
-        x, y, c = sim_model_data.load_data(sim_config_data.model_dict)
-        # read model
-        out_folder = self.data_config.data_path["Out"]
-        epoch = sim_config_data.model_dict["train"]["nEpoch"]
-        model = model_run.model_load(out_folder, epoch, model_name='model')
-        # run the model
-        model_dict = self.data_config.model_dict
-        t_range = self.t_range
-        epoch = model_dict["train"]["nEpoch"]
-        file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(epoch)])
-        file_path = os.path.join(out_folder, file_name) + '.csv'
-        model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
-        # read natural_flow from file
-        np_natural_flow = pd.read_csv(file_path, dtype=np.float, header=None).values
-        return np_natural_flow
-
-    def read_obs_outflow(self):
-        sim_model_data = self.sim_model_data
-        data_flow = sim_model_data.data_flow
-        return data_flow
