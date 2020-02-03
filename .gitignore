@@ -220,7 +220,6 @@ pip-selfcheck.json
 /example/output/
 /example/temp/
 /example/logs/
-/example/User/
 /data/kaggle.json
 /data/mycreds.txt
 /example/output/gages_temp/

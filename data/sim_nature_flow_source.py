@@ -12,7 +12,7 @@ from hydroDL.model import model_run
 
 
 class SimNatureFlowSource(object):
-    def __init__(self, t_range, config_data, sim_config_file, subdir=None, *args):
+    def __init__(self, t_range, config_data, sim_config_file, subdir=None, basin_area_screen=None, *args):
         self.t_range = t_range
         if len(args) == 0:
             if subdir:
@@ -20,7 +20,10 @@ class SimNatureFlowSource(object):
             else:
                 sim_config_data = GagesConfig(sim_config_file)
             sim_source_data = GagesSource(sim_config_data, t_range)
-            source_data = GagesSource(config_data, t_range)
+            if basin_area_screen:
+                source_data = GagesSource.choose_some_basins(config_data, t_range, basin_area_screen)
+            else:
+                source_data = GagesSource(config_data, t_range)
             self.sim_model_data = DataModel(sim_source_data)
             self.model_data = DataModel(source_data)
 
@@ -81,7 +84,7 @@ class SimNatureFlowSource(object):
                                         var_dict_file_name='dictAttribute.json',
                                         t_s_dict_file_name='dictTimeSpace.json')
 
-        sim_nature_flow_source = cls(t_range, config_data, sim_config_file, subdir, sim_model_data, model_data)
+        sim_nature_flow_source = cls(t_range, config_data, sim_config_file, subdir, None, sim_model_data, model_data)
         return sim_nature_flow_source
 
     def read_natural_inflow(self):
@@ -96,10 +99,10 @@ class SimNatureFlowSource(object):
             master_train(sim_model_data)
         model = torch.load(model_file)
         # run the model
-        batch_size = sim_config_data.model_dict["train"]["miniBatch"][0]
         model_data = self.model_data
         config_data = model_data.data_source.data_config
         model_dict = config_data.model_dict
+        batch_size = model_dict["train"]["miniBatch"][0]
         x, y, c = model_data.load_data(model_dict)
         t_range = self.t_range
         natural_epoch = model_dict["train"]["nEpoch"]

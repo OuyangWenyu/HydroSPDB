@@ -28,14 +28,20 @@ class MyTestCase(unittest.TestCase):
         # self.sim_config_file = os.path.join(config_dir, "simulate/config_natureflow_1_exp2.ini")
         # self.config_file = os.path.join(config_dir, "simulate/config_natureflow_2_exp2.ini")
         # self.subdir = "simulate/exp2"
-        self.sim_config_file = os.path.join(config_dir, "simulate/config_natureflow_1_exp3.ini")
-        self.config_file = os.path.join(config_dir, "simulate/config_natureflow_2_exp3.ini")
-        self.subdir = "simulate/exp3"
         # self.sim_config_file = os.path.join(config_dir, "simulate/config_natureflow_1_exp3.ini")
         # self.config_file = os.path.join(config_dir, "simulate/config_natureflow_2_exp3.ini")
+        # self.subdir = "simulate/exp3"
+        # self.sim_config_file = os.path.join(config_dir, "simulate/config_natureflow_1_exp4.ini")
+        # self.config_file = os.path.join(config_dir, "simulate/config_natureflow_2_exp4.ini")
         # self.subdir = "simulate/exp4"
+
+        self.sim_config_file = os.path.join(config_dir, "simulate/config_natureflow_1_exp5.ini")
+        self.config_file = os.path.join(config_dir, "simulate/config_natureflow_2_exp5.ini")
+        self.subdir = "simulate/exp5"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         add_model_param(self.config_data, "model", seqLength=7)
+        # choose some small basins, unit: SQKM
+        self.basin_area_screen = 100
 
     def test_sim_nature_flow_source(self):
         source_data = SimNatureFlowSource(self.config_data.model_dict["data"]["tRangeTrain"], self.config_data,
@@ -84,6 +90,16 @@ class MyTestCase(unittest.TestCase):
         inds_test = subset_of_dict(inds, keys)
         box_fig = plot_boxes_inds(inds_test)
         box_fig.savefig(os.path.join(self.config_data.data_path["Out"], "box_fig.png"))
+
+    def test_sim_nature_flow_source_smallres(self):
+        source_data = SimNatureFlowSource(self.config_data.model_dict["data"]["tRangeTrain"], self.config_data,
+                                          self.sim_config_file, self.subdir, self.basin_area_screen)
+        source_data.write_temp_source()
+
+    def test_sim_nature_flow_source_test_smallres(self):
+        source_data = SimNatureFlowSource(self.config_data.model_dict["data"]["tRangeTest"], self.config_data,
+                                          self.sim_config_file, self.subdir, self.basin_area_screen)
+        source_data.write_temp_source(is_test=True)
 
 
 if __name__ == '__main__':
