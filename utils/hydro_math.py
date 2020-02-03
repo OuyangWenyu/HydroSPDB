@@ -28,3 +28,10 @@ def interpNan1d(x, mode='linear'):
                     x0 = x[k]
 
     return x
+
+
+def concat_two_3darray(arr1, arr2):
+    arr3 = np.zeros([arr1.shape[0], arr1.shape[1], arr1.shape[2] + arr2.shape[2]])
+    for j in range(arr1.shape[0]):
+        arr3[j] = np.concatenate((arr1[j], arr2[j]), axis=1)
+    return arr3

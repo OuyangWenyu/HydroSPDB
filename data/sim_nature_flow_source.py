@@ -5,11 +5,10 @@ import numpy as np
 import torch
 
 from data import GagesConfig, GagesSource, DataModel
+from data.data_input import save_datamodel, load_datamodel
 from explore import trans_norm
 from hydroDL import master_train
 from hydroDL.model import model_run
-from utils import serialize_numpy, serialize_pickle, serialize_json, unserialize_pickle, unserialize_json, \
-    unserialize_numpy
 
 
 class SimNatureFlowSource(object):
@@ -31,29 +30,6 @@ class SimNatureFlowSource(object):
 
     def write_temp_source(self, is_test=False):
         """wirte source object to some temp files"""
-
-        def save_datamodel(data_model, num_str, **kwargs):
-            dir_temp = os.path.join(data_model.data_source.data_config.data_path["Temp"], num_str)
-            if not os.path.isdir(dir_temp):
-                os.makedirs(dir_temp)
-            data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
-            stat_file = os.path.join(dir_temp, kwargs['stat_file_name'])
-            flow_file = os.path.join(dir_temp, kwargs['flow_file_name'])
-            forcing_file = os.path.join(dir_temp, kwargs['forcing_file_name'])
-            attr_file = os.path.join(dir_temp, kwargs['attr_file_name'])
-            f_dict_file = os.path.join(dir_temp, kwargs['f_dict_file_name'])
-            var_dict_file = os.path.join(dir_temp, kwargs['var_dict_file_name'])
-            t_s_dict_file = os.path.join(dir_temp, kwargs['t_s_dict_file_name'])
-            serialize_pickle(data_model.data_source, data_source_file)
-            serialize_json(data_model.stat_dict, stat_file)
-            serialize_numpy(data_model.data_flow, flow_file)
-            serialize_numpy(data_model.data_forcing, forcing_file)
-            serialize_numpy(data_model.data_attr, attr_file)
-            # dictFactorize.json is the explanation of value of categorical variables
-            serialize_json(data_model.f_dict, f_dict_file)
-            serialize_json(data_model.var_dict, var_dict_file)
-            serialize_json(data_model.t_s_dict, t_s_dict_file)
-
         if is_test:
             save_datamodel(self.sim_model_data, "1", data_source_file_name='test_data_source.txt',
                            stat_file_name='test_Statistics.json', flow_file_name='test_flow',
@@ -77,30 +53,6 @@ class SimNatureFlowSource(object):
 
     @classmethod
     def get_sim_nature_flow_source(cls, config_data, t_range, sim_config_file, subdir=None, is_test=False):
-        def load_datamodel(dir_temp_orgin, num_str, **kwargs):
-            dir_temp = os.path.join(dir_temp_orgin, num_str)
-            data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
-            stat_file = os.path.join(dir_temp, kwargs['stat_file_name'])
-            flow_npy_file = os.path.join(dir_temp, kwargs['flow_file_name'])
-            forcing_npy_file = os.path.join(dir_temp, kwargs['forcing_file_name'])
-            attr_npy_file = os.path.join(dir_temp, kwargs['attr_file_name'])
-            f_dict_file = os.path.join(dir_temp, kwargs['f_dict_file_name'])
-            var_dict_file = os.path.join(dir_temp, kwargs['var_dict_file_name'])
-            t_s_dict_file = os.path.join(dir_temp, kwargs['t_s_dict_file_name'])
-            source_data = unserialize_pickle(data_source_file)
-            # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
-            stat_dict = unserialize_json(stat_file)
-            data_flow = unserialize_numpy(flow_npy_file)
-            data_forcing = unserialize_numpy(forcing_npy_file)
-            data_attr = unserialize_numpy(attr_npy_file)
-            # dictFactorize.json is the explanation of value of categorical variables
-            var_dict = unserialize_json(var_dict_file)
-            f_dict = unserialize_json(f_dict_file)
-            t_s_dict = unserialize_json(t_s_dict_file)
-            data_model = DataModel(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
-                                   t_s_dict)
-            return data_model
-
         temp_dir = config_data.data_path["Temp"]
         if is_test:
             sim_model_data = load_datamodel(temp_dir, "1", data_source_file_name='test_data_source.txt',
@@ -150,8 +102,8 @@ class SimNatureFlowSource(object):
         model_dict = config_data.model_dict
         x, y, c = model_data.load_data(model_dict)
         t_range = self.t_range
-        epoch = model_dict["train"]["nEpoch"]
-        file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(epoch)])
+        natural_epoch = model_dict["train"]["nEpoch"]
+        file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(natural_epoch)])
         file_path = os.path.join(out_folder, file_name) + '.csv'
         model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
         # read natural_flow from file

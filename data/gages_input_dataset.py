@@ -5,6 +5,7 @@ import numpy as np
 from data import GagesSource, DataModel
 from explore import trans_norm
 from utils.dataset_format import subset_of_dict
+from utils.hydro_math import concat_two_3darray
 
 
 class GagesSourceDataset(GagesSource):
@@ -63,6 +64,8 @@ class GagesInvDataModel(object):
     def __init__(self, data_model1, data_model2):
         self.model_dict1 = data_model1.data_source.data_config.model_dict
         self.model_dict2 = data_model2.data_source.data_config.model_dict
+        self.stat_dict = data_model2.stat_dict
+        self.t_s_dict = data_model2.t_s_dict
         all_data = self.prepare_input(data_model1, data_model2)
         input_keys = ['xh', 'ch', 'qh', 'xt', 'ct']
         output_keys = ['qt']
@@ -98,12 +101,6 @@ class GagesInvDataModel(object):
         data_inflow_h_new = np.zeros([data_inflow_h.shape[0], data_inflow_h.shape[1] - seq_length + 1, seq_length])
         for i in range(data_inflow_h_new.shape[1]):
             data_inflow_h_new[:, i, :] = data_inflow_h[:, i:i + seq_length]
-
-        def concat_two_3darray(arr1, arr2):
-            arr3 = np.zeros([arr1.shape[0], arr1.shape[1], arr1.shape[2] + arr2.shape[2]])
-            for j in range(arr1.shape[0]):
-                arr3[j] = np.concatenate((arr1[j], arr2[j]), axis=1)
-            return arr3
 
         # because data_inflow_h_new is assimilated, time sequence length has changed
         data_forcing_h = data_input['xh'][:, seq_length - 1:, :]

@@ -403,3 +403,34 @@ def train_lstm_inv(data_model):
     model_run.model_train_inv(model_inv, xqch, xct, qt, loss_fun, n_epoch=opt_train['nEpoch'],
                               mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
                               save_folder=output_dir)
+
+
+def test_lstm_inv(data_model):
+    model_dict = data_model.model_dict1
+    opt_data = model_dict['data']
+    opt_train = model_dict['train']
+    # 测试和训练使用的batch_size, rho是一样的
+    batch_size, rho = model_dict['train']['miniBatch']
+
+    # data
+    xqch, xct, qt = data_model.load_data()
+    theta_length = 10
+    # generate file names and run model
+    out = os.path.join(model_dict['dir']['Out'])
+    t_range = data_model.model_dict2["data"]["tRangeTest"]
+    epoch = opt_train["nEpoch"]
+    file_path = name_pred(model_dict, out, t_range, epoch)
+    print('output files:', file_path)
+    model = model_run.model_load(out, epoch)
+    data_pred, data_params = model_run.model_test_inv(model, xqch, xct, batch_size)
+
+    data_stack = reduce(lambda a, b: np.vstack((a, b)),
+                        list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), data_pred)))
+    pred = np.expand_dims(data_stack, axis=2)
+    if opt_data['doNorm'][1] is True:
+        stat_dict = data_model.stat_dict
+        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
+        pred = stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+        qt = stat.trans_norm(qt, 'usgsFlow', stat_dict, to_norm=False)
+
+    return pred, qt

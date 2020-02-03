@@ -454,7 +454,9 @@ def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[1
                     save_folder=None):
     batchSize, rho = mini_batch
     ngrid, nt, nx = xqch.shape
-    nIterEp = int(np.ceil(np.log(0.01) / np.log(1 - batchSize * rho / ngrid / nt)))
+    ngrid_t, nt_t, nx_t = xct.shape
+    nt_temp = max(nt, nt_t)
+    nIterEp = int(np.ceil(np.log(0.01) / np.log(1 - batchSize * rho / ngrid / nt_temp)))
 
     if torch.cuda.is_available():
         lossFun = lossFun.cuda()
@@ -469,11 +471,14 @@ def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[1
         lossEp = 0
         t0 = time.time()
         for iIter in range(0, nIterEp):
-            # training iterations # TODO: iT maybe not same between xhTrain and  (xtTrain,yTrain)
+            # training iterations
             iGrid, iT = random_index(ngrid, nt, [batchSize, rho])
             xhTrain = select_subset(xqch, iGrid, iT, rho)
-            xtTrain = select_subset(xct, iGrid, iT, rho)
-            yTrain = select_subset(qt, iGrid, iT, rho)
+            iGrid_t, iT_t = random_index(ngrid_t, nt_t, [batchSize, rho])
+            # iGrid should be same, iT can be different
+            xtTrain = select_subset(xct, iGrid, iT_t, rho)
+            # iTs of xtTrain and yTrain should be same
+            yTrain = select_subset(qt, iGrid, iT_t, rho)
             yP, Param_Inv = model(xhTrain, xtTrain)  # will also send in the y for inversion generator
             loss = lossFun(yP, yTrain)
             loss.backward()
@@ -494,3 +499,71 @@ def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[1
     if save_folder is not None:
         rf.close()
     return model
+
+
+def model_test_inv(model, xqch, xct, batch_size):
+    ngrid, nt, nx = xqch.shape
+    ngrid_t, nt_t, nx_t = xct.shape
+    if nt != nt_t:
+        print("check")
+    if torch.cuda.is_available():
+        model = model.cuda()
+
+    model.train(mode=False)
+    i_s = np.arange(0, ngrid, batch_size)
+    i_e = np.append(i_s[1:], ngrid)
+
+    y_out_list = []
+    param_list = []
+    for i in range(0, len(i_s)):
+        print('batch {}'.format(i))
+        xh_temp = xqch[i_s[i]:i_e[i], :, :]
+        xt_temp = xct[i_s[i]:i_e[i], :, :]
+        # TODO: default shape1 of xh_temp is larger than xt_temp's
+        len_max = xh_temp.shape[1]
+        len_min = xt_temp.shape[1]
+        time_batch_size = int(len_max / len_min) if len_max % len_min == 0 else int(len_max / len_min) + 1
+        y_outs = []
+        param_outs = []
+        for j in range(time_batch_size):
+            if j == time_batch_size - 1:
+                xh_temp_j = xh_temp[:, j * len_min:, :]
+                xt_temp_j = xt_temp
+                # cut to same length
+                if xh_temp_j.shape[1] != xt_temp_j.shape[1]:
+                    xt_temp_j = xt_temp_j[:, :xh_temp_j.shape[1], :]
+            else:
+                xh_temp_j = xh_temp[:, j * len_min:(j + 1) * len_min, :]
+                xt_temp_j = xt_temp
+            xhTest = torch.from_numpy(np.swapaxes(xh_temp_j, 1, 0)).float()
+            xtTest = torch.from_numpy(np.swapaxes(xt_temp_j, 1, 0)).float()
+            if torch.cuda.is_available():
+                xhTest = xhTest.cuda()
+                xtTest = xtTest.cuda()
+
+            y_p, param = model(xhTest, xtTest)
+            y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
+            param_out = param.detach().cpu().numpy().swapaxes(0, 1)
+            y_outs.append(y_out)
+            param_outs.append(param_out)
+
+        # y_outs every items average
+        def avg_3darray_list(arr_list):
+            arr = arr_list[0]
+            for i in range(1, len(arr_list) - 1):
+                arr = arr + arr_list[i]
+            arr = arr / (len(arr_list) - 1)
+            arr_last = arr_list[len(arr_list) - 1]
+            arr[:, :arr_last.shape[1], :] = (arr[:, :arr_last.shape[1], :] + arr_last) / 2
+            return arr
+
+        y_out_i = avg_3darray_list(y_outs)
+        param_out_i = avg_3darray_list(param_outs)
+        y_out_list.append(y_out_i)
+        param_list.append(param_out_i)
+
+    # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
+    model.zero_grad()
+    torch.cuda.empty_cache()
+
+    return y_out_list, param_list

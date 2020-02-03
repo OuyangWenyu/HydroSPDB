@@ -1,9 +1,60 @@
 """一个处理数据的模板方法"""
+import os
 from collections import OrderedDict
 
 import numpy as np
 
 from explore import *
+from utils import serialize_pickle, serialize_json, serialize_numpy, unserialize_pickle, unserialize_json, \
+    unserialize_numpy
+
+
+def save_datamodel(data_model, num_str, **kwargs):
+    dir_temp = os.path.join(data_model.data_source.data_config.data_path["Temp"], num_str)
+    if not os.path.isdir(dir_temp):
+        os.makedirs(dir_temp)
+    data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
+    stat_file = os.path.join(dir_temp, kwargs['stat_file_name'])
+    flow_file = os.path.join(dir_temp, kwargs['flow_file_name'])
+    forcing_file = os.path.join(dir_temp, kwargs['forcing_file_name'])
+    attr_file = os.path.join(dir_temp, kwargs['attr_file_name'])
+    f_dict_file = os.path.join(dir_temp, kwargs['f_dict_file_name'])
+    var_dict_file = os.path.join(dir_temp, kwargs['var_dict_file_name'])
+    t_s_dict_file = os.path.join(dir_temp, kwargs['t_s_dict_file_name'])
+    serialize_pickle(data_model.data_source, data_source_file)
+    serialize_json(data_model.stat_dict, stat_file)
+    serialize_numpy(data_model.data_flow, flow_file)
+    serialize_numpy(data_model.data_forcing, forcing_file)
+    serialize_numpy(data_model.data_attr, attr_file)
+    # dictFactorize.json is the explanation of value of categorical variables
+    serialize_json(data_model.f_dict, f_dict_file)
+    serialize_json(data_model.var_dict, var_dict_file)
+    serialize_json(data_model.t_s_dict, t_s_dict_file)
+
+
+def load_datamodel(dir_temp_orgin, num_str, **kwargs):
+    dir_temp = os.path.join(dir_temp_orgin, num_str)
+    data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
+    stat_file = os.path.join(dir_temp, kwargs['stat_file_name'])
+    flow_npy_file = os.path.join(dir_temp, kwargs['flow_file_name'])
+    forcing_npy_file = os.path.join(dir_temp, kwargs['forcing_file_name'])
+    attr_npy_file = os.path.join(dir_temp, kwargs['attr_file_name'])
+    f_dict_file = os.path.join(dir_temp, kwargs['f_dict_file_name'])
+    var_dict_file = os.path.join(dir_temp, kwargs['var_dict_file_name'])
+    t_s_dict_file = os.path.join(dir_temp, kwargs['t_s_dict_file_name'])
+    source_data = unserialize_pickle(data_source_file)
+    # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
+    stat_dict = unserialize_json(stat_file)
+    data_flow = unserialize_numpy(flow_npy_file)
+    data_forcing = unserialize_numpy(forcing_npy_file)
+    data_attr = unserialize_numpy(attr_npy_file)
+    # dictFactorize.json is the explanation of value of categorical variables
+    var_dict = unserialize_json(var_dict_file)
+    f_dict = unserialize_json(f_dict_file)
+    t_s_dict = unserialize_json(t_s_dict_file)
+    data_model = DataModel(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
+                           t_s_dict)
+    return data_model
 
 
 class DataModel(object):
