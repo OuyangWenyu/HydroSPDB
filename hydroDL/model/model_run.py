@@ -504,8 +504,6 @@ def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[1
 def model_test_inv(model, xqch, xct, batch_size):
     ngrid, nt, nx = xqch.shape
     ngrid_t, nt_t, nx_t = xct.shape
-    if nt != nt_t:
-        print("check")
     if torch.cuda.is_available():
         model = model.cuda()
 
@@ -567,3 +565,63 @@ def model_test_inv(model, xqch, xct, batch_size):
     torch.cuda.empty_cache()
 
     return y_out_list, param_list
+
+
+def model_test_inv_kernel(model, xqch, xct, batch_size):
+    ngrid, nt, nx = xqch.shape
+    ngrid_t, nt_t, nx_t = xct.shape
+    if torch.cuda.is_available():
+        model = model.cuda()
+
+    model.train(mode=False)
+    i_s = np.arange(0, ngrid, batch_size)
+    i_e = np.append(i_s[1:], ngrid)
+
+    y_out_list = []
+    param_list = []
+    for i in range(0, len(i_s)):
+        print('batch {}'.format(i))
+        xh_temp = xqch[i_s[i]:i_e[i], :, :]
+        xt_temp = xct[i_s[i]:i_e[i], :, :]
+
+        xhTest = torch.from_numpy(np.swapaxes(xh_temp, 1, 0)).float()
+        xtTest = torch.from_numpy(np.swapaxes(xt_temp, 1, 0)).float()
+        if torch.cuda.is_available():
+            xhTest = xhTest.cuda()
+            xtTest = xtTest.cuda()
+
+        y_p, param = model(xhTest, xtTest)
+        y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
+        param_out = param.detach().cpu().numpy().swapaxes(0, 1)
+
+        y_out_list.append(y_out)
+        param_list.append(param_out)
+
+    # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
+    model.zero_grad()
+    torch.cuda.empty_cache()
+    return y_out_list, param_list
+
+
+def model_train_new():
+    """new framework train func"""
+    print("need check")
+    # for itera in tqdm(range(1, max_iterations + 1)):
+    #     lr_scheduler.step()
+    #     train_batch, train_mask, sample_datetimes, _ = \
+    #         train_hko_iter.sample(batch_size=batch_size)
+    #     train_batch = torch.from_numpy(train_batch.astype(np.float32)).to(cfg.GLOBAL.DEVICE) / 255.0
+    #     train_data = train_batch[:IN_LEN, ...]
+    #     train_label = train_batch[IN_LEN:IN_LEN + OUT_LEN, ...]
+    #     mask = torch.from_numpy(train_mask[IN_LEN:IN_LEN + OUT_LEN, ...].astype(int)).to(cfg.GLOBAL.DEVICE)
+    #
+    #     encoder_forecaster.train()
+    #     optimizer.zero_grad()
+    #     output = encoder_forecaster(train_data)
+    #     loss = criterion(output, train_label, mask)
+    #     loss.backward()
+    #     torch.nn.utils.clip_grad_value_(encoder_forecaster.parameters(), clip_value=50.0)
+    #     optimizer.step()
+    #     train_loss += loss.item()
+    #
+    #     train_label_numpy = train_label.cpu().numpy()

@@ -33,9 +33,16 @@ class MyTestCase(unittest.TestCase):
         # self.config_file_2 = os.path.join(config_dir, "inv/config_inv_2_ex4.ini")
         # self.subdir = r"inv/exp4"
 
-        self.config_file_1 = os.path.join(config_dir, "inv/config_inv_1_ex5.ini")
-        self.config_file_2 = os.path.join(config_dir, "inv/config_inv_2_ex5.ini")
-        self.subdir = r"inv/exp5"
+        # self.config_file_1 = os.path.join(config_dir, "inv/config_inv_1_ex5.ini")
+        # self.config_file_2 = os.path.join(config_dir, "inv/config_inv_2_ex5.ini")
+        # self.subdir = r"inv/exp5"
+
+        # self.config_file_1 = os.path.join(config_dir, "inv/config_inv_1_ex6.ini")
+        # self.config_file_2 = os.path.join(config_dir, "inv/config_inv_2_ex6.ini")
+        # self.subdir = r"inv/exp6"
+        self.config_file_1 = os.path.join(config_dir, "inv/config_inv_1_ex7.ini")
+        self.config_file_2 = os.path.join(config_dir, "inv/config_inv_2_ex7.ini")
+        self.subdir = r"inv/exp7"
         self.config_data_1 = GagesConfig.set_subdir(self.config_file_1, self.subdir)
         self.config_data_2 = GagesConfig.set_subdir(self.config_file_2, self.subdir)
         add_model_param(self.config_data_1, "model", seqLength=7)
@@ -116,7 +123,7 @@ class MyTestCase(unittest.TestCase):
         pred, obs = test_lstm_inv(data_model)
 
         pred = pred.reshape(pred.shape[0], pred.shape[1])
-        obs = obs.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(obs.shape[0], obs.shape[1])
 
         inds = statError(obs, pred)
         show_me_num = 5

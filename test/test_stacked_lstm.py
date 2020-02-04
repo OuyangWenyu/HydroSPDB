@@ -2,8 +2,8 @@ import os
 import unittest
 
 import definitions
-from data import GagesConfig
-from data.gages_input_dataset import GagesSourceDataset, GagesInputDataset
+from data import GagesConfig, GagesSource, DataModel
+from data.gages_input_dataset import GagesInputDataset
 from hydroDL.master.master import train_stacked_lstm
 
 
@@ -20,12 +20,13 @@ class MyTestCase(unittest.TestCase):
         # 读取模型配置文件
         config_data = GagesConfig(config_file)
         # 准备训练数据
-        source_data = GagesSourceDataset(config_data, config_data.model_dict["data"]["tRangeTrain"])
+        source_data = GagesSource(config_data, config_data.model_dict["data"]["tRangeTrain"])
+        model_data = DataModel(source_data)
         # 构建输入数据类对象
-        data_model = GagesInputDataset(source_data)
+        data_input = GagesInputDataset(model_data)
         # 进行模型训练
         # train model
-        train_stacked_lstm(data_model)
+        train_stacked_lstm(data_input)
 
 
 if __name__ == '__main__':

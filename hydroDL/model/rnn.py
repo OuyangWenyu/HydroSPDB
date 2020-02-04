@@ -642,6 +642,26 @@ class CudnnLstmModelInv(torch.nn.Module):
         return out_lstm, param
 
 
+class CudnnLstmModelInvKernel(torch.nn.Module):
+    def __init__(self, nx, ny, hidden_size, dr=0.5):
+        super(CudnnLstmModelInvKernel, self).__init__()
+        self.nx = nx  # (xqch, xct, theta)
+        self.ny = ny
+        self.hiddenSize = hidden_size
+        self.lstm_inv = CudnnLstmModel(nx=nx[0], ny=nx[2], hidden_size=int(hidden_size / 4),
+                                       dr=dr)  # Input is forcing + Q + attr,
+        self.lstm = CudnnLstmModel(nx=nx[1] + nx[2], ny=ny, hidden_size=hidden_size, dr=dr)
+        self.gpu = 2
+
+    def forward(self, xh, xt):
+        gen = self.lstm_inv(xh)
+        # seq to one
+        param = gen[-1, :, :].repeat(xt.shape[0], 1, 1)
+        x1 = torch.cat((xt, param), dim=len(param.shape) - 1)  # by default cat along dim=0
+        out_lstm = self.lstm(x1)
+        return out_lstm, param
+
+
 class CudnnLstmModelWithout1stLinear(torch.nn.Module):
     def __init__(self, *, nx, ny, hidden_size, dr=0.5):
         super(CudnnLstmModelWithout1stLinear, self).__init__()

@@ -28,8 +28,10 @@ class MyTestCaseGages(unittest.TestCase):
         # self.config_file = os.path.join(config_dir, "basic/config_exp4.ini")
         # self.subdir = r"basic/exp4"
         os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # cuda is geforce 2
-        self.config_file = os.path.join(config_dir, "basic/config_exp5.ini")
-        self.subdir = r"basic/exp5"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp5.ini")
+        # self.subdir = r"basic/exp5"
+        self.config_file = os.path.join(config_dir, "basic/config_exp6.ini")
+        self.subdir = r"basic/exp6"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
 
     def test_gages_train(self):
