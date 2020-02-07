@@ -35,9 +35,12 @@ class MyTestCase(unittest.TestCase):
         # self.config_file = os.path.join(config_dir, "simulate/config_natureflow_2_exp4.ini")
         # self.subdir = "simulate/exp4"
 
-        self.sim_config_file = os.path.join(config_dir, "simulate/config_natureflow_1_exp5.ini")
-        self.config_file = os.path.join(config_dir, "simulate/config_natureflow_2_exp5.ini")
-        self.subdir = "simulate/exp5"
+        # self.sim_config_file = os.path.join(config_dir, "simulate/config_natureflow_1_exp5.ini")
+        # self.config_file = os.path.join(config_dir, "simulate/config_natureflow_2_exp5.ini")
+        # self.subdir = "simulate/exp5"
+        self.sim_config_file = os.path.join(config_dir, "simulate/config_natureflow_1_exp6.ini")
+        self.config_file = os.path.join(config_dir, "simulate/config_natureflow_2_exp6.ini")
+        self.subdir = "simulate/exp6"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         add_model_param(self.config_data, "model", seqLength=7)
         # choose some small basins, unit: SQKM

@@ -1,9 +1,7 @@
 """本项目调用可视化函数进行可视化的一些函数"""
 import pandas as pd
 import numpy as np
-import torch
-import torch.nn.functional as F
-import matplotlib.pyplot as plt
+import geopandas as gpd
 
 from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes
 
@@ -61,3 +59,12 @@ def plot_ts_obs_pred(obs, pred, sites, t_range, num):
     tidy_data = pd.concat([obs_formatted, pred_formatted])
     ts_fig = plot_ts(tidy_data, sites_column, tag_column, time_column, flow_column)
     return ts_fig
+
+
+def plot_ind_map(all_points_file, ind_value, sites):
+    """plot ind values on a map"""
+    all_points = gpd.read_file(all_points_file)
+    index = [i for i in range(all_points["STAID"].size) if all_points["STAID"].values[i] in sites]
+    all_points_chosen = all_points.iloc[index]
+    all_points_chosen.loc['ind'] = ind_value
+

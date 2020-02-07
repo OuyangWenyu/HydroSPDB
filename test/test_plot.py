@@ -6,7 +6,7 @@ from explore.stat import statError, statError1d
 from utils import unserialize_numpy, unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual import plot_box_inds, plot_ts_obs_pred
-from visual.plot_model import plot_boxes_inds
+from visual.plot_model import plot_boxes_inds, plot_ind_map
 
 
 def test_stat():
@@ -88,6 +88,16 @@ class MyTestCase(unittest.TestCase):
         sites = np.array(t_s_dict["sites_id"])
         t_range = np.array(t_s_dict["t_final_range"])
         plot_ts_obs_pred(self.obs, self.pred, sites, t_range, show_me_num)
+
+    def test_plot_map(self):
+        """plot nse value on map"""
+        t_s_dict = unserialize_json(self.t_s_dict_file)
+        sites = np.array(t_s_dict["sites_id"])
+        keys = ["NSE"]
+        inds_test = subset_of_dict(self.inds, keys)
+        plot_ind_map(
+            "/mnt/sdc/wvo5024/hydro-anthropogenic-lstm/example/data/gages/gagesII_9322_point_shapefile/gagesII_9322_sept30_2011.shp",
+            inds_test["NSE"], sites)
 
 
 if __name__ == '__main__':

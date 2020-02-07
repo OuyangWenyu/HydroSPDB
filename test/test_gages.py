@@ -30,8 +30,14 @@ class MyTestCaseGages(unittest.TestCase):
         os.environ["CUDA_VISIBLE_DEVICES"] = "2"  # cuda is geforce 2
         # self.config_file = os.path.join(config_dir, "basic/config_exp5.ini")
         # self.subdir = r"basic/exp5"
-        self.config_file = os.path.join(config_dir, "basic/config_exp6.ini")
-        self.subdir = r"basic/exp6"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp6.ini")
+        # self.subdir = r"basic/exp6"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp7.ini")
+        # self.subdir = r"basic/exp7"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp8.ini")
+        # self.subdir = r"basic/exp8"
+        self.config_file = os.path.join(config_dir, "basic/config_exp9.ini")
+        self.subdir = r"basic/exp9"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
 
     def test_gages_train(self):
@@ -59,8 +65,8 @@ class MyTestCaseGages(unittest.TestCase):
         t_s_dict = data_model_test.t_s_dict
         sites = np.array(t_s_dict["sites_id"])
         t_range = np.array(t_s_dict["t_final_range"])
-        ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
-        ts_fig.savefig(os.path.join(config_data.data_path["Out"], "ts_fig.png"))
+        # ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
+        # ts_fig.savefig(os.path.join(config_data.data_path["Out"], "ts_fig.png"))
         # plot box，使用seaborn库
         keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(inds, keys)

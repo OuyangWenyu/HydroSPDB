@@ -40,9 +40,12 @@ class MyTestCase(unittest.TestCase):
         # self.config_file_1 = os.path.join(config_dir, "inv/config_inv_1_ex6.ini")
         # self.config_file_2 = os.path.join(config_dir, "inv/config_inv_2_ex6.ini")
         # self.subdir = r"inv/exp6"
-        self.config_file_1 = os.path.join(config_dir, "inv/config_inv_1_ex7.ini")
-        self.config_file_2 = os.path.join(config_dir, "inv/config_inv_2_ex7.ini")
-        self.subdir = r"inv/exp7"
+        # self.config_file_1 = os.path.join(config_dir, "inv/config_inv_1_ex7.ini")
+        # self.config_file_2 = os.path.join(config_dir, "inv/config_inv_2_ex7.ini")
+        # self.subdir = r"inv/exp7"
+        self.config_file_1 = os.path.join(config_dir, "inv/config_inv_1_ex8.ini")
+        self.config_file_2 = os.path.join(config_dir, "inv/config_inv_2_ex8.ini")
+        self.subdir = r"inv/exp8"
         self.config_data_1 = GagesConfig.set_subdir(self.config_file_1, self.subdir)
         self.config_data_2 = GagesConfig.set_subdir(self.config_file_2, self.subdir)
         add_model_param(self.config_data_1, "model", seqLength=7)
