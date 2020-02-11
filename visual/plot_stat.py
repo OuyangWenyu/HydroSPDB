@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import geopandas as gpd
 import geoplot as gplt
 import geoplot.crs as gcrs
-import mapclassify as mc
+import numpy as np
 
 
 def plot_boxs(data, x_name, y_name):
@@ -41,33 +41,17 @@ def plot_ts(data, row_name, col_name, x_name, y_name):
 
 def plot_point_map(gpd_gdf):
     """plot point data on a map"""
-    gpd_gdf = gpd_gdf.query('STATE not in ["AK", "HI", "PR"]')
+    # Choose points in which NSE value are bigger than the 25% quartile value range
+    p25 = np.percentile(gpd_gdf['NSE'].values, 25).astype(float)
+    # the result of query is a tuple with one element, but it's right for plotting
+    data_chosen = gpd_gdf.query("NSE > " + str(p25))
     contiguous_usa = gpd.read_file(gplt.datasets.get_path('contiguous_usa'))
-    scheme = mc.Quantiles(gpd_gdf['POP_2010'], k=5)
-
-    ax = gplt.polyplot(
-        contiguous_usa,
-        zorder=-1,
-        linewidth=1,
-        projection=gcrs.AlbersEqualArea(),
-        edgecolor='white',
-        facecolor='lightgray',
-        figsize=(8, 12)
-    )
-    gplt.pointplot(
-        gpd_gdf,
-        scale='POP_2010',
-        limits=(2, 30),
-        hue='POP_2010',
-        cmap='Blues',
-        scheme=scheme,
-        legend=True,
-        legend_var='scale',
-        legend_values=[8000000, 2000000, 1000000, 100000],
-        legend_labels=['8 million', '2 million', '1 million', '100 thousand'],
-        legend_kwargs={'frameon': False, 'loc': 'lower right'},
-        ax=ax
-    )
-
-    plt.title("Large cities in the contiguous United States, 2010")
-    plt.savefig("largest-cities-usa.png", bbox_inches='tight', pad_inches=0.1)
+    proj = gcrs.AlbersEqualArea(central_longitude=-98, central_latitude=39.5)
+    polyplot_kwargs = {'facecolor': (0.9, 0.9, 0.9), 'linewidth': 0}
+    pointplot_kwargs = {'hue': 'NSE', 'legend': True, 'linewidth': 0.01}
+    # ax = gplt.polyplot(contiguous_usa.geometry, projection=proj, **polyplot_kwargs)
+    ax = gplt.webmap(contiguous_usa, projection=gcrs.WebMercator())
+    gplt.pointplot(data_chosen, ax=ax, **pointplot_kwargs)
+    ax.set_title("NSE " + "Map")
+    plt.show()
+    # plt.savefig("NSE-usa.png", bbox_inches='tight', pad_inches=0.1)

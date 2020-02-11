@@ -1,6 +1,7 @@
 import os
 import unittest
 import numpy as np
+import pandas as pd
 import definitions
 from explore.stat import statError
 from utils import unserialize_numpy, unserialize_json
@@ -93,9 +94,11 @@ class MyTestCase(unittest.TestCase):
         sites = np.array(t_s_dict["sites_id"])
         keys = ["NSE"]
         inds_test = subset_of_dict(self.inds, keys)
+        # concat sites and inds
+        sites_df = pd.DataFrame({"sites": sites, keys[0]: inds_test[keys[0]]})
         plot_ind_map(
             "/mnt/sdc/wvo5024/hydro-anthropogenic-lstm/example/data/gages/gagesII_9322_point_shapefile/gagesII_9322_sept30_2011.shp",
-            inds_test["NSE"], sites)
+            sites_df)
 
 
 if __name__ == '__main__':

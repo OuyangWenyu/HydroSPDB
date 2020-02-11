@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import geopandas as gpd
-
+from pyproj import CRS
 from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map
 
 
@@ -61,10 +61,25 @@ def plot_ts_obs_pred(obs, pred, sites, t_range, num):
     return ts_fig
 
 
-def plot_ind_map(all_points_file, ind_value, sites):
+def plot_ind_map(all_points_file, df_ind_value):
     """plot ind values on a map"""
     all_points = gpd.read_file(all_points_file)
+    print(all_points.head())
+    print(all_points.crs)
+    # Here transform coordination to WGS84
+    crs_wgs84 = CRS.from_epsg(4326)
+    print(crs_wgs84)
+    if not all_points.crs == crs_wgs84:
+        all_points = all_points.to_crs(crs_wgs84)
+    print(all_points.head())
+    print(all_points.crs)
+    sites = df_ind_value['sites'].values
     index = [i for i in range(all_points["STAID"].size) if all_points["STAID"].values[i] in sites]
-    all_points_chosen = all_points.iloc[index]
-    all_points_chosen.loc['ind'] = ind_value
-    plot_point_map(all_points_chosen)
+    newdata = gpd.GeoDataFrame(df_ind_value, crs=all_points.crs)
+
+    newdata['geometry'] = None
+    for idx in range(len(index)):
+        # copy the point object to the geometry column on this row:
+        newdata.at[idx, 'geometry'] = all_points.at[index[idx], 'geometry']
+
+    plot_point_map(newdata)

@@ -8,8 +8,9 @@ from utils import hydro_util
 from utils.dataset_format import subset_of_dict
 from visual import *
 import numpy as np
+import pandas as pd
 import definitions
-from visual.plot_model import plot_boxes_inds
+from visual.plot_model import plot_boxes_inds, plot_ind_map
 
 
 class MyTestCaseGages(unittest.TestCase):
@@ -70,6 +71,9 @@ class MyTestCaseGages(unittest.TestCase):
         inds_test = subset_of_dict(inds, keys)
         box_fig = plot_boxes_inds(inds_test)
         box_fig.savefig(os.path.join(config_data.data_path["Out"], "box_fig.png"))
+        # plot map
+        sites_df = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
+        plot_ind_map(source_data.all_configs['gage_point_file'], sites_df)
 
 
 if __name__ == '__main__':
