@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.stats
-from hydroeval import evaluator, nse
 
 keyLst = ['Bias', 'RMSE', 'Corr', 'NSE']
 
@@ -51,17 +50,6 @@ def statError(target, pred):
             PBiashigh[k] = np.sum(highpred - hightarget) / np.sum(hightarget) * 100
             outDict = dict(Bias=Bias, RMSE=RMSE, ubRMSE=ubRMSE, Corr=Corr, R2=R2, NSE=NSE, FLV=PBiaslow, FHV=PBiashigh)
     return outDict
-
-
-def statError1d(pred, target):
-    # Bias
-    Bias = np.mean(pred - target)
-    # RMSE
-    RMSE = np.sqrt(np.mean((pred - target) ** 2))
-    # nse
-    nse_ = evaluator(nse, pred, target)[0]
-
-    return [Bias, RMSE, nse_]
 
 
 def cal_4_stat_inds(b):

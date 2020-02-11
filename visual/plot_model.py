@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 
-from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes
+from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map
 
 
 def plot_box_inds(indicators):
@@ -67,4 +67,4 @@ def plot_ind_map(all_points_file, ind_value, sites):
     index = [i for i in range(all_points["STAID"].size) if all_points["STAID"].values[i] in sites]
     all_points_chosen = all_points.iloc[index]
     all_points_chosen.loc['ind'] = ind_value
-
+    plot_point_map(all_points_chosen)

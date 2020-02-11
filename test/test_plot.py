@@ -2,7 +2,7 @@ import os
 import unittest
 import numpy as np
 import definitions
-from explore.stat import statError, statError1d
+from explore.stat import statError
 from utils import unserialize_numpy, unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual import plot_box_inds, plot_ts_obs_pred
@@ -49,8 +49,6 @@ def test_stat():
     print(type(b))
     c = np.array(b)
     print(c.shape)
-
-    print(statError1d(np.array([1, 2, 3]), np.array([4, 5, 6])))
 
 
 class MyTestCase(unittest.TestCase):

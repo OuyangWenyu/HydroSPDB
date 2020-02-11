@@ -1,4 +1,60 @@
-# workflow
+# Analyze impact of human activities to streamflow prediction with Deep Learning model
+
+## setup
+
+As the "environment.yml" file has existed, you can run the code with it to setup the environment (Firstly you need to modify "$prefix" of this file to your own):
+
+```Shell
+conda env create -f environment.yml
+```
+
+The following is procedure of generating environment.yml:
+
+```Shell
+conda create --prefix ./envs python=3.7
+conda activate /mnt/sdc/wvo5024/hydro-anthropogenic-lstm/envs
+```
+create or modify the .condarc file in your system:
+
+```Shell
+conda config --set env_prompt '({name})'
+```
+
+Then add the following content of .condarc file (you can find it in your home directory):
+
+```.condarc
+channel_priority: strict
+channels:
+  - conda-forge
+  - defaults
+```
+ 
+and then use conda to install package, for example:
+
+```Shell
+conda config --set channel_priority strict
+conda install pytorch==1.2.0 torchvision==0.4.0 cudatoolkit=10.0 -c pytorch
+conda install -c conda-forge kaggle
+conda install -c conda-forge pydrive
+conda install -c conda-forge geopandas
+conda install -c conda-forge netcdf4
+conda install -c conda-forge scipy
+conda install -c conda-forge tensorboard
+conda install -c conda-forge future
+conda install -c conda-forge matplotlib
+conda install -c conda-forge statsmodels
+conda install -c conda-forge seaborn
+conda install -c conda-forge cartopy
+conda install -c conda-forge geoplot
+```
+
+Finally, generate environment.yml file by conda:
+
+```Shell
+conda env export > environment.yml
+```
+
+## workflow
 
 主要参考了项目[machine-learning-project-walkthrough](https://github.com/WillKoehrsen/machine-learning-project-walkthrough)，
 重新构建整体流程，便于项目调试和各个模块的测试。

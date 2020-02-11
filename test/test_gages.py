@@ -1,8 +1,6 @@
 import os
 import unittest
 
-import torch
-
 from data import *
 from explore.stat import statError
 from hydroDL.master import *
