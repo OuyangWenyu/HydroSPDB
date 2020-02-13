@@ -9,8 +9,11 @@ from utils import serialize_pickle, serialize_json, serialize_numpy, unserialize
     unserialize_numpy
 
 
-def save_datamodel(data_model, num_str, **kwargs):
-    dir_temp = os.path.join(data_model.data_source.data_config.data_path["Temp"], num_str)
+def save_datamodel(data_model, num_str=None, **kwargs):
+    if num_str:
+        dir_temp = os.path.join(data_model.data_source.data_config.data_path["Temp"], num_str)
+    else:
+        dir_temp = data_model.data_source.data_config.data_path["Temp"]
     if not os.path.isdir(dir_temp):
         os.makedirs(dir_temp)
     data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
@@ -32,8 +35,11 @@ def save_datamodel(data_model, num_str, **kwargs):
     serialize_json(data_model.t_s_dict, t_s_dict_file)
 
 
-def load_datamodel(dir_temp_orgin, num_str, **kwargs):
-    dir_temp = os.path.join(dir_temp_orgin, num_str)
+def load_datamodel(dir_temp_orgin, num_str=None, **kwargs):
+    if num_str:
+        dir_temp = os.path.join(dir_temp_orgin, num_str)
+    else:
+        dir_temp = dir_temp_orgin
     data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
     stat_file = os.path.join(dir_temp, kwargs['stat_file_name'])
     flow_npy_file = os.path.join(dir_temp, kwargs['flow_file_name'])

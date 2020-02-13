@@ -7,6 +7,7 @@ from explore.stat import statError
 from utils import unserialize_numpy, unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual import plot_box_inds, plot_ts_obs_pred
+from visual.plot import plotCDF
 from visual.plot_model import plot_boxes_inds, plot_ind_map
 
 
@@ -99,6 +100,13 @@ class MyTestCase(unittest.TestCase):
         plot_ind_map(
             "/mnt/sdc/wvo5024/hydro-anthropogenic-lstm/example/data/gages/gagesII_9322_point_shapefile/gagesII_9322_sept30_2011.shp",
             sites_df)
+
+    def test_plot_cdf(self):
+        t_s_dict = unserialize_json(self.t_s_dict_file)
+        sites = np.array(t_s_dict["sites_id"])
+        keys = ["RMSE"]
+        inds_test = subset_of_dict(self.inds, keys)
+        plotCDF([inds_test[keys[0]]], ref=None, legendLst=["LSTM"], linespec=['-', '-', ':', ':', ':'])
 
 
 if __name__ == '__main__':

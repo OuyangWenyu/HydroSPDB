@@ -235,3 +235,41 @@ class GagesSimInvDataModel(object):
 
         qt = self.data_target["qt"]
         return xqqnch, xct, qt
+
+
+class GagesDaDataModel(object):
+    """DataModel for da model"""
+
+    def __init__(self, data_model):
+        self.data_model = data_model
+
+    def load_data(self, model_dict):
+        """Notice that don't cover the data of today when loading history data"""
+
+        def cut_data(temp_x, temp_rm_nan, temp_seq_length):
+            """cut to size same as inflow's. Don't cover the data of today when loading history data"""
+            temp = temp_x[:, temp_seq_length:, :]
+            if temp_rm_nan:
+                temp[np.where(np.isnan(temp))] = 0
+            return temp
+
+        opt_data = model_dict["data"]
+        rm_nan_x = opt_data['rmNan'][0]
+        rm_nan_y = opt_data['rmNan'][1]
+        x, y, c = self.data_model.load_data(model_dict)
+
+        seq_length = model_dict["model"]["seqLength"]
+        # don't cover the data of today when loading history data, so the length of 2nd dim is 'y.shape[1] - seq_length'
+        flow = y.reshape(y.shape[0], y.shape[1])
+        q = np.zeros([flow.shape[0], flow.shape[1] - seq_length, seq_length])
+        for i in range(q.shape[1]):
+            q[:, i, :] = flow[:, i:i + seq_length]
+
+        if rm_nan_x is True:
+            q[np.where(np.isnan(q))] = 0
+
+        if seq_length > 1:
+            x = cut_data(x, rm_nan_x, seq_length)
+            y = cut_data(y, rm_nan_y, seq_length)
+        qx = np.array([np.concatenate((q[j], x[j]), axis=1) for j in range(q.shape[0])])
+        return qx, y, c

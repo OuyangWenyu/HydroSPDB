@@ -45,7 +45,7 @@ def plot_ts_obs_pred(obs, pred, sites, t_range, num):
     flow_column = "flow"
     tag_obs = 'obs'
     tag_pred = 'pred'
-    t_rng_lst = pd.DataFrame({time_column: pd.date_range(t_range[0], periods=obs_value.shape[0], freq='D')})
+    t_rng_lst = pd.DataFrame({time_column: pd.date_range(str(t_range[0]), periods=obs_value.shape[0], freq='D')})
     obs_df = pd.concat([t_rng_lst, obs_value], axis=1)
     pred_df = pd.concat([t_rng_lst, pred_value], axis=1)
     obs_format = pd.melt(obs_df, id_vars=[time_column], value_vars=sites_lst, var_name=sites_column,

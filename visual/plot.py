@@ -12,15 +12,6 @@ import sys
 
 import utils.hydro_geo
 
-projectionPath = "/home/owen/anaconda3/pkgs/proj4-5.2.0-he6710b0_1/share/proj"
-print(sys.platform)
-if "win" in sys.platform:
-    projectionPath = "J:/Wenyu/Programs/anaconda3/Library/share"
-print(projectionPath)
-# os.environ["PROJ_LIB"] = r"H:\Anaconda3\pkgs\proj4-5.2.0-ha925a31_1\Library\share"
-# os.environ["PROJ_LIB"] = r"\Library\share"
-os.environ["PROJ_LIB"] = projectionPath
-
 
 def plot_box_fig(data,
                  label1=None,
@@ -377,7 +368,9 @@ def plotCDF(xLst,
             cLst=None,
             xlabel=None,
             ylabel=None,
-            showDiff='RMSE'):
+            showDiff='RMSE',
+            xlim=None,
+            linespec=None):
     if ax is None:
         fig = plt.figure(figsize=figsize)
         ax = fig.subplots()
@@ -389,7 +382,7 @@ def plotCDF(xLst,
         cLst = cmap(np.linspace(0, 1, len(xLst)))
 
     if title is not None:
-        ax.set_title(title)
+        ax.set_title(title, loc='left')
     if xlabel is not None:
         ax.set_xlabel(xlabel)
     if ylabel is not None:
@@ -407,21 +400,23 @@ def plotCDF(xLst,
             legStr = None
         else:
             legStr = legendLst[k]
-
-        if ref is '121':
-            yRef = yRank
-        elif ref is 'norm':
-            yRef = scipy.stats.norm.cdf(xSort, 0, 1)
-        rmse = np.sqrt(((xSort - yRef) ** 2).mean())
-        ksd = np.max(np.abs(xSort - yRef))
-        rmseLst.append(rmse)
-        ksdLst.append(ksd)
-        if showDiff is 'RMSE':
-            legStr = legStr + ' RMSE=' + '%.3f' % rmse
-        elif showDiff is 'KS':
-            legStr = legStr + ' KS=' + '%.3f' % ksd
-        ax.plot(xSort, yRank, color=cLst[k], label=legStr)
-
+        if ref is not None:
+            if ref is '121':
+                yRef = yRank
+            elif ref is 'norm':
+                yRef = scipy.stats.norm.cdf(xSort, 0, 1)
+            rmse = np.sqrt(((xSort - yRef) ** 2).mean())
+            ksd = np.max(np.abs(xSort - yRef))
+            rmseLst.append(rmse)
+            ksdLst.append(ksd)
+            if showDiff is 'RMSE':
+                legStr = legStr + ' RMSE=' + '%.3f' % rmse
+            elif showDiff is 'KS':
+                legStr = legStr + ' KS=' + '%.3f' % ksd
+        ax.plot(xSort, yRank, color=cLst[k], label=legStr, linestyle=linespec[k])
+        ax.grid(b=True)
+    if xlim is not None:
+        ax.set(xlim=xlim)
     if ref is '121':
         ax.plot([0, 1], [0, 1], 'k', label='y=x')
     if ref is 'norm':
@@ -429,9 +424,10 @@ def plotCDF(xLst,
         normCdf = scipy.stats.norm.cdf(xNorm, 0, 1)
         ax.plot(xNorm, normCdf, 'k', label='Gaussian')
     if legendLst is not None:
-        ax.legend(loc='best')
-    out = {'xSortLst': xSortLst, 'rmseLst': rmseLst, 'ksdLst': ksdLst}
-    return fig, ax, out
+        ax.legend(loc='best', frameon=False)
+    # out = {'xSortLst': xSortLst, 'rmseLst': rmseLst, 'ksdLst': ksdLst}
+    plt.show()
+    return fig, ax
 
 
 def flatData(x):
