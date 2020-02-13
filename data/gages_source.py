@@ -28,7 +28,7 @@ class GagesSource(DataSource):
         all_points = gpd.read_file(all_points_file)
         all_points_chosen = all_points[all_points["DRAIN_SQKM"] < basin_area]
         small_gages_chosen_id = all_points_chosen['STAID'].values
-        if self.all_configs["flow_screen_gage_id"]: # TODO: check
+        if self.all_configs["flow_screen_gage_id"]:  # TODO: check
             small_gages_chosen_id, ind1, ind2 = np.intersect1d(self.all_configs["flow_screen_gage_id"],
                                                                small_gages_chosen_id, return_indices=True)
         self.all_configs["flow_screen_gage_id"] = small_gages_chosen_id.tolist()
@@ -197,10 +197,6 @@ class GagesSource(DataSource):
         skip_rows_index = list(range(0, row_comment_end))
         skip_rows_index.append(row_comment_end + 1)
         df_flow = pd.read_csv(usgs_file, skiprows=skip_rows_index, sep='\t', dtype={'site_no': str})
-        if usgs_id == '07311600':
-            print(
-                "just for test, it only contains max and min flow of a day, but dont have a mean, there will be some "
-                "warning, but it's fine. no impact for results.")
         # 原数据的列名并不好用，这里修改
         columns_names = df_flow.columns.tolist()
         for column_name in columns_names:
@@ -218,12 +214,16 @@ class GagesSource(DataSource):
         columns = ['agency_cd', 'site_no', 'datetime', 'flow', 'mode']
         if df_flow.empty:
             df_flow = pd.DataFrame(columns=columns)
-
-        data_temp = df_flow.loc[:, columns]
+        if not ('flow' in df_flow.columns.intersection(columns)):
+            data_temp = df_flow.loc[:, df_flow.columns.intersection(columns)]
+            # add nan column to data_temp
+            data_temp = pd.concat([data_temp, pd.DataFrame(columns=['flow', 'mode'])])
+        else:
+            data_temp = df_flow.loc[:, columns]
 
         # 处理下负值
         obs = data_temp['flow'].astype('float').values
-        # 看看warning是哪个站点：01606500，时间索引为2828的站点为nan，不过不影响计算。
+        # 看看warning是哪个站点：01606500 and other 3-5 ones. For 01606500, 时间索引为2828的站点为nan，不过不影响计算。
         if usgs_id == '01606500':
             print(obs)
             print(np.argwhere(np.isnan(obs)))

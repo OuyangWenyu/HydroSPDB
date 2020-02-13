@@ -559,3 +559,67 @@ def test_lstm_da(data_input):
         obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
     return pred, obs
+
+
+def train_lstm_forecast(data_input):
+    data_model = data_input.model_data
+    model_dict = data_model.data_source.data_config.model_dict
+    opt_model = model_dict['model']
+    opt_train = model_dict['train']
+
+    # data
+    x, y, c = data_input.load_data(model_dict)
+    nx = x.shape[-1] + c.shape[-1]
+    ny = y.shape[-1]
+    opt_model['nx'] = nx
+    opt_model['ny'] = ny
+    # loss
+    loss_fun = crit.RmseLoss()
+    # model
+    model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+    # train model
+    out = os.path.join(model_dict['dir']['Out'], "model")
+    if not os.path.isdir(out):
+        os.mkdir(out)
+    model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
+                          mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'], save_folder=out)
+
+
+def test_lstm_forecast(data_input):
+    data_model = data_input.model_data
+    model_dict = data_model.data_source.data_config.model_dict
+    opt_data = model_dict['data']
+    # 测试和训练使用的batch_size, rho是一样的
+    batch_size, rho = model_dict['train']['miniBatch']
+
+    x, obs, c = data_input.load_data(model_dict)
+
+    # generate file names and run model
+    out = os.path.join(model_dict['dir']['Out'], "model")
+    t_range = data_model.t_s_dict["t_final_range"]
+    epoch = model_dict['train']["nEpoch"]
+    file_path = name_pred(model_dict, out, t_range, epoch)
+    print('output files:', file_path)
+    # 如果没有测试结果，那么就重新运行测试代码
+    re_test = False
+    if not os.path.isfile(file_path):
+        re_test = True
+    if re_test:
+        print('Runing new results')
+        model = model_run.model_load(out, epoch)
+        model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
+    else:
+        print('Loaded previous results')
+
+    # load previous result并反归一化为标准量纲
+    data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
+
+    # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
+    pred = np.expand_dims(data_pred, axis=2)
+    if opt_data['doNorm'][1] is True:
+        stat_dict = data_model.stat_dict
+        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
+        pred = stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+        obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+
+    return pred, obs

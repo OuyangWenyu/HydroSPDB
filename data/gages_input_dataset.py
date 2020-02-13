@@ -273,3 +273,70 @@ class GagesDaDataModel(object):
             y = cut_data(y, rm_nan_y, seq_length)
         qx = np.array([np.concatenate((q[j], x[j]), axis=1) for j in range(q.shape[0])])
         return qx, y, c
+
+
+class GagesForecastDataModel(object):
+    """DataModel for assimilation of forecast data"""
+
+    def __init__(self, sim_data_model, data_model):
+        self.sim_data_model = sim_data_model
+        self.model_data = data_model
+        self.natural_flow = self.read_natural_inflow_and_forecast()
+
+    def read_natural_inflow_and_forecast(self):
+        sim_model_data = self.sim_data_model
+        sim_config_data = sim_model_data.data_source.data_config
+        # read model
+        # firstly, check if the model used to generate natural flow has existed
+        out_folder = sim_config_data.data_path["Out"]
+        epoch = sim_config_data.model_dict["train"]["nEpoch"]
+        model_file = os.path.join(out_folder, 'model_Ep' + str(epoch) + '.pt')
+        if not os.path.isfile(model_file):
+            master_train(sim_model_data)
+        model = torch.load(model_file)
+        # run the model
+        model_data = self.model_data
+        config_data = model_data.data_source.data_config
+        model_dict = config_data.model_dict
+        batch_size = model_dict["train"]["miniBatch"][0]
+        x, y, c = model_data.load_data(model_dict)
+        t_range = self.model_data.t_s_dict["t_final_range"]
+        natural_epoch = model_dict["train"]["nEpoch"]
+        file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(natural_epoch)])
+        file_path = os.path.join(out_folder, file_name) + '.csv'
+        model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
+        # read natural_flow from file
+        np_natural_flow = pd.read_csv(file_path, dtype=np.float, header=None).values
+        return np_natural_flow
+
+    def load_data(self, model_dict):
+        """Notice that don't cover the data of today when loading history data"""
+
+        def cut_data(temp_x, temp_rm_nan, temp_seq_length, temp_fcst_length):
+            """cut to size same as inflow's. Cover future natural flow"""
+            temp = temp_x[:, temp_seq_length - 1: -temp_fcst_length, :]
+            if temp_rm_nan:
+                temp[np.where(np.isnan(temp))] = 0
+            return temp
+
+        opt_data = model_dict["data"]
+        rm_nan_x = opt_data['rmNan'][0]
+        rm_nan_y = opt_data['rmNan'][1]
+        x, y, c = self.model_data.load_data(model_dict)
+
+        seq_length = model_dict["model"]["seqLength"]
+        fcst_length = model_dict["model"]["fcstLength"]
+        # don't cover the data of today when loading history data, so the length of 2nd dim is 'y.shape[1] - seq_length'
+        flow = self.natural_flow
+        q = np.zeros([flow.shape[0], flow.shape[1] - seq_length - fcst_length + 1, seq_length + fcst_length])
+        for i in range(q.shape[1]):
+            q[:, i, :] = flow[:, i:i + seq_length + fcst_length]
+
+        if rm_nan_x is True:
+            q[np.where(np.isnan(q))] = 0
+
+        if seq_length >= 1 or fcst_length >= 1:
+            x = cut_data(x, rm_nan_x, seq_length, fcst_length)
+            y = cut_data(y, rm_nan_y, seq_length, fcst_length)
+        qx = np.array([np.concatenate((q[j], x[j]), axis=1) for j in range(q.shape[0])])
+        return qx, y, c

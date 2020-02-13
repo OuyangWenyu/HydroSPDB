@@ -78,6 +78,15 @@ class TestDataClassCase(unittest.TestCase):
         forcing_data = source_data.read_forcing(usgs_id, t_range_list)
         print(forcing_data)
 
+    def test_read_usgs_gage(self):
+        source_data = unserialize_pickle(self.data_source_dump)
+        t_range_list = hydro_time.t_range_days(["1995-10-01", "2000-10-01"])
+        source_data.read_usge_gage("11", '07311600', t_range_list)
+
+    def test_read_usgs(self):
+        source_data = unserialize_pickle(self.data_source_dump)
+        source_data.read_usgs()
+
 
 if __name__ == '__main__':
     unittest.main()
