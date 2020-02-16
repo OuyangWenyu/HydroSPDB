@@ -66,6 +66,12 @@ class GagesConfig(DataConfig):
         attrGeol = eval(cfg.get(section, options[16]))
         attrHydro = eval(cfg.get(section, options[17]))
         attrHydroModDams = eval(cfg.get(section, options[18]))
+        attrHydroModOther = eval(cfg.get(section, options[19]))
+        attrLandscapePat = eval(cfg.get(section, options[20]))
+        attrLC06Basin = eval(cfg.get(section, options[21]))
+        attrPopInfrastr = eval(cfg.get(section, options[22]))
+        attrProtAreas = eval(cfg.get(section, options[23]))
+
         attr_str_sel = eval(cfg.get(section, options[12]))
 
         opt_data = collections.OrderedDict(varT=forcing_lst, forcingDir=forcing_dir, forcingType=forcing_type,

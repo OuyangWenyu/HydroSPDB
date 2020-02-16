@@ -12,16 +12,15 @@ def add_model_param(data_config, model_dict_item, **kwargs):
         dict_chosen[key] = kwargs[key]
 
 
-def update(opt, **kw):
-    for key in kw:
+def update_config_item(opt, **kwargs):
+    for key in kwargs:
         if key in opt:
             try:
-                opt[key] = type(opt[key])(kw[key])
+                opt[key] = kwargs[key]
             except ValueError:
                 print('skiped ' + key + ': wrong type')
         else:
             print('skiped ' + key + ': not in argument dict')
-    return opt
 
 
 def init_path(config_file):

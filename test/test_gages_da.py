@@ -32,7 +32,6 @@ class MyTestCase(unittest.TestCase):
         self.basin_area_screen = 100
 
     def test_da_data_temp(self):
-        # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM
         config_data = self.config_data
         source_data = GagesSource(config_data, config_data.model_dict["data"]["tRangeTrain"])
         df = DataModel(source_data)
@@ -52,7 +51,6 @@ class MyTestCase(unittest.TestCase):
         train_lstm_da(data_model)
 
     def test_da_data_temp_test(self):
-        # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM
         config_data = self.config_data
         source_data = GagesSource(config_data, config_data.model_dict["data"]["tRangeTest"])
         df = DataModel(source_data)
@@ -96,7 +94,6 @@ class MyTestCase(unittest.TestCase):
         plot_ind_map(df1.data_source.all_configs['gage_point_file'], sites_df)
 
     def test_inv_data_temp_smallres(self):
-        # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM
         config_data_1 = self.config_data
         source_data_1 = GagesSource.choose_some_basins(config_data_1, config_data_1.model_dict["data"]["tRangeTrain"],
                                                        self.basin_area_screen)
@@ -107,7 +104,6 @@ class MyTestCase(unittest.TestCase):
                        var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
 
     def test_inv_data_temp_test_smallres(self):
-        # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM
         config_data_1 = self.config_data
         source_data_1 = GagesSource.choose_some_basins(config_data_1, config_data_1.model_dict["data"]["tRangeTest"],
                                                        self.basin_area_screen)

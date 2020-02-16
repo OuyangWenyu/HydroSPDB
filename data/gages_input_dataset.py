@@ -1,10 +1,15 @@
 """for stacked lstm"""
+import copy
 import os
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
 import numpy as np
+
+from data import DataModel
+from data.data_config import update_config_item
 from explore import trans_norm
+from explore.hydro_cluster import cluster_attr_train
 from hydroDL import master_train
 from hydroDL.model import model_run
 from utils.dataset_format import subset_of_dict
@@ -340,3 +345,61 @@ class GagesForecastDataModel(object):
             y = cut_data(y, rm_nan_y, seq_length, fcst_length)
         qx = np.array([np.concatenate((q[j], x[j]), axis=1) for j in range(q.shape[0])])
         return qx, y, c
+
+
+class GagesExploreDataModel(object):
+    def __init__(self, data_model, num_cluster, sites_ids_list=None):
+        self.data_model = data_model
+        self.data_models = self.cluster_datamodel(num_cluster, sites_ids_list)
+
+    def cluster_datamodel(self, num_cluster, sites_ids_list=None):
+        """according to attr, cluster dataset"""
+        model_data = self.data_model
+        sites_id_all = model_data.t_s_dict["sites_id"]
+        label_dict = {}
+        if sites_ids_list:
+            for k in range(len(sites_ids_list)):
+                for site_id_temp in sites_ids_list[k]:
+                    label_dict[site_id_temp] = k
+        else:
+            stat_dict = model_data.stat_dict
+            var_lst = model_data.data_source.all_configs.get("attr_chosen")
+            data = trans_norm(model_data.data_attr, var_lst, stat_dict, to_norm=True)
+            index_start_anthro = 0
+            for i in range(len(var_lst)):
+                if var_lst[i] == 'NDAMS_2009':
+                    index_start_anthro = i
+                    break
+            norm_data = data[:, index_start_anthro:]
+            kmeans, labels = cluster_attr_train(norm_data, num_cluster)
+            label_dict = dict(zip(sites_id_all, labels))
+        data_models = []
+        for i in range(num_cluster):
+            sites_label_i = [key for key, value in label_dict.items() if value == i]
+            sites_label_i_index = [j for j in range(len(sites_id_all)) if sites_id_all[j] in sites_label_i]
+            data_flow = model_data.data_flow[sites_label_i_index, :]
+            data_forcing = model_data.data_forcing[sites_label_i_index, :, :]
+            data_attr = model_data.data_attr[sites_label_i_index, :]
+            var_dict = model_data.var_dict
+            f_dict = model_data.f_dict
+            stat_dict = {}
+            t_s_dict = {}
+            source_data_i = copy.deepcopy(model_data.data_source)
+            out_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Out"], str(i))
+            if not os.path.isdir(out_dir_new):
+                os.makedirs(out_dir_new)
+            temp_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Temp"], str(i))
+            if not os.path.isdir(temp_dir_new):
+                os.makedirs(temp_dir_new)
+            update_config_item(source_data_i.data_config.data_path, Out=out_dir_new, Temp=temp_dir_new)
+            update_config_item(source_data_i.all_configs, out_dir=out_dir_new, temp_dir=temp_dir_new,
+                               flow_screen_gage_id=sites_label_i)
+            data_model_i = DataModel(source_data_i, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
+                                     t_s_dict)
+            t_s_dict['sites_id'] = sites_label_i
+            t_s_dict['t_final_range'] = source_data_i.t_range
+            data_model_i.t_s_dict = t_s_dict
+            stat_dict_i = data_model_i.cal_stat_all()
+            data_model_i.stat_dict = stat_dict_i
+            data_models.append(data_model_i)
+        return data_models
