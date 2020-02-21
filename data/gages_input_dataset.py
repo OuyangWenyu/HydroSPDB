@@ -1,14 +1,15 @@
 """for stacked lstm"""
 import copy
+import operator
 import os
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
 import numpy as np
-
+import geopandas as gpd
 from data import DataModel
 from data.data_config import update_config_item
-from explore import trans_norm
+from explore import trans_norm, cal_stat
 from explore.hydro_cluster import cluster_attr_train
 from hydroDL import master_train
 from hydroDL.model import model_run
@@ -403,3 +404,72 @@ class GagesExploreDataModel(object):
             data_model_i.stat_dict = stat_dict_i
             data_models.append(data_model_i)
         return data_models
+
+
+class GagesDamDataModel(object):
+    def __init__(self, gages_input, nid_input):
+        self.gages_input = gages_input
+        self.nid_input = nid_input
+        self.gage_main_dam_purpose = self.spatial_join_dam()
+        self.update_attr()
+
+    def spatial_join_dam(self):
+        gage_region_dir = self.gages_input.data_source.all_configs.get("gage_region_dir")
+        region_shapefiles = self.gages_input.data_source.all_configs.get("regions")
+        # read sites from shapefile of region, get id from it.
+        shapefiles = [os.path.join(gage_region_dir, region_shapefile + '.shp') for region_shapefile in
+                      region_shapefiles]
+        dam_dict = {}
+        for shapefile in shapefiles:
+            polys = gpd.read_file(shapefile)
+            points = self.nid_input.nid_data
+            print(points.crs)
+            print(polys.crs)
+            if not (points.crs == polys.crs):
+                points = points.to_crs(polys.crs)
+            print(points.head())
+            print(polys.head())
+            # Make a spatial join
+            spatial_dam = gpd.sjoin(points, polys, how="inner", op="within")
+            gages_id_dam = spatial_dam['GAGE_ID'].values
+            u1 = np.unique(gages_id_dam)
+            main_purposes = []
+            for u1_i in u1:
+                purposes = []
+                storages = []
+                for index_i in range(gages_id_dam.shape[0]):
+                    if gages_id_dam[index_i] == u1_i:
+                        purposes.append(spatial_dam["PURPOSES"].iloc[index_i])
+                        storages.append(spatial_dam["NID_STORAGE"].iloc[index_i])
+                purposes = np.array(purposes)
+                storages = np.array(storages)
+                u, indices = np.unique(purposes, return_inverse=True)
+                max_index = np.amax(indices)
+                dict_i = {}
+                for i in range(max_index + 1):
+                    dict_i[u[i]] = np.sum(storages[np.where(indices == i)])
+                main_purpose = max(dict_i.items(), key=operator.itemgetter(1))[0]
+                main_purposes.append(main_purpose)
+            d = dict(zip(u1.tolist(), main_purposes))
+            dam_dict = {**dam_dict, **d}
+        return dam_dict
+
+    def update_attr(self):
+        dam_dict = self.gage_main_dam_purpose
+        attr_lst = self.gages_input.data_source.all_configs.get("attr_chosen")
+        data_attr = self.gages_input.data_attr
+        stat_dict = self.gages_input.stat_dict
+        # update attr_lst, var_dict, f_dict, data_attr
+        var_dam = 'GAGE_MAIN_DAM_PURPOSE'
+        attr_lst.append(var_dam)
+        dam_keys = dam_dict.keys()
+        site_dam_purpose = []
+        for site_id in self.gages_input.t_s_dict['sites_id']:
+            if site_id in dam_keys:
+                site_dam_purpose.append(dam_dict[site_id])
+            else:
+                site_dam_purpose.append(None)
+        site_dam_purpose, uniques = pd.factorize(site_dam_purpose)
+        site_dam_purpose = np.array(site_dam_purpose).reshape(len(site_dam_purpose), 1)
+        self.gages_input.data_attr = np.append(data_attr, site_dam_purpose, axis=1)
+        stat_dict[var_dam] = cal_stat(self.gages_input.data_attr[:, -1])

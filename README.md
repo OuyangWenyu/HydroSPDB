@@ -46,6 +46,7 @@ conda install -c conda-forge statsmodels
 conda install -c conda-forge seaborn
 conda install -c conda-forge cartopy
 conda install -c conda-forge geoplot
+pip install xlrd
 ```
 
 Finally, generate environment.yml file by conda:

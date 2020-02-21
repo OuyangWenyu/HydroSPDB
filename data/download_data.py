@@ -1,5 +1,6 @@
 import os
 import shutil
+import urllib
 import zipfile
 from urllib import parse
 
@@ -7,7 +8,6 @@ import kaggle
 import requests
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
-from six.moves import urllib
 
 from utils.dataset_format import unzip_nested_zip
 
@@ -60,6 +60,12 @@ def download_small_file(data_url, temp_file):
     r = requests.get(data_url)
     with open(temp_file, 'w') as f:
         f.write(r.text)
+
+
+def download_excel(data_url, temp_file):
+    """download a excel file according to url"""
+    if not os.path.isfile(temp_file):
+        urllib.request.urlretrieve(data_url, temp_file)
 
 
 def download_kaggle_file(kaggle_json, name_of_dataset, path_download, file_download):
