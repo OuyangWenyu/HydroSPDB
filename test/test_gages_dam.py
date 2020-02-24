@@ -3,7 +3,7 @@ import unittest
 import definitions
 from data import GagesConfig, GagesSource, DataModel
 from data.data_input import save_datamodel, load_datamodel
-from data.gages_input_dataset import GagesExploreDataModel, GagesDamDataModel
+from data.gages_input_dataset import GagesDamDataModel
 from data.nid_input import NidModel
 from explore.stat import statError
 from hydroDL.master.master import master_train, master_test
@@ -27,6 +27,8 @@ class MyTestCase(unittest.TestCase):
         self.config_file = os.path.join(config_dir, "dam/config_dam_exp2.ini")
         self.subdir = r"dam/exp2"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
+        # self.nid_file = 'PA_U.xlsx'
+        self.nid_file = 'OH_U.xlsx'
 
     def test_data_temp_dam(self):
         config_data_1 = self.config_data
@@ -45,6 +47,7 @@ class MyTestCase(unittest.TestCase):
                             var_dict_file_name='dictAttribute.json',
                             t_s_dict_file_name='dictTimeSpace.json')
         nid_input = NidModel()
+        # nid_input = NidModel(self.nid_file)
         data_input = GagesDamDataModel(df, nid_input)
         master_train(data_input.gages_input)
 
@@ -66,6 +69,7 @@ class MyTestCase(unittest.TestCase):
                                  var_dict_file_name='test_dictAttribute.json',
                                  t_s_dict_file_name='test_dictTimeSpace.json')
         nid_input = NidModel()
+        # nid_input = NidModel(self.nid_file)
         data_input_test = GagesDamDataModel(df_test, nid_input)
         pred, obs = master_test(data_input_test.gages_input)
         pred = pred.reshape(pred.shape[0], pred.shape[1])

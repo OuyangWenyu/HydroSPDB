@@ -44,9 +44,10 @@ class MyTestCase(unittest.TestCase):
                             f_dict_file_name='dictFactorize.json',
                             var_dict_file_name='dictAttribute.json',
                             t_s_dict_file_name='dictTimeSpace.json')
-        data_input = GagesExploreDataModel(df, num_cluster=self.num_cluster)
+        data_input = GagesExploreDataModel(df)
+        data_models = data_input.cluster_datamodel(num_cluster=self.num_cluster)
         count = 1
-        for data_model in data_input.data_models:
+        for data_model in data_models:
             print("\n", "training model", str(count), ":\n")
             master_train(data_model)
             count += 1
@@ -75,13 +76,16 @@ class MyTestCase(unittest.TestCase):
                                  var_dict_file_name='test_dictAttribute.json',
                                  t_s_dict_file_name='test_dictTimeSpace.json')
 
-        data_input_train = GagesExploreDataModel(df_train, num_cluster=self.num_cluster)
+        data_input_train = GagesExploreDataModel(df_train)
+        data_train_models = data_input_train.cluster_datamodel(num_cluster=self.num_cluster)
         sites_ids_list = []
-        for data_model_train in data_input_train.data_models:
+        for data_model_train in data_train_models:
             sites_id_i = data_model_train.t_s_dict["sites_id"]
             sites_ids_list.append(sites_id_i)
-        data_input_test = GagesExploreDataModel(df_test, num_cluster=self.num_cluster, sites_ids_list=sites_ids_list)
-        for data_model in data_input_test.data_models:
+        data_input_test = GagesExploreDataModel(df_test)
+        data_test_models = data_input_test.cluster_datamodel(num_cluster=self.num_cluster,
+                                                             sites_ids_list=sites_ids_list)
+        for data_model in data_test_models:
             pred, obs = master_test(data_model)
             pred = pred.reshape(pred.shape[0], pred.shape[1])
             obs = obs.reshape(obs.shape[0], obs.shape[1])

@@ -348,12 +348,59 @@ class GagesForecastDataModel(object):
         return qx, y, c
 
 
-class GagesExploreDataModel(object):
-    def __init__(self, data_model, num_cluster, sites_ids_list=None):
-        self.data_model = data_model
-        self.data_models = self.cluster_datamodel(num_cluster, sites_ids_list)
+def divide_to_classes_by_dam(label_dict, model_data, num_cluster, sites_id_all):
+    data_models = []
+    var_dict = model_data.var_dict
+    f_dict = model_data.f_dict
+    for i in range(num_cluster):
+        sites_label_i = [key for key, value in label_dict.items() if value == i]
+        sites_label_i_index = [j for j in range(len(sites_id_all)) if sites_id_all[j] in sites_label_i]
+        data_model_i = create_new_datamodel(f_dict, i, model_data, num_cluster, sites_label_i, sites_label_i_index,
+                                            var_dict)
+        data_models.append(data_model_i)
+    return data_models
 
-    def cluster_datamodel(self, num_cluster, sites_ids_list=None):
+
+def create_new_datamodel(f_dict, i, model_data, num_cluster, sites_label_i, sites_label_i_index, var_dict):
+    data_flow = model_data.data_flow[sites_label_i_index, :]
+    data_forcing = model_data.data_forcing[sites_label_i_index, :, :]
+    data_attr = model_data.data_attr[sites_label_i_index, :]
+    stat_dict = {}
+    t_s_dict = {}
+    source_data_i = copy.deepcopy(model_data.data_source)
+    out_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Out"], str(i))
+    if not os.path.isdir(out_dir_new):
+        os.makedirs(out_dir_new)
+    temp_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Temp"], str(i))
+    if not os.path.isdir(temp_dir_new):
+        os.makedirs(temp_dir_new)
+    update_config_item(source_data_i.data_config.data_path, Out=out_dir_new, Temp=temp_dir_new)
+    update_config_item(source_data_i.all_configs, out_dir=out_dir_new, temp_dir=temp_dir_new,
+                       flow_screen_gage_id=sites_label_i)
+    f_dict_new = copy.deepcopy(f_dict)
+    if num_cluster > len(f_dict['GAGE_MAIN_DAM_PURPOSE']):
+        # there is a "None" type
+        if i == 0:
+            f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = None
+        else:
+            f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = [f_dict['GAGE_MAIN_DAM_PURPOSE'][i - 1]]
+    else:
+        f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = [f_dict['GAGE_MAIN_DAM_PURPOSE'][i]]
+    data_model_i = DataModel(source_data_i, data_flow, data_forcing, data_attr, var_dict, f_dict_new, stat_dict,
+                             t_s_dict)
+    t_s_dict['sites_id'] = sites_label_i
+    t_s_dict['t_final_range'] = source_data_i.t_range
+    data_model_i.t_s_dict = t_s_dict
+    stat_dict_i = data_model_i.cal_stat_all()
+    data_model_i.stat_dict = stat_dict_i
+    return data_model_i
+
+
+class GagesExploreDataModel(object):
+    def __init__(self, data_model):
+        self.data_model = data_model
+
+    def cluster_datamodel(self, num_cluster, start_dam_var='NDAMS_2009', sites_ids_list=None):
         """according to attr, cluster dataset"""
         model_data = self.data_model
         sites_id_all = model_data.t_s_dict["sites_id"]
@@ -368,42 +415,66 @@ class GagesExploreDataModel(object):
             data = trans_norm(model_data.data_attr, var_lst, stat_dict, to_norm=True)
             index_start_anthro = 0
             for i in range(len(var_lst)):
-                if var_lst[i] == 'NDAMS_2009':
+                if var_lst[i] == start_dam_var:
                     index_start_anthro = i
                     break
             norm_data = data[:, index_start_anthro:]
             kmeans, labels = cluster_attr_train(norm_data, num_cluster)
             label_dict = dict(zip(sites_id_all, labels))
-        data_models = []
-        for i in range(num_cluster):
-            sites_label_i = [key for key, value in label_dict.items() if value == i]
-            sites_label_i_index = [j for j in range(len(sites_id_all)) if sites_id_all[j] in sites_label_i]
-            data_flow = model_data.data_flow[sites_label_i_index, :]
-            data_forcing = model_data.data_forcing[sites_label_i_index, :, :]
-            data_attr = model_data.data_attr[sites_label_i_index, :]
-            var_dict = model_data.var_dict
-            f_dict = model_data.f_dict
-            stat_dict = {}
-            t_s_dict = {}
-            source_data_i = copy.deepcopy(model_data.data_source)
-            out_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Out"], str(i))
-            if not os.path.isdir(out_dir_new):
-                os.makedirs(out_dir_new)
-            temp_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Temp"], str(i))
-            if not os.path.isdir(temp_dir_new):
-                os.makedirs(temp_dir_new)
-            update_config_item(source_data_i.data_config.data_path, Out=out_dir_new, Temp=temp_dir_new)
-            update_config_item(source_data_i.all_configs, out_dir=out_dir_new, temp_dir=temp_dir_new,
-                               flow_screen_gage_id=sites_label_i)
-            data_model_i = DataModel(source_data_i, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
-                                     t_s_dict)
-            t_s_dict['sites_id'] = sites_label_i
-            t_s_dict['t_final_range'] = source_data_i.t_range
-            data_model_i.t_s_dict = t_s_dict
-            stat_dict_i = data_model_i.cal_stat_all()
-            data_model_i.stat_dict = stat_dict_i
-            data_models.append(data_model_i)
+
+        data_models = divide_to_classes_by_dam(label_dict, model_data, num_cluster, sites_id_all)
         return data_models
+
+    def classify_datamodel(self, sites_ids_list=None):
+        """classify data into classes one of which include all gage with same main dam purpose"""
+        model_data = self.data_model
+        sites_id_all = model_data.t_s_dict["sites_id"]
+        data_attrs = model_data.data_attr[:, -1]
+        data_attrs_unique, indices = np.unique(data_attrs, return_index=True)
+        label_dict = {}
+        if sites_ids_list:
+            for k in range(len(sites_ids_list)):
+                for site_id_temp in sites_ids_list[k]:
+                    label_dict[site_id_temp] = k
+        else:
+            for i in range(data_attrs_unique.size):
+                for j in range(len(sites_id_all)):
+                    if data_attrs[j] == data_attrs_unique[i]:
+                        label_dict[sites_id_all[j]] = i
+        data_models = divide_to_classes_by_dam(label_dict, model_data, data_attrs_unique.size, sites_id_all)
+        return data_models
+
+    def choose_datamodel(self, sites_ids, f_dict_dam_purpose, sub_dir_num):
+        model_data = self.data_model
+        sites_id_all = model_data.t_s_dict["sites_id"]
+        sites_label_i_index = [j for j in range(len(sites_id_all)) if sites_id_all[j] in sites_ids]
+        data_flow = model_data.data_flow[sites_label_i_index, :]
+        data_forcing = model_data.data_forcing[sites_label_i_index, :, :]
+        data_attr = model_data.data_attr[sites_label_i_index, :]
+        stat_dict = {}
+        t_s_dict = {}
+        source_data_i = copy.deepcopy(model_data.data_source)
+        out_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Out"], str(sub_dir_num))
+        temp_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Temp"], str(sub_dir_num))
+        update_config_item(source_data_i.data_config.data_path, Out=out_dir_new, Temp=temp_dir_new)
+        sites_id_all_np = np.array(sites_id_all)
+        update_config_item(source_data_i.all_configs, out_dir=out_dir_new, temp_dir=temp_dir_new,
+                           flow_screen_gage_id=sites_id_all_np[sites_label_i_index].tolist())
+        f_dict = model_data.f_dict
+        f_dict_new = copy.deepcopy(f_dict)
+        if f_dict_dam_purpose is None:
+            f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = None
+        else:
+            f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = f_dict_dam_purpose
+        var_dict = model_data.var_dict
+        data_model_i = DataModel(source_data_i, data_flow, data_forcing, data_attr, var_dict, f_dict_new, stat_dict,
+                                 t_s_dict)
+        t_s_dict['sites_id'] = sites_id_all_np[sites_label_i_index].tolist()
+        t_s_dict['t_final_range'] = source_data_i.t_range
+        data_model_i.t_s_dict = t_s_dict
+        stat_dict_i = data_model_i.cal_stat_all()
+        data_model_i.stat_dict = stat_dict_i
+        return data_model_i
 
 
 class GagesDamDataModel(object):
@@ -459,6 +530,8 @@ class GagesDamDataModel(object):
         attr_lst = self.gages_input.data_source.all_configs.get("attr_chosen")
         data_attr = self.gages_input.data_attr
         stat_dict = self.gages_input.stat_dict
+        f_dict = self.gages_input.f_dict
+        var_dict = self.gages_input.var_dict
         # update attr_lst, var_dict, f_dict, data_attr
         var_dam = 'GAGE_MAIN_DAM_PURPOSE'
         attr_lst.append(var_dam)
@@ -469,7 +542,11 @@ class GagesDamDataModel(object):
                 site_dam_purpose.append(dam_dict[site_id])
             else:
                 site_dam_purpose.append(None)
-        site_dam_purpose, uniques = pd.factorize(site_dam_purpose)
-        site_dam_purpose = np.array(site_dam_purpose).reshape(len(site_dam_purpose), 1)
-        self.gages_input.data_attr = np.append(data_attr, site_dam_purpose, axis=1)
+        site_dam_purpose_int, uniques = pd.factorize(site_dam_purpose)
+        site_dam_purpose_int = np.array(site_dam_purpose_int).reshape(len(site_dam_purpose_int), 1)
+        self.gages_input.data_attr = np.append(data_attr, site_dam_purpose_int, axis=1)
         stat_dict[var_dam] = cal_stat(self.gages_input.data_attr[:, -1])
+        # update f_dict and var_dict
+        print("update f_dict and var_dict")
+        var_dict['dam_purpose'] = var_dam
+        f_dict[var_dam] = uniques.tolist()

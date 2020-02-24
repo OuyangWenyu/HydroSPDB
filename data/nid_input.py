@@ -9,20 +9,17 @@ from shapely.geometry import Point
 
 
 class NidConfig(object):
-    nidFile = 'NID2018_U.xlsx'
-    # nidFile = 'PA_U.xlsx'
-    # nidFile = 'OH_U.xlsx'
-    nidUrl = 'https://nid.sec.usace.army.mil/ords/NID_R.DOWNLOADFILE?InFileName={nidFile}'.format(nidFile=nidFile)
+    nidUrl = 'https://nid.sec.usace.army.mil/ords/NID_R.DOWNLOADFILE?InFileName={nidFile}'
     nidDir = os.path.join(definitions.ROOT_DIR, "example", 'data', 'nid')
     # EPSG:4269 --  https://epsg.io/4269
     nidEpsg = 4269
 
-    def __init__(self):
+    def __init__(self, nid_file_name):
         if not os.path.isdir(NidConfig.nidDir):
             os.mkdir(NidConfig.nidDir)
-        self.nid_url = NidConfig.nidUrl
+        self.nid_url = NidConfig.nidUrl.format(nidFile=nid_file_name)
         self.nid_dir = NidConfig.nidDir
-        self.nid_file = os.path.join(NidConfig.nidDir, NidConfig.nidFile)
+        self.nid_file = os.path.join(NidConfig.nidDir, nid_file_name)
         self.nid_epsg = NidConfig.nidEpsg
 
 
@@ -53,8 +50,8 @@ class NidSource(object):
 class NidModel(object):
     """data formatter， utilizing function of DataSource object to read data and transform"""
 
-    def __init__(self):
+    def __init__(self, nid_file='NID2018_U.xlsx'):
         """:parameter data_source: DataSource object"""
-        nid_config = NidConfig()
+        nid_config = NidConfig(nid_file)
         self.nid_source = NidSource(nid_config)
         self.nid_data = self.nid_source.read_nid()
