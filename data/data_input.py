@@ -1,12 +1,16 @@
 """一个处理数据的模板方法"""
+import copy
 import os
 from collections import OrderedDict
 
 import numpy as np
+import torch
+from torch.utils.data import Dataset
 
 from explore import *
 from utils import serialize_pickle, serialize_json, serialize_numpy, unserialize_pickle, unserialize_json, \
-    unserialize_numpy
+    unserialize_numpy, hydro_time
+from utils.hydro_math import copy_attr_array_in2d, concat_two_3darray
 
 
 def save_datamodel(data_model, num_str=None, **kwargs):
@@ -33,34 +37,6 @@ def save_datamodel(data_model, num_str=None, **kwargs):
     serialize_json(data_model.f_dict, f_dict_file)
     serialize_json(data_model.var_dict, var_dict_file)
     serialize_json(data_model.t_s_dict, t_s_dict_file)
-
-
-def load_datamodel(dir_temp_orgin, num_str=None, **kwargs):
-    if num_str:
-        dir_temp = os.path.join(dir_temp_orgin, num_str)
-    else:
-        dir_temp = dir_temp_orgin
-    data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
-    stat_file = os.path.join(dir_temp, kwargs['stat_file_name'])
-    flow_npy_file = os.path.join(dir_temp, kwargs['flow_file_name'])
-    forcing_npy_file = os.path.join(dir_temp, kwargs['forcing_file_name'])
-    attr_npy_file = os.path.join(dir_temp, kwargs['attr_file_name'])
-    f_dict_file = os.path.join(dir_temp, kwargs['f_dict_file_name'])
-    var_dict_file = os.path.join(dir_temp, kwargs['var_dict_file_name'])
-    t_s_dict_file = os.path.join(dir_temp, kwargs['t_s_dict_file_name'])
-    source_data = unserialize_pickle(data_source_file)
-    # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
-    stat_dict = unserialize_json(stat_file)
-    data_flow = unserialize_numpy(flow_npy_file)
-    data_forcing = unserialize_numpy(forcing_npy_file)
-    data_attr = unserialize_numpy(attr_npy_file)
-    # dictFactorize.json is the explanation of value of categorical variables
-    var_dict = unserialize_json(var_dict_file)
-    f_dict = unserialize_json(f_dict_file)
-    t_s_dict = unserialize_json(t_s_dict_file)
-    data_model = DataModel(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
-                           t_s_dict)
-    return data_model
 
 
 class DataModel(object):
@@ -184,9 +160,68 @@ class DataModel(object):
             x = np.concatenate([x, obs], axis=2)
         return x, y, c
 
+    @classmethod
+    def data_models_of_train_test(cls, data_model, t_train, t_test):
+        """split the data_model that will be used in LSTM according to train and test"""
+
+        def select_by_time(data_flow_temp, data_forcing_temp, data_model_origin, t_temp):
+            data_attr_temp = data_model_origin.data_attr[:, :]
+            stat_dict_temp = {}
+            t_s_dict_temp = {}
+            source_data_temp = copy.deepcopy(data_model_origin.data_source)
+            source_data_temp.t_range = t_temp
+            f_dict_temp = data_model_origin.f_dict
+            var_dict_temp = data_model_origin.var_dict
+            data_model_temp = cls(source_data_temp, data_flow_temp, data_forcing_temp, data_attr_temp,
+                                  var_dict_temp, f_dict_temp, stat_dict_temp, t_s_dict_temp)
+            t_s_dict_temp['sites_id'] = data_model_origin.t_s_dict['sites_id']
+            t_s_dict_temp['t_final_range'] = t_temp
+            data_model_temp.t_s_dict = t_s_dict_temp
+            stat_dict_temp = data_model_temp.cal_stat_all()
+            data_model_temp.stat_dict = stat_dict_temp
+            return data_model_temp
+
+        t_lst_train = hydro_time.t_range_days(t_train)
+        t_train_final_index = t_lst_train.size
+        data_flow_train = data_model.data_flow[:, :t_train_final_index]
+        data_forcing_train = data_model.data_forcing[:, :t_train_final_index, :]
+        data_model_train = select_by_time(data_flow_train, data_forcing_train, data_model, t_train)
+
+        data_flow_test = data_model.data_flow[:, t_train_final_index:]
+        data_forcing_test = data_model.data_forcing[:, t_train_final_index:, :]
+        data_model_test = select_by_time(data_flow_test, data_forcing_test, data_model, t_test)
+        return data_model_train, data_model_test
+
+    @classmethod
+    def load_datamodel(cls, dir_temp_orgin, num_str=None, **kwargs):
+        if num_str:
+            dir_temp = os.path.join(dir_temp_orgin, num_str)
+        else:
+            dir_temp = dir_temp_orgin
+        data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
+        stat_file = os.path.join(dir_temp, kwargs['stat_file_name'])
+        flow_npy_file = os.path.join(dir_temp, kwargs['flow_file_name'])
+        forcing_npy_file = os.path.join(dir_temp, kwargs['forcing_file_name'])
+        attr_npy_file = os.path.join(dir_temp, kwargs['attr_file_name'])
+        f_dict_file = os.path.join(dir_temp, kwargs['f_dict_file_name'])
+        var_dict_file = os.path.join(dir_temp, kwargs['var_dict_file_name'])
+        t_s_dict_file = os.path.join(dir_temp, kwargs['t_s_dict_file_name'])
+        source_data = unserialize_pickle(data_source_file)
+        # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
+        stat_dict = unserialize_json(stat_file)
+        data_flow = unserialize_numpy(flow_npy_file)
+        data_forcing = unserialize_numpy(forcing_npy_file)
+        data_attr = unserialize_numpy(attr_npy_file)
+        # dictFactorize.json is the explanation of value of categorical variables
+        var_dict = unserialize_json(var_dict_file)
+        f_dict = unserialize_json(f_dict_file)
+        t_s_dict = unserialize_json(t_s_dict_file)
+        data_model = cls(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
+                         t_s_dict)
+        return data_model
+
 
 class GagesModel(DataModel):
-    # TODO: cal_stat_basin_norm and  cal_stat_gamma still not completed in get_data_xx functions;  trans_norm still not completed for this case
     def __init__(self, data_source, *args):
         super().__init__(data_source, *args)
 
@@ -197,6 +232,8 @@ class GagesModel(DataModel):
         stat_dict = dict()
         basin_area = self.data_source.read_attr(self.t_s_dict["sites_id"], ['DRAIN_SQKM'], is_return_dict=False)
         mean_prep = self.data_source.read_attr(self.t_s_dict["sites_id"], ['PPTAVG_BASIN'], is_return_dict=False)
+        # annual value to daily value and cm to mm
+        mean_prep = mean_prep / 365 * 10
         stat_dict['usgsFlow'] = cal_stat_basin_norm(flow, basin_area, mean_prep)
 
         # forcing
@@ -217,9 +254,82 @@ class GagesModel(DataModel):
             stat_dict[var] = cal_stat(attr_data[:, k])
         return stat_dict
 
+    def get_data_obs(self, rm_nan=True, to_norm=True):
+        stat_dict = self.stat_dict
+        data = self.data_flow
+        basin_area = self.data_source.read_attr(self.t_s_dict["sites_id"], ['DRAIN_SQKM'], is_return_dict=False)
+        mean_prep = self.data_source.read_attr(self.t_s_dict["sites_id"], ['PPTAVG_BASIN'], is_return_dict=False)
+        mean_prep = mean_prep / 365 * 10
+        data = _basin_norm(data, basin_area, mean_prep, to_norm=True)
+        data = np.expand_dims(data, axis=2)
+        data = _trans_norm(data, 'usgsFlow', stat_dict, to_norm=to_norm)
+        if rm_nan is True:
+            data[np.where(np.isnan(data))] = 0
+        return data
+
+    def get_data_ts(self, rm_nan=True, to_norm=True):
+        stat_dict = self.stat_dict
+        var_lst = self.data_source.all_configs.get("forcing_chosen")
+        data = self.data_forcing
+        data = _trans_norm(data, var_lst, stat_dict, to_norm=to_norm)
+        if rm_nan is True:
+            data[np.where(np.isnan(data))] = 0
+        return data
+
+
+def _trans_norm(x, var_lst, stat_dict, *, to_norm):
+    """normalization; when to_norm=False, anti-normalization
+    :parameter
+        xï¼šad or 3d
+            2d: 1st dim is gauge  2nd dim is var type
+            3d: 1st dim is gauge 2nd dim is time 3rd dim is var type
+    """
+    if type(var_lst) is str:
+        var_lst = [var_lst]
+    out = np.zeros(x.shape)
+    for k in range(len(var_lst)):
+        var = var_lst[k]
+        stat = stat_dict[var]
+        if to_norm is True:
+            if len(x.shape) == 3:
+                if var == 'prcp' or var == 'usgsFlow':
+                    x[:, :, k] = np.log10(np.sqrt(x[:, :, k]) + 0.1)
+                out[:, :, k] = (x[:, :, k] - stat[2]) / stat[3]
+            elif len(x.shape) == 2:
+                if var == 'prcp' or var == 'usgsFlow':
+                    x[:, k] = np.log10(np.sqrt(x[:, k]) + 0.1)
+                out[:, k] = (x[:, k] - stat[2]) / stat[3]
+        else:
+            if len(x.shape) == 3:
+                out[:, :, k] = x[:, :, k] * stat[3] + stat[2]
+                if var == 'prcp' or var == 'usgsFlow':
+                    out[:, :, k] = (np.power(10, out[:, :, k]) - 0.1) ** 2
+            elif len(x.shape) == 2:
+                out[:, k] = x[:, k] * stat[3] + stat[2]
+                if var == 'prcp' or var == 'usgsFlow':
+                    out[:, k] = (np.power(10, out[:, k]) - 0.1) ** 2
+    return out
+
+
+def _basin_norm(x, basin_area, mean_prep, to_norm):
+    """for regional training, gageid should be numpyarray"""
+    nd = len(x.shape)
+    # meanprep = readAttr(gageid, ['q_mean'])
+    if nd == 3 and x.shape[2] == 1:
+        x = x[:, :, 0]  # unsqueeze the original 3 dimension matrix
+    temparea = np.tile(basin_area, (1, x.shape[1]))
+    tempprep = np.tile(mean_prep, (1, x.shape[1]))
+    if to_norm is True:
+        flow = (x * 0.0283168 * 3600 * 24) / (
+                (temparea * (10 ** 6)) * (tempprep * 10 ** (-3)))  # (m^3/day)/(m^3/day)
+    else:
+        flow = x * ((temparea * (10 ** 6)) * (tempprep * 10 ** (-3))) / (0.0283168 * 3600 * 24)
+    if nd == 3:
+        flow = np.expand_dims(flow, axis=2)
+    return flow
+
 
 class CamelsModel(DataModel):
-    # TODO: cal_stat_basin_norm and  cal_stat_gamma still not completed in get_data_xx functions
     def __init__(self, data_source, *args):
         super().__init__(data_source, *args)
 
@@ -249,3 +359,57 @@ class CamelsModel(DataModel):
             var = attr_lst[k]
             stat_dict[var] = cal_stat(attr_data[:, k])
         return stat_dict
+
+    def get_data_obs(self, rm_nan=True, to_norm=True):
+        stat_dict = self.stat_dict
+        data = self.data_flow
+        basin_area = self.data_source.read_attr(self.t_s_dict["sites_id"], ['area_gages2'], is_return_dict=False)
+        mean_prep = self.data_source.read_attr(self.t_s_dict["sites_id"], ['p_mean'], is_return_dict=False)
+        data = _basin_norm(data, basin_area, mean_prep, to_norm=True)
+        data = np.expand_dims(data, axis=2)
+        data = _trans_norm(data, 'usgsFlow', stat_dict, to_norm=to_norm)
+        if rm_nan is True:
+            data[np.where(np.isnan(data))] = 0
+        return data
+
+    def get_data_ts(self, rm_nan=True, to_norm=True):
+        stat_dict = self.stat_dict
+        var_lst = self.data_source.all_configs.get("forcing_chosen")
+        data = self.data_forcing
+        data = _trans_norm(data, var_lst, stat_dict, to_norm=to_norm)
+        if rm_nan is True:
+            data[np.where(np.isnan(data))] = 0
+        return data
+
+
+class StreamflowInputDataset(Dataset):
+    """Dataset for input of LSTM"""
+
+    def __init__(self, data_model, train_mode=True, transform=None):
+        self.data_model = data_model
+        self.train_mode = train_mode
+        model_dict = data_model.data_source.data_config.model_dict
+        self.batch_size, self.rho = model_dict["train"]["miniBatch"]
+        x, self.y, c = data_model.load_data(model_dict)
+        c = copy_attr_array_in2d(c, x.shape[1])
+        self.xc = concat_two_3darray(x, c)
+        self.transform = transform
+
+    def __getitem__(self, index):
+        ngrid, nt, nx = self.xc.shape
+        rho = self.rho
+        if self.train_mode:
+            i_grid = index // (nt - rho + 1)
+            i_t = index % (nt - rho + 1)
+            xc = self.xc[i_grid, i_t:i_t + rho, :]
+            y = self.y[i_grid, i_t:i_t + rho, :]
+        else:
+            xc = self.xc[index, :, :]
+            y = self.y[index, :, :]
+        return torch.from_numpy(xc).float(), torch.from_numpy(y).float()
+
+    def __len__(self):
+        if self.train_mode:
+            return self.xc.shape[0] * (self.xc.shape[1] - self.rho + 1)
+        else:
+            return self.xc.shape[0]

@@ -317,7 +317,7 @@ class CudnnLstm(torch.nn.Module):
 
 
 class CudnnLstmModel(torch.nn.Module):
-    def __init__(self, *, nx, ny, hidden_size, dr=0.5):
+    def __init__(self, *, nx, ny, hidden_size, dr=0.5, gpu=1):
         super(CudnnLstmModel, self).__init__()
         self.nx = nx
         self.ny = ny
@@ -327,16 +327,10 @@ class CudnnLstmModel(torch.nn.Module):
         self.linearIn = torch.nn.Linear(nx, hidden_size)
         self.lstm = CudnnLstm(input_size=hidden_size, hidden_size=hidden_size, dr=dr)
         self.linearOut = torch.nn.Linear(hidden_size, ny)
-        self.gpu = 1
+        self.gpu = gpu
 
     def forward(self, x, do_drop_mc=False, dropout_false=False):
-        mask = x != x
-        if len(mask[mask == True]) > 0:
-            print("please check")
         x0 = F.relu(self.linearIn(x))
-        mask0 = x0 != x0
-        if len(mask0[mask0 == True]) > 0:
-            print("please check")
         out_lstm, (hn, cn) = self.lstm(x0, do_drop_mc=do_drop_mc, dropout_false=dropout_false)
         out = self.linearOut(out_lstm)
         return out

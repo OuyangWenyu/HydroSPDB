@@ -1,9 +1,34 @@
 """本项目调用可视化函数进行可视化的一些函数"""
+import os
+
 import pandas as pd
 import numpy as np
 import geopandas as gpd
 from pyproj import CRS
+
+from explore.stat import statError
+from utils.dataset_format import subset_of_dict
 from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map
+
+
+def plot_we_need(data_model_test, obs, pred):
+    pred = pred.reshape(pred.shape[0], pred.shape[1])
+    obs = obs.reshape(pred.shape[0], pred.shape[1])
+    inds = statError(obs, pred)
+    show_me_num = 5
+    t_s_dict = data_model_test.t_s_dict
+    sites = np.array(t_s_dict["sites_id"])
+    t_range = np.array(t_s_dict["t_final_range"])
+    ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
+    ts_fig.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], "ts_fig.png"))
+    # plot box，使用seaborn库
+    keys = ["Bias", "RMSE", "NSE"]
+    inds_test = subset_of_dict(inds, keys)
+    box_fig = plot_boxes_inds(inds_test)
+    box_fig.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], "box_fig.png"))
+    # plot map
+    # sites_df = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
+    # plot_ind_map(data_model_test.data_source.all_configs['gage_point_file'], sites_df, percentile=25)
 
 
 def plot_box_inds(indicators):
@@ -61,7 +86,7 @@ def plot_ts_obs_pred(obs, pred, sites, t_range, num):
     return ts_fig
 
 
-def plot_ind_map(all_points_file, df_ind_value):
+def plot_ind_map(all_points_file, df_ind_value, percentile=0):
     """plot ind values on a map"""
     all_points = gpd.read_file(all_points_file)
     print(all_points.head())
@@ -82,4 +107,4 @@ def plot_ind_map(all_points_file, df_ind_value):
         # copy the point object to the geometry column on this row:
         newdata.at[idx, 'geometry'] = all_points.at[index[idx], 'geometry']
 
-    plot_point_map(newdata)
+    plot_point_map(newdata, percentile=percentile)

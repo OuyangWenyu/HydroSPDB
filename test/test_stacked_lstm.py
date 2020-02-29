@@ -3,7 +3,7 @@ import unittest
 
 import definitions
 from data import GagesConfig, GagesSource, DataModel
-from data.gages_input_dataset import GagesInputDataset
+from data.data_input import StreamflowInputDataset
 from hydroDL.master.master import train_stacked_lstm
 
 
@@ -23,7 +23,7 @@ class MyTestCase(unittest.TestCase):
         source_data = GagesSource(config_data, config_data.model_dict["data"]["tRangeTrain"])
         model_data = DataModel(source_data)
         # 构建输入数据类对象
-        data_input = GagesInputDataset(model_data)
+        data_input = StreamflowInputDataset(model_data)
         # 进行模型训练
         # train model
         train_stacked_lstm(data_input)

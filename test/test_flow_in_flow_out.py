@@ -6,10 +6,10 @@ from markdown.util import deprecated
 import definitions
 from data import GagesConfig
 from data.data_config import add_model_param
-from data.sim_input_dataset import SimInputDataset, SimNatureFlowInput
+from data.sim_input_dataset import SimNatureFlowInput
 from data.sim_nature_flow_source import SimNatureFlowSource
 from explore.stat import statError
-from hydroDL.master.master import train_natural_flow, test_natural_flow, master_train_natural_flow, \
+from hydroDL.master.master import master_train_natural_flow, \
     master_test_natural_flow
 from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred

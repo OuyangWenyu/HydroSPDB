@@ -9,121 +9,6 @@ from . import rnn
 from torch.utils.tensorboard import SummaryWriter
 
 
-def model_test_for_lstm_without_1stlinear(model, x, c, *, file_path, batch_size=None):
-    if type(x) is tuple or type(x) is list:
-        x, z = x
-    else:
-        z = None
-    ngrid, nt, nx = x.shape
-    nc = c.shape[-1]
-    ny = model.ny
-    if batch_size is None:
-        batch_size = ngrid
-    if torch.cuda.is_available():
-        model = model.cuda()
-
-    model.train(mode=False)
-    if hasattr(model, 'ctRm'):
-        if model.ctRm is True:
-            nt = nt - model.ct
-    # y_p = torch.zeros([nt, ngrid, ny])
-    i_s = np.arange(0, ngrid, batch_size)
-    i_e = np.append(i_s[1:], ngrid)
-
-    # deal with file name to save
-    if os.path.exists(file_path):
-        os.remove(file_path)
-    with open(file_path, 'a') as f:
-        # forward for each batch
-        for i in range(0, len(i_s)):
-            print('batch {}'.format(i))
-            x_temp = x[i_s[i]:i_e[i], :, :]
-            c_temp = np.repeat(
-                np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
-            x_test = torch.from_numpy(
-                np.swapaxes(np.concatenate([x_temp, c_temp], 2), 1, 0)).float()
-            if torch.cuda.is_available():
-                x_test = x_test.cuda()
-            if z is not None:
-                z_temp = z[i_s[i]:i_e[i], :, :]
-                z_test = torch.from_numpy(np.swapaxes(z_temp, 1, 0)).float()
-                if torch.cuda.is_available():
-                    z_test = z_test.cuda()
-            y_p = model(x_test)
-            y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
-
-            # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
-            pd.DataFrame(y_out[:, :, 0]).to_csv(f, header=False, index=False)
-
-            model.zero_grad()
-            torch.cuda.empty_cache()
-
-        f.close()
-    y_out = torch.from_numpy(y_out)
-    return y_out
-
-
-def model_train_for_lstm_without_1stlinear(model, x, y, c, loss_fun, *, n_epoch=500, mini_batch=[100, 30],
-                                           save_epoch=100, save_folder=None, mode='seq2seq'):
-    batch_size, rho = mini_batch
-    # x- input; z - additional input; y - target; c - constant input
-    if type(x) is tuple or type(x) is list:
-        x, z = x
-    ngrid, nt, nx = x.shape
-    if c is not None:
-        nx = nx + c.shape[-1]
-    # batch_size * rho must be bigger than ngrid * nt, if not, the value logged will be negative  that is wrong
-    n_iter_ep = int(
-        np.ceil(np.log(0.01) / np.log(1 - batch_size * rho / ngrid / nt)))
-    if hasattr(model, 'ctRm'):
-        if model.ctRm is True:
-            n_iter_ep = int(
-                np.ceil(
-                    np.log(0.01) / np.log(1 - batch_size *
-                                          (rho - model.ct) / ngrid / nt)))
-
-    if torch.cuda.is_available():
-        loss_fun = loss_fun.cuda()
-        model = model.cuda()
-
-    optim = torch.optim.Adadelta(model.parameters())
-    model.zero_grad()
-    if save_folder is not None:
-        run_file = os.path.join(save_folder, str(n_epoch) + 'epoch_run.csv')
-        rf = open(run_file, 'a+')
-    for iEpoch in range(1, n_epoch + 1):
-        loss_ep = 0
-        t0 = time.time()
-        for iIter in range(0, n_iter_ep):
-            # training iterations
-            i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
-            x_train = select_subset(x, i_grid, i_t, rho, c=c)
-            y_train = select_subset(y, i_grid, i_t, rho)
-            y_p = model(x_train)
-            loss = loss_fun(y_p, y_train)
-            loss.backward()
-            optim.step()
-            model.zero_grad()
-            loss_ep = loss_ep + loss.item()
-        # print loss
-        loss_ep = loss_ep / n_iter_ep
-        log_str = 'Epoch {} Loss {:.3f} time {:.2f}'.format(
-            iEpoch, loss_ep,
-            time.time() - t0)
-        print(log_str)
-        # save model and loss
-        if save_folder is not None:
-            rf.write(log_str + '\n')
-            if iEpoch % save_epoch == 0:
-                # save model
-                model_file = os.path.join(save_folder,
-                                          'model_Ep' + str(iEpoch) + '.pt')
-                torch.save(model, model_file)
-    if save_folder is not None:
-        rf.close()
-    return model
-
-
 def test_dataloader(net, testloader):
     test_obs = []
     test_preds = []
@@ -150,15 +35,10 @@ def train_dataloader(net, trainloader, criterion, n_epoch, out_folder, save_mode
     optimizer = torch.optim.Adadelta(net.parameters())
     # default `log_dir` is "runs" - we'll be more specific here
     writer = SummaryWriter(os.path.join(out_folder, 'runs', 'experiment_1'))
-    # print structure of net
-    dataiter = iter(trainloader)
-    inputs4graph, outputs4graph = dataiter.next()
-    if torch.cuda.is_available():
-        writer.add_graph(net, inputs4graph.cuda())
-
     for epoch in range(n_epoch):  # loop over the dataset multiple times
         running_loss = 0.0
         steps_num = 0
+        t0 = time.time()
         for step, (batch_xs, batch_ys) in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
             # zero the parameter gradients
@@ -175,7 +55,9 @@ def train_dataloader(net, trainloader, criterion, n_epoch, out_folder, save_mode
             running_loss += loss.item()
             steps_num = steps_num + 1
             print('Epoch: ', epoch, '| Step: ', step, '| loss_avg: ', running_loss / steps_num)
-
+        loss_ep = running_loss / steps_num
+        log_str = 'Epoch {} Loss {:.3f} time {:.2f}'.format(epoch, loss_ep, time.time() - t0)
+        print("\n", log_str, "\n")
         # log the running loss
         writer.add_scalar('training loss', running_loss / steps_num, epoch * len(trainloader) + steps_num)
         # save model
@@ -197,7 +79,8 @@ def model_train(model,
                 mini_batch=[100, 30],
                 save_epoch=100,
                 save_folder=None,
-                mode='seq2seq'):
+                mode='seq2seq',
+                gpu_num = 1):
     batch_size, rho = mini_batch
     # x- input; z - additional input; y - target; c - constant input
     if type(x) is tuple or type(x) is list:
@@ -210,7 +93,6 @@ def model_train(model,
     if hasattr(model, 'ctRm'):
         if model.ctRm is True:
             n_iter_ep = int(np.ceil(np.log(0.01) / np.log(1 - batch_size * (rho - model.ct) / ngrid / nt)))
-
     if torch.cuda.is_available():
         loss_fun = loss_fun.cuda()
         model = model.cuda()

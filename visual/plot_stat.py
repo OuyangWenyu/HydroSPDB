@@ -39,12 +39,12 @@ def plot_ts(data, row_name, col_name, x_name, y_name):
     return g
 
 
-def plot_point_map(gpd_gdf):
+def plot_point_map(gpd_gdf, percentile=0):
     """plot point data on a map"""
     # Choose points in which NSE value are bigger than the 25% quartile value range
-    p25 = np.percentile(gpd_gdf['NSE'].values, 25).astype(float)
+    percentile_data = np.percentile(gpd_gdf['NSE'].values, percentile).astype(float)
     # the result of query is a tuple with one element, but it's right for plotting
-    data_chosen = gpd_gdf.query("NSE > " + str(p25))
+    data_chosen = gpd_gdf.query("NSE > " + str(percentile_data))
     contiguous_usa = gpd.read_file(gplt.datasets.get_path('contiguous_usa'))
     proj = gcrs.AlbersEqualArea(central_longitude=-98, central_latitude=39.5)
     polyplot_kwargs = {'facecolor': (0.9, 0.9, 0.9), 'linewidth': 0}
@@ -55,3 +55,10 @@ def plot_point_map(gpd_gdf):
     ax.set_title("NSE " + "Map")
     plt.show()
     # plt.savefig("NSE-usa.png", bbox_inches='tight', pad_inches=0.1)
+
+
+def plot_dist(x):
+    print(x.shape)
+    sns.distplot(x, color="b")
+    sns.distplot(x, hist=False)
+    plt.show()

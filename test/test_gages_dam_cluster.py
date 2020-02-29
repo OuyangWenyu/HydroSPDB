@@ -48,11 +48,11 @@ class MyTestCase(unittest.TestCase):
                             f_dict_file_name='dictFactorize.json',
                             var_dict_file_name='dictAttribute.json',
                             t_s_dict_file_name='dictTimeSpace.json')
-        # nid_input = NidModel()
-        nid_input = NidModel(self.nid_file)
+        nid_input = NidModel()
+        # nid_input = NidModel(self.nid_file)
         dam_input = GagesDamDataModel(df, nid_input)
         data_input = GagesExploreDataModel(dam_input.gages_input)
-        data_models = data_input.classify_datamodel()
+        data_models = data_input.classify_datamodel_by_dam_purpose()
         # data_models = data_input.cluster_datamodel(self.num_cluster, start_dam_var='GAGE_MAIN_DAM_PURPOSE')
         count = 0
         for data_model in data_models:
@@ -86,7 +86,6 @@ class MyTestCase(unittest.TestCase):
                 print("don't train this one")
             else:
                 master_train(data_model)
-            count += 1
 
     def test_data_temp_test_damcls(self):
         config_data_test = self.config_data
@@ -105,8 +104,8 @@ class MyTestCase(unittest.TestCase):
                                  f_dict_file_name='test_dictFactorize.json',
                                  var_dict_file_name='test_dictAttribute.json',
                                  t_s_dict_file_name='test_dictTimeSpace.json')
-        # nid_input = NidModel()
-        nid_input = NidModel(self.nid_file)
+        nid_input = NidModel()
+        # nid_input = NidModel(self.nid_file)
         dam_input_test = GagesDamDataModel(df_test, nid_input)
         data_input_test = GagesExploreDataModel(dam_input_test.gages_input)
         models_num = 0
@@ -131,7 +130,6 @@ class MyTestCase(unittest.TestCase):
                            forcing_file_name='test_forcing', attr_file_name='test_attr',
                            f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
                            t_s_dict_file_name='test_dictTimeSpace.json')
-            count += 1
 
     def test_damcls_test(self):
         models_num = 0
@@ -140,37 +138,43 @@ class MyTestCase(unittest.TestCase):
             if os.path.isdir(os.path.join(self.config_data.data_path["Temp"], dir_temp)):
                 models_num += 1
         for count in range(models_num):
-            print("\n", "testing model", str(count + 1), ":\n")
-            data_model = load_datamodel(self.config_data.data_path["Temp"], str(count),
-                                        data_source_file_name='test_data_source.txt',
-                                        stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                                        forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                                        f_dict_file_name='test_dictFactorize.json',
-                                        var_dict_file_name='test_dictAttribute.json',
-                                        t_s_dict_file_name='test_dictTimeSpace.json')
+            self.test_a_case(count)
 
-            model_file = os.path.join(data_model.data_source.data_config.model_dict['dir']['Out'], 'model_Ep' + str(
-                data_model.data_source.data_config.model_dict['train']['nEpoch']) + '.pt')
-            if os.path.isfile(model_file):
-                pred, obs = master_test(data_model)
-                pred = pred.reshape(pred.shape[0], pred.shape[1])
-                obs = obs.reshape(obs.shape[0], obs.shape[1])
-                inds = statError(obs, pred)
-                show_me_num = 1
-                t_s_dict = data_model.t_s_dict
-                sites = np.array(t_s_dict["sites_id"])
-                t_range = np.array(t_s_dict["t_final_range"])
-                ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
-                ts_fig.savefig(os.path.join(data_model.data_source.data_config.data_path["Out"], "ts_fig.png"))
-                # # plot box，使用seaborn库
-                keys = ["Bias", "RMSE", "NSE"]
-                inds_test = subset_of_dict(inds, keys)
-                box_fig = plot_boxes_inds(inds_test)
-                box_fig.savefig(os.path.join(data_model.data_source.data_config.data_path["Out"], "box_fig.png"))
-                # plot map
-                sites_df = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
-                plot_ind_map(data_model.data_source.all_configs['gage_point_file'], sites_df)
-            count += 1
+    def test_damcls_test_some_cases(self):
+        models_num = [1, 2]
+        for count in models_num:
+            self.test_a_case(count)
+
+    def test_a_case(self, count):
+        print("\n", "testing model", str(count + 1), ":\n")
+        data_model = load_datamodel(self.config_data.data_path["Temp"], str(count),
+                                    data_source_file_name='test_data_source.txt',
+                                    stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                    forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                    f_dict_file_name='test_dictFactorize.json',
+                                    var_dict_file_name='test_dictAttribute.json',
+                                    t_s_dict_file_name='test_dictTimeSpace.json')
+        model_file = os.path.join(data_model.data_source.data_config.model_dict['dir']['Out'], 'model_Ep' + str(
+            data_model.data_source.data_config.model_dict['train']['nEpoch']) + '.pt')
+        if os.path.isfile(model_file):
+            pred, obs = master_test(data_model)
+            pred = pred.reshape(pred.shape[0], pred.shape[1])
+            obs = obs.reshape(obs.shape[0], obs.shape[1])
+            inds = statError(obs, pred)
+            show_me_num = 1
+            t_s_dict = data_model.t_s_dict
+            sites = np.array(t_s_dict["sites_id"])
+            t_range = np.array(t_s_dict["t_final_range"])
+            ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
+            ts_fig.savefig(os.path.join(data_model.data_source.data_config.data_path["Out"], "ts_fig.png"))
+            # # plot box，使用seaborn库
+            keys = ["Bias", "RMSE", "NSE"]
+            inds_test = subset_of_dict(inds, keys)
+            box_fig = plot_boxes_inds(inds_test)
+            box_fig.savefig(os.path.join(data_model.data_source.data_config.data_path["Out"], "box_fig.png"))
+            # plot map
+            sites_df = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
+            plot_ind_map(data_model.data_source.all_configs['gage_point_file'], sites_df)
 
 
 if __name__ == '__main__':

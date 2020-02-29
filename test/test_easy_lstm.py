@@ -18,20 +18,21 @@ class MyTestCase(unittest.TestCase):
         assert a.size(2) == 10
 
     def test_run_weight_dropout(self):
-        lstm = LSTM(5, 10, dropoutw=0.2)
-        x = torch.rand(3, 4, 5)
+        # when weight dropout, there will be "To compact weights again call flatten_parameters()" warning!
+        lstm = LSTM(5, 10, dropoutw=0.2).cuda()
+        x = torch.rand(3, 4, 5, device='cuda')
         a, (hn, cn) = lstm(x)
 
     def test_run_input_output_dropout(self):
-        lstm = LSTM(5, 10, dropouti=0.2, dropouto=0.5)
-        x = torch.rand(3, 4, 5)
+        lstm = LSTM(5, 10, dropouti=0.2, dropouto=0.5).cuda()
+        x = torch.rand(3, 4, 5, device='cuda')
         a, (hn, cn) = lstm(x)
 
     def test_variational_dropout(self):
         dr = 0.3
         seq_len = 10
-        do = VariationalDropout(dr, batch_first=True)
-        x = torch.ones(3, seq_len, 5)
+        do = VariationalDropout(dr, batch_first=True).cuda()
+        x = torch.ones(3, seq_len, 5, device='cuda')
         dropped_x = do(x)
         x = dropped_x.sum(1)
         for i in range(3):

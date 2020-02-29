@@ -4,70 +4,32 @@ import operator
 import os
 import pandas as pd
 import torch
-from torch.utils.data import Dataset
 import numpy as np
 import geopandas as gpd
-from data import DataModel
+
+from data import DataModel, GagesSource
 from data.data_config import update_config_item
+from data.data_input import GagesModel
 from explore import trans_norm, cal_stat
 from explore.hydro_cluster import cluster_attr_train
 from hydroDL import master_train
 from hydroDL.model import model_run
 from utils.dataset_format import subset_of_dict
-from utils.hydro_math import concat_two_3darray
+from utils.hydro_math import concat_two_3darray, copy_attr_array_in2d
 
 
-class GagesIterator(object):
-    """the iterator for GAGES-II dataset"""
+class GagesModels(object):
+    """the data model for GAGES-II dataset"""
 
-    def __init__(self):
-        print()
-
-    def sample(self):
-        """Sample a minibatch from the GAGES-II data_model"""
-        print()
-
-
-class GagesInputDataset(Dataset):
-    """simulated streamflow input"""
-
-    def __init__(self, data_model, transform=None):
-        self.data_model = data_model
-        self.data_input = self.read_attr_forcing()
-        self.data_target = self.read_outflow()
-        self.transform = transform
-
-    def __getitem__(self, index):
-        x = self.data_input[index]
-        y = self.data_target[index]
-        return x, y
-
-    def __len__(self):
-        return len(self.data_input)
-
-    def read_attr_forcing(self):
-        """generate flow from model, reshape to a 3d array, and transform to tensor:
-        1d: nx * ny_per_nx
-        2d: miniBatch[1]
-        3d: length of time sequence, now also miniBatch[1]
-        """
-        # read data for model of allref
-        sim_model_data = self.gages_data
-        sim_config_data = sim_model_data.data_source.data_config
-        batch_size = sim_config_data.model_dict["train"]["miniBatch"][0]
-        x, y, c = sim_model_data.load_data(sim_config_data.model_dict)
-        # concatenate x with c
-        input_data = np.concatenate(x, c)
-        return input_data
-
-    def read_outflow(self):
-        """read streamflow data as observation data, transform array to tensor"""
-        gages_model_data = self.gages_data
-        data_flow = gages_model_data.data_flow
-        data = np.expand_dims(data_flow, axis=2)
-        stat_dict = gages_model_data.stat_dict
-        data = trans_norm(data, 'usgsFlow', stat_dict, to_norm=True)
-        return data
+    def __init__(self, config_data):
+        # 准备训练数据
+        t_train = config_data.model_dict["data"]["tRangeTrain"]
+        t_test = config_data.model_dict["data"]["tRangeTest"]
+        t_train_test = [t_train[0], t_test[1]]
+        source_data = GagesSource(config_data, t_train_test)
+        # 构建输入数据类对象
+        data_model = GagesModel(source_data)
+        self.data_model_train, self.data_model_test = GagesModel.data_models_of_train_test(data_model, t_train, t_test)
 
 
 class GagesInvDataModel(object):
@@ -117,12 +79,6 @@ class GagesInvDataModel(object):
         # because data_inflow_h_new is assimilated, time sequence length has changed
         data_forcing_h = data_input['xh'][:, seq_length - 1:, :]
         xqh = concat_two_3darray(data_inflow_h_new, data_forcing_h)
-
-        def copy_attr_array_in2d(arr1, len_of_2d):
-            arr2 = np.zeros([arr1.shape[0], len_of_2d, arr1.shape[1]])
-            for k in range(arr1.shape[0]):
-                arr2[k] = np.tile(arr1[k], arr2.shape[1]).reshape(arr2.shape[1], arr1.shape[1])
-            return arr2
 
         attr_h = data_input['ch']
         attr_h_new = copy_attr_array_in2d(attr_h, xqh.shape[1])
@@ -348,59 +304,55 @@ class GagesForecastDataModel(object):
         return qx, y, c
 
 
-def divide_to_classes_by_dam(label_dict, model_data, num_cluster, sites_id_all):
+def divide_to_classes(label_dict, model_data, num_cluster, sites_id_all, with_dam_purpose=False):
     data_models = []
     var_dict = model_data.var_dict
     f_dict = model_data.f_dict
     for i in range(num_cluster):
         sites_label_i = [key for key, value in label_dict.items() if value == i]
         sites_label_i_index = [j for j in range(len(sites_id_all)) if sites_id_all[j] in sites_label_i]
-        data_model_i = create_new_datamodel(f_dict, i, model_data, num_cluster, sites_label_i, sites_label_i_index,
-                                            var_dict)
+        data_flow = model_data.data_flow[sites_label_i_index, :]
+        data_forcing = model_data.data_forcing[sites_label_i_index, :, :]
+        data_attr = model_data.data_attr[sites_label_i_index, :]
+        stat_dict = {}
+        t_s_dict = {}
+        source_data_i = copy.deepcopy(model_data.data_source)
+        out_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Out"], str(i))
+        if not os.path.isdir(out_dir_new):
+            os.makedirs(out_dir_new)
+        temp_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Temp"], str(i))
+        if not os.path.isdir(temp_dir_new):
+            os.makedirs(temp_dir_new)
+        update_config_item(source_data_i.data_config.data_path, Out=out_dir_new, Temp=temp_dir_new)
+        update_config_item(source_data_i.all_configs, out_dir=out_dir_new, temp_dir=temp_dir_new,
+                           flow_screen_gage_id=sites_label_i)
+        f_dict_new = copy.deepcopy(f_dict)
+        if with_dam_purpose:
+            if num_cluster > len(f_dict['GAGE_MAIN_DAM_PURPOSE']):
+                # there is a "None" type
+                if i == 0:
+                    f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = None
+                else:
+                    f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = [f_dict['GAGE_MAIN_DAM_PURPOSE'][i - 1]]
+            else:
+                f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = [f_dict['GAGE_MAIN_DAM_PURPOSE'][i]]
+        data_model_i = DataModel(source_data_i, data_flow, data_forcing, data_attr, var_dict, f_dict_new, stat_dict,
+                                 t_s_dict)
+        t_s_dict['sites_id'] = sites_label_i
+        t_s_dict['t_final_range'] = source_data_i.t_range
+        data_model_i.t_s_dict = t_s_dict
+        stat_dict_i = data_model_i.cal_stat_all()
+        data_model_i.stat_dict = stat_dict_i
         data_models.append(data_model_i)
     return data_models
-
-
-def create_new_datamodel(f_dict, i, model_data, num_cluster, sites_label_i, sites_label_i_index, var_dict):
-    data_flow = model_data.data_flow[sites_label_i_index, :]
-    data_forcing = model_data.data_forcing[sites_label_i_index, :, :]
-    data_attr = model_data.data_attr[sites_label_i_index, :]
-    stat_dict = {}
-    t_s_dict = {}
-    source_data_i = copy.deepcopy(model_data.data_source)
-    out_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Out"], str(i))
-    if not os.path.isdir(out_dir_new):
-        os.makedirs(out_dir_new)
-    temp_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Temp"], str(i))
-    if not os.path.isdir(temp_dir_new):
-        os.makedirs(temp_dir_new)
-    update_config_item(source_data_i.data_config.data_path, Out=out_dir_new, Temp=temp_dir_new)
-    update_config_item(source_data_i.all_configs, out_dir=out_dir_new, temp_dir=temp_dir_new,
-                       flow_screen_gage_id=sites_label_i)
-    f_dict_new = copy.deepcopy(f_dict)
-    if num_cluster > len(f_dict['GAGE_MAIN_DAM_PURPOSE']):
-        # there is a "None" type
-        if i == 0:
-            f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = None
-        else:
-            f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = [f_dict['GAGE_MAIN_DAM_PURPOSE'][i - 1]]
-    else:
-        f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = [f_dict['GAGE_MAIN_DAM_PURPOSE'][i]]
-    data_model_i = DataModel(source_data_i, data_flow, data_forcing, data_attr, var_dict, f_dict_new, stat_dict,
-                             t_s_dict)
-    t_s_dict['sites_id'] = sites_label_i
-    t_s_dict['t_final_range'] = source_data_i.t_range
-    data_model_i.t_s_dict = t_s_dict
-    stat_dict_i = data_model_i.cal_stat_all()
-    data_model_i.stat_dict = stat_dict_i
-    return data_model_i
 
 
 class GagesExploreDataModel(object):
     def __init__(self, data_model):
         self.data_model = data_model
 
-    def cluster_datamodel(self, num_cluster, start_dam_var='NDAMS_2009', sites_ids_list=None):
+    def cluster_datamodel(self, num_cluster, start_dam_var='NDAMS_2009', with_dam_purpose=False,
+                          sites_ids_list=None):
         """according to attr, cluster dataset"""
         model_data = self.data_model
         sites_id_all = model_data.t_s_dict["sites_id"]
@@ -421,11 +373,14 @@ class GagesExploreDataModel(object):
             norm_data = data[:, index_start_anthro:]
             kmeans, labels = cluster_attr_train(norm_data, num_cluster)
             label_dict = dict(zip(sites_id_all, labels))
-
-        data_models = divide_to_classes_by_dam(label_dict, model_data, num_cluster, sites_id_all)
+        if with_dam_purpose:
+            data_models = divide_to_classes(label_dict, model_data, num_cluster, sites_id_all,
+                                            with_dam_purpose=True)
+        else:
+            data_models = divide_to_classes(label_dict, model_data, num_cluster, sites_id_all)
         return data_models
 
-    def classify_datamodel(self, sites_ids_list=None):
+    def classify_datamodel_by_dam_purpose(self, sites_ids_list=None):
         """classify data into classes one of which include all gage with same main dam purpose"""
         model_data = self.data_model
         sites_id_all = model_data.t_s_dict["sites_id"]
@@ -441,7 +396,8 @@ class GagesExploreDataModel(object):
                 for j in range(len(sites_id_all)):
                     if data_attrs[j] == data_attrs_unique[i]:
                         label_dict[sites_id_all[j]] = i
-        data_models = divide_to_classes_by_dam(label_dict, model_data, data_attrs_unique.size, sites_id_all)
+        data_models = divide_to_classes(label_dict, model_data, data_attrs_unique.size, sites_id_all,
+                                        with_dam_purpose=True)
         return data_models
 
     def choose_datamodel(self, sites_ids, f_dict_dam_purpose, sub_dir_num):
@@ -468,6 +424,33 @@ class GagesExploreDataModel(object):
             f_dict_new['GAGE_MAIN_DAM_PURPOSE'] = f_dict_dam_purpose
         var_dict = model_data.var_dict
         data_model_i = DataModel(source_data_i, data_flow, data_forcing, data_attr, var_dict, f_dict_new, stat_dict,
+                                 t_s_dict)
+        t_s_dict['sites_id'] = sites_id_all_np[sites_label_i_index].tolist()
+        t_s_dict['t_final_range'] = source_data_i.t_range
+        data_model_i.t_s_dict = t_s_dict
+        stat_dict_i = data_model_i.cal_stat_all()
+        data_model_i.stat_dict = stat_dict_i
+        return data_model_i
+
+    def choose_datamodel_nodam(self, sites_ids, sub_dir_num):
+        model_data = self.data_model
+        sites_id_all = model_data.t_s_dict["sites_id"]
+        sites_label_i_index = [j for j in range(len(sites_id_all)) if sites_id_all[j] in sites_ids]
+        data_flow = model_data.data_flow[sites_label_i_index, :]
+        data_forcing = model_data.data_forcing[sites_label_i_index, :, :]
+        data_attr = model_data.data_attr[sites_label_i_index, :]
+        stat_dict = {}
+        t_s_dict = {}
+        source_data_i = copy.deepcopy(model_data.data_source)
+        out_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Out"], str(sub_dir_num))
+        temp_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Temp"], str(sub_dir_num))
+        update_config_item(source_data_i.data_config.data_path, Out=out_dir_new, Temp=temp_dir_new)
+        sites_id_all_np = np.array(sites_id_all)
+        update_config_item(source_data_i.all_configs, out_dir=out_dir_new, temp_dir=temp_dir_new,
+                           flow_screen_gage_id=sites_id_all_np[sites_label_i_index].tolist())
+        f_dict = model_data.f_dict
+        var_dict = model_data.var_dict
+        data_model_i = DataModel(source_data_i, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
                                  t_s_dict)
         t_s_dict['sites_id'] = sites_id_all_np[sites_label_i_index].tolist()
         t_s_dict['t_final_range'] = source_data_i.t_range

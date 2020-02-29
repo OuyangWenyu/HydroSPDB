@@ -37,7 +37,7 @@ class MyTestCase(unittest.TestCase):
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
                        var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
 
-    def test_explore_train(self):
+    def test_explore_train_datamodel(self):
         df = load_datamodel(self.config_data.data_path["Temp"], data_source_file_name='data_source.txt',
                             stat_file_name='Statistics.json', flow_file_name='flow.npy',
                             forcing_file_name='forcing.npy', attr_file_name='attr.npy',
@@ -46,11 +46,38 @@ class MyTestCase(unittest.TestCase):
                             t_s_dict_file_name='dictTimeSpace.json')
         data_input = GagesExploreDataModel(df)
         data_models = data_input.cluster_datamodel(num_cluster=self.num_cluster)
-        count = 1
+        count = 0
         for data_model in data_models:
-            print("\n", "training model", str(count), ":\n")
-            master_train(data_model)
+            print("saving model", str(count + 1), "\n")
+            save_datamodel(data_model, data_source_file_name='data_source.txt',
+                           stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
+                           attr_file_name='attr', f_dict_file_name='dictFactorize.json',
+                           var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
             count += 1
+
+    def test_explore_train(self):
+        models_num = 0
+        dirs = os.listdir(self.config_data.data_path["Temp"])
+        for dir_temp in dirs:
+            if os.path.isdir(os.path.join(self.config_data.data_path["Temp"], dir_temp)):
+                models_num += 1
+        for count in range(models_num):
+            print("\n", "training model", str(count + 1), ":\n")
+            data_model = load_datamodel(self.config_data.data_path["Temp"], str(count),
+                                        data_source_file_name='data_source.txt',
+                                        stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                        forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                        f_dict_file_name='dictFactorize.json',
+                                        var_dict_file_name='dictAttribute.json',
+                                        t_s_dict_file_name='dictTimeSpace.json')
+            # temporary treatment for
+            ngrid = data_model.data_attr.shape[0]
+            nt = data_model.data_flow.shape[1]
+            mini_batch = data_model.data_source.data_config.model_dict['train']['miniBatch']
+            if 1 - mini_batch[0] * mini_batch[1] / ngrid / nt < 0:
+                print("don't train this one")
+            else:
+                master_train(data_model)
 
     def test_data_temp_test_explore(self):
         config_data_test = self.config_data
@@ -62,30 +89,52 @@ class MyTestCase(unittest.TestCase):
                        f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
                        t_s_dict_file_name='test_dictTimeSpace.json')
 
-    def test_explore_test(self):
-        df_train = load_datamodel(self.config_data.data_path["Temp"], data_source_file_name='data_source.txt',
-                                  stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                  forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                  f_dict_file_name='dictFactorize.json',
-                                  var_dict_file_name='dictAttribute.json',
-                                  t_s_dict_file_name='dictTimeSpace.json')
+    def test_explore_test_datamodel(self):
         df_test = load_datamodel(self.config_data.data_path["Temp"], data_source_file_name='test_data_source.txt',
                                  stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
                                  forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
                                  f_dict_file_name='test_dictFactorize.json',
                                  var_dict_file_name='test_dictAttribute.json',
                                  t_s_dict_file_name='test_dictTimeSpace.json')
-
-        data_input_train = GagesExploreDataModel(df_train)
-        data_train_models = data_input_train.cluster_datamodel(num_cluster=self.num_cluster)
-        sites_ids_list = []
-        for data_model_train in data_train_models:
-            sites_id_i = data_model_train.t_s_dict["sites_id"]
-            sites_ids_list.append(sites_id_i)
         data_input_test = GagesExploreDataModel(df_test)
-        data_test_models = data_input_test.cluster_datamodel(num_cluster=self.num_cluster,
-                                                             sites_ids_list=sites_ids_list)
-        for data_model in data_test_models:
+
+        models_num = 0
+        dirs = os.listdir(self.config_data.data_path["Temp"])
+        for dir_temp in dirs:
+            if os.path.isdir(os.path.join(self.config_data.data_path["Temp"], dir_temp)):
+                models_num += 1
+        for count in range(models_num):
+            print("saving test model", str(count + 1), ":\n")
+            data_train_model = load_datamodel(self.config_data.data_path["Temp"], str(count),
+                                              data_source_file_name='data_source.txt',
+                                              stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                              forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                              f_dict_file_name='dictFactorize.json',
+                                              var_dict_file_name='dictAttribute.json',
+                                              t_s_dict_file_name='dictTimeSpace.json')
+            sites_id_i = data_train_model.t_s_dict["sites_id"]
+            data_test_model = data_input_test.choose_datamodel_nodam(sites_id_i, count)
+            save_datamodel(data_test_model, data_source_file_name='test_data_source.txt',
+                           stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+                           forcing_file_name='test_forcing', attr_file_name='test_attr',
+                           f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+                           t_s_dict_file_name='test_dictTimeSpace.json')
+
+    def test_explore_test(self):
+        models_num = 0
+        dirs = os.listdir(self.config_data.data_path["Temp"])
+        for dir_temp in dirs:
+            if os.path.isdir(os.path.join(self.config_data.data_path["Temp"], dir_temp)):
+                models_num += 1
+        for count in range(models_num):
+            print("\n", "testing model", str(count + 1), ":\n")
+            data_model = load_datamodel(self.config_data.data_path["Temp"], str(count),
+                                        data_source_file_name='test_data_source.txt',
+                                        stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                        forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                        f_dict_file_name='test_dictFactorize.json',
+                                        var_dict_file_name='test_dictAttribute.json',
+                                        t_s_dict_file_name='test_dictTimeSpace.json')
             pred, obs = master_test(data_model)
             pred = pred.reshape(pred.shape[0], pred.shape[1])
             obs = obs.reshape(obs.shape[0], obs.shape[1])

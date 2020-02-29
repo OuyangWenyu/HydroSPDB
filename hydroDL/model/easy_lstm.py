@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import PackedSequence
 from typing import *
+import torch.nn.functional as F
 
 
 class VariationalDropout(nn.Module):
@@ -82,3 +83,71 @@ class LSTM(nn.LSTM):
         input = self.input_drop(input)
         seq, state = super().forward(input, hx=hx)
         return self.output_drop(seq), state
+
+
+class PytorchLstm(nn.Module):
+    def __init__(self, *, nx, ny, hidden_size, dropouti=0, dropouto=0.5):
+        super(PytorchLstm, self).__init__()
+        self.nx = nx
+        self.ny = ny
+        self.hidden_size = hidden_size
+        self.dropout_rate = dropouto
+        self.lstm = nn.LSTM(input_size=self.nx, hidden_size=self.hidden_size, num_layers=1, bias=True, batch_first=True,
+                            dropout=dropouto)
+        self.linearOut = torch.nn.Linear(self.hidden_size, self.ny)
+
+    def forward(self, x):
+        out_lstm, (h_n, c_n) = self.lstm(x)
+        out = self.linearOut(out_lstm)
+        return out
+
+
+class EasyLstm(torch.nn.Module):
+    def __init__(self, *, nx, ny, hidden_size, dropouti=0, dropouto=0.5):
+        super(EasyLstm, self).__init__()
+        self.nx = nx
+        self.ny = ny
+        self.hidden_size = hidden_size
+        self.lstm = LSTM(nx, hidden_size, dropouti=dropouti, dropouto=dropouto)
+        self.linearOut = torch.nn.Linear(hidden_size, ny)
+
+    def forward(self, x):
+        out_lstm, state = self.lstm(x)
+        out = self.linearOut(out_lstm)
+        return out
+
+
+class StackedEasyLstm(torch.nn.Module):
+    def __init__(self, *, nx, ny, hidden_size, dropouti=0.2, dropouto=0.5):
+        super(StackedEasyLstm, self).__init__()
+        self.nx = nx
+        self.ny = ny
+        self.hidden_size = hidden_size
+        self.lstm1 = LSTM(nx, hidden_size, dropouti=dropouti, dropouto=dropouto)
+        self.lstm2 = LSTM(hidden_size, ny, dropouti=dropouti, dropouto=dropouto)
+
+    def forward(self, x):
+        out_lstm1, state1 = self.lstm1(x)
+        out_lstm2, state2 = self.lstm2(out_lstm1)
+        return out_lstm2
+
+
+class LinearEasyLstm(torch.nn.Module):
+    def __init__(self, *, nx, ny, hidden_size, dropouti=0.5, dropouto=0.5):
+        super(LinearEasyLstm, self).__init__()
+        self.nx = nx
+        self.ny = ny
+        self.hidden_size = hidden_size
+        self.ct = 0
+        self.nLayer = 1
+        self.linearIn = torch.nn.Linear(nx, hidden_size)
+        self.lstm = LSTM(hidden_size, hidden_size, dropouti=dropouti, dropouto=dropouto)
+        self.linearOut = torch.nn.Linear(hidden_size, ny)
+        self.gpu = 1
+
+    def forward(self, x):
+        # self.lstm.flatten_parameters()
+        x0 = F.relu(self.linearIn(x))
+        out_lstm, state = self.lstm(x0)
+        out = self.linearOut(out_lstm)
+        return out

@@ -1,3 +1,4 @@
+import numpy
 import numpy as np
 
 
@@ -35,3 +36,10 @@ def concat_two_3darray(arr1, arr2):
     for j in range(arr1.shape[0]):
         arr3[j] = np.concatenate((arr1[j], arr2[j]), axis=1)
     return arr3
+
+
+def copy_attr_array_in2d(arr1, len_of_2d):
+    arr2 = np.zeros([arr1.shape[0], len_of_2d, arr1.shape[1]])
+    for k in range(arr1.shape[0]):
+        arr2[k] = np.tile(arr1[k], arr2.shape[1]).reshape(arr2.shape[1], arr1.shape[1])
+    return arr2

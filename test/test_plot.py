@@ -9,6 +9,7 @@ from utils.dataset_format import subset_of_dict
 from visual import plot_box_inds, plot_ts_obs_pred
 from visual.plot import plotCDF
 from visual.plot_model import plot_boxes_inds, plot_ind_map
+from visual.plot_stat import plot_dist
 
 
 def test_stat():
@@ -107,6 +108,10 @@ class MyTestCase(unittest.TestCase):
         keys = ["RMSE"]
         inds_test = subset_of_dict(self.inds, keys)
         plotCDF([inds_test[keys[0]]], ref=None, legendLst=["LSTM"], linespec=['-', '-', ':', ':', ':'])
+
+    def test_plot_dist(self):
+        x = np.random.normal(size=100)
+        plot_dist(x)
 
 
 if __name__ == '__main__':
