@@ -80,7 +80,7 @@ def model_train(model,
                 save_epoch=100,
                 save_folder=None,
                 mode='seq2seq',
-                gpu_num = 1):
+                gpu_num=1):
     batch_size, rho = mini_batch
     # x- input; z - additional input; y - target; c - constant input
     if type(x) is tuple or type(x) is list:
@@ -485,25 +485,129 @@ def model_test_inv_kernel(model, xqch, xct, batch_size):
     return y_out_list, param_list
 
 
-def model_train_new():
-    """new framework train func"""
-    print("need check")
-    # for itera in tqdm(range(1, max_iterations + 1)):
-    #     lr_scheduler.step()
-    #     train_batch, train_mask, sample_datetimes, _ = \
-    #         train_hko_iter.sample(batch_size=batch_size)
-    #     train_batch = torch.from_numpy(train_batch.astype(np.float32)).to(cfg.GLOBAL.DEVICE) / 255.0
-    #     train_data = train_batch[:IN_LEN, ...]
-    #     train_label = train_batch[IN_LEN:IN_LEN + OUT_LEN, ...]
-    #     mask = torch.from_numpy(train_mask[IN_LEN:IN_LEN + OUT_LEN, ...].astype(int)).to(cfg.GLOBAL.DEVICE)
-    #
-    #     encoder_forecaster.train()
-    #     optimizer.zero_grad()
-    #     output = encoder_forecaster(train_data)
-    #     loss = criterion(output, train_label, mask)
-    #     loss.backward()
-    #     torch.nn.utils.clip_grad_value_(encoder_forecaster.parameters(), clip_value=50.0)
-    #     optimizer.step()
-    #     train_loss += loss.item()
-    #
-    #     train_label_numpy = train_label.cpu().numpy()
+def select_subset_batch_first(x, i_grid, i_t, rho, *, c=None):
+    nx = x.shape[-1]
+    nt = x.shape[1]
+    if x.shape[0] < len(i_grid):
+        raise ValueError('grid num should be smaller than x.shape[0]')
+    if nt < rho:
+        raise ValueError('time length option should be larger than rho')
+
+    batch_size = i_grid.shape[0]
+    x_tensor = torch.zeros([batch_size, rho, nx], requires_grad=False)
+    for k in range(batch_size):
+        x_tensor[k:k + 1, :, :] = torch.from_numpy(
+            x[i_grid[k]:i_grid[k] + 1, np.arange(i_t[k], i_t[k] + rho), :]).float()
+
+    if c is not None:
+        nc = c.shape[-1]
+        temp = np.repeat(np.reshape(c[i_grid, :], [batch_size, 1, nc]), rho, axis=1)
+        c_tensor = torch.from_numpy(temp).float()
+        out = torch.cat((x_tensor, c_tensor), 2)
+    else:
+        out = x_tensor
+    if torch.cuda.is_available():
+        out = out.cuda()
+    return out
+
+
+def model_train_easy_lstm(model,
+                          x,
+                          y,
+                          c,
+                          loss_fun,
+                          *,
+                          n_epoch=500,
+                          mini_batch=[100, 30],
+                          save_epoch=100,
+                          save_folder=None,
+                          mode='seq2seq',
+                          gpu_num=1):
+    batch_size, rho = mini_batch
+    ngrid, nt, nx = x.shape
+    if c is not None:
+        nx = nx + c.shape[-1]
+    # batch_size * rho must be bigger than ngrid * nt, if not, the value logged will be negative  that is wrong
+    n_iter_ep = int(np.ceil(np.log(0.01) / np.log(1 - batch_size * rho / ngrid / nt)))
+    if torch.cuda.is_available():
+        loss_fun = loss_fun.cuda()
+        model = model.cuda()
+
+    optim = torch.optim.Adadelta(model.parameters())
+    model.zero_grad()
+    if save_folder is not None:
+        run_file = os.path.join(save_folder, str(n_epoch) + 'epoch_run.csv')
+        rf = open(run_file, 'a+')
+    for iEpoch in range(1, n_epoch + 1):
+        loss_ep = 0
+        t0 = time.time()
+        for iIter in range(0, n_iter_ep):
+            # training iterations
+            i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
+            x_train = select_subset_batch_first(x, i_grid, i_t, rho, c=c)
+            y_train = select_subset_batch_first(y, i_grid, i_t, rho)
+            y_p = model(x_train)
+            loss = loss_fun(y_p, y_train)
+            loss.backward()
+            optim.step()
+            model.zero_grad()
+            loss_ep = loss_ep + loss.item()
+        # print loss
+        loss_ep = loss_ep / n_iter_ep
+        log_str = 'Epoch {} Loss {:.3f} time {:.2f}'.format(
+            iEpoch, loss_ep,
+            time.time() - t0)
+        print(log_str)
+        # save model and loss
+        if save_folder is not None:
+            rf.write(log_str + '\n')
+            if iEpoch % save_epoch == 0:
+                # save model
+                model_file = os.path.join(save_folder, 'model_Ep' + str(iEpoch) + '.pt')
+                torch.save(model, model_file)
+    if save_folder is not None:
+        rf.close()
+    return model
+
+
+def model_test_easy_lstm(model, x, c, *, file_path, batch_size=None):
+    ngrid, nt, nx = x.shape
+    if c is not None:
+        nc = c.shape[-1]
+    ny = model.ny
+    if batch_size is None:
+        batch_size = ngrid
+    if torch.cuda.is_available():
+        model = model.cuda()
+
+    model.train(mode=False)
+    y_out_list = []
+    i_s = np.arange(0, ngrid, batch_size)
+    i_e = np.append(i_s[1:], ngrid)
+
+    # deal with file name to save
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    with open(file_path, 'a') as f:
+        # forward for each batch
+        for i in range(0, len(i_s)):
+            print('batch {}'.format(i))
+            x_temp = x[i_s[i]:i_e[i], :, :]
+            if c is not None:
+                c_temp = np.repeat(np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
+                x_test = torch.from_numpy(np.concatenate([x_temp, c_temp], 2)).float()
+            else:
+                x_test = torch.from_numpy(x_temp).float()
+            if torch.cuda.is_available():
+                x_test = x_test.cuda()
+            y_p = model(x_test)
+            y_out = y_p.detach().cpu().numpy()
+            y_out_list.append(y_out)
+            # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
+            pd.DataFrame(y_out[:, :, 0]).to_csv(f, header=False, index=False)
+
+            model.zero_grad()
+            torch.cuda.empty_cache()
+
+        f.close()
+    return y_out_list

@@ -33,16 +33,6 @@ class GagesSource(DataSource):
                                                                small_gages_chosen_id, return_indices=True)
         self.all_configs["flow_screen_gage_id"] = small_gages_chosen_id.tolist()
 
-    def prepare_attr_data(self):
-        """根据时间读取数据，没有的数据下载"""
-        configs = self.all_configs
-        data_dir = configs.get('root_dir')
-        if not os.path.isdir(data_dir):
-            os.mkdir(data_dir)
-        attr_urls = configs.get('attr_url')
-        [download_one_zip(attr_url, data_dir) for attr_url in attr_urls]
-        print("attribute data Ready! ...")
-
     def read_site_info(self, ids_specific=None, screen_basin_area_huc4=True):
         """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
         从中选出field_lst中属性名称对应的值，存入dic中。

@@ -3,13 +3,14 @@ import unittest
 import numpy as np
 import pandas as pd
 import definitions
+from data.data_input import CamelsModel
 from explore.stat import statError
 from utils import unserialize_numpy, unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual import plot_box_inds, plot_ts_obs_pred
 from visual.plot import plotCDF
-from visual.plot_model import plot_boxes_inds, plot_ind_map
-from visual.plot_stat import plot_dist
+from visual.plot_model import plot_boxes_inds, plot_ind_map, plot_map
+from visual.plot_stat import plot_pdf_cdf, plot_ecdf
 
 
 def test_stat():
@@ -57,14 +58,18 @@ def test_stat():
 class MyTestCase(unittest.TestCase):
     config_file = definitions.CONFIG_FILE
     project_dir = definitions.ROOT_DIR
-    dataset = 'gages'
-    # dataset = 'camels'
+    # dataset = 'gages'
+    # dataset_exp = dataset + '/basic/exp11'
+    dataset = 'camels'
+    dataset_exp = dataset + '/basic/exp5'
     dir_db = os.path.join(project_dir, 'example/data', dataset)
-    dir_out = os.path.join(project_dir, 'example/output', dataset)
-    dir_temp = os.path.join(project_dir, 'example/temp', dataset)
+    dir_out = os.path.join(project_dir, 'example/output', dataset_exp)
+    dir_temp = os.path.join(project_dir, 'example/temp', dataset_exp)
     flow_pred_file = os.path.join(dir_temp, 'flow_pred.npy')
     flow_obs_file = os.path.join(dir_temp, 'flow_obs.npy')
-    t_s_dict_file = os.path.join(dir_temp, 'dictTimeSpace_test.json')
+    t_s_dict_file = os.path.join(dir_temp, 'test_dictTimeSpace.json')
+    # gages point shp file
+    gage_point_file = os.path.join(dir_db, 'gagesII_9322_point_shapefile/gagesII_9322_sept30_2011.shp')
 
     def setUp(self):
         pred = unserialize_numpy(self.flow_pred_file)
@@ -73,6 +78,10 @@ class MyTestCase(unittest.TestCase):
         self.obs = obs.reshape(pred.shape[0], pred.shape[1])
         # 统计性能指标
         self.inds = statError(self.obs, self.pred)
+        t_s_dict = unserialize_json(self.t_s_dict_file)
+        sites = np.array(t_s_dict["sites_id"])
+        self.keys = ["NSE"]
+        self.inds_test = subset_of_dict(self.inds, self.keys)
 
     def test_plot_box(self):
         """测试可视化代码"""
@@ -90,7 +99,7 @@ class MyTestCase(unittest.TestCase):
         t_range = np.array(t_s_dict["t_final_range"])
         plot_ts_obs_pred(self.obs, self.pred, sites, t_range, show_me_num)
 
-    def test_plot_map(self):
+    def test_plot_ind_map(self):
         """plot nse value on map"""
         t_s_dict = unserialize_json(self.t_s_dict_file)
         sites = np.array(t_s_dict["sites_id"])
@@ -98,20 +107,44 @@ class MyTestCase(unittest.TestCase):
         inds_test = subset_of_dict(self.inds, keys)
         # concat sites and inds
         sites_df = pd.DataFrame({"sites": sites, keys[0]: inds_test[keys[0]]})
-        plot_ind_map(
-            "/mnt/sdc/wvo5024/hydro-anthropogenic-lstm/example/data/gages/gagesII_9322_point_shapefile/gagesII_9322_sept30_2011.shp",
-            sites_df)
+        plot_ind_map(self.gage_point_file, sites_df)
 
-    def test_plot_cdf(self):
+    def test_plot_map(self):
+        data_model = CamelsModel.load_datamodel(self.dir_temp,
+                                                data_source_file_name='test_data_source.txt',
+                                                stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                                forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                                f_dict_file_name='test_dictFactorize.json',
+                                                var_dict_file_name='test_dictAttribute.json',
+                                                t_s_dict_file_name='test_dictTimeSpace.json')
+        gauge_dict = data_model.data_source.gage_dict
         t_s_dict = unserialize_json(self.t_s_dict_file)
         sites = np.array(t_s_dict["sites_id"])
-        keys = ["RMSE"]
+        keys = ["NSE"]
+        inds_test = subset_of_dict(self.inds, keys)
+        sites_df = pd.DataFrame({"sites": sites, keys[0]: inds_test[keys[0]]})
+        plot_map(gauge_dict, sites_df, id_col="id", lon_col="lon", lat_col="lat")
+        # plot_map(gauge_dict, sites_df, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+
+    def test_plot_kuai_cdf(self):
+        t_s_dict = unserialize_json(self.t_s_dict_file)
+        sites = np.array(t_s_dict["sites_id"])
+        keys = ["NSE"]
         inds_test = subset_of_dict(self.inds, keys)
         plotCDF([inds_test[keys[0]]], ref=None, legendLst=["LSTM"], linespec=['-', '-', ':', ':', ':'])
 
-    def test_plot_dist(self):
-        x = np.random.normal(size=100)
-        plot_dist(x)
+    def test_plot_pdf_cdf(self):
+        t_s_dict = unserialize_json(self.t_s_dict_file)
+        sites = np.array(t_s_dict["sites_id"])
+        keys = ["NSE"]
+        inds_test = subset_of_dict(self.inds, keys)
+        x = pd.DataFrame(inds_test)
+        # x = inds_test[keys[0]]
+        # plot_dist(x)
+        plot_pdf_cdf(x, keys[0])
+
+    def test_plot_ecdf(self):
+        plot_ecdf(self.inds_test, self.keys[0])
 
 
 if __name__ == '__main__':

@@ -5,13 +5,13 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 from pyproj import CRS
-
+from shapely.geometry import Point
 from explore.stat import statError
 from utils.dataset_format import subset_of_dict
-from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map
+from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf
 
 
-def plot_we_need(data_model_test, obs, pred):
+def plot_we_need(data_model_test, obs, pred, point_file=None, **kwargs):
     pred = pred.reshape(pred.shape[0], pred.shape[1])
     obs = obs.reshape(pred.shape[0], pred.shape[1])
     inds = statError(obs, pred)
@@ -26,9 +26,15 @@ def plot_we_need(data_model_test, obs, pred):
     inds_test = subset_of_dict(inds, keys)
     box_fig = plot_boxes_inds(inds_test)
     box_fig.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], "box_fig.png"))
+    # plot nse ecdf
+    sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
+    plot_ecdf(sites_df_nse, keys[2])
     # plot map
-    # sites_df = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
-    # plot_ind_map(data_model_test.data_source.all_configs['gage_point_file'], sites_df, percentile=25)
+    if point_file is None:
+        gauge_dict = data_model_test.data_source.gage_dict
+        plot_map(gauge_dict, sites_df_nse, **kwargs)
+    else:
+        plot_ind_map(point_file, sites_df_nse, percentile=25)
 
 
 def plot_box_inds(indicators):
@@ -99,12 +105,27 @@ def plot_ind_map(all_points_file, df_ind_value, percentile=0):
     print(all_points.head())
     print(all_points.crs)
     sites = df_ind_value['sites'].values
-    index = [i for i in range(all_points["STAID"].size) if all_points["STAID"].values[i] in sites]
+    index = np.array([np.where(all_points["STAID"] == i) for i in sites]).flatten()
     newdata = gpd.GeoDataFrame(df_ind_value, crs=all_points.crs)
 
     newdata['geometry'] = None
     for idx in range(len(index)):
         # copy the point object to the geometry column on this row:
         newdata.at[idx, 'geometry'] = all_points.at[index[idx], 'geometry']
+
+    plot_point_map(newdata, percentile=percentile)
+
+
+def plot_map(gauge_dict, df_ind_value, proj_epsg=4269, percentile=0, **kwargs):
+    """plot ind values on a map, epsg num of NAD83 is 4269"""
+    sites = df_ind_value['sites'].values
+    index = np.array([np.where(gauge_dict[kwargs["id_col"]] == i) for i in sites]).flatten()
+    # index = [i for i in range(gauge_dict[id_col_name].size) if gauge_dict[id_col_name][i] in sites]
+    newdata = gpd.GeoDataFrame(df_ind_value, crs=CRS.from_epsg(proj_epsg).to_wkt())
+    newdata['geometry'] = None
+    for idx in range(len(index)):
+        # copy the point object to the geometry column on this row:
+        point = Point(gauge_dict[kwargs["lon_col"]][index[idx]], gauge_dict[kwargs["lat_col"]][index[idx]])
+        newdata.at[idx, 'geometry'] = point
 
     plot_point_map(newdata, percentile=percentile)

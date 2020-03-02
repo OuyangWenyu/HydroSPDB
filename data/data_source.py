@@ -34,8 +34,8 @@ class DataSource(object):
         data_dir = configs.get('root_dir')
         if not os.path.isdir(data_dir):
             os.mkdir(data_dir)
-        attr_url = configs.get('attr_url')
-        download_one_zip(attr_url, data_dir)
+        attr_urls = configs.get('attr_url')
+        [download_one_zip(attr_url, data_dir) for attr_url in attr_urls]
         print("attribute data Ready! ...")
 
     def read_site_info(self, ids_specific=None, screen_basin_area_huc4=True):

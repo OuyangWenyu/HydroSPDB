@@ -5,6 +5,9 @@ import geopandas as gpd
 import geoplot as gplt
 import geoplot.crs as gcrs
 import numpy as np
+import pandas as pd
+
+from explore.stat import ecdf
 
 
 def plot_boxs(data, x_name, y_name):
@@ -57,8 +60,32 @@ def plot_point_map(gpd_gdf, percentile=0):
     # plt.savefig("NSE-usa.png", bbox_inches='tight', pad_inches=0.1)
 
 
-def plot_dist(x):
-    print(x.shape)
-    sns.distplot(x, color="b")
-    sns.distplot(x, hist=False)
+def plot_ecdf(mydataframe, mycolumn):
+    """Empirical cumulative distribution function"""
+    x, y = ecdf(mydataframe[mycolumn])
+    df = pd.DataFrame({"x": x, "y": y})
+    sns.set_style("ticks", {'axes.grid': True})
+    ax = sns.lineplot(x="x", y="y", data=df, estimator=None).set(xlim=(0, 1), xticks=np.arange(0, 1, 0.05),
+                                                                 yticks=np.arange(0, 1, 0.05))
+    plt.show()
+    return ax
+
+
+def plot_pdf_cdf(mydataframe, mycolumn):
+    # settings
+    f, axes = plt.subplots(1, 2, figsize=(18, 6), dpi=320)
+    axes[0].set_ylabel('fraction (PDF)')
+    axes[1].set_ylabel('fraction (CDF)')
+
+    # left plot (PDF) # REMEMBER TO CHANGE bins, xlim PROPERLY!!
+    sns.distplot(
+        mydataframe[mycolumn], kde=True, axlabel=mycolumn,
+        hist_kws={"density": True}, ax=axes[0]
+    ).set(xlim=(0, 1))
+
+    # right plot (CDF) # REMEMBER TO CHANGE bins, xlim PROPERLY!!
+    sns.distplot(
+        mydataframe[mycolumn], kde=False, axlabel=mycolumn,
+        hist_kws={"density": True, "cumulative": True, "histtype": "step", "linewidth": 4}, ax=axes[1],
+    ).set(xlim=(0, 1), ylim=(0, 1))
     plt.show()

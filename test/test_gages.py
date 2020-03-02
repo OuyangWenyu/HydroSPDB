@@ -11,8 +11,8 @@ from explore import cal_stat, cal_stat_basin_norm
 from hydroDL.master import *
 from hydroDL.master.master import master_train_better_lstm, master_test_better_lstm
 import definitions
+from utils import serialize_numpy
 from visual.plot_model import plot_we_need
-from visual.plot_stat import plot_dist
 import numpy as np
 from matplotlib import pyplot
 
@@ -40,8 +40,10 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp8"
         # self.config_file = os.path.join(config_dir, "basic/config_exp9.ini")
         # self.subdir = r"basic/exp9"
-        self.config_file = os.path.join(config_dir, "basic/config_exp10.ini")
-        self.subdir = r"basic/exp10"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp10.ini")
+        # self.subdir = r"basic/exp10"
+        self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
+        self.subdir = r"basic/exp11"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
 
     def test_gages_data_model(self):
@@ -65,7 +67,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='dictFactorize.json',
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(2):
+        with torch.cuda.device(0):
             master_train(data_model)
 
     def test_test_gages(self):
@@ -83,8 +85,8 @@ class MyTestCaseGages(unittest.TestCase):
                                                      f_dict_file_name='dictFactorize.json',
                                                      var_dict_file_name='dictAttribute.json',
                                                      t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(2):
-            pred, obs = master_test(data_model)
+        with torch.cuda.device(0):
+            pred, obs = master_test(data_model, epoch=300)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)
             mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
@@ -92,7 +94,11 @@ class MyTestCaseGages(unittest.TestCase):
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            plot_we_need(data_model, obs, pred)
+            flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred')
+            flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs')
+            serialize_numpy(pred, flow_pred_file)
+            serialize_numpy(obs, flow_obs_file)
+            plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_explore_gages_prcp_log(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

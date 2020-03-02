@@ -46,7 +46,7 @@ class CamelsConfig(DataConfig):
 
         # attribute
         attr_dir = cfg.get(section, options[6])
-        attr_url = cfg.get(section, options[7])
+        attr_url = eval(cfg.get(section, options[7]))
         attr_str_sel = eval(cfg.get(section, options[8]))
 
         opt_data = collections.OrderedDict(varT=forcing_lst, forcingDir=forcing_dir, forcingType=forcing_type,
@@ -62,7 +62,8 @@ class CamelsConfig(DataConfig):
         dir_temp = self.data_path.get("Temp")
 
         data_params = self.init_data_param()
-
+        # 站点的shp file
+        camels_shp_file = os.path.join(dir_db, "basin_set_full_res", "HCDN_nhru_final_671.shp")
         # 径流数据配置
         flow_dir = os.path.join(dir_db, data_params.get("streamflowDir"))
         flow_screen_gage_id = data_params.get("gageIdScreen")
@@ -85,4 +86,4 @@ class CamelsConfig(DataConfig):
                                        forcing_chosen=forcing_chosen, forcing_dir=forcing_dir,
                                        forcing_type=forcing_type, forcing_url=forcing_url,
                                        attr_url=attr_url, attr_chosen=attr_chosen, attr_dir=attr_dir,
-                                       gauge_id_file=gauge_id_file)
+                                       gauge_id_file=gauge_id_file, gauge_shp_file=camels_shp_file)

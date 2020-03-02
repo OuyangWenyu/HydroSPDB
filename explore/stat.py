@@ -113,3 +113,11 @@ def trans_norm(x, var_lst, stat_dict, *, to_norm):
             elif len(x.shape) == 2:
                 out[:, k] = x[:, k] * stat[3] + stat[2]
     return out
+
+
+def ecdf(data):
+    """ Compute ECDF """
+    x = np.sort(data)
+    n = x.size
+    y = np.arange(1, n + 1) / n
+    return (x, y)

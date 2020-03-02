@@ -118,18 +118,22 @@ class EasyLstm(torch.nn.Module):
 
 
 class StackedEasyLstm(torch.nn.Module):
-    def __init__(self, *, nx, ny, hidden_size, dropouti=0.2, dropouto=0.5):
+    def __init__(self, *, nx, ny, hidden_size, dropouti=0.5, dropouto=0.5):
         super(StackedEasyLstm, self).__init__()
         self.nx = nx
         self.ny = ny
         self.hidden_size = hidden_size
-        self.lstm1 = LSTM(nx, hidden_size, dropouti=dropouti, dropouto=dropouto)
-        self.lstm2 = LSTM(hidden_size, ny, dropouti=dropouti, dropouto=dropouto)
+        self.lstm1 = LSTM(nx, hidden_size, dropouto=dropouto)
+        self.lstm2 = LSTM(hidden_size, int(hidden_size / 2), dropouti=dropouti, dropouto=dropouto)
+        self.lstm3 = LSTM(int(hidden_size / 2), int(hidden_size / 4), dropouti=dropouti, dropouto=dropouto)
+        self.linearOut = torch.nn.Linear(int(hidden_size / 4), ny)
 
     def forward(self, x):
         out_lstm1, state1 = self.lstm1(x)
         out_lstm2, state2 = self.lstm2(out_lstm1)
-        return out_lstm2
+        out_lstm3, state3 = self.lstm3(out_lstm2)
+        out = self.linearOut(out_lstm3)
+        return out
 
 
 class LinearEasyLstm(torch.nn.Module):
