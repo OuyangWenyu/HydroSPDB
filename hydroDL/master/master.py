@@ -59,6 +59,8 @@ def master_train(data_model):
 
     # train model
     out = model_dict['dir']['Out']
+    if not os.path.isdir(out):
+        os.makedirs(out)
     model = model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
                                   mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'], save_folder=out)
 

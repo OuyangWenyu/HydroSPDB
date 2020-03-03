@@ -14,7 +14,7 @@ class DataSource(object):
     接下来获取forcing数据和streamflow数据
     """
 
-    def __init__(self, config_data, t_range):
+    def __init__(self, config_data, t_range, screen_basin_area_huc4=True):
         """read configuration of data source. 读取配置，准备数据，关于数据读取部分，可以放在外部需要的时候再执行"""
         self.data_config = config_data
         self.all_configs = config_data.read_data_config()
@@ -22,7 +22,7 @@ class DataSource(object):
         self.t_range = t_range
         self.prepare_attr_data()
         self.prepare_forcing_data()
-        gage_dict, gage_fld_lst = self.read_site_info()
+        gage_dict, gage_fld_lst = self.read_site_info(screen_basin_area_huc4=screen_basin_area_huc4)
         self.prepare_flow_data(gage_dict, gage_fld_lst)
         # 一些后面常用的变量也在这里赋值到SourceData对象中
         self.gage_dict = gage_dict

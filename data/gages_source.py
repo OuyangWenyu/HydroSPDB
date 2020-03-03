@@ -11,8 +11,8 @@ from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 
 
 class GagesSource(DataSource):
-    def __init__(self, config_data, t_range):
-        super().__init__(config_data, t_range)
+    def __init__(self, config_data, t_range, screen_basin_area_huc4=True):
+        super().__init__(config_data, t_range, screen_basin_area_huc4)
 
     @classmethod
     def choose_some_basins(cls, config_data, t_range, basin_area):

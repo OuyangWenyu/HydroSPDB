@@ -11,11 +11,10 @@ from utils.dataset_format import subset_of_dict
 from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf
 
 
-def plot_we_need(data_model_test, obs, pred, point_file=None, **kwargs):
+def plot_we_need(data_model_test, obs, pred, show_me_num=5, point_file=None, **kwargs):
     pred = pred.reshape(pred.shape[0], pred.shape[1])
     obs = obs.reshape(pred.shape[0], pred.shape[1])
     inds = statError(obs, pred)
-    show_me_num = 5
     t_s_dict = data_model_test.t_s_dict
     sites = np.array(t_s_dict["sites_id"])
     t_range = np.array(t_s_dict["t_final_range"])

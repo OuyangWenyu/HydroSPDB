@@ -65,6 +65,9 @@ def cal_4_stat_inds(b):
 def cal_stat(x):
     a = x.flatten()
     b = a[~np.isnan(a)]
+    if b.size == 0:
+        # if b is [], then give it a 0 value
+        b = np.array([0])
     return cal_4_stat_inds(b)
 
 

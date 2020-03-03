@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+from data.data_config import update_config_item
 from explore import *
 from utils import serialize_pickle, serialize_json, serialize_numpy, unserialize_pickle, unserialize_json, \
     unserialize_numpy, hydro_time
@@ -219,6 +220,41 @@ class DataModel(object):
         data_model = cls(source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
                          t_s_dict)
         return data_model
+
+    @classmethod
+    def every_model(cls, model_data):
+        data_models = []
+        sites_id_all = model_data.t_s_dict["sites_id"]
+        for i in range(len(sites_id_all)):
+            data_model_temp = cls.which_data_model(model_data, i)
+            data_models.append(data_model_temp)
+        return data_models
+
+    @classmethod
+    def which_data_model(cls, model_data, i):
+        sites_id_all = model_data.t_s_dict["sites_id"]
+        data_flow = model_data.data_flow[i:i + 1, :]
+        data_forcing = model_data.data_forcing[i:i + 1, :, :]
+        data_attr = model_data.data_attr[i:i + 1, :]
+        stat_dict = {}
+        t_s_dict = {}
+        source_data_i = copy.deepcopy(model_data.data_source)
+        out_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Out"], str(i))
+        temp_dir_new = os.path.join(source_data_i.data_config.model_dict['dir']["Temp"], str(i))
+        update_config_item(source_data_i.data_config.data_path, Out=out_dir_new, Temp=temp_dir_new)
+        site_id_lst = [sites_id_all[i]]
+        update_config_item(source_data_i.all_configs, out_dir=out_dir_new, temp_dir=temp_dir_new,
+                           flow_screen_gage_id=site_id_lst)
+        f_dict = model_data.f_dict
+        var_dict = model_data.var_dict
+        data_model_i = cls(source_data_i, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
+                           t_s_dict)
+        t_s_dict['sites_id'] = site_id_lst
+        t_s_dict['t_final_range'] = source_data_i.t_range
+        data_model_i.t_s_dict = t_s_dict
+        stat_dict_i = data_model_i.cal_stat_all()
+        data_model_i.stat_dict = stat_dict_i
+        return data_model_i
 
 
 class GagesModel(DataModel):

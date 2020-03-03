@@ -1,97 +1,98 @@
 import os
+import shutil
 import unittest
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
-from utils.dataset_format import trans_daymet_forcing_file_to_camels, subset_of_dict
+
+import definitions
+from data import GagesConfig, GagesSource
+from utils import serialize_pickle, unserialize_pickle
+from utils.dataset_format import trans_daymet_to_camels, subset_of_dict
 from utils.hydro_time import t_range_years, t_range_days, get_year
 from datetime import datetime, timedelta
 
 
-def test_numpy():
-    date = np.arange(1996, 2012).reshape(4, 4)
-    print("------------------")
-    print(date[0, 1])
-    print(date[0][1])
-    print("对应坐标(0,0)和(1,1)的数字：", date[[0, 1], [0, 1]])
-    C_A = date[[0, 2]]  # 先取出想要的行数据
-    C_A = C_A[:, [2, 3]]  # 再取出要求的列数据
-    print("第0,2行的第3,3列", C_A)
-    print(np.arange(5))
-    print(np.arange(5).shape[0])
-
-
-def test_get_year():
-    str_time = "1995-01-01"
-    print()
-    year1 = get_year(str_time)
-    print("年份是：", year1)
-    text = '2012-09-20'
-    y = datetime.strptime(text, '%Y-%m-%d')
-    print()
-    year2 = get_year(y)
-    print("年份是：", year2)
-    print("生成年份序列字符串：", np.arange(year1, year2).astype(str))
-    a_time = np.datetime64('1995-01-01T00:00:00.000000')
-    year3 = get_year(a_time)
-    print(type(year3))
-    print("年份是：", year3)
-
-
-def test_os_func():
-    files = os.listdir()
-    print(type(files))
-    print(files)
-
-
-def test_pandas():
-    df = pd.DataFrame(np.arange(16).reshape((4, 4)), columns=['one', 'two', 'three', 'four'],
-                      index=['a', 'b', 'c', 'd'])
-    print(df["one"].values.astype(str))
-    df0 = pd.DataFrame(
-        [["A", 1], ["A", 2], ["A", 3], ["B", 1], ["B", 2], ["B", 3], ["C", 1], ["C", 2], ["C", 3],
-         ["A", 4], ["A", 5], ["A", 6], ["A", 7], ["B", 4], ["B", 5], ["B", 6], ["B", 7], ["C", 4], ["C", 5], ["C", 6],
-         ["C", 7],
-         ["A", 8], ["A", 9], ["A", 10], ["B", 8], ["B", 9], ["B", 10], ["C", 8], ["C", 9], ["C", 10]],
-        columns=['gage_id', 'time_start'])
-    # 接下来把df0转为如下形式：
-    df_result = pd.DataFrame(
-        [["A", 1], ["A", 2], ["A", 3], ["A", 4], ["A", 5], ["A", 6], ["A", 7], ["A", 8], ["A", 9], ["A", 10],
-         ["B", 1], ["B", 2], ["B", 3], ["B", 4], ["B", 5], ["B", 6], ["B", 7], ["B", 8], ["B", 9], ["B", 10],
-         ["C", 1], ["C", 2], ["C", 3], ["C", 4], ["C", 5], ["C", 6], ["C", 7], ["C", 8], ["C", 9], ["C", 10]])
-    names = ["A", "B", "C"]
-    df2 = pd.DataFrame()
-    for name in names:
-        df_name = df0[df0['gage_id'] == name]
-        print("目前的名称：", name, df_name)
-        df2 = [df2, df_name]
-        df2 = pd.concat(df2)
-    np1 = df2.values
-    np2 = np.expand_dims(np1, axis=0)
-    print(np2)
-    np3 = np2.reshape(3, 10, 2)
-    print(np3)
-    np11 = df_result.values
-    np21 = np.expand_dims(np11, axis=0)
-    np31 = np21.reshape(3, 10, 2)
-    np.testing.assert_equal(np3, np31)
-
-
-def test_subset_of_dict():
-    prices = {
-        'ACME': 45.23,
-        'AAPL': 612.78,
-        'IBM': 205.55,
-        'HPQ': 37.20,
-        'FB': 10.75
-    }
-    tech_names = ['AAPL', 'IBM', 'HPQ', 'MSFT']
-    print(subset_of_dict(prices, tech_names))
-
-
 class MyTestCase(unittest.TestCase):
+    def test_numpy(self):
+        date = np.arange(1996, 2012).reshape(4, 4)
+        print("------------------")
+        print(date[0, 1])
+        print(date[0][1])
+        print("对应坐标(0,0)和(1,1)的数字：", date[[0, 1], [0, 1]])
+        C_A = date[[0, 2]]  # 先取出想要的行数据
+        C_A = C_A[:, [2, 3]]  # 再取出要求的列数据
+        print("第0,2行的第3,3列", C_A)
+        print(np.arange(5))
+        print(np.arange(5).shape[0])
+
+    def test_get_year(self):
+        str_time = "1995-01-01"
+        print()
+        year1 = get_year(str_time)
+        print("年份是：", year1)
+        text = '2012-09-20'
+        y = datetime.strptime(text, '%Y-%m-%d')
+        print()
+        year2 = get_year(y)
+        print("年份是：", year2)
+        print("生成年份序列字符串：", np.arange(year1, year2).astype(str))
+        a_time = np.datetime64('1995-01-01T00:00:00.000000')
+        year3 = get_year(a_time)
+        print(type(year3))
+        print("年份是：", year3)
+
+    def test_os_func(self):
+        files = os.listdir()
+        print(type(files))
+        print(files)
+
+    def test_pandas(self):
+        df = pd.DataFrame(np.arange(16).reshape((4, 4)), columns=['one', 'two', 'three', 'four'],
+                          index=['a', 'b', 'c', 'd'])
+        print(df["one"].values.astype(str))
+        df0 = pd.DataFrame(
+            [["A", 1], ["A", 2], ["A", 3], ["B", 1], ["B", 2], ["B", 3], ["C", 1], ["C", 2], ["C", 3],
+             ["A", 4], ["A", 5], ["A", 6], ["A", 7], ["B", 4], ["B", 5], ["B", 6], ["B", 7], ["C", 4], ["C", 5],
+             ["C", 6],
+             ["C", 7],
+             ["A", 8], ["A", 9], ["A", 10], ["B", 8], ["B", 9], ["B", 10], ["C", 8], ["C", 9], ["C", 10]],
+            columns=['gage_id', 'time_start'])
+        # 接下来把df0转为如下形式：
+        df_result = pd.DataFrame(
+            [["A", 1], ["A", 2], ["A", 3], ["A", 4], ["A", 5], ["A", 6], ["A", 7], ["A", 8], ["A", 9], ["A", 10],
+             ["B", 1], ["B", 2], ["B", 3], ["B", 4], ["B", 5], ["B", 6], ["B", 7], ["B", 8], ["B", 9], ["B", 10],
+             ["C", 1], ["C", 2], ["C", 3], ["C", 4], ["C", 5], ["C", 6], ["C", 7], ["C", 8], ["C", 9], ["C", 10]])
+        names = ["A", "B", "C"]
+        df2 = pd.DataFrame()
+        for name in names:
+            df_name = df0[df0['gage_id'] == name]
+            print("目前的名称：", name, df_name)
+            df2 = [df2, df_name]
+            df2 = pd.concat(df2)
+        np1 = df2.values
+        np2 = np.expand_dims(np1, axis=0)
+        print(np2)
+        np3 = np2.reshape(3, 10, 2)
+        print(np3)
+        np11 = df_result.values
+        np21 = np.expand_dims(np11, axis=0)
+        np31 = np21.reshape(3, 10, 2)
+        np.testing.assert_equal(np3, np31)
+
+    def test_subset_of_dict(self):
+        prices = {
+            'ACME': 45.23,
+            'AAPL': 612.78,
+            'IBM': 205.55,
+            'HPQ': 37.20,
+            'FB': 10.75
+        }
+        tech_names = ['AAPL', 'IBM', 'HPQ', 'MSFT']
+        print(subset_of_dict(prices, tech_names))
+
     t_range = ['1995-01-01', '2000-01-01']
 
     def test_t_range_years(self):
@@ -141,11 +142,56 @@ class MyTestCase(unittest.TestCase):
         result = np.array([np.nan, 1, 2, np.nan, 3])
         np.testing.assert_equal(out, result)
 
-    # def test_trans_daymet_forcing_file_to_camels(self):
-    #     daymet_dir = ''
-    #     output_dir = ''
-    #     result = pd.read_csv(output_dir)
-    #     self.assertEqual(trans_daymet_forcing_file_to_camels(daymet_dir, output_dir), result)
+    def test_data_source(self):
+        source_data = GagesSource(self.config_data, self.config_data.model_dict["data"]["tRangeTrain"],
+                                  screen_basin_area_huc4=False)
+        my_file = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')
+        serialize_pickle(source_data, my_file)
+
+    def test_trans_forcing_file_to_camels(self):
+        data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')
+        source_data = unserialize_pickle(data_source_dump)
+        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data")
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
+        region_names = [region_temp.split("_")[-1] for region_temp in source_data.all_configs['regions']]
+        # forcing data file generated is named as "allref", so rename the "all"
+        region_names = ["allref" if r == "all" else r for r in region_names]
+        years = np.arange(1990, 2016)
+        for year in years:
+            trans_daymet_to_camels(source_data.all_configs["forcing_dir"], output_dir, source_data.gage_dict,
+                                   region_names[0], year)
+
+    def test_choose_some_gauge(self):
+        gauge_list = np.array(
+            ['01013500', '01401650', '01585500', '02120780', '02324400', '03139000', '04086600', '05087500',
+             '05539900', '06468170', '07184000', '08158810', '09404450', '11055800', '12134500', '14166500'])
+        data_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data")
+        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_ashu")
+        if not os.path.isdir(output_dir):
+            os.mkdir(output_dir)
+        data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')
+        source_data = unserialize_pickle(data_source_dump)
+        gageids = np.array(source_data.gage_dict['STAID'])
+        xy, x_ind, y_ind = np.intersect1d(gauge_list, gageids, return_indices=True)
+        index = np.array([np.where(gageids == i) for i in xy]).flatten()
+        print(index)
+        for j in index:
+            huc_id = source_data.gage_dict['HUC02'][j]
+            data_huc_dir = os.path.join(data_dir, huc_id)
+            src = os.path.join(data_huc_dir, source_data.gage_dict['STAID'][j] + '_lump_daymet_forcing.txt')
+            output_huc_dir = os.path.join(output_dir, huc_id)
+            if not os.path.isdir(output_huc_dir):
+                os.mkdir(output_huc_dir)
+            dst = os.path.join(output_huc_dir, source_data.gage_dict['STAID'][j] + '_lump_daymet_forcing.txt')
+            shutil.copy(src, dst)
+
+    def setUp(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "transdata/config_exp1.ini")
+        subdir = r"transdata/exp1"
+        self.config_data = GagesConfig.set_subdir(config_file, subdir)
+
     def test_gpu(self):
         # os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cuda is TITAN
         os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # cuda is geforce 0
