@@ -13,7 +13,7 @@ from explore import stat
 from hydroDL.model import *
 
 
-def master_train(data_model):
+def master_train(data_model, valid_size=0):
     model_dict = data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_loss = model_dict['loss']
@@ -61,8 +61,18 @@ def master_train(data_model):
     out = model_dict['dir']['Out']
     if not os.path.isdir(out):
         os.makedirs(out)
-    model = model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
-                                  mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'], save_folder=out)
+    if valid_size > 0:
+        model, train_loss, valid_loss = model_run.model_train_valid(model, x, y, c, loss_fun,
+                                                                    n_epoch=opt_train['nEpoch'],
+                                                                    mini_batch=opt_train['miniBatch'],
+                                                                    save_epoch=opt_train['saveEpoch'],
+                                                                    save_folder=out, valid_size=valid_size)
+        return model, train_loss, valid_loss
+    else:
+        model = model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
+                                      mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
+                                      save_folder=out)
+        return model
 
 
 def master_test(data_model, epoch=-1):
@@ -72,6 +82,7 @@ def master_test(data_model, epoch=-1):
     """
     model_dict = data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
+    opt_model = model_dict['model']
     # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
 
@@ -82,19 +93,37 @@ def master_test(data_model, epoch=-1):
     t_range = data_model.data_source.t_range
     if epoch < 0:
         epoch = model_dict['train']["nEpoch"]
-    # do_mc = model_dict["do_mc"]  TODO： 明确do_mc参数是什么用的
+    model_file = os.path.join(out, 'model_Ep' + str(epoch) + '.pt')
     file_path = name_pred(model_dict, out, t_range, epoch)
     print('output files:', file_path)
-    # 如果没有测试结果，那么就重新运行测试代码
-    re_test = False
-    if not os.path.isfile(file_path):
-        re_test = True
-    if re_test:
-        print('Runing new results')
-        model = model_run.model_load(out, epoch)
-        model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
+    if not os.path.isfile(model_file):
+        model_file = os.path.join(out, 'checkpoint.pt')
+        opt_model['nx'] = x.shape[-1] + c.shape[-1]
+        opt_model['ny'] = obs.shape[-1]
+        if opt_model['name'] == 'CudnnLstmModel':
+            model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+        elif opt_model['name'] == 'LstmCloseModel':
+            model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                       fillObs=True)
+        elif opt_model['name'] == 'AnnModel':
+            model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+        elif opt_model['name'] == 'AnnCloseModel':
+            model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                      fillObs=True)
+        model.load_state_dict(torch.load(model_file))
+        model.eval()
+        model_run.model_test_valid(model, x, c, file_path=file_path, batch_size=batch_size)
     else:
-        print('Loaded previous results')
+        # 如果没有测试结果，那么就重新运行测试代码
+        re_test = False
+        if not os.path.isfile(file_path):
+            re_test = True
+        if re_test:
+            print('Runing new results')
+            model = torch.load(model_file)
+            model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
+        else:
+            print('Loaded previous results')
 
     # load previous result并反归一化为标准量纲
     data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values

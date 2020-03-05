@@ -142,6 +142,32 @@ class MyTestCase(unittest.TestCase):
         result = np.array([np.nan, 1, 2, np.nan, 3])
         np.testing.assert_equal(out, result)
 
+    def setUp(self):
+        config_dir = definitions.CONFIG_DIR
+        # config_file = os.path.join(config_dir, "transdata/config_exp1.ini")
+        # subdir = r"transdata/exp1"
+        # config_file = os.path.join(config_dir, "transdata/config_exp2.ini")
+        # subdir = r"transdata/exp2"
+        # config_file = os.path.join(config_dir, "transdata/config_exp3.ini")
+        # subdir = r"transdata/exp3"
+        # config_file = os.path.join(config_dir, "transdata/config_exp4.ini")
+        # subdir = r"transdata/exp4"
+        # config_file = os.path.join(config_dir, "transdata/config_exp5.ini")
+        # subdir = r"transdata/exp5"
+        # config_file = os.path.join(config_dir, "transdata/config_exp6.ini")
+        # subdir = r"transdata/exp6"
+        # config_file = os.path.join(config_dir, "transdata/config_exp7.ini")
+        # subdir = r"transdata/exp7"
+        # config_file = os.path.join(config_dir, "transdata/config_exp8.ini")
+        # subdir = r"transdata/exp8"
+        # config_file = os.path.join(config_dir, "transdata/config_exp9.ini")
+        # subdir = r"transdata/exp9"
+        # config_file = os.path.join(config_dir, "transdata/config_exp10.ini")
+        # subdir = r"transdata/exp10"
+        config_file = os.path.join(config_dir, "transdata/config_exp11.ini")
+        subdir = r"transdata/exp11"
+        self.config_data = GagesConfig.set_subdir(config_file, subdir)
+
     def test_data_source(self):
         source_data = GagesSource(self.config_data, self.config_data.model_dict["data"]["tRangeTrain"],
                                   screen_basin_area_huc4=False)
@@ -163,9 +189,13 @@ class MyTestCase(unittest.TestCase):
                                    region_names[0], year)
 
     def test_choose_some_gauge(self):
-        gauge_list = np.array(
-            ['01013500', '01401650', '01585500', '02120780', '02324400', '03139000', '04086600', '05087500',
-             '05539900', '06468170', '07184000', '08158810', '09404450', '11055800', '12134500', '14166500'])
+        ashu_gageid_file = os.path.join(self.config_data.data_path["DB"], "ashu", "AshuGagesId.txt")
+        gauge_df = pd.read_csv(ashu_gageid_file, dtype={"STAID": str})
+        gauge_list = gauge_df["STAID"].values
+
+        # np.array(
+        #     ['01013500', '01401650', '01585500', '02120780', '02324400', '03139000', '04086600', '05087500',
+        #      '05539900', '06468170', '07184000', '08158810', '09404450', '11055800', '12134500', '14166500'])
         data_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data")
         output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_ashu")
         if not os.path.isdir(output_dir):
@@ -184,13 +214,8 @@ class MyTestCase(unittest.TestCase):
             if not os.path.isdir(output_huc_dir):
                 os.mkdir(output_huc_dir)
             dst = os.path.join(output_huc_dir, source_data.gage_dict['STAID'][j] + '_lump_daymet_forcing.txt')
+            print("write into", dst)
             shutil.copy(src, dst)
-
-    def setUp(self):
-        config_dir = definitions.CONFIG_DIR
-        config_file = os.path.join(config_dir, "transdata/config_exp1.ini")
-        subdir = r"transdata/exp1"
-        self.config_data = GagesConfig.set_subdir(config_file, subdir)
 
     def test_gpu(self):
         # os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cuda is TITAN

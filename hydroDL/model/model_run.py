@@ -5,8 +5,11 @@ import time
 import os
 import pandas as pd
 
+from utils.hydro_math import random_index, select_subset, select_subset_batch_first
 from . import rnn
 from torch.utils.tensorboard import SummaryWriter
+
+from .early_stopping import EarlyStopping
 
 
 def test_dataloader(net, testloader):
@@ -67,6 +70,150 @@ def train_dataloader(net, trainloader, criterion, n_epoch, out_folder, save_mode
             torch.save(net, model_file)
     writer.close()
     print('Finished Training')
+
+
+def model_train_valid(model, x, y, c, loss_fun, *, n_epoch=500, mini_batch=[100, 30], save_epoch=100, save_folder=None,
+                      mode='seq2seq', gpu_num=1, valid_size=0.2):
+    batch_size, rho = mini_batch
+    patience = save_epoch
+    ngrid, nt, nx = x.shape
+    if c is not None:
+        nx = nx + c.shape[-1]
+    # batch_size * rho must be bigger than ngrid * nt, if not, the value logged will be negative  that is wrong
+    n_iter_ep = int(np.ceil(np.log(0.01) / np.log(1 - batch_size * rho / ngrid / nt)))
+    if torch.cuda.is_available():
+        loss_fun = loss_fun.cuda()
+        model = model.cuda()
+    optim = torch.optim.Adadelta(model.parameters())
+    model.zero_grad()
+    # to track the training loss as the model trains
+    train_losses = []
+    # to track the validation loss as the model trains
+    valid_losses = []
+    # to track the average training loss per epoch as the model trains
+    avg_train_losses = []
+    # to track the average validation loss per epoch as the model trains
+    avg_valid_losses = []
+    # initialize the early_stopping object
+    early_stopping = EarlyStopping(patience=patience, verbose=True)
+    for iEpoch in range(1, n_epoch + 1):
+        # split time to train and valid
+        num_train = nt - rho
+        indices = list(range(num_train))
+        np.random.shuffle(indices)
+        split = int(np.floor(valid_size * num_train))
+        train_idx, valid_idx = indices[split:], indices[:split]
+        assert len(train_idx) > batch_size
+        assert len(valid_idx) > batch_size
+        #  use i_grids to keep same grids in train and valid
+        i_grids = []
+        ###################
+        # train the model #
+        ###################
+        t0 = time.time()
+        model.train()  # prep model for training
+        for iIter in range(0, n_iter_ep):
+            i_t = np.array(train_idx)[np.random.randint(0, len(train_idx), [batch_size])]
+            i_grid = np.random.randint(0, ngrid, [batch_size])
+            i_grids.append(i_grid)
+
+            x_train = select_subset(x, i_grid, i_t, rho, c=c)
+            y_train = select_subset(y, i_grid, i_t, rho)
+            y_p = model(x_train)
+            loss = loss_fun(y_p, y_train)
+            loss.backward()
+            optim.step()
+            model.zero_grad()
+            # record training loss
+            train_losses.append(loss.item())
+
+        ######################
+        # validate the model #
+        ######################
+        model.eval()  # prep model for evaluation
+        for iIter in range(0, n_iter_ep):
+            i_grid = i_grids[iIter]
+            i_t = np.array(valid_idx)[np.random.randint(0, len(valid_idx), [batch_size])]
+            x_valid = select_subset(x, i_grid, i_t, rho, c=c)
+            y_valid = select_subset(y, i_grid, i_t, rho)
+            y_output = model(x_valid)
+            # calculate the loss
+            loss = loss_fun(y_output, y_valid)
+            # record validation loss
+            valid_losses.append(loss.item())
+
+        # print training/validation statistics
+        # calculate average loss over an epoch
+        train_loss = np.average(train_losses)
+        valid_loss = np.average(valid_losses)
+        avg_train_losses.append(train_loss)
+        avg_valid_losses.append(valid_loss)
+
+        epoch_len = len(str(n_epoch))
+
+        print_msg = (f'[{iEpoch:>{epoch_len}}/{n_epoch:>{epoch_len}}] ' +
+                     f'train_loss: {train_loss:.5f} ' +
+                     f'valid_loss: {valid_loss:.5f}')
+        log_str = 'time {:.2f}'.format(time.time() - t0)
+        print(print_msg, log_str)
+
+        # clear lists to track next epoch
+        train_losses = []
+        valid_losses = []
+
+        # early_stopping needs the validation loss to check if it has decresed,
+        # and if it has, it will make a checkpoint of the current model
+        early_stopping(valid_loss, model, save_folder)
+
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
+    # load the last checkpoint with the best model
+    model.load_state_dict(torch.load(os.path.join(save_folder, 'checkpoint.pt')))
+    return model, avg_train_losses, avg_valid_losses
+
+
+def model_test_valid(model, x, c, *, file_path, batch_size=None):
+    ngrid, nt, nx = x.shape
+    if c is not None:
+        nc = c.shape[-1]
+    ny = model.ny
+    if batch_size is None:
+        batch_size = ngrid
+    if torch.cuda.is_available():
+        model = model.cuda()
+    # y_p = torch.zeros([nt, ngrid, ny])
+    i_s = np.arange(0, ngrid, batch_size)
+    i_e = np.append(i_s[1:], ngrid)
+
+    # deal with file name to save
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    with open(file_path, 'a') as f:
+        # forward for each batch
+        for i in range(0, len(i_s)):
+            print('batch {}'.format(i))
+            x_temp = x[i_s[i]:i_e[i], :, :]
+            if c is not None:
+                c_temp = np.repeat(np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
+                x_test = torch.from_numpy(np.swapaxes(np.concatenate([x_temp, c_temp], 2), 1, 0)).float()
+            else:
+                x_test = torch.from_numpy(np.swapaxes(x_temp, 1, 0)).float()
+            if torch.cuda.is_available():
+                x_test = x_test.cuda()
+
+            y_p = model(x_test)
+            y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
+            # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
+            pd.DataFrame(y_out[:, :, 0]).to_csv(f, header=False, index=False)
+
+            model.zero_grad()
+            torch.cuda.empty_cache()
+
+        f.close()
+    # TODO: y_out is not all output
+    y_out = torch.from_numpy(y_out)
+    return y_out
 
 
 def model_train(model,
@@ -288,50 +435,6 @@ def random_subset(x, y, dim_subset):
     return x_tensor, y_tensor
 
 
-def random_index(ngrid, nt, dim_subset):
-    batch_size, rho = dim_subset
-    i_grid = np.random.randint(0, ngrid, [batch_size])
-    i_t = np.random.randint(0, nt - rho, [batch_size])
-    return i_grid, i_t
-
-
-def select_subset(x, i_grid, i_t, rho, *, c=None, tuple_out=False):
-    nx = x.shape[-1]
-    nt = x.shape[1]
-    if x.shape[0] == len(i_grid):  # hack
-        i_grid = np.arange(0, len(i_grid))  # hack
-        if nt <= rho:
-            i_t.fill(0)
-    if i_t is not None:
-        batch_size = i_grid.shape[0]
-        x_tensor = torch.zeros([rho, batch_size, nx], requires_grad=False)
-        for k in range(batch_size):
-            temp = x[i_grid[k]:i_grid[k] + 1, np.arange(i_t[k], i_t[k] + rho), :]
-            x_tensor[:, k:k + 1, :] = torch.from_numpy(np.swapaxes(temp, 1, 0))
-    else:
-        if len(x.shape) == 2:
-            x_tensor = torch.from_numpy(x[i_grid, :]).float()
-        else:
-            x_tensor = torch.from_numpy(np.swapaxes(x[i_grid, :, :], 1, 0)).float()
-            rho = x_tensor.shape[0]
-    if c is not None:
-        nc = c.shape[-1]
-        temp = np.repeat(np.reshape(c[i_grid, :], [batch_size, 1, nc]), rho, axis=1)
-        c_tensor = torch.from_numpy(np.swapaxes(temp, 1, 0)).float()
-        if tuple_out:
-            if torch.cuda.is_available():
-                x_tensor = x_tensor.cuda()
-                c_tensor = c_tensor.cuda()
-            out = (x_tensor, c_tensor)
-        else:
-            out = torch.cat((x_tensor, c_tensor), 2)
-    else:
-        out = x_tensor
-    if torch.cuda.is_available() and type(out) is not tuple:
-        out = out.cuda()
-    return out
-
-
 def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[100, 30], save_epoch=100,
                     save_folder=None):
     batchSize, rho = mini_batch
@@ -483,32 +586,6 @@ def model_test_inv_kernel(model, xqch, xct, batch_size):
     model.zero_grad()
     torch.cuda.empty_cache()
     return y_out_list, param_list
-
-
-def select_subset_batch_first(x, i_grid, i_t, rho, *, c=None):
-    nx = x.shape[-1]
-    nt = x.shape[1]
-    if x.shape[0] < len(i_grid):
-        raise ValueError('grid num should be smaller than x.shape[0]')
-    if nt < rho:
-        raise ValueError('time length option should be larger than rho')
-
-    batch_size = i_grid.shape[0]
-    x_tensor = torch.zeros([batch_size, rho, nx], requires_grad=False)
-    for k in range(batch_size):
-        x_tensor[k:k + 1, :, :] = torch.from_numpy(
-            x[i_grid[k]:i_grid[k] + 1, np.arange(i_t[k], i_t[k] + rho), :]).float()
-
-    if c is not None:
-        nc = c.shape[-1]
-        temp = np.repeat(np.reshape(c[i_grid, :], [batch_size, 1, nc]), rho, axis=1)
-        c_tensor = torch.from_numpy(temp).float()
-        out = torch.cat((x_tensor, c_tensor), 2)
-    else:
-        out = x_tensor
-    if torch.cuda.is_available():
-        out = out.cuda()
-    return out
 
 
 def model_train_easy_lstm(model,

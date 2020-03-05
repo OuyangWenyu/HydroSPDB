@@ -1,5 +1,6 @@
 import numpy
 import numpy as np
+import torch
 
 
 def interpNan(x, mode='linear'):
@@ -43,3 +44,73 @@ def copy_attr_array_in2d(arr1, len_of_2d):
     for k in range(arr1.shape[0]):
         arr2[k] = np.tile(arr1[k], arr2.shape[1]).reshape(arr2.shape[1], arr1.shape[1])
     return arr2
+
+
+def random_index(ngrid, nt, dim_subset):
+    batch_size, rho = dim_subset
+    i_grid = np.random.randint(0, ngrid, [batch_size])
+    i_t = np.random.randint(0, nt - rho, [batch_size])
+    return i_grid, i_t
+
+
+def select_subset(x, i_grid, i_t, rho, *, c=None, tuple_out=False):
+    nx = x.shape[-1]
+    nt = x.shape[1]
+    if x.shape[0] == len(i_grid):  # hack
+        i_grid = np.arange(0, len(i_grid))  # hack
+        if nt <= rho:
+            i_t.fill(0)
+    if i_t is not None:
+        batch_size = i_grid.shape[0]
+        x_tensor = torch.zeros([rho, batch_size, nx], requires_grad=False)
+        for k in range(batch_size):
+            temp = x[i_grid[k]:i_grid[k] + 1, np.arange(i_t[k], i_t[k] + rho), :]
+            x_tensor[:, k:k + 1, :] = torch.from_numpy(np.swapaxes(temp, 1, 0))
+    else:
+        if len(x.shape) == 2:
+            x_tensor = torch.from_numpy(x[i_grid, :]).float()
+        else:
+            x_tensor = torch.from_numpy(np.swapaxes(x[i_grid, :, :], 1, 0)).float()
+            rho = x_tensor.shape[0]
+    if c is not None:
+        nc = c.shape[-1]
+        temp = np.repeat(np.reshape(c[i_grid, :], [batch_size, 1, nc]), rho, axis=1)
+        c_tensor = torch.from_numpy(np.swapaxes(temp, 1, 0)).float()
+        if tuple_out:
+            if torch.cuda.is_available():
+                x_tensor = x_tensor.cuda()
+                c_tensor = c_tensor.cuda()
+            out = (x_tensor, c_tensor)
+        else:
+            out = torch.cat((x_tensor, c_tensor), 2)
+    else:
+        out = x_tensor
+    if torch.cuda.is_available() and type(out) is not tuple:
+        out = out.cuda()
+    return out
+
+
+def select_subset_batch_first(x, i_grid, i_t, rho, *, c=None):
+    nx = x.shape[-1]
+    nt = x.shape[1]
+    if x.shape[0] < len(i_grid):
+        raise ValueError('grid num should be smaller than x.shape[0]')
+    if nt < rho:
+        raise ValueError('time length option should be larger than rho')
+
+    batch_size = i_grid.shape[0]
+    x_tensor = torch.zeros([batch_size, rho, nx], requires_grad=False)
+    for k in range(batch_size):
+        x_tensor[k:k + 1, :, :] = torch.from_numpy(
+            x[i_grid[k]:i_grid[k] + 1, np.arange(i_t[k], i_t[k] + rho), :]).float()
+
+    if c is not None:
+        nc = c.shape[-1]
+        temp = np.repeat(np.reshape(c[i_grid, :], [batch_size, 1, nc]), rho, axis=1)
+        c_tensor = torch.from_numpy(temp).float()
+        out = torch.cat((x_tensor, c_tensor), 2)
+    else:
+        out = x_tensor
+    if torch.cuda.is_available():
+        out = out.cuda()
+    return out

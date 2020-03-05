@@ -89,3 +89,24 @@ def plot_pdf_cdf(mydataframe, mycolumn):
         hist_kws={"density": True, "cumulative": True, "histtype": "step", "linewidth": 4}, ax=axes[1],
     ).set(xlim=(0, 1), ylim=(0, 1))
     plt.show()
+
+
+def plot_loss_early_stop(train_loss, valid_loss):
+    # visualize the loss as the network trained
+    fig = plt.figure(figsize=(10, 8))
+    plt.plot(range(1, len(train_loss) + 1), train_loss, label='Training Loss')
+    plt.plot(range(1, len(valid_loss) + 1), valid_loss, label='Validation Loss')
+
+    # find position of lowest validation loss
+    minposs = valid_loss.index(min(valid_loss)) + 1
+    plt.axvline(minposs, linestyle='--', color='r', label='Early Stopping Checkpoint')
+    max_loss = max(np.amax(np.array(train_loss)), np.amax(np.array(valid_loss)))
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.ylim(0, max_loss + 0.05)  # consistent scale
+    plt.xlim(0, len(train_loss) + 1)  # consistent scale
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    return fig

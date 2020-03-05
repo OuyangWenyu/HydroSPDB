@@ -11,7 +11,8 @@ from data.data_config import update_config_item
 from explore import *
 from utils import serialize_pickle, serialize_json, serialize_numpy, unserialize_pickle, unserialize_json, \
     unserialize_numpy, hydro_time
-from utils.hydro_math import copy_attr_array_in2d, concat_two_3darray
+from utils.hydro_math import copy_attr_array_in2d, concat_two_3darray, random_index, select_subset, \
+    select_subset_batch_first
 
 
 def save_datamodel(data_model, num_str=None, **kwargs):
