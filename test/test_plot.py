@@ -10,7 +10,7 @@ from utils.dataset_format import subset_of_dict
 from visual import plot_box_inds, plot_ts_obs_pred
 from visual.plot import plotCDF
 from visual.plot_model import plot_boxes_inds, plot_ind_map, plot_map
-from visual.plot_stat import plot_pdf_cdf, plot_ecdf
+from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map
 
 
 def test_stat():
@@ -145,6 +145,15 @@ class MyTestCase(unittest.TestCase):
 
     def test_plot_ecdf(self):
         plot_ecdf(self.inds_test, self.keys[0])
+
+    def test_plot_map_ts(self):
+        data_map = np.arange(5).tolist()
+        lat = [24, 30, 40, 50, 50.5]
+        lon = [-120, -110, -100, -90, -70]
+        data_ts_np = np.arange(30).reshape(5, 6)
+        data_ts = [data_ts_temp.tolist() for data_ts_temp in data_ts_np]
+        t = np.arange(6).tolist()
+        plot_ts_map(data_map, data_ts, lat, lon, t)
 
 
 if __name__ == '__main__':

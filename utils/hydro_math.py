@@ -3,6 +3,13 @@ import numpy as np
 import torch
 
 
+def flat_data(x):
+    xArrayTemp = x.flatten()
+    xArray = xArrayTemp[~np.isnan(xArrayTemp)]
+    xSort = np.sort(xArray)
+    return xSort
+
+
 def interpNan(x, mode='linear'):
     if len(x.shape) == 1:
         ngrid = 1

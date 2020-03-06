@@ -19,8 +19,12 @@ class MyTestCase(unittest.TestCase):
         config_dir = definitions.CONFIG_DIR
         # self.config_file = os.path.join(config_dir, "camelsvalid/config_exp1.ini")
         # self.subdir = r"camelsvalid/exp1"
-        self.config_file = os.path.join(config_dir, "camelsvalid/config_exp2.ini")
-        self.subdir = r"camelsvalid/exp2"
+        # self.config_file = os.path.join(config_dir, "camelsvalid/config_exp2.ini")
+        # self.subdir = r"camelsvalid/exp2"
+        # self.config_file = os.path.join(config_dir, "camelsvalid/config_exp3.ini")
+        # self.subdir = r"camelsvalid/exp3"
+        self.config_file = os.path.join(config_dir, "camelsvalid/config_exp4.ini")
+        self.subdir = r"camelsvalid/exp4"
         self.config_data = CamelsConfig.set_subdir(self.config_file, self.subdir)
 
     def test_camels_data_model(self):

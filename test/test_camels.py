@@ -28,8 +28,12 @@ class MyTestCase(unittest.TestCase):
         # self.subdir = r"basic/exp4"
         # self.config_file = os.path.join(config_dir, "camels/config_exp5.ini")
         # self.subdir = r"basic/exp5"
-        self.config_file = os.path.join(config_dir, "camels/config_exp6.ini")
-        self.subdir = r"basic/exp6"
+        # self.config_file = os.path.join(config_dir, "camels/config_exp6.ini")
+        # self.subdir = r"basic/exp6"
+        # self.config_file = os.path.join(config_dir, "camels/config_exp7.ini")
+        # self.subdir = r"basic/exp7"
+        self.config_file = os.path.join(config_dir, "camels/config_exp8.ini")
+        self.subdir = r"basic/exp8"
         self.config_data = CamelsConfig.set_subdir(self.config_file, self.subdir)
 
     def test_camels_data_model(self):

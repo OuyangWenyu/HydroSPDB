@@ -6,8 +6,12 @@ import geoplot as gplt
 import geoplot.crs as gcrs
 import numpy as np
 import pandas as pd
+import cartopy.crs as ccrs
+from cartopy.feature import NaturalEarthFeature
+from matplotlib import gridspec
 
 from explore.stat import ecdf
+from utils.hydro_math import flat_data
 
 
 def plot_boxs(data, x_name, y_name):
@@ -110,3 +114,69 @@ def plot_loss_early_stop(train_loss, valid_loss):
     plt.tight_layout()
     plt.show()
     return fig
+
+
+def plot_map_carto(data, lat, lon, ax=None, pertile_range=None):
+    temp = flat_data(data)
+    vmin = np.percentile(temp, 5)
+    vmax = np.percentile(temp, 95)
+    llcrnrlat = np.min(lat),
+    urcrnrlat = np.max(lat),
+    llcrnrlon = np.min(lon),
+    urcrnrlon = np.max(lon),
+    extent = [llcrnrlon[0], urcrnrlon[0], llcrnrlat[0], urcrnrlat[0]]
+    # Figure
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.subplots(projection=ccrs.PlateCarree())
+    ax.set_extent(extent)
+    states = NaturalEarthFeature(category="cultural", scale="50m",
+                                 facecolor="none",
+                                 name="admin_1_states_provinces_shp")
+    ax.add_feature(states, linewidth=.5, edgecolor="black")
+    ax.coastlines('50m', linewidth=0.8)
+    # auto projection
+    pcm = ax.scatter(lon, lat, c=temp, s=10, cmap='viridis', vmin=vmin, vmax=vmax)
+    # colorbar
+    fig.subplots_adjust(right=0.87)
+    cbar_ax = fig.add_axes([0.89, 0.3, 0.04, 0.4])
+    cbar = fig.colorbar(pcm, cax=cbar_ax, extend='both', orientation='vertical')
+    plt.show()
+
+
+def plot_ts_matplot(t, y, color='r', ax=None):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.subplots()
+    ax.plot(t, y, color=color)
+    if ax is None:
+        return fig, ax
+    else:
+        return ax
+
+
+def plot_ts_map(dataMap, dataTs, lat, lon, t):
+    assert type(dataMap) == list
+    assert type(dataTs) == list
+    # setup axes
+    fig = plt.figure()
+    # plot maps
+    ax1 = plt.subplot(211, projection=ccrs.PlateCarree())
+    plot_map_carto(dataMap, lat=lat, lon=lon, ax=ax1)
+    # line plot
+    ax2 = plt.subplot(212)
+
+    # plot ts
+    def onclick(event):
+        xClick = event.xdata
+        yClick = event.ydata
+        d = np.sqrt((xClick - lon) ** 2 + (yClick - lat) ** 2)
+        ind = np.argmin(d)
+        titleStr = 'pixel %d, lat %.3f, lon %.3f' % (ind, lat[ind], lon[ind])
+        tsLst = dataTs[ind]
+        plot_ts_matplot(t, tsLst, ax=ax2)
+        plt.draw()
+
+    fig.canvas.mpl_connect('button_press_event', onclick)
+    plt.tight_layout()
+    plt.show()
