@@ -1,4 +1,5 @@
 """使用seaborn库绘制各类统计相关的图形"""
+import matplotlib
 import seaborn as sns
 import matplotlib.pyplot as plt
 import geopandas as gpd
@@ -8,8 +9,6 @@ import numpy as np
 import pandas as pd
 import cartopy.crs as ccrs
 from cartopy.feature import NaturalEarthFeature
-from matplotlib import gridspec
-
 from explore.stat import ecdf
 from utils.hydro_math import flat_data
 
@@ -117,7 +116,7 @@ def plot_loss_early_stop(train_loss, valid_loss):
 
 
 def plot_map_carto(data, lat, lon, ax=None, pertile_range=None):
-    temp = flat_data(data)
+    temp = data
     vmin = np.percentile(temp, 5)
     vmax = np.percentile(temp, 95)
     llcrnrlat = np.min(lat),
@@ -137,11 +136,7 @@ def plot_map_carto(data, lat, lon, ax=None, pertile_range=None):
     ax.coastlines('50m', linewidth=0.8)
     # auto projection
     pcm = ax.scatter(lon, lat, c=temp, s=10, cmap='viridis', vmin=vmin, vmax=vmax)
-    # colorbar
-    fig.subplots_adjust(right=0.87)
-    cbar_ax = fig.add_axes([0.89, 0.3, 0.04, 0.4])
-    cbar = fig.colorbar(pcm, cax=cbar_ax, extend='both', orientation='vertical')
-    plt.show()
+    return pcm, ax
 
 
 def plot_ts_matplot(t, y, color='r', ax=None):
@@ -156,18 +151,24 @@ def plot_ts_matplot(t, y, color='r', ax=None):
 
 
 def plot_ts_map(dataMap, dataTs, lat, lon, t):
+    matplotlib.use('TkAgg')
     assert type(dataMap) == list
     assert type(dataTs) == list
     # setup axes
     fig = plt.figure()
+    plt.subplots_adjust(left=0.13, right=0.89, bottom=0.05)
     # plot maps
     ax1 = plt.subplot(211, projection=ccrs.PlateCarree())
-    plot_map_carto(dataMap, lat=lat, lon=lon, ax=ax1)
+    pcm, ax1 = plot_map_carto(dataMap, lat=lat, lon=lon, ax=ax1)
+    # colorbar
+    # cbar_ax = fig.add_axes([0.89, 0.3, 0.04, 0.4])
+    # cbar = fig.colorbar(pcm, cax=cbar_ax, extend='both', orientation='vertical')
     # line plot
     ax2 = plt.subplot(212)
 
     # plot ts
     def onclick(event):
+        print("click event")
         xClick = event.xdata
         yClick = event.ydata
         d = np.sqrt((xClick - lon) ** 2 + (yClick - lat) ** 2)
@@ -177,6 +178,7 @@ def plot_ts_map(dataMap, dataTs, lat, lon, t):
         plot_ts_matplot(t, tsLst, ax=ax2)
         plt.draw()
 
-    fig.canvas.mpl_connect('button_press_event', onclick)
+    cid = fig.canvas.mpl_connect('button_press_event', onclick)
+    print(cid)
     plt.tight_layout()
     plt.show()
