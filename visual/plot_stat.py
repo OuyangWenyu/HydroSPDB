@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 import cartopy.crs as ccrs
 from cartopy.feature import NaturalEarthFeature
+from matplotlib import gridspec
+
 from explore.stat import ecdf
 from utils.hydro_math import flat_data
 
@@ -136,14 +138,22 @@ def plot_map_carto(data, lat, lon, ax=None, pertile_range=None):
     ax.coastlines('50m', linewidth=0.8)
     # auto projection
     pcm = ax.scatter(lon, lat, c=temp, s=10, cmap='viridis', vmin=vmin, vmax=vmax)
+    sm = plt.cm.ScalarMappable(cmap='viridis')
+    plt.colorbar(sm, ax=ax)
     return pcm, ax
 
 
-def plot_ts_matplot(t, y, color='r', ax=None):
+def plot_ts_matplot(t, y, color='r', ax=None, title=None):
+    assert type(t) == list
+    assert type(y) == list
     if ax is None:
         fig = plt.figure()
         ax = fig.subplots()
-    ax.plot(t, y, color=color)
+    ax.plot(t, y[0], color=color, label='pred')
+    ax.plot(t, y[1], label='obs')
+    ax.legend()
+    if title is not None:
+        ax.set_title(title, loc='center')
     if ax is None:
         return fig, ax
     else:
@@ -151,20 +161,18 @@ def plot_ts_matplot(t, y, color='r', ax=None):
 
 
 def plot_ts_map(dataMap, dataTs, lat, lon, t):
-    matplotlib.use('TkAgg')
+    # matplotlib.use('TkAgg')
     assert type(dataMap) == list
     assert type(dataTs) == list
     # setup axes
-    fig = plt.figure()
-    plt.subplots_adjust(left=0.13, right=0.89, bottom=0.05)
+    fig = plt.figure(figsize=(8, 8), dpi=100)
+    gs = gridspec.GridSpec(2, 1)
+    # plt.subplots_adjust(left=0.13, right=0.89, bottom=0.05)
     # plot maps
-    ax1 = plt.subplot(211, projection=ccrs.PlateCarree())
+    ax1 = plt.subplot(gs[0], projection=ccrs.PlateCarree())
     pcm, ax1 = plot_map_carto(dataMap, lat=lat, lon=lon, ax=ax1)
-    # colorbar
-    # cbar_ax = fig.add_axes([0.89, 0.3, 0.04, 0.4])
-    # cbar = fig.colorbar(pcm, cax=cbar_ax, extend='both', orientation='vertical')
     # line plot
-    ax2 = plt.subplot(212)
+    ax2 = plt.subplot(gs[1])
 
     # plot ts
     def onclick(event):
@@ -175,10 +183,8 @@ def plot_ts_map(dataMap, dataTs, lat, lon, t):
         ind = np.argmin(d)
         titleStr = 'pixel %d, lat %.3f, lon %.3f' % (ind, lat[ind], lon[ind])
         tsLst = dataTs[ind]
-        plot_ts_matplot(t, tsLst, ax=ax2)
+        plot_ts_matplot(t, tsLst, ax=ax2, title=titleStr)
         plt.draw()
 
-    cid = fig.canvas.mpl_connect('button_press_event', onclick)
-    print(cid)
-    plt.tight_layout()
+    fig.canvas.mpl_connect('button_press_event', onclick)
     plt.show()

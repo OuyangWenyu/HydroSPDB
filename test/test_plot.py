@@ -150,8 +150,10 @@ class MyTestCase(unittest.TestCase):
         data_map = np.arange(5).tolist()
         lat = [24, 30, 40, 50, 50.5]
         lon = [-120, -110, -100, -90, -70]
-        data_ts_np = np.arange(30).reshape(5, 6)
-        data_ts = [data_ts_temp.tolist() for data_ts_temp in data_ts_np]
+        data_ts_obs_np = np.arange(30).reshape(5, 6)
+        data_ts_pred_np = np.arange(30, 60).reshape(5, 6)
+        data_ts = [[data_ts_obs_np[i], data_ts_pred_np[i]] for i in range(data_ts_obs_np.shape[0])]
+        print(data_ts)
         t = np.arange(6).tolist()
         plot_ts_map(data_map, data_ts, lat, lon, t)
 
