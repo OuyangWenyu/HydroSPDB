@@ -12,6 +12,96 @@ from torch.utils.tensorboard import SummaryWriter
 from .early_stopping import EarlyStopping
 
 
+def train_valid_dataloader(net, trainloader, validloader, criterion, n_epoch, out_folder, save_epoch, seq_first=True):
+    """train a model using data from dataloader"""
+    print("Start Training...")
+    # to track the training loss as the model trains
+    train_losses = []
+    # to track the validation loss as the model trains
+    valid_losses = []
+    # to track the average training loss per epoch as the model trains
+    avg_train_losses = []
+    # to track the average validation loss per epoch as the model trains
+    avg_valid_losses = []
+    # initialize the early_stopping object
+    early_stopping = EarlyStopping(patience=save_epoch, verbose=True)
+    if torch.cuda.is_available():
+        criterion = criterion.cuda()
+        net = net.cuda()
+    optimizer = torch.optim.Adadelta(net.parameters())
+    for epoch in range(1, n_epoch + 1):  # loop over the dataset multiple times
+        ###################
+        # train the model #
+        ###################
+        net.train()  # prep model for training
+        t0 = time.time()
+        for step, (batch_xs, batch_ys) in enumerate(trainloader, 1):
+            # get the inputs; data is a list of [inputs, labels]
+            # zero the parameter gradients
+            optimizer.zero_grad()
+            if seq_first:
+                batch_xs = batch_xs.transpose(0, 1)
+                batch_ys = batch_ys.transpose(0, 1)
+            if torch.cuda.is_available():
+                batch_xs = batch_xs.cuda()
+                batch_ys = batch_ys.cuda()
+            # forward + backward + optimize
+            outputs = net(batch_xs)
+            loss = criterion(outputs, batch_ys)
+            loss.backward()
+            optimizer.step()
+            # record training loss
+            train_losses.append(loss.item())
+            # print('Epoch: ', epoch, '| Step: ', step, '| loss_avg: ', running_loss / steps_num)
+
+        ######################
+        # validate the model #
+        ######################
+        net.eval()  # prep model for evaluation
+        for data, target in validloader:
+            if seq_first:
+                data = data.transpose(0, 1)
+                target = target.transpose(0, 1)
+            if torch.cuda.is_available():
+                data = data.cuda()
+                target = target.cuda()
+            # forward pass: compute predicted outputs by passing inputs to the model
+            output = net(data)
+            # calculate the loss
+            loss = criterion(output, target)
+            # record validation loss
+            valid_losses.append(loss.item())
+        # print training/validation statistics
+        # calculate average loss over an epoch
+        train_loss = np.average(train_losses)
+        valid_loss = np.average(valid_losses)
+        avg_train_losses.append(train_loss)
+        avg_valid_losses.append(valid_loss)
+        epoch_len = len(str(n_epoch))
+
+        print_msg = (f'[{epoch:>{epoch_len}}/{n_epoch:>{epoch_len}}] ' +
+                     f'train_loss: {train_loss:.5f} ' +
+                     f'valid_loss: {valid_loss:.5f}')
+        log_str = 'time {:.2f}'.format(time.time() - t0)
+        print(print_msg, log_str)
+        # clear lists to track next epoch
+        train_losses = []
+        valid_losses = []
+
+        # early_stopping needs the validation loss to check if it has decresed,
+        # and if it has, it will make a checkpoint of the current model
+        early_stopping(valid_loss, net, out_folder)
+
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
+
+        # load the last checkpoint with the best model
+    net.load_state_dict(torch.load(os.path.join(out_folder, 'checkpoint.pt')))
+    print('Finished Training')
+    return net, avg_train_losses, avg_valid_losses
+
+
 def test_dataloader(net, testloader):
     test_obs = []
     test_preds = []

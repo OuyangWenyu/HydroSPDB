@@ -6,6 +6,7 @@ from collections import OrderedDict
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from torch.utils.data.sampler import SubsetRandomSampler
 
 from data.data_config import update_config_item
 from explore import *
@@ -450,3 +451,50 @@ class StreamflowInputDataset(Dataset):
             return self.xc.shape[0] * (self.xc.shape[1] - self.rho + 1)
         else:
             return self.xc.shape[0]
+
+
+class StreamflowDataset(Dataset):
+    """Dataset for input of LSTM for only one gauge"""
+
+    def __init__(self, x, y, rho=30, mode='train'):
+        self.x = x
+        self.y = y
+        self.rho = rho
+        self.mode = mode
+
+    def __getitem__(self, index):
+        x = self.x[index:index + self.rho, :]
+        y = self.y[index:index + self.rho, :]
+        return torch.from_numpy(x).float(), torch.from_numpy(y).float()
+
+    def __len__(self):
+        return self.x.shape[0] - self.rho + 1
+
+
+def create_datasets(data_model, mini_batch, valid_size=0.2):
+    batch_size, rho = mini_batch
+    model_dict = data_model.data_source.data_config.model_dict
+    x3d, y3d, c = data_model.load_data(model_dict)
+    x = x3d[0]
+    y = y3d[0]
+    train_data = StreamflowDataset(x, y)
+    # obtain training indices that will be used for validation
+    num_train = len(train_data)
+    indices = list(range(num_train))
+    np.random.shuffle(indices)
+    split = int(np.floor(valid_size * num_train))
+    train_idx, valid_idx = indices[split:], indices[:split]
+    # define samplers for obtaining training and validation batches
+    train_sampler = SubsetRandomSampler(train_idx)
+    valid_sampler = SubsetRandomSampler(valid_idx)
+
+    # load training data in batches
+    train_loader = torch.utils.data.DataLoader(train_data,
+                                               batch_size=batch_size,
+                                               sampler=train_sampler)
+
+    # load validation data in batches
+    valid_loader = torch.utils.data.DataLoader(train_data,
+                                               batch_size=batch_size,
+                                               sampler=valid_sampler)
+    return train_loader, valid_loader

@@ -8,9 +8,49 @@ from functools import reduce
 from torch.utils.data import DataLoader
 
 from data.data_config import name_pred
-from data.data_input import _trans_norm
+from data.data_input import _trans_norm, create_datasets
 from explore import stat
 from hydroDL.model import *
+
+
+def master_train_1by1(data_model, valid_size=0.2):
+    model_dict = data_model.data_source.data_config.model_dict
+    opt_model = model_dict['model']
+    opt_loss = model_dict['loss']
+    opt_train = model_dict['train']
+
+    # data
+    opt_model['nx'] = data_model.data_forcing.shape[-1]  # + data_model.data_attr.shape[-1]
+    opt_model['ny'] = 1
+    # loss
+    if opt_loss['name'] == 'RmseLoss':
+        loss_fun = crit.RmseLoss()
+    elif opt_loss['name'] == 'NSELosstest':
+        loss_fun = crit.NSELosstest()
+    elif opt_loss['name'] == 'NSELoss':
+        loss_fun = crit.NSELoss()
+    else:
+        print("Please specify the loss function!!!")
+
+    # model
+    if opt_model['name'] == 'CudnnLstmModel':
+        model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+    elif opt_model['name'] == 'LstmCloseModel':
+        model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                   fillObs=True)
+    elif opt_model['name'] == 'AnnModel':
+        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+    elif opt_model['name'] == 'AnnCloseModel':
+        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                  fillObs=True)
+
+    # train model
+    output_dir = model_dict['dir']['Out']
+    trainloader, validloader = create_datasets(data_model, model_dict["train"]["miniBatch"], valid_size)
+    model, avg_train_losses, avg_valid_losses = model_run.train_valid_dataloader(model, trainloader, validloader,
+                                                                                 loss_fun, opt_train['nEpoch'],
+                                                                                 output_dir, opt_train['saveEpoch'])
+    return model, avg_train_losses, avg_valid_losses
 
 
 def master_train(data_model, valid_size=0):

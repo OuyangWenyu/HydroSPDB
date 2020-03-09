@@ -5,11 +5,9 @@ import torch
 from scipy import stats
 
 from data import *
-from data.data_input import save_datamodel, StreamflowInputDataset, GagesModel, _basin_norm
+from data.data_input import save_datamodel, GagesModel, _basin_norm
 from data.gages_input_dataset import GagesModels
-from explore import cal_stat, cal_stat_basin_norm
 from hydroDL.master import *
-from hydroDL.master.master import master_train_better_lstm, master_test_better_lstm
 import definitions
 from utils import serialize_numpy
 from visual.plot_model import plot_we_need
