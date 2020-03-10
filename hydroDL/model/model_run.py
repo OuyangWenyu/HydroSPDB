@@ -102,7 +102,7 @@ def train_valid_dataloader(net, trainloader, validloader, criterion, n_epoch, ou
     return net, avg_train_losses, avg_valid_losses
 
 
-def test_dataloader(net, testloader):
+def test_dataloader(net, testloader, seq_first=False):
     test_obs = []
     test_preds = []
     if torch.cuda.is_available():
@@ -110,6 +110,9 @@ def test_dataloader(net, testloader):
     with torch.no_grad():
         for data in testloader:
             xs, ys = data
+            if seq_first:
+                xs = xs.transpose(0, 1)
+                ys = ys.transpose(0, 1)
             if torch.cuda.is_available():
                 xs = xs.cuda()
                 ys = ys.cuda()

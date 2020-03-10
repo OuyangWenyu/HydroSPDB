@@ -8,9 +8,55 @@ from functools import reduce
 from torch.utils.data import DataLoader
 
 from data.data_config import name_pred
-from data.data_input import _trans_norm, create_datasets
+from data.data_input import _trans_norm, create_datasets, _basin_norm
 from explore import stat
 from hydroDL.model import *
+
+
+def master_test_1by1(data_model):
+    """:parameter
+        data_model：测试使用的数据
+        model_dict：测试时的模型配置
+    """
+    model_dict = data_model.data_source.data_config.model_dict
+    opt_model = model_dict['model']
+    # generate file names and run model
+    out = model_dict['dir']['Out']
+    t_range = data_model.data_source.t_range
+    epoch = model_dict['train']["nEpoch"]
+    file_path = name_pred(model_dict, out, t_range, epoch)
+    print('output files:', file_path)
+
+    model_file = os.path.join(out, 'checkpoint.pt')
+    opt_model['nx'] = data_model.data_forcing.shape[-1]
+    opt_model['ny'] = 1
+
+    if opt_model['name'] == 'CudnnLstmModel':
+        model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+    elif opt_model['name'] == 'LstmCloseModel':
+        model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                   fillObs=True)
+    elif opt_model['name'] == 'AnnModel':
+        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+    elif opt_model['name'] == 'AnnCloseModel':
+        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                  fillObs=True)
+    model.load_state_dict(torch.load(model_file))
+    testloader = create_datasets(data_model, train_mode=False)
+    pred_list, obs_list = model_run.test_dataloader(model, testloader, seq_first=True)
+    pred = reduce(lambda x, y: np.vstack((x, y)), pred_list)
+    obs = reduce(lambda x, y: np.vstack((x, y)), obs_list)
+    stat_dict = data_model.stat_dict
+    # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
+    pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+    obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+    basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['area_gages2'],
+                                                  is_return_dict=False)
+    mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['p_mean'],
+                                                 is_return_dict=False)
+    pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
+    obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
+    return pred, obs
 
 
 def master_train_1by1(data_model, valid_size=0.2):
@@ -46,7 +92,7 @@ def master_train_1by1(data_model, valid_size=0.2):
 
     # train model
     output_dir = model_dict['dir']['Out']
-    trainloader, validloader = create_datasets(data_model, model_dict["train"]["miniBatch"], valid_size)
+    trainloader, validloader = create_datasets(data_model, valid_size)
     model, avg_train_losses, avg_valid_losses = model_run.train_valid_dataloader(model, trainloader, validloader,
                                                                                  loss_fun, opt_train['nEpoch'],
                                                                                  output_dir, opt_train['saveEpoch'])

@@ -7,7 +7,7 @@ import definitions
 from data import CamelsConfig
 from data.data_input import save_datamodel, CamelsModel, _basin_norm
 from data.sim_input_dataset import CamelsModels
-from hydroDL.master.master import master_train, master_test, master_train_1by1
+from hydroDL.master.master import master_train, master_test, master_train_1by1, master_test_1by1
 from visual.plot_model import plot_we_need
 import numpy as np
 
@@ -72,6 +72,27 @@ class MyTestCase(unittest.TestCase):
                 fig = plot_loss_early_stop(train_loss, valid_loss)
                 out_dir = data_models[i].data_source.data_config.data_path["Out"]
                 fig.savefig(os.path.join(out_dir, 'loss_plot.png'), bbox_inches='tight')
+
+    def test_test_camels_iter(self):
+        data_model = CamelsModel.load_datamodel(self.config_data.data_path["Temp"],
+                                                data_source_file_name='test_data_source.txt',
+                                                stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                                forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                                f_dict_file_name='test_dictFactorize.json',
+                                                var_dict_file_name='test_dictAttribute.json',
+                                                t_s_dict_file_name='test_dictTimeSpace.json')
+        with torch.cuda.device(1):
+            data_models = CamelsModel.every_model(data_model)
+            obs_lst = []
+            pred_lst = []
+            for i in range(len(data_models)):
+                print("\n", "Testing model", str(i + 1), ":\n")
+                pred, obs = master_test_1by1(data_models[i])
+                obs_lst.append(obs.flatten())
+                pred_lst.append(pred.flatten())
+            preds = np.array(pred_lst)
+            obss = np.array(obs_lst)
+            plot_we_need(data_model, obss, preds, id_col="id", lon_col="lon", lat_col="lat")
 
     def test_test_camels(self):
         data_model = CamelsModel.load_datamodel(self.config_data.data_path["Temp"],

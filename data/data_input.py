@@ -456,45 +456,59 @@ class StreamflowInputDataset(Dataset):
 class StreamflowDataset(Dataset):
     """Dataset for input of LSTM for only one gauge"""
 
-    def __init__(self, x, y, rho=30, mode='train'):
+    def __init__(self, x, y, rho=30, train_mode=True):
         self.x = x
         self.y = y
         self.rho = rho
-        self.mode = mode
+        self.train_mode = train_mode
 
     def __getitem__(self, index):
-        x = self.x[index:index + self.rho, :]
-        y = self.y[index:index + self.rho, :]
+        if self.train_mode:
+            x = self.x[index:index + self.rho, :]
+            y = self.y[index:index + self.rho, :]
+        else:
+            x = self.x
+            y = self.y
         return torch.from_numpy(x).float(), torch.from_numpy(y).float()
 
     def __len__(self):
-        return self.x.shape[0] - self.rho + 1
+        if self.train_mode:
+            return self.x.shape[0] - self.rho + 1
+        else:
+            return 1
 
 
-def create_datasets(data_model, mini_batch, valid_size=0.2):
-    batch_size, rho = mini_batch
+def create_datasets(data_model, valid_size=0.2, train_mode=True):
     model_dict = data_model.data_source.data_config.model_dict
+    batch_size, rho = model_dict["train"]["miniBatch"]
     x3d, y3d, c = data_model.load_data(model_dict)
     x = x3d[0]
     y = y3d[0]
-    train_data = StreamflowDataset(x, y)
-    # obtain training indices that will be used for validation
-    num_train = len(train_data)
-    indices = list(range(num_train))
-    np.random.shuffle(indices)
-    split = int(np.floor(valid_size * num_train))
-    train_idx, valid_idx = indices[split:], indices[:split]
-    # define samplers for obtaining training and validation batches
-    train_sampler = SubsetRandomSampler(train_idx)
-    valid_sampler = SubsetRandomSampler(valid_idx)
+    if train_mode:
+        train_data = StreamflowDataset(x, y, rho=rho)
+        # obtain training indices that will be used for validation
+        num_train = len(train_data)
+        indices = list(range(num_train))
+        np.random.shuffle(indices)
+        split = int(np.floor(valid_size * num_train))
+        train_idx, valid_idx = indices[split:], indices[:split]
+        # define samplers for obtaining training and validation batches
+        train_sampler = SubsetRandomSampler(train_idx)
+        valid_sampler = SubsetRandomSampler(valid_idx)
 
-    # load training data in batches
-    train_loader = torch.utils.data.DataLoader(train_data,
-                                               batch_size=batch_size,
-                                               sampler=train_sampler)
+        # load training data in batches
+        train_loader = torch.utils.data.DataLoader(train_data,
+                                                   batch_size=batch_size,
+                                                   sampler=train_sampler)
 
-    # load validation data in batches
-    valid_loader = torch.utils.data.DataLoader(train_data,
-                                               batch_size=batch_size,
-                                               sampler=valid_sampler)
-    return train_loader, valid_loader
+        # load validation data in batches
+        valid_loader = torch.utils.data.DataLoader(train_data,
+                                                   batch_size=batch_size,
+                                                   sampler=valid_sampler)
+        return train_loader, valid_loader
+    else:
+        test_data = StreamflowDataset(x, y, rho=rho, train_mode=False)
+        test_loader = torch.utils.data.DataLoader(test_data,
+                                                  batch_size=batch_size)
+
+        return test_loader
