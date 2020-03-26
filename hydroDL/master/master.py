@@ -92,6 +92,8 @@ def master_train_1by1(data_model, valid_size=0.2):
 
     # train model
     output_dir = model_dict['dir']['Out']
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
     trainloader, validloader = create_datasets(data_model, valid_size)
     model, avg_train_losses, avg_valid_losses = model_run.train_valid_dataloader(model, trainloader, validloader,
                                                                                  loss_fun, opt_train['nEpoch'],
@@ -384,8 +386,7 @@ def master_test_better_lstm(dataset, load_epoch=-1):
 
 
 def master_train_natural_flow(model_input):
-    data_model = model_input.data_source.model_data
-    model_dict = data_model.data_source.data_config.model_dict
+    model_dict = model_input.data_model2.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_train = model_dict['train']
 

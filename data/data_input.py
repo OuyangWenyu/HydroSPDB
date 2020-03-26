@@ -8,6 +8,7 @@ import torch
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import SubsetRandomSampler
 
+from data import GagesSource
 from data.data_config import update_config_item
 from explore import *
 from utils import serialize_pickle, serialize_json, serialize_numpy, unserialize_pickle, unserialize_json, \
@@ -262,6 +263,27 @@ class DataModel(object):
 class GagesModel(DataModel):
     def __init__(self, data_source, *args):
         super().__init__(data_source, *args)
+
+    @classmethod
+    def update_data_model(cls, config_data, data_model):
+        t_s_dict = data_model.t_s_dict
+        t_range = t_s_dict["t_final_range"]
+        new_source_data = GagesSource(config_data, t_range)
+        data_flow = data_model.data_flow
+        data_forcing = data_model.data_forcing
+        data_attr = data_model.data_attr
+        var_dict = data_model.var_dict
+        f_dict = data_model.f_dict
+        stat_dict = data_model.stat_dict
+        data_model = cls(new_source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
+                         t_s_dict)
+        return data_model
+
+    def update_model_param(self, opt, **kwargs):
+        for key in kwargs:
+            if key in self.data_source.data_config.model_dict[opt].keys():
+                self.data_source.data_config.model_dict[opt][key] = kwargs[key]
+                print("update", opt, key, kwargs[key])
 
     def cal_stat_all(self):
         """calculate statistics of streamflow, forcing and attributes of Gages"""

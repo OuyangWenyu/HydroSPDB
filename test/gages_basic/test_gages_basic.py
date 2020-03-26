@@ -40,8 +40,14 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp9"
         # self.config_file = os.path.join(config_dir, "basic/config_exp10.ini")
         # self.subdir = r"basic/exp10"
-        self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
-        self.subdir = r"basic/exp11"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
+        # self.subdir = r"basic/exp11"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
+        # self.subdir = r"basic/exp12"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp14.ini")
+        # self.subdir = r"basic/exp14"
+        self.config_file = os.path.join(config_dir, "basic/config_exp17.ini")
+        self.subdir = r"basic/exp17"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
 
     def test_gages_data_model(self):
@@ -65,7 +71,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='dictFactorize.json',
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(0):
+        with torch.cuda.device(1):
             master_train(data_model)
 
     def test_test_gages(self):
@@ -83,7 +89,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                      f_dict_file_name='dictFactorize.json',
                                                      var_dict_file_name='dictAttribute.json',
                                                      t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(0):
+        with torch.cuda.device(1):
             pred, obs = master_test(data_model, epoch=300)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)

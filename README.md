@@ -1,5 +1,9 @@
 # Analyze impact of human activities to streamflow prediction with Deep Learning model
 
+## Paper idea
+
+If a method of classification need to be incorporated to the pre-processing, this paper can be referred: https://doi.org/10.1016/j.jhydrol.2013.03.024
+
 ## setup
 
 As the "environment.yml" file has existed, you can run the code with it to setup the environment (Firstly you need to modify "$prefix" of this file to your own):

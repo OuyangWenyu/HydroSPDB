@@ -6,7 +6,7 @@ import torch
 import definitions
 from data import CamelsConfig
 from data.data_input import save_datamodel, StreamflowInputDataset, CamelsModel, _basin_norm
-from data.sim_input_dataset import CamelsModels
+from data.camels_input_dataset import CamelsModels
 from hydroDL.master.master import master_train_better_lstm, master_test_better_lstm
 from visual.plot_model import plot_we_need
 
