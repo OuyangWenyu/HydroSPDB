@@ -127,7 +127,7 @@ class MyTestCase(unittest.TestCase):
             train_lstm_inv(data_model)
 
     def test_inv_test(self):
-        with torch.cuda.device(1):
+        with torch.cuda.device(2):
             df1 = GagesModel.load_datamodel(self.config_data_1.data_path["Temp"], "1",
                                             data_source_file_name='test_data_source.txt',
                                             stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',

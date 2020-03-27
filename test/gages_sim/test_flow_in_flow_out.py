@@ -119,7 +119,7 @@ class MyTestCase(unittest.TestCase):
                                                     f_dict_file_name='dictFactorize.json',
                                                     var_dict_file_name='dictAttribute.json',
                                                     t_s_dict_file_name='dictTimeSpace.json')
-            # data_model1.update_model_param('train', nEpoch=10)
+            data_model1.update_model_param('train', nEpoch=300)
             data_model2 = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "2",
                                                     data_source_file_name='data_source.txt',
                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
