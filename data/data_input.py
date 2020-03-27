@@ -265,18 +265,38 @@ class GagesModel(DataModel):
         super().__init__(data_source, *args)
 
     @classmethod
-    def update_data_model(cls, config_data, data_model):
-        t_s_dict = data_model.t_s_dict
-        t_range = t_s_dict["t_final_range"]
+    def update_data_model(cls, config_data, data_model_origin, t_range=None):
+        t_s_dict = data_model_origin.t_s_dict
+        data_flow = data_model_origin.data_flow
+        data_forcing = data_model_origin.data_forcing
+        data_attr = data_model_origin.data_attr
+        var_dict = data_model_origin.var_dict
+        f_dict = data_model_origin.f_dict
+        stat_dict = data_model_origin.stat_dict
+        if t_range is None:
+            t_range = t_s_dict["t_final_range"]
         new_source_data = GagesSource(config_data, t_range)
-        data_flow = data_model.data_flow
-        data_forcing = data_model.data_forcing
-        data_attr = data_model.data_attr
-        var_dict = data_model.var_dict
-        f_dict = data_model.f_dict
-        stat_dict = data_model.stat_dict
         data_model = cls(new_source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
                          t_s_dict)
+        if t_range is not None:
+            stat_dict_temp = {}
+            t_s_dict_temp = {}
+            start_index = int(
+                (np.datetime64(t_range[0]) - np.datetime64(t_s_dict["t_final_range"][0])) / np.timedelta64(1, 'D'))
+            assert start_index >= 0
+            t_lst_temp = hydro_time.t_range_days(t_range)
+            end_index = start_index + t_lst_temp.size
+            data_flow = data_model.data_flow[:, start_index:end_index]
+            data_forcing = data_model.data_forcing[:, start_index:end_index, :]
+
+            data_model = cls(new_source_data, data_flow, data_forcing, data_attr,
+                             var_dict, f_dict, stat_dict_temp, t_s_dict_temp)
+            t_s_dict_temp['sites_id'] = data_model_origin.t_s_dict['sites_id']
+            t_s_dict_temp['t_final_range'] = t_range
+            data_model.t_s_dict = t_s_dict_temp
+            stat_dict_temp = data_model.cal_stat_all()
+            data_model.stat_dict = stat_dict_temp
+
         return data_model
 
     def update_model_param(self, opt, **kwargs):
