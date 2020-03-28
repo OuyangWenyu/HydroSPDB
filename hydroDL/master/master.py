@@ -385,7 +385,7 @@ def master_test_better_lstm(dataset, load_epoch=-1):
     return pred, obs
 
 
-def master_train_natural_flow(model_input):
+def master_train_natural_flow(model_input, pre_trained_model_epoch=1):
     model_dict = model_input.data_model2.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_train = model_dict['train']
@@ -400,14 +400,20 @@ def master_train_natural_flow(model_input):
     loss_fun = crit.RmseLoss()
 
     # model
-    model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
-
-    # train model
     out = os.path.join(model_dict['dir']['Out'], "model")
     if not os.path.isdir(out):
         os.mkdir(out)
+    if pre_trained_model_epoch > 1:
+        pre_trained_model_file = os.path.join(out, 'model_Ep' + str(pre_trained_model_epoch) + '.pt')
+        model = rnn.CudnnLstmModelPretrain(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'],
+                                           pretrian_model_file=pre_trained_model_file)
+    else:
+        model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+
+    # train model
     model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
-                          mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'], save_folder=out)
+                          mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'], save_folder=out,
+                          pre_trained_model_epoch=pre_trained_model_epoch)
 
 
 def master_test_natural_flow(model_input):
@@ -454,7 +460,7 @@ def master_test_natural_flow(model_input):
     return pred, obs
 
 
-def train_lstm_inv(data_model):
+def train_lstm_inv(data_model, pre_trained_model_epoch=1):
     """call lstm inv model to train"""
     model_dict = data_model.model_dict1
     opt_model = model_dict['model']
@@ -468,17 +474,24 @@ def train_lstm_inv(data_model):
     # loss
     loss_fun = crit.RmseLoss()
     # model
-    if opt_model['name'] == 'CudnnLstmModelInv':
-        model_inv = rnn.CudnnLstmModelInv(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+    output_dir = model_dict['dir']['Out']
+    if pre_trained_model_epoch > 1:
+        pre_trained_model_file = os.path.join(output_dir, 'model_Ep' + str(pre_trained_model_epoch) + '.pt')
+        model_inv = rnn.CudnnLstmModelInvKernelPretrain(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                        hidden_size=opt_model['hiddenSize'],
+                                                        pretrian_model_file=pre_trained_model_file)
     else:
-        model_inv = rnn.CudnnLstmModelInvKernel(nx=opt_model['nx'], ny=opt_model['ny'],
-                                                hidden_size=opt_model['hiddenSize'])
+        if opt_model['name'] == 'CudnnLstmModelInv':
+            model_inv = rnn.CudnnLstmModelInv(nx=opt_model['nx'], ny=opt_model['ny'],
+                                              hidden_size=opt_model['hiddenSize'])
+        else:
+            model_inv = rnn.CudnnLstmModelInvKernel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                    hidden_size=opt_model['hiddenSize'])
 
     # train model
-    output_dir = model_dict['dir']['Out']
     model_run.model_train_inv(model_inv, xqch, xct, qt, loss_fun, n_epoch=opt_train['nEpoch'],
                               mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
-                              save_folder=output_dir)
+                              save_folder=output_dir, pre_trained_model_epoch=pre_trained_model_epoch)
 
 
 def test_lstm_inv(data_model):
@@ -516,7 +529,7 @@ def test_lstm_inv(data_model):
     return pred, qt
 
 
-def train_lstm_siminv(data_input):
+def train_lstm_siminv(data_input, pre_trained_model_epoch=1):
     model_dict = data_input.model_dict2
     opt_model = model_dict['model']
     opt_train = model_dict['train']
@@ -529,20 +542,26 @@ def train_lstm_siminv(data_input):
     # loss
     loss_fun = crit.RmseLoss()
     # model
-    if opt_model['name'] == 'CudnnLstmModelInv':
-        model_inv = rnn.CudnnLstmModelInv(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
-    else:
-        model_inv = rnn.CudnnLstmModelInvKernel(nx=opt_model['nx'], ny=opt_model['ny'],
-                                                hidden_size=opt_model['hiddenSize'])
-
-    # train model
     output_dir = model_dict['dir']['Out']
     model_save_dir = os.path.join(output_dir, 'model')
     if not os.path.isdir(model_save_dir):
         os.mkdir(model_save_dir)
+    if pre_trained_model_epoch > 1:
+        pre_trained_model_file = os.path.join(model_save_dir, 'model_Ep' + str(pre_trained_model_epoch) + '.pt')
+        model_inv = rnn.CudnnLstmModelInvKernelPretrain(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                        hidden_size=opt_model['hiddenSize'],
+                                                        pretrian_model_file=pre_trained_model_file)
+    else:
+        if opt_model['name'] == 'CudnnLstmModelInv':
+            model_inv = rnn.CudnnLstmModelInv(nx=opt_model['nx'], ny=opt_model['ny'],
+                                              hidden_size=opt_model['hiddenSize'])
+        else:
+            model_inv = rnn.CudnnLstmModelInvKernel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                    hidden_size=opt_model['hiddenSize'])
+    # train model
     model_run.model_train_inv(model_inv, xqqnch, xct, qt, loss_fun, n_epoch=opt_train['nEpoch'],
                               mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
-                              save_folder=model_save_dir)
+                              save_folder=model_save_dir, pre_trained_model_epoch=pre_trained_model_epoch)
 
 
 def test_lstm_siminv(data_input):
@@ -580,7 +599,7 @@ def test_lstm_siminv(data_input):
     return pred, qt
 
 
-def train_lstm_da(data_input):
+def train_lstm_da(data_input, pre_trained_model_epoch=1):
     model_dict = data_input.data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_train = model_dict['train']
@@ -592,12 +611,17 @@ def train_lstm_da(data_input):
     # loss
     loss_fun = crit.RmseLoss()
     # model
-    model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
-    # train model
     output_dir = model_dict['dir']['Out']
+    if pre_trained_model_epoch > 1:
+        pre_trained_model_file = os.path.join(output_dir, 'model_Ep' + str(pre_trained_model_epoch) + '.pt')
+        model = rnn.CudnnLstmModelPretrain(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'],
+                                           pretrian_model_file=pre_trained_model_file)
+    else:
+        model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+    # train model
     model_run.model_train(model, qx, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
                           mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
-                          save_folder=output_dir)
+                          save_folder=output_dir, pre_trained_model_epoch=pre_trained_model_epoch)
 
 
 def test_lstm_da(data_input):

@@ -128,7 +128,8 @@ class MyTestCase(unittest.TestCase):
                                                     var_dict_file_name='dictAttribute.json',
                                                     t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesSimDataModel(data_model1, data_model2)
-            master_train_natural_flow(data_model)
+            pre_trained_model_epoch = 160
+            master_train_natural_flow(data_model, pre_trained_model_epoch)
 
     def test_test_gages_sim(self):
         with torch.cuda.device(1):

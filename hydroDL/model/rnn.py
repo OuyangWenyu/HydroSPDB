@@ -336,6 +336,19 @@ class CudnnLstmModel(torch.nn.Module):
         return out
 
 
+class CudnnLstmModelPretrain(torch.nn.Module):
+    def __init__(self, *, nx, ny, hidden_size, pretrian_model_file):
+        super(CudnnLstmModelPretrain, self).__init__()
+        self.nx = nx
+        self.ny = ny
+        self.hidden_size = hidden_size
+        self.lstm = torch.load(pretrian_model_file)
+
+    def forward(self, x, do_drop_mc=False, dropout_false=False):
+        out = self.lstm(x)
+        return out
+
+
 class CudnnLstmModel_R2P(torch.nn.Module):
     def __init__(self, *, nx, ny, hiddenSize, dr=0.5, filename):
         super(CudnnLstmModel_R2P, self).__init__()
@@ -656,19 +669,14 @@ class CudnnLstmModelInvKernel(torch.nn.Module):
         return out_lstm, param
 
 
-class CudnnLstmModelWithout1stLinear(torch.nn.Module):
-    def __init__(self, *, nx, ny, hidden_size, dr=0.5):
-        super(CudnnLstmModelWithout1stLinear, self).__init__()
+class CudnnLstmModelInvKernelPretrain(torch.nn.Module):
+    def __init__(self, *, nx, ny, hidden_size, pretrian_model_file):
+        super(CudnnLstmModelInvKernelPretrain, self).__init__()
         self.nx = nx
         self.ny = ny
         self.hidden_size = hidden_size
-        self.ct = 0
-        self.nLayer = 1
-        self.lstm = CudnnLstm(input_size=nx, hidden_size=hidden_size, dr=dr)
-        self.linearOut = torch.nn.Linear(hidden_size, ny)
-        self.gpu = 2
+        self.lstm_inv = torch.load(pretrian_model_file)
 
-    def forward(self, x, do_drop_mc=False, dropout_false=False):
-        out_lstm, (hn, cn) = self.lstm(x, do_drop_mc=do_drop_mc, dropout_false=dropout_false)
-        out = self.linearOut(out_lstm)
-        return out
+    def forward(self, xh, xt, do_drop_mc=False, dropout_false=False):
+        out_lstm, param = self.lstm_inv(xh, xt)
+        return out_lstm, param

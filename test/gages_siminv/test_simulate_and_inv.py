@@ -151,7 +151,8 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesSimInvDataModel(df1, df2, df3)
-            train_lstm_siminv(data_model)
+            pre_trained_model_epoch = 60
+            train_lstm_siminv(data_model,pre_trained_model_epoch = pre_trained_model_epoch)
 
     def test_siminv_test(self):
         df1 = GagesModel.load_datamodel(self.config_data_sim.data_path["Temp"], "1",

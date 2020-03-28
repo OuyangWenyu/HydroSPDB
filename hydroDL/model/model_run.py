@@ -319,6 +319,7 @@ def model_train(model,
                 mini_batch=[100, 30],
                 save_epoch=100,
                 save_folder=None,
+                pre_trained_model_epoch=1,
                 mode='seq2seq',
                 gpu_num=1):
     batch_size, rho = mini_batch
@@ -342,12 +343,12 @@ def model_train(model,
     if save_folder is not None:
         run_file = os.path.join(save_folder, str(n_epoch) + 'epoch_run.csv')
         rf = open(run_file, 'a+')
-    for iEpoch in range(1, n_epoch + 1):
+    for iEpoch in range(pre_trained_model_epoch, n_epoch + 1):
         loss_ep = 0
         t0 = time.time()
         for iIter in range(0, n_iter_ep):
             # training iterations
-            if type(model) in [rnn.CudnnLstmModel, rnn.AnnModel]:
+            if type(model) in [rnn.CudnnLstmModel, rnn.CudnnLstmModelPretrain]:
                 i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
                 x_train = select_subset(x, i_grid, i_t, rho, c=c)
                 y_train = select_subset(y, i_grid, i_t, rho)
@@ -385,9 +386,7 @@ def model_train(model,
             loss_ep = loss_ep + loss.item()
         # print loss
         loss_ep = loss_ep / n_iter_ep
-        log_str = 'Epoch {} Loss {:.3f} time {:.2f}'.format(
-            iEpoch, loss_ep,
-            time.time() - t0)
+        log_str = 'Epoch {} Loss {:.3f} time {:.2f}'.format(iEpoch, loss_ep, time.time() - t0)
         print(log_str)
         # save model and loss
         if save_folder is not None:
@@ -529,7 +528,7 @@ def random_subset(x, y, dim_subset):
 
 
 def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[100, 30], save_epoch=100,
-                    save_folder=None):
+                    save_folder=None, pre_trained_model_epoch=1):
     batchSize, rho = mini_batch
     ngrid, nt, nx = xqch.shape
     ngrid_t, nt_t, nx_t = xct.shape
@@ -545,7 +544,7 @@ def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[1
     if save_folder is not None:
         runFile = os.path.join(save_folder, str(n_epoch) + 'epoch_run.csv')
         rf = open(runFile, 'w+')
-    for iEpoch in range(1, n_epoch + 1):
+    for iEpoch in range(pre_trained_model_epoch, n_epoch + 1):
         lossEp = 0
         t0 = time.time()
         for iIter in range(0, nIterEp):

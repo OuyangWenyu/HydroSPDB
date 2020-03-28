@@ -124,7 +124,8 @@ class MyTestCase(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesInvDataModel(df1, df2)
-            train_lstm_inv(data_model)
+            pre_trained_model_epoch = 1
+            train_lstm_inv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_inv_test(self):
         with torch.cuda.device(2):
