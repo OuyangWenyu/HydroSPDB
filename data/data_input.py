@@ -265,6 +265,37 @@ class GagesModel(DataModel):
         super().__init__(data_source, *args)
 
     @classmethod
+    def compact_data_model(cls, data_model_lst, data_source):
+        print("compact models")
+        data_model1 = data_model_lst[0]
+        for i in range(1, len(data_model_lst)):
+            data_model2 = data_model_lst[i]
+            data_attr1 = data_model1.data_attr
+            data_attr2 = data_model2.data_attr
+            data_attr = np.vstack((data_attr1, data_attr2))
+            data_flow1 = data_model1.data_flow
+            data_flow2 = data_model2.data_flow
+            # param of vstack is a tuple
+            data_flow = np.vstack((data_flow1, data_flow2))
+            data_forcing1 = data_model1.data_forcing
+            data_forcing2 = data_model2.data_forcing
+            data_forcing = np.vstack((data_forcing1, data_forcing2))
+            f_dict = data_model1.f_dict
+            var_dict = data_model1.var_dict
+            stat_dict_temp = {}
+            t_s_dict = {}
+            s_dict = data_model1.t_s_dict['sites_id'] + data_model2.t_s_dict['sites_id']
+            t_s_dict['sites_id'] = s_dict
+            t_s_dict['t_final_range'] = data_model1.t_s_dict['t_final_range']
+            data_model1 = cls(data_source, data_flow, data_forcing, data_attr,
+                              var_dict, f_dict, stat_dict_temp, t_s_dict)
+            data_model1.t_s_dict = t_s_dict
+
+        stat_dict = data_model1.cal_stat_all()
+        data_model1.stat_dict = stat_dict
+        return data_model1
+
+    @classmethod
     def update_data_model(cls, config_data, data_model_origin, t_range=None):
         t_s_dict = data_model_origin.t_s_dict
         data_flow = data_model_origin.data_flow

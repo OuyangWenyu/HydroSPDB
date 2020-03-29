@@ -50,12 +50,6 @@ def master_test_1by1(data_model):
     # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
     pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
     obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
-    basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['area_gages2'],
-                                                  is_return_dict=False)
-    mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['p_mean'],
-                                                 is_return_dict=False)
-    pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
-    obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
     return pred, obs
 
 

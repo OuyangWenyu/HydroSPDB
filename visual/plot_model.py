@@ -15,16 +15,17 @@ def plot_we_need(data_model_test, obs, pred, show_me_num=5, point_file=None, **k
     pred = pred.reshape(pred.shape[0], pred.shape[1])
     obs = obs.reshape(pred.shape[0], pred.shape[1])
     inds = statError(obs, pred)
-    t_s_dict = data_model_test.t_s_dict
-    sites = np.array(t_s_dict["sites_id"])
-    t_range = np.array(t_s_dict["t_final_range"])
-    ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
-    ts_fig.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], "ts_fig.png"))
     # plot box，使用seaborn库
     keys = ["Bias", "RMSE", "NSE"]
     inds_test = subset_of_dict(inds, keys)
     box_fig = plot_boxes_inds(inds_test)
     box_fig.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], "box_fig.png"))
+    # plot ts
+    t_s_dict = data_model_test.t_s_dict
+    sites = np.array(t_s_dict["sites_id"])
+    t_range = np.array(t_s_dict["t_final_range"])
+    ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
+    ts_fig.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], "ts_fig.png"))
     # plot nse ecdf
     sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
     plot_ecdf(sites_df_nse, keys[2])
