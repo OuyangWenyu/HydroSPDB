@@ -141,8 +141,8 @@ class MyTestCase(unittest.TestCase):
                                                      t_s_dict_file_name='test_dictTimeSpace.json')
             data_model_test_lst.append(data_model_i)
 
-            flow_pred_file_i = os.path.join(data_dir_i, 'flow_pred')
-            flow_obs_file_i = os.path.join(data_dir_i, 'flow_obs')
+            flow_pred_file_i = os.path.join(data_dir_i, 'flow_pred.npy')
+            flow_obs_file_i = os.path.join(data_dir_i, 'flow_obs.npy')
             preds = unserialize_numpy(flow_pred_file_i)
             obss = unserialize_numpy(flow_obs_file_i)
             obs_lsts.append(obss)

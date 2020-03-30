@@ -56,11 +56,11 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
         # self.test_epoch = test_epoch_lst[3]
         # self.test_epoch = test_epoch_lst[4]
         # self.test_epoch = test_epoch_lst[5]
-        # self.test_epoch = test_epoch_lst[6]
+        self.test_epoch = test_epoch_lst[6]
         # self.test_epoch = test_epoch_lst[7]
         # self.test_epoch = test_epoch_lst[8]
         # self.test_epoch = test_epoch_lst[9]
-        self.test_epoch = test_epoch_lst[10]
+        # self.test_epoch = test_epoch_lst[10]
 
     def test_siminv_data_temp(self):
         quick_data_dir = os.path.join(self.config_data_sim.data_path["DB"], "quickdata")

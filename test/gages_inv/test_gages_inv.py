@@ -69,8 +69,8 @@ class MyTestCase(unittest.TestCase):
         # self.test_epoch = test_epoch_lst[6]
         # self.test_epoch = test_epoch_lst[7]
         # self.test_epoch = test_epoch_lst[8]
-        # self.test_epoch = test_epoch_lst[9]
-        self.test_epoch = test_epoch_lst[10]
+        self.test_epoch = test_epoch_lst[9]
+        # self.test_epoch = test_epoch_lst[10]
 
     def test_inv_data_temp(self):
         # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM

@@ -52,6 +52,18 @@ class MyTestCase(unittest.TestCase):
         add_model_param(self.config_data, "model", seqLength=7)
         # choose some small basins, unit: SQKM
         self.basin_area_screen = 100
+        test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]
+        # self.test_epoch = test_epoch_lst[0]
+        # self.test_epoch = test_epoch_lst[1]
+        # self.test_epoch = test_epoch_lst[2]
+        # self.test_epoch = test_epoch_lst[3]
+        # self.test_epoch = test_epoch_lst[4]
+        # self.test_epoch = test_epoch_lst[5]
+        # self.test_epoch = test_epoch_lst[6]
+        # self.test_epoch = test_epoch_lst[7]
+        self.test_epoch = test_epoch_lst[8]
+        # self.test_epoch = test_epoch_lst[9]
+        # self.test_epoch = test_epoch_lst[10]
 
     def test_gages_sim_data_model(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
@@ -157,7 +169,7 @@ class MyTestCase(unittest.TestCase):
                                                     var_dict_file_name='test_dictAttribute.json',
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
             model_input = GagesSimDataModel(data_model1, data_model2)
-            pred, obs = master_test_natural_flow(model_input, epoch=300)
+            pred, obs = master_test_natural_flow(model_input, epoch=self.test_epoch)
             basin_area = model_input.data_model2.data_source.read_attr(model_input.data_model2.t_s_dict["sites_id"],
                                                                        ['DRAIN_SQKM'], is_return_dict=False)
             mean_prep = model_input.data_model2.data_source.read_attr(model_input.data_model2.t_s_dict["sites_id"],
@@ -167,8 +179,9 @@ class MyTestCase(unittest.TestCase):
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
 
             flow_pred_file = os.path.join(model_input.data_model2.data_source.data_config.data_path['Temp'],
-                                          'flow_pred')
-            flow_obs_file = os.path.join(model_input.data_model2.data_source.data_config.data_path['Temp'], 'flow_obs')
+                                          'epoch' + str(self.test_epoch) + 'flow_pred')
+            flow_obs_file = os.path.join(model_input.data_model2.data_source.data_config.data_path['Temp'],
+                                         'epoch' + str(self.test_epoch) + 'flow_obs')
             serialize_numpy(pred, flow_pred_file)
             serialize_numpy(obs, flow_obs_file)
 
@@ -183,8 +196,9 @@ class MyTestCase(unittest.TestCase):
                                                 var_dict_file_name='test_dictAttribute.json',
                                                 t_s_dict_file_name='test_dictTimeSpace.json')
         flow_pred_file = os.path.join(data_model2.data_source.data_config.data_path['Temp'],
-                                      'flow_pred.npy')
-        flow_obs_file = os.path.join(data_model2.data_source.data_config.data_path['Temp'], 'flow_obs.npy')
+                                      'epoch' + str(self.test_epoch) + 'flow_pred.npy')
+        flow_obs_file = os.path.join(data_model2.data_source.data_config.data_path['Temp'],
+                                     'epoch' + str(self.test_epoch) + 'flow_obs.npy')
         pred = unserialize_numpy(flow_pred_file)
         obs = unserialize_numpy(flow_obs_file)
         pred = pred.reshape(pred.shape[0], pred.shape[1])

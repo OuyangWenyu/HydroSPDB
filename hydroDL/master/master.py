@@ -95,7 +95,7 @@ def master_train_1by1(data_model, valid_size=0.2):
     return model, avg_train_losses, avg_valid_losses
 
 
-def master_train(data_model, valid_size=0):
+def master_train(data_model, valid_size=0, pre_trained_model_epoch=1):
     model_dict = data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_loss = model_dict['loss']
@@ -124,25 +124,29 @@ def master_train(data_model, valid_size=0):
         print("Please specify the loss function!!!")
 
     # model
-    if opt_model['name'] == 'CudnnLstmModel':
-        model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
-    elif opt_model['name'] == 'LstmCloseModel':
-        model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
-                                   fillObs=True)
-    elif opt_model['name'] == 'AnnModel':
-        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
-    elif opt_model['name'] == 'AnnCloseModel':
-        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
-                                  fillObs=True)
-
-    # train
     if opt_train['saveEpoch'] > opt_train['nEpoch']:
         opt_train['saveEpoch'] = opt_train['nEpoch']
-
-    # train model
     out = model_dict['dir']['Out']
     if not os.path.isdir(out):
         os.makedirs(out)
+    if pre_trained_model_epoch > 1:
+        pre_trained_model_file = os.path.join(out, 'model_Ep' + str(pre_trained_model_epoch) + '.pt')
+        model = rnn.CudnnLstmModelPretrain(nx=opt_model['nx'], ny=opt_model['ny'],
+                                           hidden_size=opt_model['hiddenSize'],
+                                           pretrian_model_file=pre_trained_model_file)
+    else:
+        if opt_model['name'] == 'CudnnLstmModel':
+            model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+        elif opt_model['name'] == 'LstmCloseModel':
+            model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                       fillObs=True)
+        elif opt_model['name'] == 'AnnModel':
+            model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+        elif opt_model['name'] == 'AnnCloseModel':
+            model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                      fillObs=True)
+
+    # train model
     if valid_size > 0:
         model, train_loss, valid_loss = model_run.model_train_valid(model, x, y, c, loss_fun,
                                                                     n_epoch=opt_train['nEpoch'],
@@ -153,7 +157,7 @@ def master_train(data_model, valid_size=0):
     else:
         model = model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
                                       mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
-                                      save_folder=out)
+                                      save_folder=out, pre_trained_model_epoch=pre_trained_model_epoch)
         return model
 
 

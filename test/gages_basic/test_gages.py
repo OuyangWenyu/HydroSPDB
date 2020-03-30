@@ -51,6 +51,18 @@ class MyTestCaseGages(unittest.TestCase):
         self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
         self.subdir = r"basic/exp19"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
+        test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]
+        # self.test_epoch = test_epoch_lst[0]
+        # self.test_epoch = test_epoch_lst[1]
+        # self.test_epoch = test_epoch_lst[2]
+        # self.test_epoch = test_epoch_lst[3]
+        # self.test_epoch = test_epoch_lst[4]
+        # self.test_epoch = test_epoch_lst[5]
+        # self.test_epoch = test_epoch_lst[6]
+        # self.test_epoch = test_epoch_lst[7]
+        self.test_epoch = test_epoch_lst[8]
+        # self.test_epoch = test_epoch_lst[9]
+        # self.test_epoch = test_epoch_lst[10]
 
     def test_gages_data_model(self):
         gages_model = GagesModels(self.config_data)
@@ -107,7 +119,8 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(0):
-            master_train(data_model)
+            pre_trained_model_epoch = 285
+            master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
@@ -125,7 +138,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                      var_dict_file_name='dictAttribute.json',
                                                      t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(0):
-            pred, obs = master_test(data_model, epoch=300)
+            pred, obs = master_test(data_model, epoch=self.test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)
             mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
