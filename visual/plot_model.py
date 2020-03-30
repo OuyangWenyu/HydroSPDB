@@ -116,7 +116,7 @@ def plot_ind_map(all_points_file, df_ind_value, percentile=0):
     plot_point_map(newdata, percentile=percentile)
 
 
-def plot_map(gauge_dict, df_ind_value, proj_epsg=4269, percentile=0, **kwargs):
+def plot_map(gauge_dict, df_ind_value, proj_epsg=4269, percentile=10, **kwargs):
     """plot ind values on a map, epsg num of NAD83 is 4269"""
     sites = df_ind_value['sites'].values
     index = np.array([np.where(gauge_dict[kwargs["id_col"]] == i) for i in sites]).flatten()

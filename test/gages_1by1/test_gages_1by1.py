@@ -125,6 +125,8 @@ class MyTestCase(unittest.TestCase):
         data_config = self.config_data.read_data_config()
         regions = data_config["regions"]
         data_model_test_lst = []
+        obs_lsts = []
+        pred_lsts = []
         for i in range(1, len(regions) + 1):
             data_dir_i_temp = '/'.join(self.config_data.data_path['Temp'].split('/')[:-1])
             data_dir_i = os.path.join(data_dir_i_temp, "exp" + str(i))
@@ -139,8 +141,17 @@ class MyTestCase(unittest.TestCase):
                                                      t_s_dict_file_name='test_dictTimeSpace.json')
             data_model_test_lst.append(data_model_i)
 
-        pred_final = unserialize_numpy(self.flow_pred_file)
-        obs_final = unserialize_numpy(self.flow_obs_file)
+            flow_pred_file_i = os.path.join(data_dir_i, 'flow_pred')
+            flow_obs_file_i = os.path.join(data_dir_i, 'flow_obs')
+            preds = unserialize_numpy(flow_pred_file_i)
+            obss = unserialize_numpy(flow_obs_file_i)
+            obs_lsts.append(obss)
+            pred_lsts.append(preds)
+
+        # pred_final = unserialize_numpy(self.flow_pred_file)
+        # obs_final = unserialize_numpy(self.flow_obs_file)
+        obs_final = reduce(lambda a, b: np.vstack((a, b)), obs_lsts)
+        pred_final = reduce(lambda a, b: np.vstack((a, b)), pred_lsts)
         gages_model_test = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
                                                      data_source_file_name='test_data_source.txt',
                                                      stat_file_name='test_Statistics.json',
@@ -152,7 +163,7 @@ class MyTestCase(unittest.TestCase):
                                                      t_s_dict_file_name='test_dictTimeSpace.json')
 
         data_model_test = GagesModel.compact_data_model(data_model_test_lst, gages_model_test.data_source)
-        plot_we_need(data_model_test, obs_final, pred_final, id_col="id", lon_col="lon", lat_col="lat")
+        plot_we_need(data_model_test, obs_final, pred_final, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
 
 if __name__ == '__main__':

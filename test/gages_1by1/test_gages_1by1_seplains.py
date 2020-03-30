@@ -8,6 +8,7 @@ from data import GagesConfig
 from data.data_input import save_datamodel, _basin_norm, GagesModel
 from data.gages_input_dataset import GagesModels
 from hydroDL.master.master import master_train, master_test, master_train_1by1, master_test_1by1
+from utils import serialize_numpy
 from visual.plot_model import plot_we_need
 import numpy as np
 
@@ -62,18 +63,31 @@ class MyTestCase(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        with torch.cuda.device(1):
+        with torch.cuda.device(2):
             obs_lst = []
             pred_lst = []
             for i in range(0, data_model.data_flow.shape[0]):
                 print("\n", "Testing model", str(i + 1), ":\n")
                 data_models_i = GagesModel.which_data_model(data_model, i)
                 pred, obs = master_test_1by1(data_models_i)
+                basin_area = data_models_i.data_source.read_attr(data_models_i.t_s_dict["sites_id"], ['DRAIN_SQKM'],
+                                                                 is_return_dict=False)
+                mean_prep = data_models_i.data_source.read_attr(data_models_i.t_s_dict["sites_id"],
+                                                                ['PPTAVG_BASIN'],
+                                                                is_return_dict=False)
+                mean_prep = mean_prep / 365 * 10
+                pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
+                obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
                 obs_lst.append(obs.flatten())
                 pred_lst.append(pred.flatten())
             preds = np.array(pred_lst)
             obss = np.array(obs_lst)
-            plot_we_need(data_model, obss, preds, id_col="id", lon_col="lon", lat_col="lat")
+            flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'],
+                                          'flow_pred')
+            flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'],
+                                         'flow_obs')
+            serialize_numpy(preds, flow_pred_file)
+            serialize_numpy(obss, flow_obs_file)
 
 
 if __name__ == '__main__':

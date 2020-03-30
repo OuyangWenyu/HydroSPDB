@@ -454,7 +454,7 @@ def model_test(model, x, c, *, file_path, batch_size=None):
                 z_test = torch.from_numpy(np.swapaxes(z_temp, 1, 0)).float()
                 if torch.cuda.is_available():
                     z_test = z_test.cuda()
-            if type(model) in [rnn.CudnnLstmModel, rnn.AnnModel]:
+            if type(model) in [rnn.CudnnLstmModel, rnn.CudnnLstmModelPretrain]:
                 y_p = model(x_test)
             if type(model) in [rnn.LstmCloseModel, rnn.AnnCloseModel]:
                 y_p = model(x_test, z_test)

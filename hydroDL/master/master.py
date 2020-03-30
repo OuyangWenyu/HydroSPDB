@@ -410,12 +410,12 @@ def master_train_natural_flow(model_input, pre_trained_model_epoch=1):
                           pre_trained_model_epoch=pre_trained_model_epoch)
 
 
-def master_test_natural_flow(model_input):
+def master_test_natural_flow(model_input, epoch=-1):
     """:parameter
         data_model：测试使用的数据
         model_dict：测试时的模型配置
     """
-    data_model = model_input.data_source.model_data
+    data_model = model_input.data_model2
     model_dict = data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
     # 测试和训练使用的batch_size, rho是一样的
@@ -426,7 +426,8 @@ def master_test_natural_flow(model_input):
     # generate file names and run model
     out = os.path.join(model_dict['dir']['Out'], "model")
     t_range = data_model.data_source.t_range
-    epoch = model_dict['train']["nEpoch"]
+    if epoch < 0:
+        epoch = model_dict['train']["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, epoch)
     print('output files:', file_path)
     # 如果没有测试结果，那么就重新运行测试代码
@@ -448,8 +449,8 @@ def master_test_natural_flow(model_input):
     if opt_data['doNorm'][1] is True:
         stat_dict = data_model.stat_dict
         # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
-        pred = stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
-        obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+        pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+        obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
     return pred, obs
 
@@ -488,7 +489,7 @@ def train_lstm_inv(data_model, pre_trained_model_epoch=1):
                               save_folder=output_dir, pre_trained_model_epoch=pre_trained_model_epoch)
 
 
-def test_lstm_inv(data_model):
+def test_lstm_inv(data_model, epoch=-1):
     model_dict = data_model.model_dict1
     opt_data = model_dict['data']
     opt_model = model_dict['model']
@@ -502,7 +503,8 @@ def test_lstm_inv(data_model):
     # generate file names and run model
     out = os.path.join(model_dict['dir']['Out'])
     t_range = data_model.model_dict2["data"]["tRangeTest"]
-    epoch = opt_train["nEpoch"]
+    if epoch < 0:
+        epoch = opt_train["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, epoch)
     print('output files:', file_path)
     model = model_run.model_load(out, epoch)
@@ -517,8 +519,8 @@ def test_lstm_inv(data_model):
     if opt_data['doNorm'][1] is True:
         stat_dict = data_model.stat_dict
         # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
-        pred = stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
-        qt = stat.trans_norm(qt, 'usgsFlow', stat_dict, to_norm=False)
+        pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+        qt = _trans_norm(qt, 'usgsFlow', stat_dict, to_norm=False)
 
     return pred, qt
 
@@ -558,7 +560,7 @@ def train_lstm_siminv(data_input, pre_trained_model_epoch=1):
                               save_folder=model_save_dir, pre_trained_model_epoch=pre_trained_model_epoch)
 
 
-def test_lstm_siminv(data_input):
+def test_lstm_siminv(data_input, epoch=-1):
     model_dict = data_input.model_dict2
     opt_data = model_dict['data']
     opt_model = model_dict['model']
@@ -572,7 +574,8 @@ def test_lstm_siminv(data_input):
     # generate file names and run model
     out = os.path.join(model_dict['dir']['Out'], 'model')
     t_range = data_input.test_trange
-    epoch = opt_train["nEpoch"]
+    if epoch < 0:
+        epoch = opt_train["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, epoch)
     print('output files:', file_path)
     model = model_run.model_load(out, epoch)
@@ -587,8 +590,8 @@ def test_lstm_siminv(data_input):
     if opt_data['doNorm'][1] is True:
         stat_dict = data_input.test_stat_dict
         # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
-        pred = stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
-        qt = stat.trans_norm(qt, 'usgsFlow', stat_dict, to_norm=False)
+        pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+        qt = _trans_norm(qt, 'usgsFlow', stat_dict, to_norm=False)
 
     return pred, qt
 
@@ -618,7 +621,7 @@ def train_lstm_da(data_input, pre_trained_model_epoch=1):
                           save_folder=output_dir, pre_trained_model_epoch=pre_trained_model_epoch)
 
 
-def test_lstm_da(data_input):
+def test_lstm_da(data_input, epoch=-1):
     model_dict = data_input.data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
     opt_model = model_dict['model']
@@ -631,7 +634,8 @@ def test_lstm_da(data_input):
     # generate file names and run model
     out = model_dict['dir']['Out']
     t_range = data_input.data_model.data_source.t_range
-    epoch = opt_train["nEpoch"]
+    if epoch < 0:
+        epoch = opt_train["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, epoch)
     print('output files:', file_path)
     model = model_run.model_load(out, epoch)
@@ -645,8 +649,8 @@ def test_lstm_da(data_input):
     if opt_data['doNorm'][1] is True:
         stat_dict = data_input.data_model.stat_dict
         # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
-        pred = stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
-        obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+        pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+        obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
     return pred, obs
 

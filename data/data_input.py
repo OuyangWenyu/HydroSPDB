@@ -296,7 +296,7 @@ class GagesModel(DataModel):
         return data_model1
 
     @classmethod
-    def update_data_model(cls, config_data, data_model_origin, t_range=None):
+    def update_data_model(cls, config_data, data_model_origin, t_range_update=None, data_attr_update=False):
         t_s_dict = data_model_origin.t_s_dict
         data_flow = data_model_origin.data_flow
         data_forcing = data_model_origin.data_forcing
@@ -304,12 +304,15 @@ class GagesModel(DataModel):
         var_dict = data_model_origin.var_dict
         f_dict = data_model_origin.f_dict
         stat_dict = data_model_origin.stat_dict
-        if t_range is None:
-            t_range = t_s_dict["t_final_range"]
+        t_range = t_s_dict["t_final_range"]
         new_source_data = GagesSource(config_data, t_range)
+        if data_attr_update:
+            attr_lst = new_source_data.all_configs.get("attr_chosen")
+            data_attr, var_dict, f_dict = new_source_data.read_attr(t_s_dict["sites_id"], attr_lst)
         data_model = cls(new_source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
                          t_s_dict)
-        if t_range is not None:
+        if t_range_update is not None:
+            t_range = t_range_update
             stat_dict_temp = {}
             t_s_dict_temp = {}
             start_index = int(
@@ -325,8 +328,9 @@ class GagesModel(DataModel):
             t_s_dict_temp['sites_id'] = data_model_origin.t_s_dict['sites_id']
             t_s_dict_temp['t_final_range'] = t_range
             data_model.t_s_dict = t_s_dict_temp
-            stat_dict_temp = data_model.cal_stat_all()
-            data_model.stat_dict = stat_dict_temp
+
+        stat_dict_temp = data_model.cal_stat_all()
+        data_model.stat_dict = stat_dict_temp
 
         return data_model
 
