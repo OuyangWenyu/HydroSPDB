@@ -2,6 +2,22 @@
 
 ## Paper idea
 
+选择85-05年，20年数据，选择无数据时间长度不超过10%的流域站点进行计算，单独计算和一起计算分别尝试。
+
+- 目前得到的结果是分开计算的不太好，需要进一步检查；
+- 另外，在其他文献中都能看到 basin area 是影响计算结果的关键指标，所以可以做一个histogram看看是什么样的。
+
+有一些问题可以问：
+
+1. 有些流域可预测，有些流域结果很差，这能说明什么？加州的比较差可能是因为水库很多，中部差是因为地表水会很快下渗，然后在地下流动到一定地方之后再反补出来，会造成径流预测不准。这可以有什么hypothesis？对加州地区的水库做进一步分析？
+2. DL能不能分离各类影响，比如能分析climate change，是怎么分析的？DL的预测记录下了climate change？逻辑上，DL记录下了时间序列的趋势，所以从中可以看出climate change
+所以land use如何分析呢？可能是类似地，如果能预测出结果，就能统计分析判断land use的变化。
+
+进一步的理解和认识需要补充一些文献，比如2013年开启水文十年的关于水-社会-人类活动的综述文献等。
+
+- [Change in hydrology and society—The IAHS Scientific Decade 2013–2022](https://doi.org/10.1080/02626667.2013.809088)
+- [A Transdisciplinary Review of Deep Learning Research and Its Relevance for Water Resources Scientists](https://doi.org/10.1029/2018WR022643)
+
 If a method of classification need to be incorporated to the pre-processing, this paper can be referred: https://doi.org/10.1016/j.jhydrol.2013.03.024
 
 ## setup
