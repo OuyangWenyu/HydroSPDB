@@ -120,7 +120,8 @@ class MyTestCase(unittest.TestCase):
         flow_obs_file = os.path.join(data_model.data_model.data_source.data_config.data_path['Temp'], 'flow_obs.npy')
         pred = unserialize_numpy(flow_pred_file)
         obs = unserialize_numpy(flow_obs_file)
-
+        pred = pred.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(obs.shape[0], obs.shape[1])
         inds = statError(obs, pred)
         # plot box，使用seaborn库
         keys = ["Bias", "RMSE", "NSE"]

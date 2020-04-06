@@ -48,10 +48,11 @@ class MyTestCase(unittest.TestCase):
         attr_lst = ['DRAIN_SQKM']
         data_attr, var_dict, f_dict = data_model_train.data_source.read_attr(usgs_id, attr_lst)
         data_show = data_attr.flatten()
+        print("number of small basins: ", data_show[data_show < 1000].size)
         # sns.distplot(data_show, bins=20, kde=False, rug=False)
-        sns.distplot(data_show, bins=100, kde=False, rug=False)
-        plt.xticks(np.arange(0, 50000, 1000))
-        plt.show()
+        # sns.distplot(data_show, bins=100, kde=False, rug=False)
+        # plt.xticks(np.arange(0, 50000, 1000))
+        # plt.show()
 
     def test_data_temp_explore(self):
         config_data_1 = self.config_data
