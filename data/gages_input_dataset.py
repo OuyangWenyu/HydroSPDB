@@ -21,12 +21,16 @@ from utils.hydro_math import concat_two_3darray, copy_attr_array_in2d
 class GagesModels(object):
     """the data model for GAGES-II dataset"""
 
-    def __init__(self, config_data):
+    def __init__(self, config_data, sites_id=None):
         # 准备训练数据
         t_train = config_data.model_dict["data"]["tRangeTrain"]
         t_test = config_data.model_dict["data"]["tRangeTest"]
         t_train_test = [t_train[0], t_test[1]]
-        source_data = GagesSource(config_data, t_train_test)
+        if sites_id is None:
+            source_data = GagesSource(config_data, t_train_test)
+        else:
+            source_data = GagesSource.choose_some_basins(config_data, t_train_test,
+                                                         sites_id=sites_id)
         # 构建输入数据类对象
         data_model = GagesModel(source_data)
         self.data_model_train, self.data_model_test = GagesModel.data_models_of_train_test(data_model, t_train, t_test)

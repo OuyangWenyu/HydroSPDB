@@ -216,7 +216,7 @@ class MyTestCase(unittest.TestCase):
         # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM
         config_data_1 = self.config_data_1
         source_data_1 = GagesSource.choose_some_basins(config_data_1, config_data_1.model_dict["data"]["tRangeTrain"],
-                                                       self.basin_area_screen)
+                                                       basin_area=self.basin_area_screen)
         df1 = DataModel(source_data_1)
         save_datamodel(df1, "1", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
@@ -227,7 +227,7 @@ class MyTestCase(unittest.TestCase):
         # final dim of lstm-inv
         config_data_2 = self.config_data_2
         source_data_2 = GagesSource.choose_some_basins(config_data_2, config_data_2.model_dict["data"]["tRangeTrain"],
-                                                       self.basin_area_screen)
+                                                       basin_area=self.basin_area_screen)
         df2 = DataModel(source_data_2)
         save_datamodel(df2, "2", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
@@ -238,7 +238,7 @@ class MyTestCase(unittest.TestCase):
         # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM
         config_data_1 = self.config_data_1
         source_data_1 = GagesSource.choose_some_basins(config_data_1, config_data_1.model_dict["data"]["tRangeTest"],
-                                                       self.basin_area_screen)
+                                                       basin_area=self.basin_area_screen)
         df1 = DataModel(source_data_1)
         save_datamodel(df1, "1", data_source_file_name='test_data_source.txt',
                        stat_file_name='test_Statistics.json', flow_file_name='test_flow',
@@ -249,7 +249,7 @@ class MyTestCase(unittest.TestCase):
         # final dim of lstm-inv
         config_data_2 = self.config_data_2
         source_data_2 = GagesSource.choose_some_basins(config_data_2, config_data_2.model_dict["data"]["tRangeTest"],
-                                                       self.basin_area_screen)
+                                                       basin_area=self.basin_area_screen)
         df2 = DataModel(source_data_2)
         save_datamodel(df2, "2", data_source_file_name='test_data_source.txt',
                        stat_file_name='test_Statistics.json', flow_file_name='test_flow',

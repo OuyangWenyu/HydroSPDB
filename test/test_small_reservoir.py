@@ -30,7 +30,7 @@ class MyTestCase(unittest.TestCase):
         # choose some small basins, unit: SQKM
         basin_area_screen = 100
         source_data = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTrain"],
-                                                     basin_area_screen)
+                                                     basin_area=basin_area_screen)
         # 构建输入数据类对象
         data_model = DataModel(source_data)
         # train model
@@ -42,7 +42,7 @@ class MyTestCase(unittest.TestCase):
         # choose some small basins, unit: SQKM
         basin_area_screen = 100
         source_data = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTest"],
-                                                     basin_area_screen)
+                                                     basin_area=basin_area_screen)
         data_model_test = DataModel(source_data)
         pred, obs = master_test(data_model_test)
         pred = pred.reshape(pred.shape[0], pred.shape[1])

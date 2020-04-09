@@ -55,6 +55,7 @@ class DataModel(object):
             data_flow = data_source.read_usgs()
             usgs_id = data_source.all_configs["flow_screen_gage_id"]
             data_flow, usgs_id, t_range_list = data_source.usgs_screen_streamflow(data_flow, usgs_ids=usgs_id)
+            assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
             self.data_flow = data_flow
             # read forcing
             data_forcing = data_source.read_forcing(usgs_id, t_range_list)
@@ -166,9 +167,11 @@ class DataModel(object):
 
     @classmethod
     def data_models_of_train_test(cls, data_model, t_train, t_test):
-        """split the data_model that will be used in LSTM according to train and test"""
+        """split the data_model that will be used in LSTM according to train and test
+        Notice: you can't know anything about test dataset before evaluating, so we should use the statistic value of
+        training period for normalization in test period"""
 
-        def select_by_time(data_flow_temp, data_forcing_temp, data_model_origin, t_temp):
+        def select_by_time(data_flow_temp, data_forcing_temp, data_model_origin, t_temp, train_stat_dict=None):
             data_attr_temp = data_model_origin.data_attr[:, :]
             stat_dict_temp = {}
             t_s_dict_temp = {}
@@ -181,7 +184,10 @@ class DataModel(object):
             t_s_dict_temp['sites_id'] = data_model_origin.t_s_dict['sites_id']
             t_s_dict_temp['t_final_range'] = t_temp
             data_model_temp.t_s_dict = t_s_dict_temp
-            stat_dict_temp = data_model_temp.cal_stat_all()
+            if train_stat_dict is None:
+                stat_dict_temp = data_model_temp.cal_stat_all()
+            else:
+                stat_dict_temp = train_stat_dict
             data_model_temp.stat_dict = stat_dict_temp
             return data_model_temp
 
@@ -193,7 +199,8 @@ class DataModel(object):
 
         data_flow_test = data_model.data_flow[:, t_train_final_index:]
         data_forcing_test = data_model.data_forcing[:, t_train_final_index:, :]
-        data_model_test = select_by_time(data_flow_test, data_forcing_test, data_model, t_test)
+        data_model_test = select_by_time(data_flow_test, data_forcing_test, data_model, t_test,
+                                         data_model_train.stat_dict)
         return data_model_train, data_model_test
 
     @classmethod

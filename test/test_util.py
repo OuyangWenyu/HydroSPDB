@@ -164,8 +164,10 @@ class MyTestCase(unittest.TestCase):
         # subdir = r"transdata/exp9"
         # config_file = os.path.join(config_dir, "transdata/config_exp10.ini")
         # subdir = r"transdata/exp10"
-        config_file = os.path.join(config_dir, "transdata/config_exp11.ini")
-        subdir = r"transdata/exp11"
+        # config_file = os.path.join(config_dir, "transdata/config_exp11.ini")
+        # subdir = r"transdata/exp11"
+        config_file = os.path.join(config_dir, "transdata/config_exp12.ini")
+        subdir = r"transdata/exp12"
         self.config_data = GagesConfig.set_subdir(config_file, subdir)
 
     def test_data_source(self):
@@ -177,13 +179,13 @@ class MyTestCase(unittest.TestCase):
     def test_trans_forcing_file_to_camels(self):
         data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')
         source_data = unserialize_pickle(data_source_dump)
-        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data")
+        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_85-90")
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         region_names = [region_temp.split("_")[-1] for region_temp in source_data.all_configs['regions']]
         # forcing data file generated is named as "allref", so rename the "all"
         region_names = ["allref" if r == "all" else r for r in region_names]
-        years = np.arange(1990, 2016)
+        years = np.arange(1985, 1990)
         for year in years:
             trans_daymet_to_camels(source_data.all_configs["forcing_dir"], output_dir, source_data.gage_dict,
                                    region_names[0], year)
@@ -196,8 +198,8 @@ class MyTestCase(unittest.TestCase):
         # np.array(
         #     ['01013500', '01401650', '01585500', '02120780', '02324400', '03139000', '04086600', '05087500',
         #      '05539900', '06468170', '07184000', '08158810', '09404450', '11055800', '12134500', '14166500'])
-        data_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data")
-        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_ashu")
+        data_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_85-90")
+        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_ashu_85-90")
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')

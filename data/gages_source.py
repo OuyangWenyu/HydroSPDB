@@ -15,10 +15,16 @@ class GagesSource(DataSource):
         super().__init__(config_data, t_range, screen_basin_area_huc4)
 
     @classmethod
-    def choose_some_basins(cls, config_data, t_range, basin_area):
-        """choose some basins according to given conditions"""
+    def choose_some_basins(cls, config_data, t_range, **kwargs):
+        """choose some basins according to given condition, different conditions but only one for once"""
         new_data_source = cls(config_data, t_range)
-        new_data_source.small_basins_chosen(basin_area)
+        for criteria in kwargs:
+            if criteria == "basin_area":
+                new_data_source.small_basins_chosen(kwargs[criteria])
+            elif criteria == "sites_id":
+                if not (all(x < y for x, y in zip(kwargs[criteria], kwargs[criteria][1:]))):
+                    kwargs[criteria].sort()
+                new_data_source.all_configs["flow_screen_gage_id"] = kwargs[criteria]
         return new_data_source
 
     def small_basins_chosen(self, basin_area):
@@ -28,19 +34,22 @@ class GagesSource(DataSource):
         all_points = gpd.read_file(all_points_file)
         all_points_chosen = all_points[all_points["DRAIN_SQKM"] < basin_area]
         small_gages_chosen_id = all_points_chosen['STAID'].values
+        # if arrays are not ascending order, np.intersect1d can't be used, because it will resort the arrays
+        assert (all(x < y for x, y in zip(small_gages_chosen_id, small_gages_chosen_id[1:])))
+        assert (all(x < y for x, y in
+                    zip(self.all_configs["flow_screen_gage_id"], self.all_configs["flow_screen_gage_id"][1:])))
         if self.all_configs["flow_screen_gage_id"]:  # TODO: check
             small_gages_chosen_id, ind1, ind2 = np.intersect1d(self.all_configs["flow_screen_gage_id"],
                                                                small_gages_chosen_id, return_indices=True)
         self.all_configs["flow_screen_gage_id"] = small_gages_chosen_id.tolist()
 
-    def read_site_info(self, ids_specific=None, screen_basin_area_huc4=True):
+    def read_site_info(self, screen_basin_area_huc4=True):
         """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
         从中选出field_lst中属性名称对应的值，存入dic中。
                     # using shapefile of all basins to check if their basin area satisfy the criteria
                     # read shpfile from data directory and calculate the area
 
         Parameter:
-            ids_specific： given sites' ids
             screen_basin_area_huc4: 是否取出流域面积大于等于所处HUC流域的面积的流域
         Return：
             各个站点的attibutes in basinid.txt
@@ -54,31 +63,29 @@ class GagesSource(DataSource):
         data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
         gage_fld_lst = data_all.columns.values
         out = dict()
-        if len(region_shapefiles):
-            # using shapefile of all basins to check if their basin area satisfy the criteria
-            # remove stations with catchment areas greater than the HUC4 basins in which they are located
-            # firstly, get the HUC4 basin's area of the site
-            join_points = spatial_join(points_file, huc4_shp_file)
-            # get "AREASQKM" attribute data to filter
-            join_points = join_points[join_points["DRAIN_SQKM"] < join_points["AREASQKM"]]
-            gages_huc4_id = join_points['STAID'].values
-            # read sites from shapefile of region, get id from it.
-            shapefiles = [os.path.join(gage_region_dir, region_shapefile + '.shp') for region_shapefile in
-                          region_shapefiles]
-            data = pd.DataFrame()
-            df_id_region = data_all.iloc[:, 0].values
-            for shapefile in shapefiles:
-                shape_data = gpd.read_file(shapefile)
-                gages_id = shape_data['GAGE_ID'].values
-                if screen_basin_area_huc4:
-                    gages_id, ind1, ind2 = np.intersect1d(gages_id, gages_huc4_id, return_indices=True)
-                c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
-                data = pd.concat([data, data_all.iloc[ind1, :]])
-            data_all = data
-        if ids_specific:
-            df_id_test = data_all.iloc[:, 0].values
-            c, ind1, ind2 = np.intersect1d(df_id_test, ids_specific, return_indices=True)
-            data_all = data_all.iloc[ind1, :]
+        # using shapefile of all basins to check if their basin area satisfy the criteria
+        # remove stations with catchment areas greater than the HUC4 basins in which they are located
+        # firstly, get the HUC4 basin's area of the site
+        join_points_all = spatial_join(points_file, huc4_shp_file)
+        # get "AREASQKM" attribute data to filter
+        join_points = join_points_all[join_points_all["DRAIN_SQKM"] < join_points_all["AREASQKM"]]
+        gages_huc4_id = join_points['STAID'].values
+        # read sites from shapefile of region, get id from it.
+        shapefiles = [os.path.join(gage_region_dir, region_shapefile + '.shp') for region_shapefile in
+                      region_shapefiles]
+        data = pd.DataFrame()
+        df_id_region = data_all.iloc[:, 0].values
+        assert (all(x < y for x, y in zip(df_id_region, df_id_region[1:])))
+        for shapefile in shapefiles:
+            shape_data = gpd.read_file(shapefile)
+            gages_id = shape_data['GAGE_ID'].values
+            if screen_basin_area_huc4:
+                gages_id = np.intersect1d(gages_id, gages_huc4_id)
+            c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+            assert (all(x < y for x, y in zip(ind1, ind1[1:])))
+            data = pd.concat([data, data_all.iloc[ind1, :]])
+        # after screen for every regions, resort the dataframe by sites_id
+        data_all = data.sort_values(by="STAID")
         for s in gage_fld_lst:
             if s is gage_fld_lst[1]:
                 out[s] = data_all[s].values.tolist()
@@ -333,7 +340,12 @@ class GagesSource(DataSource):
         # get discharge data of chosen sites, and change to ndarray
         usgs_out = np.array([usgs_values[i] for i in range(sites_index.size) if sites_chosen[sites_index[i]] > 0])
         gages_chosen_id = [usgs_all_sites[i] for i in range(len(sites_chosen)) if sites_chosen[i] > 0]
-
+        gage_dict_new = dict()
+        for key, value in self.gage_dict.items():
+            value_new = np.array([value[i] for i in range(len(sites_chosen)) if sites_chosen[i] > 0])
+            gage_dict_new[key] = value_new
+        self.gage_dict = gage_dict_new
+        assert gages_chosen_id == gage_dict_new["STAID"]
         return usgs_out, gages_chosen_id, ts
 
     @my_timer
@@ -438,6 +450,7 @@ class GagesSource(DataSource):
             # 因为选择的站点可能是站点的一部分，所以需要求交集，ind2是所选站点在conterm_文件中所有站点里的index，把这些值放到out_temp中
             range1 = gages_ids
             range2 = data_temp.iloc[:, 0].astype(str).tolist()
+            assert (all(x < y for x, y in zip(range2, range2[1:])))
             c, ind1, ind2 = np.intersect1d(range1, range2, return_indices=True)
             for field in var_lst_temp:
                 if is_string_dtype(data_temp[field]):  # 字符串值就当做是类别变量，赋值给变量类型value，以及类型说明ref
@@ -453,6 +466,7 @@ class GagesSource(DataSource):
 
     def read_attr(self, usgs_id_lst, var_lst, is_return_dict=True):
         """指定读取某些站点的某些属性"""
+        assert (all(x < y for x, y in zip(usgs_id_lst, usgs_id_lst[1:])))
         attr_all, var_lst_all, var_dict, f_dict = self.read_attr_all(usgs_id_lst)
         ind_var = list()
         for var in var_lst:

@@ -87,6 +87,18 @@ class TestDataClassCase(unittest.TestCase):
         source_data = unserialize_pickle(self.data_source_dump)
         source_data.read_usgs()
 
+    def test_read_attr(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "landuse/config_exp2.ini")
+        subdir = r"landuse/exp2"
+        config_data = GagesConfig.set_subdir(config_file, subdir)
+        data_source_dump = os.path.join(config_data.data_path["Temp"], 'data_source.txt')
+        source_data = unserialize_pickle(data_source_dump)
+        usgs_id_lst = source_data.all_configs['flow_screen_gage_id']
+        print(all(x < y for x, y in zip(usgs_id_lst, usgs_id_lst[1:])))
+        var_lst = source_data.all_configs['attr_chosen']
+        source_data.read_attr(usgs_id_lst, var_lst, is_return_dict=True)
+
 
 if __name__ == '__main__':
     unittest.main()

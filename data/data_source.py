@@ -38,7 +38,7 @@ class DataSource(object):
         [download_one_zip(attr_url, data_dir) for attr_url in attr_urls]
         print("attribute data Ready! ...")
 
-    def read_site_info(self, ids_specific=None, screen_basin_area_huc4=True):
+    def read_site_info(self, screen_basin_area_huc4=True):
         """read basic information of sites"""
         print("get infomation of sites...")
 
