@@ -42,10 +42,10 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp10"
         # self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
         # self.subdir = r"basic/exp11"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
-        # self.subdir = r"basic/exp12"
-        self.config_file = os.path.join(config_dir, "basic/config_exp15.ini")
-        self.subdir = r"basic/exp15"
+        self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
+        self.subdir = r"basic/exp12"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp15.ini")
+        # self.subdir = r"basic/exp15"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
 
     def test_gages_data_model(self):

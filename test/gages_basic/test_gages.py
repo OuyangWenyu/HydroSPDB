@@ -46,10 +46,10 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp12"
         # self.config_file = os.path.join(config_dir, "basic/config_exp13.ini")
         # self.subdir = r"basic/exp13"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
-        # self.subdir = r"basic/exp18"
-        self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
-        self.subdir = r"basic/exp19"
+        self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
+        self.subdir = r"basic/exp18"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
+        # self.subdir = r"basic/exp19"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]
         # self.test_epoch = test_epoch_lst[0]

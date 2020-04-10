@@ -303,7 +303,8 @@ class GagesModel(DataModel):
         return data_model1
 
     @classmethod
-    def update_data_model(cls, config_data, data_model_origin, t_range_update=None, data_attr_update=False):
+    def update_data_model(cls, config_data, data_model_origin, t_range_update=None, data_attr_update=False,
+                          train_stat_dict=None):
         t_s_dict = data_model_origin.t_s_dict
         data_flow = data_model_origin.data_flow
         data_forcing = data_model_origin.data_forcing
@@ -336,7 +337,10 @@ class GagesModel(DataModel):
             t_s_dict_temp['t_final_range'] = t_range
             data_model.t_s_dict = t_s_dict_temp
 
-        stat_dict_temp = data_model.cal_stat_all()
+        if train_stat_dict is None:
+            stat_dict_temp = data_model.cal_stat_all()
+        else:
+            stat_dict_temp = train_stat_dict
         data_model.stat_dict = stat_dict_temp
 
         return data_model

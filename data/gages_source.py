@@ -345,7 +345,7 @@ class GagesSource(DataSource):
             value_new = np.array([value[i] for i in range(len(sites_chosen)) if sites_chosen[i] > 0])
             gage_dict_new[key] = value_new
         self.gage_dict = gage_dict_new
-        assert gages_chosen_id == gage_dict_new["STAID"]
+        assert (gages_chosen_id == gage_dict_new["STAID"]).all()
         return usgs_out, gages_chosen_id, ts
 
     @my_timer
