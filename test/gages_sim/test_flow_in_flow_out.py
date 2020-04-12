@@ -101,10 +101,14 @@ class MyTestCase(unittest.TestCase):
                                                      f_dict_file_name='test_dictFactorize.json',
                                                      var_dict_file_name='test_dictAttribute.json',
                                                      t_s_dict_file_name='test_dictTimeSpace.json')
-        sim_gages_model_train = GagesModel.update_data_model(self.sim_config_data, data_model1_train)
-        gages_model_train = GagesModel.update_data_model(self.config_data, data_model2_train)
-        sim_gages_model_test = GagesModel.update_data_model(self.sim_config_data, data_model1_test)
-        gages_model_test = GagesModel.update_data_model(self.config_data, data_model2_test)
+        sim_gages_model_train = GagesModel.update_data_model(self.sim_config_data, data_model1_train,
+                                                             data_attr_update=True)
+        gages_model_train = GagesModel.update_data_model(self.config_data, data_model2_train, data_attr_update=True)
+        sim_gages_model_test = GagesModel.update_data_model(self.sim_config_data, data_model1_test,
+                                                            data_attr_update=True,
+                                                            train_stat_dict=sim_gages_model_train.stat_dict)
+        gages_model_test = GagesModel.update_data_model(self.config_data, data_model2_test, data_attr_update=True,
+                                                        train_stat_dict=gages_model_train.stat_dict)
         save_datamodel(sim_gages_model_train, "1", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
@@ -144,8 +148,9 @@ class MyTestCase(unittest.TestCase):
                                                     var_dict_file_name='dictAttribute.json',
                                                     t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesSimDataModel(data_model1, data_model2)
-            pre_trained_model_epoch = 340
+            pre_trained_model_epoch = 260
             master_train_natural_flow(data_model, pre_trained_model_epoch)
+            # master_train_natural_flow(data_model)
 
     def test_test_gages_sim(self):
         with torch.cuda.device(1):

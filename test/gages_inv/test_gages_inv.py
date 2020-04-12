@@ -95,12 +95,16 @@ class MyTestCase(unittest.TestCase):
                                                       var_dict_file_name='test_dictAttribute.json',
                                                       t_s_dict_file_name='test_dictTimeSpace.json')
         t_range1 = self.config_data_1.model_dict["data"]["tRangeTrain"]
-        gages_model1_train = GagesModel.update_data_model(self.config_data_1, data_model1_train, t_range1)
+        gages_model1_train = GagesModel.update_data_model(self.config_data_1, data_model1_train, t_range1,
+                                                          data_attr_update=True)
         gages_model1_test = copy.deepcopy(gages_model1_train)
         t_range2_train = self.config_data_2.model_dict["data"]["tRangeTrain"]
         t_range2_test = self.config_data_2.model_dict["data"]["tRangeTest"]
-        gages_model2_train = GagesModel.update_data_model(self.config_data_2, data_model2_train, t_range2_train)
-        gages_model2_test = GagesModel.update_data_model(self.config_data_2, data_model2_train, t_range2_test)
+        gages_model2_train = GagesModel.update_data_model(self.config_data_2, data_model2_train, t_range2_train,
+                                                          data_attr_update=True)
+        gages_model2_test = GagesModel.update_data_model(self.config_data_2, data_model2_train, t_range2_test,
+                                                         data_attr_update=True,
+                                                         train_stat_dict=gages_model2_train.stat_dict)
         save_datamodel(gages_model1_train, "1", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
@@ -122,7 +126,7 @@ class MyTestCase(unittest.TestCase):
         print("read and save data model")
 
     def test_inv_train(self):
-        with torch.cuda.device(2):
+        with torch.cuda.device(1):
             df1 = GagesModel.load_datamodel(self.config_data_1.data_path["Temp"], "1",
                                             data_source_file_name='data_source.txt',
                                             stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -138,11 +142,12 @@ class MyTestCase(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesInvDataModel(df1, df2)
-            pre_trained_model_epoch = 275
+            pre_trained_model_epoch = 125
+            # train_lstm_inv(data_model)
             train_lstm_inv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_inv_test(self):
-        with torch.cuda.device(2):
+        with torch.cuda.device(1):
             df1 = GagesModel.load_datamodel(self.config_data_1.data_path["Temp"], "1",
                                             data_source_file_name='test_data_source.txt',
                                             stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',

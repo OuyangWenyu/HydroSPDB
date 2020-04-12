@@ -24,20 +24,6 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp1"
         # self.config_file = os.path.join(config_dir, "basic/config_exp2.ini")
         # self.subdir = r"basic/exp2"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp3.ini")
-        # self.subdir = r"basic/exp3"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp4.ini")
-        # self.subdir = r"basic/exp4"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp5.ini")
-        # self.subdir = r"basic/exp5"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp6.ini")
-        # self.subdir = r"basic/exp6"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp7.ini")
-        # self.subdir = r"basic/exp7"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp8.ini")
-        # self.subdir = r"basic/exp8"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp9.ini")
-        # self.subdir = r"basic/exp9"
         # self.config_file = os.path.join(config_dir, "basic/config_exp10.ini")
         # self.subdir = r"basic/exp10"
         # self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
@@ -46,10 +32,18 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp12"
         # self.config_file = os.path.join(config_dir, "basic/config_exp13.ini")
         # self.subdir = r"basic/exp13"
-        self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
-        self.subdir = r"basic/exp18"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
+        # self.subdir = r"basic/exp18"
         # self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
         # self.subdir = r"basic/exp19"
+
+        # different regions seperately
+        # self.config_file = os.path.join(config_dir, "basic/config_exp3.ini")
+        # self.subdir = r"basic/exp3"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp4.ini")
+        # self.subdir = r"basic/exp4"
+        self.config_file = os.path.join(config_dir, "basic/config_exp9.ini")
+        self.subdir = r"basic/exp9"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]
         # self.test_epoch = test_epoch_lst[0]
@@ -98,7 +92,8 @@ class MyTestCaseGages(unittest.TestCase):
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
 
         gages_model_train = GagesModel.update_data_model(self.config_data, data_model_train, data_attr_update=True)
-        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_test, data_attr_update=True)
+        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_test, data_attr_update=True,
+                                                        train_stat_dict=gages_model_train.stat_dict)
         save_datamodel(gages_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
@@ -118,9 +113,10 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='dictFactorize.json',
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(0):
-            pre_trained_model_epoch = 285
-            master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+        with torch.cuda.device(1):
+            # pre_trained_model_epoch = 240
+            master_train(data_model)
+            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

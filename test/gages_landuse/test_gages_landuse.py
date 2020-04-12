@@ -8,7 +8,7 @@ from data.data_input import save_datamodel, GagesModel, _basin_norm
 from data.gages_input_dataset import GagesModels
 from explore.stat import statError
 from hydroDL.master import *
-from utils import serialize_numpy
+from utils import serialize_numpy, unserialize_numpy
 from utils.dataset_format import subset_of_dict
 from visual import *
 import numpy as np
@@ -93,6 +93,26 @@ class MyTestCaseGagesNonref(unittest.TestCase):
             serialize_numpy(pred, flow_pred_file)
             serialize_numpy(obs, flow_obs_file)
             plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+
+    def test_export_result(self):
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred.npy')
+        flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs.npy')
+        pred = unserialize_numpy(flow_pred_file)
+        obs = unserialize_numpy(flow_obs_file)
+        pred = pred.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(obs.shape[0], obs.shape[1])
+        inds = statError(obs, pred)
+        inds['STAID'] = data_model.t_s_dict["sites_id"]
+        inds_df = pd.DataFrame(inds)
+
+        inds_df.to_csv('data_df.csv')
 
 
 if __name__ == '__main__':

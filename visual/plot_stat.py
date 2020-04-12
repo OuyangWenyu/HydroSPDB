@@ -47,7 +47,7 @@ def plot_ts(data, row_name, col_name, x_name, y_name):
     return g
 
 
-def plot_point_map(gpd_gdf, percentile=0):
+def plot_point_map(gpd_gdf, percentile=0, save_file=None):
     """plot point data on a map"""
     # Choose points in which NSE value are bigger than the 25% quartile value range
     percentile_data = np.percentile(gpd_gdf['NSE'].values, percentile).astype(float)
@@ -62,18 +62,21 @@ def plot_point_map(gpd_gdf, percentile=0):
     gplt.pointplot(data_chosen, ax=ax, **pointplot_kwargs)
     ax.set_title("NSE " + "Map")
     plt.show()
-    # plt.savefig("NSE-usa.png", bbox_inches='tight', pad_inches=0.1)
+    if save_file is not None:
+        plt.savefig(save_file)
+        # plt.savefig("NSE-usa.png", bbox_inches='tight', pad_inches=0.1)
 
 
-def plot_ecdf(mydataframe, mycolumn):
+def plot_ecdf(mydataframe, mycolumn, save_file=None):
     """Empirical cumulative distribution function"""
     x, y = ecdf(mydataframe[mycolumn])
     df = pd.DataFrame({"x": x, "y": y})
     sns.set_style("ticks", {'axes.grid': True})
-    ax = sns.lineplot(x="x", y="y", data=df, estimator=None).set(xlim=(0, 1), xticks=np.arange(0, 1, 0.05),
-                                                                 yticks=np.arange(0, 1, 0.05))
+    sns.lineplot(x="x", y="y", data=df, estimator=None).set(xlim=(0, 1), xticks=np.arange(0, 1, 0.05),
+                                                            yticks=np.arange(0, 1, 0.05))
     plt.show()
-    return ax
+    if save_file is not None:
+        plt.savefig(save_file)
 
 
 def plot_pdf_cdf(mydataframe, mycolumn):

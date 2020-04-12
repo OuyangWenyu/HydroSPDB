@@ -336,7 +336,19 @@ class GagesModel(DataModel):
             t_s_dict_temp['sites_id'] = data_model_origin.t_s_dict['sites_id']
             t_s_dict_temp['t_final_range'] = t_range
             data_model.t_s_dict = t_s_dict_temp
-
+            data_model.data_source.t_range = t_range
+        if not data_model.data_source.gage_dict["STAID"].tolist() == data_model.t_s_dict['sites_id']:
+            gage_dict_new = dict()
+            usgs_all_sites = data_model.data_source.gage_dict["STAID"]
+            sites_chosen = np.zeros(usgs_all_sites.shape[0])
+            usgs_ids = data_model.t_s_dict['sites_id']
+            sites_index = np.where(np.in1d(usgs_all_sites, usgs_ids))[0]
+            sites_chosen[sites_index] = 1
+            for key, value in data_model.data_source.gage_dict.items():
+                value_new = np.array([value[i] for i in range(len(sites_chosen)) if sites_chosen[i] > 0])
+                gage_dict_new[key] = value_new
+            data_model.data_source.gage_dict = gage_dict_new
+            assert (np.array(usgs_ids) == gage_dict_new["STAID"]).all()
         if train_stat_dict is None:
             stat_dict_temp = data_model.cal_stat_all()
         else:

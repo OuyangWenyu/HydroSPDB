@@ -116,10 +116,11 @@ def plot_ind_map(all_points_file, df_ind_value, percentile=0):
     plot_point_map(newdata, percentile=percentile)
 
 
-def plot_map(gauge_dict, df_ind_value, proj_epsg=4269, percentile=10, **kwargs):
+def plot_map(gauge_dict, df_ind_value, save_file=None, proj_epsg=4269, percentile=10, **kwargs):
     """plot ind values on a map, epsg num of NAD83 is 4269"""
     sites = df_ind_value['sites'].values
     index = np.array([np.where(gauge_dict[kwargs["id_col"]] == i) for i in sites]).flatten()
+    assert (all(x < y for x, y in zip(index, index[1:])))
     # index = [i for i in range(gauge_dict[id_col_name].size) if gauge_dict[id_col_name][i] in sites]
     newdata = gpd.GeoDataFrame(df_ind_value, crs=CRS.from_epsg(proj_epsg).to_wkt())
     newdata['geometry'] = None
@@ -128,4 +129,4 @@ def plot_map(gauge_dict, df_ind_value, proj_epsg=4269, percentile=10, **kwargs):
         point = Point(gauge_dict[kwargs["lon_col"]][index[idx]], gauge_dict[kwargs["lat_col"]][index[idx]])
         newdata.at[idx, 'geometry'] = point
 
-    plot_point_map(newdata, percentile=percentile)
+    plot_point_map(newdata, percentile=percentile, save_file=save_file)

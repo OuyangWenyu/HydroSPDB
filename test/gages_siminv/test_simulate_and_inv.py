@@ -100,16 +100,23 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                                               f_dict_file_name='test_dictFactorize.json',
                                                               var_dict_file_name='test_dictAttribute.json',
                                                               t_s_dict_file_name='test_dictTimeSpace.json')
-        sim_gages_model_train = GagesModel.update_data_model(self.config_data_sim, data_model_allref_train)
-        sim_gages_model_test = GagesModel.update_data_model(self.config_data_sim, data_model_allref_test)
+        sim_gages_model_train = GagesModel.update_data_model(self.config_data_sim, data_model_allref_train,
+                                                             data_attr_update=True)
+        # period of sim_gages_model_train and sim_gages_model_test are same
+        sim_gages_model_test = GagesModel.update_data_model(self.config_data_sim, data_model_allref_test,
+                                                            data_attr_update=True,
+                                                            train_stat_dict=sim_gages_model_train.stat_dict)
         t_range_inv = self.config_data_inv.model_dict["data"]["tRangeTrain"]
         inv_gages_model_train = GagesModel.update_data_model(self.config_data_inv, data_model_allnonref_train,
-                                                             t_range_inv)
+                                                             t_range_inv, data_attr_update=True)
         inv_gages_model_test = copy.deepcopy(inv_gages_model_train)
         t_range_train = self.config_data.model_dict["data"]["tRangeTrain"]
         t_range_test = self.config_data.model_dict["data"]["tRangeTest"]
-        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_allnonref_test, t_range_train)
-        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_allnonref_test, t_range_test)
+        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_allnonref_test, t_range_train,
+                                                         data_attr_update=True)
+        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_allnonref_test, t_range_test,
+                                                        data_attr_update=True,
+                                                        train_stat_dict=gages_model_train.stat_dict)
 
         save_datamodel(sim_gages_model_train, "1", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
@@ -165,8 +172,9 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesSimInvDataModel(df1, df2, df3)
-            pre_trained_model_epoch = 270
+            pre_trained_model_epoch = 200
             train_lstm_siminv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            # train_lstm_siminv(data_model)
 
     def test_siminv_test(self):
         with torch.cuda.device(0):

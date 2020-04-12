@@ -22,7 +22,7 @@ def master_test_1by1(data_model):
     opt_model = model_dict['model']
     # generate file names and run model
     out = model_dict['dir']['Out']
-    t_range = data_model.data_source.t_range
+    t_range = data_model.t_s_dict["t_final_range"]
     epoch = model_dict['train']["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, epoch)
     print('output files:', file_path)
@@ -176,7 +176,7 @@ def master_test(data_model, epoch=-1):
 
     # generate file names and run model
     out = model_dict['dir']['Out']
-    t_range = data_model.data_source.t_range
+    t_range = data_model.t_s_dict["t_final_range"]
     if epoch < 0:
         epoch = model_dict['train']["nEpoch"]
     model_file = os.path.join(out, 'model_Ep' + str(epoch) + '.pt')
@@ -294,7 +294,7 @@ def master_test_easy_lstm(data_model, load_epoch=-1):
 
     # generate file names and run model
     out = model_dict['dir']['Out']
-    t_range = data_model.data_source.t_range
+    t_range = data_model.t_s_dict["t_final_range"]
     if load_epoch < 0:
         load_epoch = model_dict['train']["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, load_epoch)
@@ -429,7 +429,7 @@ def master_test_natural_flow(model_input, epoch=-1):
 
     # generate file names and run model
     out = os.path.join(model_dict['dir']['Out'], "model")
-    t_range = data_model.data_source.t_range
+    t_range = data_model.t_s_dict["t_final_range"]
     if epoch < 0:
         epoch = model_dict['train']["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, epoch)
@@ -637,7 +637,7 @@ def test_lstm_da(data_input, epoch=-1):
     qx, obs, c = data_input.load_data(model_dict)
     # generate file names and run model
     out = model_dict['dir']['Out']
-    t_range = data_input.data_model.data_source.t_range
+    t_range = data_input.data_model.t_s_dict["t_final_range"]
     if epoch < 0:
         epoch = opt_train["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, epoch)
