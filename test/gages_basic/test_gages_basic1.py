@@ -2,14 +2,15 @@ import os
 import unittest
 
 import torch
-from scipy import stats
+import pandas as pd
 
 from data import *
 from data.data_input import save_datamodel, GagesModel, _basin_norm
 from data.gages_input_dataset import GagesModels
+from explore.stat import statError
 from hydroDL.master import *
 import definitions
-from utils import serialize_numpy
+from utils import serialize_numpy, unserialize_numpy
 from visual.plot_model import plot_we_need
 import numpy as np
 from matplotlib import pyplot
@@ -42,16 +43,18 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp10"
         # self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
         # self.subdir = r"basic/exp11"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
-        # self.subdir = r"basic/exp12"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp15.ini")
-        # self.subdir = r"basic/exp15"
+        self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
+        self.subdir = r"basic/exp12"
 
         # different regions seperately
         # self.config_file = os.path.join(config_dir, "basic/config_exp14.ini")
         # self.subdir = r"basic/exp14"
-        self.config_file = os.path.join(config_dir, "basic/config_exp6.ini")
-        self.subdir = r"basic/exp6"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp15.ini")
+        # self.subdir = r"basic/exp15"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp6.ini")
+        # self.subdir = r"basic/exp6"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp7.ini")
+        # self.subdir = r"basic/exp7"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
 
     def test_gages_data_model(self):
@@ -109,7 +112,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='dictFactorize.json',
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(2):
+        with torch.cuda.device(0):
             # pre_trained_model_epoch = 200
             master_train(data_model)
             # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
@@ -122,13 +125,6 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        data_model_train = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
-                                                     data_source_file_name='data_source.txt',
-                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                                     forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                                     f_dict_file_name='dictFactorize.json',
-                                                     var_dict_file_name='dictAttribute.json',
-                                                     t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(0):
             pred, obs = master_test(data_model, epoch=300)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
@@ -143,6 +139,26 @@ class MyTestCaseGages(unittest.TestCase):
             serialize_numpy(pred, flow_pred_file)
             serialize_numpy(obs, flow_obs_file)
             plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+
+    def test_export_result(self):
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred.npy')
+        flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs.npy')
+        pred = unserialize_numpy(flow_pred_file)
+        obs = unserialize_numpy(flow_obs_file)
+        pred = pred.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(obs.shape[0], obs.shape[1])
+        inds = statError(obs, pred)
+        inds['STAID'] = data_model.t_s_dict["sites_id"]
+        inds_df = pd.DataFrame(inds)
+
+        inds_df.to_csv(os.path.join(self.config_data.data_path["Out"], 'data_df.csv'))
 
     def test_explore_gages_prcp_log(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

@@ -21,18 +21,17 @@ from visual.plot_stat import plot_ecdf
 class MyTestCaseGages(unittest.TestCase):
     def setUp(self) -> None:
         config_dir = definitions.CONFIG_DIR
-        # llnonref 95-03 train  03-05 test
+        # allnonref 95-03 train  03-05 test
         # self.config_file = os.path.join(config_dir, "basic/config_exp20.ini")
         # self.subdir = r"basic/exp20"
 
-        self.config_file = os.path.join(config_dir, "basic/config_exp13.ini")
-        self.subdir = r"basic/exp13"
-
-        # different regions seperately
-        # self.config_file = os.path.join(config_dir, "basic/config_exp15.ini")
-        # self.subdir = r"basic/exp15"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp7.ini")
-        # self.subdir = r"basic/exp7"
+        # 85-95 train  95-05 test
+        # self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
+        # self.subdir = r"basic/exp12"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp13.ini")
+        # self.subdir = r"basic/exp13"
+        self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
+        self.subdir = r"basic/exp18"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
 
@@ -130,12 +129,15 @@ class MyTestCaseGages(unittest.TestCase):
         df_id_region = np.array(data_model.t_s_dict["sites_id"])
         assert (all(x < y for x, y in zip(df_id_region, df_id_region[1:])))
         id_regions_idx = []
+        id_regions_sites_ids = []
         for shapefile in shapefiles:
             shape_data = gpd.read_file(shapefile)
             gages_id = shape_data['GAGE_ID'].values
             c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
             assert (all(x < y for x, y in zip(ind1, ind1[1:])))
+            assert (all(x < y for x, y in zip(c, c[1:])))
             id_regions_idx.append(ind1)
+            id_regions_sites_ids.append(c)
         flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred.npy')
         flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs.npy')
         pred_all = unserialize_numpy(flow_pred_file)
@@ -146,30 +148,34 @@ class MyTestCaseGages(unittest.TestCase):
             pred = pred_all[id_regions_idx[i], :]
             obs = obs_all[id_regions_idx[i], :]
             inds = statError(obs, pred)
+            inds['STAID'] = id_regions_sites_ids[i]
+            inds_df = pd.DataFrame(inds)
+            inds_df.to_csv(os.path.join(self.config_data.data_path["Out"],
+                                        region_shapefiles[i] + "epoch" + str(self.test_epoch) + 'data_df.csv'))
             # plot box，使用seaborn库
-            keys = ["Bias", "RMSE", "NSE"]
-            inds_test = subset_of_dict(inds, keys)
-            box_fig = plot_boxes_inds(inds_test)
-            box_fig.savefig(os.path.join(self.config_data.data_path["Out"],
-                                         region_shapefiles[i] + "epoch" + str(self.test_epoch) + "box_fig.png"))
-            # plot ts
-            sites = np.array(df_id_region[id_regions_idx[i]])
-            t_range = np.array(data_model.t_s_dict["t_final_range"])
-            show_me_num = 5
-            ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
-            ts_fig.savefig(os.path.join(self.config_data.data_path["Out"],
-                                        region_shapefiles[i] + "epoch" + str(self.test_epoch) + "ts_fig.png"))
-            # plot nse ecdf
-            sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
-            plot_ecdf(sites_df_nse, keys[2], os.path.join(self.config_data.data_path["Out"],
-                                                          region_shapefiles[i] + "epoch" + str(
-                                                              self.test_epoch) + "ecdf_fig.png"))
-            # plot map
-            gauge_dict = data_model.data_source.gage_dict
-            save_map_file = os.path.join(self.config_data.data_path["Out"], region_shapefiles[i] + "epoch" + str(
-                self.test_epoch) + "map_fig.png")
-            plot_map(gauge_dict, sites_df_nse, save_file=save_map_file, id_col="STAID", lon_col="LNG_GAGE",
-                     lat_col="LAT_GAGE")
+            # keys = ["Bias", "RMSE", "NSE"]
+            # inds_test = subset_of_dict(inds, keys)
+            # box_fig = plot_boxes_inds(inds_test)
+            # box_fig.savefig(os.path.join(self.config_data.data_path["Out"],
+            #                              region_shapefiles[i] + "epoch" + str(self.test_epoch) + "box_fig.png"))
+            # # plot ts
+            # sites = np.array(df_id_region[id_regions_idx[i]])
+            # t_range = np.array(data_model.t_s_dict["t_final_range"])
+            # show_me_num = 5
+            # ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
+            # ts_fig.savefig(os.path.join(self.config_data.data_path["Out"],
+            #                             region_shapefiles[i] + "epoch" + str(self.test_epoch) + "ts_fig.png"))
+            # # plot nse ecdf
+            # sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
+            # plot_ecdf(sites_df_nse, keys[2], os.path.join(self.config_data.data_path["Out"],
+            #                                               region_shapefiles[i] + "epoch" + str(
+            #                                                   self.test_epoch) + "ecdf_fig.png"))
+            # # plot map
+            # gauge_dict = data_model.data_source.gage_dict
+            # save_map_file = os.path.join(self.config_data.data_path["Out"], region_shapefiles[i] + "epoch" + str(
+            #     self.test_epoch) + "map_fig.png")
+            # plot_map(gauge_dict, sites_df_nse, save_file=save_map_file, id_col="STAID", lon_col="LNG_GAGE",
+            #          lat_col="LAT_GAGE")
 
     def test_explore_gages_prcp_log(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

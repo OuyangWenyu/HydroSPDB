@@ -60,8 +60,8 @@ class MyTestCase(unittest.TestCase):
         # self.test_epoch = test_epoch_lst[4]
         # self.test_epoch = test_epoch_lst[5]
         # self.test_epoch = test_epoch_lst[6]
-        # self.test_epoch = test_epoch_lst[7]
-        self.test_epoch = test_epoch_lst[8]
+        self.test_epoch = test_epoch_lst[7]
+        # self.test_epoch = test_epoch_lst[8]
         # self.test_epoch = test_epoch_lst[9]
         # self.test_epoch = test_epoch_lst[10]
 
@@ -209,6 +209,9 @@ class MyTestCase(unittest.TestCase):
         pred = pred.reshape(pred.shape[0], pred.shape[1])
         obs = obs.reshape(obs.shape[0], obs.shape[1])
         inds = statError(obs, pred)
+        inds['STAID'] = data_model2.t_s_dict["sites_id"]
+        inds_df = pd.DataFrame(inds)
+        inds_df.to_csv(os.path.join(self.config_data.data_path["Out"], 'data_df.csv'))
         # plot box，使用seaborn库
         keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(inds, keys)
