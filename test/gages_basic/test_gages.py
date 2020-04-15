@@ -1,12 +1,13 @@
 import os
 import unittest
+from functools import reduce
 
 import torch
 import pandas as pd
 
 from data import *
-from data.data_input import save_datamodel, GagesModel, _basin_norm
-from data.gages_input_dataset import GagesModels
+from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result, load_result
+from data.gages_input_dataset import GagesModels, load_dataconfig_case_exp
 from explore.stat import statError
 from hydroDL.master import *
 import definitions
@@ -27,10 +28,10 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp10"
         # self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
         # self.subdir = r"basic/exp11"
-        self.config_file = os.path.join(config_dir, "basic/config_exp13.ini")
-        self.subdir = r"basic/exp13"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
-        # self.subdir = r"basic/exp18"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp13.ini")
+        # self.subdir = r"basic/exp13"
+        self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
+        self.subdir = r"basic/exp18"
 
         # different regions seperately
         # self.config_file = os.path.join(config_dir, "basic/config_exp3.ini")
@@ -130,10 +131,7 @@ class MyTestCaseGages(unittest.TestCase):
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred')
-            flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs')
-            serialize_numpy(pred, flow_pred_file)
-            serialize_numpy(obs, flow_obs_file)
+            save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
             plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_export_result(self):
@@ -144,10 +142,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred.npy')
-        flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs.npy')
-        pred = unserialize_numpy(flow_pred_file)
-        obs = unserialize_numpy(flow_obs_file)
+        pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
         pred = pred.reshape(pred.shape[0], pred.shape[1])
         obs = obs.reshape(obs.shape[0], obs.shape[1])
         inds = statError(obs, pred)
@@ -155,6 +150,35 @@ class MyTestCaseGages(unittest.TestCase):
         inds_df = pd.DataFrame(inds)
 
         inds_df.to_csv(os.path.join(self.config_data.data_path["Out"], 'data_df.csv'))
+
+    def test_multi_cases_stat_together(self):
+        cases_exps = ["basic_exp14", "basic_exp14", "basic_exp2", "basic_exp3", "basic_exp4",
+                      "basic_exp5", "basic_exp6", "basic_exp7", "basic_exp8", "basic_exp9"]
+        inds_medians = []
+        inds_means = []
+        pred = []
+        obs = []
+        for case_exp in cases_exps:
+            config_data_i = load_dataconfig_case_exp(case_exp)
+            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            pred.append(pred_i)
+            obs.append(obs_i)
+            inds_i = statError(obs_i, pred_i)
+            inds_df_i = pd.DataFrame(inds_i)
+            inds_medians.append(inds_df_i.median(axis=0))
+            inds_means.append(inds_df_i.mean(axis=0))
+        print(pd.DataFrame(inds_medians)["NSE"])
+        print(pd.DataFrame(inds_means)["NSE"])
+        pred_stack = reduce(lambda a, b: np.vstack((a, b)),
+                            list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), pred)))
+        obs_stack = reduce(lambda a, b: np.vstack((a, b)),
+                           list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), obs)))
+        inds = statError(obs_stack, pred_stack)
+        inds_df = pd.DataFrame(inds)
+        print(inds_df.median(axis=0))
+        print(inds_df.mean(axis=0))
 
     def test_explore_gages_prcp_log(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

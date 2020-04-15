@@ -6,7 +6,7 @@ import torch
 import definitions
 from data import GagesConfig
 from data.data_config import add_model_param
-from data.data_input import save_datamodel, GagesModel, _basin_norm
+from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result, load_result
 from data.gages_input_dataset import GagesSimDataModel
 from explore.stat import statError
 from hydroDL.master.master import master_train_natural_flow, master_test_natural_flow
@@ -69,45 +69,45 @@ class MyTestCase(unittest.TestCase):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
         sim_data_dir = os.path.join(quick_data_dir, "allref_85-05_nan-0.1_00-1.0")
         data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
-        data_model1_train = GagesModel.load_datamodel(sim_data_dir,
-                                                      data_source_file_name='data_source.txt',
-                                                      stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                                      forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                                      f_dict_file_name='dictFactorize.json',
-                                                      var_dict_file_name='dictAttribute.json',
-                                                      t_s_dict_file_name='dictTimeSpace.json')
-        data_model2_train = GagesModel.load_datamodel(data_dir,
-                                                      data_source_file_name='data_source.txt',
-                                                      stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                                      forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                                      f_dict_file_name='dictFactorize.json',
-                                                      var_dict_file_name='dictAttribute.json',
-                                                      t_s_dict_file_name='dictTimeSpace.json')
-        data_model1_test = GagesModel.load_datamodel(sim_data_dir,
-                                                     data_source_file_name='test_data_source.txt',
-                                                     stat_file_name='test_Statistics.json',
-                                                     flow_file_name='test_flow.npy',
-                                                     forcing_file_name='test_forcing.npy',
-                                                     attr_file_name='test_attr.npy',
-                                                     f_dict_file_name='test_dictFactorize.json',
-                                                     var_dict_file_name='test_dictAttribute.json',
-                                                     t_s_dict_file_name='test_dictTimeSpace.json')
-        data_model2_test = GagesModel.load_datamodel(data_dir,
-                                                     data_source_file_name='test_data_source.txt',
-                                                     stat_file_name='test_Statistics.json',
-                                                     flow_file_name='test_flow.npy',
-                                                     forcing_file_name='test_forcing.npy',
-                                                     attr_file_name='test_attr.npy',
-                                                     f_dict_file_name='test_dictFactorize.json',
-                                                     var_dict_file_name='test_dictAttribute.json',
-                                                     t_s_dict_file_name='test_dictTimeSpace.json')
-        sim_gages_model_train = GagesModel.update_data_model(self.sim_config_data, data_model1_train,
+        data_model_sim8595 = GagesModel.load_datamodel(sim_data_dir,
+                                                       data_source_file_name='data_source.txt',
+                                                       stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                                       forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                                       f_dict_file_name='dictFactorize.json',
+                                                       var_dict_file_name='dictAttribute.json',
+                                                       t_s_dict_file_name='dictTimeSpace.json')
+        data_model_8595 = GagesModel.load_datamodel(data_dir,
+                                                    data_source_file_name='data_source.txt',
+                                                    stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                                    forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                                    f_dict_file_name='dictFactorize.json',
+                                                    var_dict_file_name='dictAttribute.json',
+                                                    t_s_dict_file_name='dictTimeSpace.json')
+        data_model_sim9505 = GagesModel.load_datamodel(sim_data_dir,
+                                                       data_source_file_name='test_data_source.txt',
+                                                       stat_file_name='test_Statistics.json',
+                                                       flow_file_name='test_flow.npy',
+                                                       forcing_file_name='test_forcing.npy',
+                                                       attr_file_name='test_attr.npy',
+                                                       f_dict_file_name='test_dictFactorize.json',
+                                                       var_dict_file_name='test_dictAttribute.json',
+                                                       t_s_dict_file_name='test_dictTimeSpace.json')
+        data_model_9505 = GagesModel.load_datamodel(data_dir,
+                                                    data_source_file_name='test_data_source.txt',
+                                                    stat_file_name='test_Statistics.json',
+                                                    flow_file_name='test_flow.npy',
+                                                    forcing_file_name='test_forcing.npy',
+                                                    attr_file_name='test_attr.npy',
+                                                    f_dict_file_name='test_dictFactorize.json',
+                                                    var_dict_file_name='test_dictAttribute.json',
+                                                    t_s_dict_file_name='test_dictTimeSpace.json')
+        sim_gages_model_train = GagesModel.update_data_model(self.sim_config_data, data_model_sim8595,
                                                              data_attr_update=True)
-        gages_model_train = GagesModel.update_data_model(self.config_data, data_model2_train, data_attr_update=True)
-        sim_gages_model_test = GagesModel.update_data_model(self.sim_config_data, data_model1_test,
+        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_8595, data_attr_update=True)
+        sim_gages_model_test = GagesModel.update_data_model(self.sim_config_data, data_model_sim9505,
                                                             data_attr_update=True,
                                                             train_stat_dict=sim_gages_model_train.stat_dict)
-        gages_model_test = GagesModel.update_data_model(self.config_data, data_model2_test, data_attr_update=True,
+        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_9505, data_attr_update=True,
                                                         train_stat_dict=gages_model_train.stat_dict)
         save_datamodel(sim_gages_model_train, "1", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
@@ -182,13 +182,8 @@ class MyTestCase(unittest.TestCase):
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-
-            flow_pred_file = os.path.join(model_input.data_model2.data_source.data_config.data_path['Temp'],
-                                          'epoch' + str(self.test_epoch) + 'flow_pred')
-            flow_obs_file = os.path.join(model_input.data_model2.data_source.data_config.data_path['Temp'],
-                                         'epoch' + str(self.test_epoch) + 'flow_obs')
-            serialize_numpy(pred, flow_pred_file)
-            serialize_numpy(obs, flow_obs_file)
+            save_result(model_input.data_model2.data_source.data_config.data_path['Temp'], str(self.test_epoch), pred,
+                        obs)
 
     def test_sim_plot(self):
         data_model2 = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "2",
@@ -200,12 +195,7 @@ class MyTestCase(unittest.TestCase):
                                                 f_dict_file_name='test_dictFactorize.json',
                                                 var_dict_file_name='test_dictAttribute.json',
                                                 t_s_dict_file_name='test_dictTimeSpace.json')
-        flow_pred_file = os.path.join(data_model2.data_source.data_config.data_path['Temp'],
-                                      'epoch' + str(self.test_epoch) + 'flow_pred.npy')
-        flow_obs_file = os.path.join(data_model2.data_source.data_config.data_path['Temp'],
-                                     'epoch' + str(self.test_epoch) + 'flow_obs.npy')
-        pred = unserialize_numpy(flow_pred_file)
-        obs = unserialize_numpy(flow_obs_file)
+        pred, obs = load_result(data_model2.data_source.data_config.data_path['Temp'], self.test_epoch)
         pred = pred.reshape(pred.shape[0], pred.shape[1])
         obs = obs.reshape(obs.shape[0], obs.shape[1])
         inds = statError(obs, pred)

@@ -17,6 +17,23 @@ from utils.hydro_math import copy_attr_array_in2d, concat_two_3darray, random_in
     select_subset_batch_first
 
 
+def save_result(save_dir, epoch, pred, obs):
+    """save the pred value of testing period and obs value"""
+    flow_pred_file = os.path.join(save_dir, 'epoch' + str(epoch) + 'flow_pred')
+    flow_obs_file = os.path.join(save_dir, 'epoch' + str(epoch) + 'flow_obs')
+    serialize_numpy(pred, flow_pred_file)
+    serialize_numpy(obs, flow_obs_file)
+
+
+def load_result(save_dir, epoch):
+    """load the pred value of testing period and obs value"""
+    flow_pred_file = os.path.join(save_dir, 'epoch' + str(epoch) + 'flow_pred.npy')
+    flow_obs_file = os.path.join(save_dir, 'epoch' + str(epoch) + 'flow_obs.npy')
+    pred = unserialize_numpy(flow_pred_file)
+    obs = unserialize_numpy(flow_obs_file)
+    return pred, obs
+
+
 def save_datamodel(data_model, num_str=None, **kwargs):
     if num_str:
         dir_temp = os.path.join(data_model.data_source.data_config.data_path["Temp"], num_str)

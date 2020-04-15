@@ -3,14 +3,16 @@ import unittest
 import numpy as np
 import pandas as pd
 import definitions
-from data.data_input import CamelsModel
-from explore.stat import statError
+from data import GagesConfig
+from data.data_input import CamelsModel, GagesModel, load_result
+from data.gages_input_dataset import load_dataconfig_case_exp
+from explore.stat import statError, ecdf
 from utils import unserialize_numpy, unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual import plot_box_inds, plot_ts_obs_pred
 from visual.plot import plotCDF
 from visual.plot_model import plot_boxes_inds, plot_ind_map, plot_map
-from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map
+from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs
 
 
 def test_stat():
@@ -82,6 +84,21 @@ class MyTestCase(unittest.TestCase):
         sites = np.array(t_s_dict["sites_id"])
         self.keys = ["NSE"]
         self.inds_test = subset_of_dict(self.inds, self.keys)
+
+        self.test_epoch = 300
+
+    def test_plot_ecdf_together(self):
+        xs = []
+        cases_exps = ["basic_exp18", "simulate_exp10", "inv_exp1", "siminv_exp1"]
+        for case_exp in cases_exps:
+            config_data_i = load_dataconfig_case_exp(case_exp)
+            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            inds_i = statError(obs_i, pred_i)
+            x, y = ecdf(inds_i[self.keys[0]])
+            xs.append(x)
+        plot_ecdfs(xs, y, cases_exps)
 
     def test_plot_box(self):
         """测试可视化代码"""

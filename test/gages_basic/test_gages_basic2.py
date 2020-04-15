@@ -4,8 +4,9 @@ import pandas as pd
 import torch
 import geopandas as gpd
 from data import *
-from data.data_input import save_datamodel, GagesModel, _basin_norm
+from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result
 from data.gages_input_dataset import GagesModels
+from explore.gages_stat import stat_every_region
 from explore.stat import statError
 from hydroDL.master import *
 import definitions
@@ -109,10 +110,19 @@ class MyTestCaseGages(unittest.TestCase):
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred')
-            flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs')
-            serialize_numpy(pred, flow_pred_file)
-            serialize_numpy(obs, flow_obs_file)
+            save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
+
+    def test_regions_stat(self):
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        inds_medians, inds_means = stat_every_region(data_model, self.test_epoch)
+        print(pd.DataFrame(inds_medians)["NSE"])
+        print(pd.DataFrame(inds_means)["NSE"])
 
     def test_regions_seperate(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

@@ -67,6 +67,30 @@ def plot_point_map(gpd_gdf, percentile=0, save_file=None):
         # plt.savefig("NSE-usa.png", bbox_inches='tight', pad_inches=0.1)
 
 
+def plot_ecdfs(xs, y, legends=None):
+    """Empirical cumulative distribution function"""
+    assert type(xs) == list
+    assert (all(xi < yi for xi, yi in zip(y, y[1:])))
+    frames = []
+    for i in range(len(xs)):
+        df_dict_i = {}
+        if legends is None:
+            str_i = "x" + str(i)
+        else:
+            str_i = legends[i]
+        assert (all(xi < yi for xi, yi in zip(xs[i], xs[i][1:])))
+        df_dict_i["x"] = xs[i]
+        df_dict_i["y"] = y
+        df_dict_i["case"] = np.full([xs[i].size], str_i)
+        df_i = pd.DataFrame(df_dict_i)
+        frames.append(df_i)
+    df = pd.concat(frames)
+    sns.set_style("ticks", {'axes.grid': True})
+    sns.lineplot(x="x", y="y", hue="case", data=df, estimator=None).set(xlim=(0, 1), xticks=np.arange(0, 1, 0.05),
+                                                                        yticks=np.arange(0, 1, 0.05))
+    plt.show()
+
+
 def plot_ecdf(mydataframe, mycolumn, save_file=None):
     """Empirical cumulative distribution function"""
     x, y = ecdf(mydataframe[mycolumn])

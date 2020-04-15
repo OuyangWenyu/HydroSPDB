@@ -11,6 +11,35 @@ from utils.dataset_format import subset_of_dict
 from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf
 
 
+def plot_region_seperately(gages_data_model, epoch, id_regions_idx, preds, obss, inds_dfs):
+    df_id_region = np.array(gages_data_model.t_s_dict["sites_id"])
+    regions_name = gages_data_model.data_source.all_configs.get("regions")
+    for i in range(len(id_regions_idx)):
+        # plot box，使用seaborn库
+        keys = ["Bias", "RMSE", "NSE"]
+        inds_test = subset_of_dict(inds_dfs[i], keys)
+        box_fig = plot_boxes_inds(inds_test)
+        box_fig.savefig(os.path.join(gages_data_model.data_source.data_config.data_path["Out"],
+                                     regions_name[i] + "epoch" + str(epoch) + "box_fig.png"))
+        # plot ts
+        sites = np.array(df_id_region[id_regions_idx[i]])
+        t_range = np.array(gages_data_model.t_s_dict["t_final_range"])
+        show_me_num = 5
+        ts_fig = plot_ts_obs_pred(obss[i], preds[i], sites, t_range, show_me_num)
+        ts_fig.savefig(os.path.join(gages_data_model.data_source.data_config.data_path["Out"],
+                                    regions_name[i] + "epoch" + str(epoch) + "ts_fig.png"))
+        # plot nse ecdf
+        sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
+        plot_ecdf(sites_df_nse, keys[2], os.path.join(gages_data_model.data_source.data_config.data_path["Out"],
+                                                      regions_name[i] + "epoch" + str(epoch) + "ecdf_fig.png"))
+        # plot map
+        gauge_dict = gages_data_model.data_source.gage_dict
+        save_map_file = os.path.join(gages_data_model.data_source.data_config.data_path["Out"],
+                                     regions_name[i] + "epoch" + str(epoch) + "map_fig.png")
+        plot_map(gauge_dict, sites_df_nse, save_file=save_map_file, id_col="STAID", lon_col="LNG_GAGE",
+                 lat_col="LAT_GAGE")
+
+
 def plot_we_need(data_model_test, obs, pred, show_me_num=5, point_file=None, **kwargs):
     pred = pred.reshape(pred.shape[0], pred.shape[1])
     obs = obs.reshape(pred.shape[0], pred.shape[1])

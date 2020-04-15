@@ -7,7 +7,8 @@ import torch
 import numpy as np
 import geopandas as gpd
 
-from data import DataModel, GagesSource
+import definitions
+from data import DataModel, GagesSource, GagesConfig
 from data.data_config import update_config_item
 from data.data_input import GagesModel
 from explore import trans_norm, cal_stat
@@ -16,6 +17,60 @@ from hydroDL import master_train
 from hydroDL.model import model_run
 from utils.dataset_format import subset_of_dict
 from utils.hydro_math import concat_two_3darray, copy_attr_array_in2d
+
+
+def load_dataconfig_case_exp(case_exp):
+    config_dir = definitions.CONFIG_DIR
+    (case, exp) = case_exp.split("_")
+    if case == "inv" or case == "simulate":
+        config_file_i = os.path.join(config_dir, case + "/config2_" + exp + ".ini")
+        subdir = case + "/" + exp
+        config_data_i = GagesConfig.set_subdir(config_file_i, subdir)
+    elif case == "siminv":
+        config_file_i = os.path.join(config_dir, case + "/config3_" + exp + ".ini")
+        subdir = case + "/" + exp
+        config_data_i = GagesConfig.set_subdir(config_file_i, subdir)
+    else:
+        config_file_i = os.path.join(config_dir, case + "/config_" + exp + ".ini")
+        subdir = case + "/" + exp
+        config_data_i = GagesConfig.set_subdir(config_file_i, subdir)
+    return config_data_i
+
+
+def load_datamodel_case_exp(case_exp):
+    (case, exp) = case_exp.split("_")
+    config_data_i = load_dataconfig_case_exp(case_exp)
+    if case == "inv" or case == "simulate":
+        data_model_i = GagesModel.load_datamodel(config_data_i.data_path["Temp"], "2",
+                                                 data_source_file_name='test_data_source.txt',
+                                                 stat_file_name='test_Statistics.json',
+                                                 flow_file_name='test_flow.npy',
+                                                 forcing_file_name='test_forcing.npy',
+                                                 attr_file_name='test_attr.npy',
+                                                 f_dict_file_name='test_dictFactorize.json',
+                                                 var_dict_file_name='test_dictAttribute.json',
+                                                 t_s_dict_file_name='test_dictTimeSpace.json')
+    elif case == "siminv":
+        data_model_i = GagesModel.load_datamodel(config_data_i.data_path["Temp"], "3",
+                                                 data_source_file_name='test_data_source.txt',
+                                                 stat_file_name='test_Statistics.json',
+                                                 flow_file_name='test_flow.npy',
+                                                 forcing_file_name='test_forcing.npy',
+                                                 attr_file_name='test_attr.npy',
+                                                 f_dict_file_name='test_dictFactorize.json',
+                                                 var_dict_file_name='test_dictAttribute.json',
+                                                 t_s_dict_file_name='test_dictTimeSpace.json')
+    else:
+        data_model_i = GagesModel.load_datamodel(config_data_i.data_path["Temp"],
+                                                 data_source_file_name='test_data_source.txt',
+                                                 stat_file_name='test_Statistics.json',
+                                                 flow_file_name='test_flow.npy',
+                                                 forcing_file_name='test_forcing.npy',
+                                                 attr_file_name='test_attr.npy',
+                                                 f_dict_file_name='test_dictFactorize.json',
+                                                 var_dict_file_name='test_dictAttribute.json',
+                                                 t_s_dict_file_name='test_dictTimeSpace.json')
+    return data_model_i
 
 
 class GagesModels(object):
