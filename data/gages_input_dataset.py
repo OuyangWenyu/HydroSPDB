@@ -232,15 +232,14 @@ class GagesSimInvDataModel(object):
     """DataModel for siminv model"""
 
     def __init__(self, data_model1, data_model2, data_model3):
+        self.sim_model = data_model1
+        self.inv_model = data_model2
+        self.lstm_model = data_model3
         all_data = self.prepare_input(data_model1, data_model2, data_model3)
-        input_keys = ['xh', 'ch', 'qh', 'qnh', 'xt', 'ct']
+        input_keys = ['xh', 'ch', 'qh', 'qnh', 'xt', 'ct', 'qnt']
         output_keys = ['qt']
         self.data_input = subset_of_dict(all_data, input_keys)
         self.data_target = subset_of_dict(all_data, output_keys)
-        self.model_dict2 = data_model2.data_source.data_config.model_dict
-        self.test_trange = data_model3.t_s_dict["t_final_range"]
-        self.test_stat_dict = data_model3.stat_dict
-        self.test_t_s_dict = data_model3.t_s_dict
 
     def read_natural_inflow(self, sim_model_data, model_data):
         sim_config_data = sim_model_data.data_source.data_config
@@ -269,22 +268,24 @@ class GagesSimInvDataModel(object):
     def prepare_input(self, data_model1, data_model2, data_model3):
         """prepare input for lstm-inv, gages_id of data_model2 and data_model3 must be same"""
         print("prepare input")
-        sim_flow = self.read_natural_inflow(data_model1, data_model2)
         sites_id2 = data_model2.t_s_dict['sites_id']
         sites_id3 = data_model3.t_s_dict['sites_id']
         assert sites_id2 == sites_id3
+        sim_flow = self.read_natural_inflow(data_model1, data_model2)
         qnh = np.expand_dims(sim_flow, axis=2)
         model_dict2 = data_model2.data_source.data_config.model_dict
         xh, qh, ch = data_model2.load_data(model_dict2)
+        sim_flow43rd_model = self.read_natural_inflow(data_model1, data_model3)
+        qnt = np.expand_dims(sim_flow43rd_model, axis=2)
         model_dict3 = data_model3.data_source.data_config.model_dict
         xt, qt, ct = data_model3.load_data(model_dict3)
-        return {'xh': xh, 'ch': ch, 'qh': qh, 'qnh': qnh, 'xt': xt, 'ct': ct, 'qt': qt}
+        return {'xh': xh, 'ch': ch, 'qh': qh, 'qnh': qnh, 'xt': xt, 'ct': ct, 'qt': qt, 'qnt': qnt}
 
     def load_data(self):
         data_input = self.data_input
         data_inflow_h = data_input['qh']
         data_nat_inflow_h = data_input['qnh']
-        seq_length = self.model_dict2["model"]["seqLength"]
+        seq_length = self.inv_model.data_source.data_config.model_dict["model"]["seqLength"]
 
         def trans_to_tim_seq(data_now, seq_length_now):
             data_now = data_now.reshape(data_now.shape[0], data_now.shape[1])
@@ -314,13 +315,22 @@ class GagesSimInvDataModel(object):
         xqqnch = concat_two_3darray(xqqnh, attr_h_new)
 
         # concatenate xt with ct
-        data_forcing_t = data_input['xt']
+        # data_forcing_t = data_input['xt']
+        # attr_t = data_input['ct']
+        # attr_t_new = copy_attr_array_in2d(attr_t, data_forcing_t.shape[1])
+        # xct = concat_two_3darray(data_forcing_t, attr_t_new)
+        # return xqqnch, xct, qt
+
+        # use natural flow in 3rd lstm
+        data_nat_inflow_t = data_input['qnt']
+        data_nat_inflow_t_new = trans_to_tim_seq(data_nat_inflow_t, seq_length)
+        data_forcing_t = data_input['xt'][:, seq_length - 1:, :]
+        xqnt = concat_two_3darray(data_nat_inflow_t_new, data_forcing_t)
         attr_t = data_input['ct']
         attr_t_new = copy_attr_array_in2d(attr_t, data_forcing_t.shape[1])
-        xct = concat_two_3darray(data_forcing_t, attr_t_new)
-
+        xqnct = concat_two_3darray(xqnt, attr_t_new)
         qt = self.data_target["qt"]
-        return xqqnch, xct, qt
+        return xqqnch, xqnct, qt
 
 
 class GagesDaDataModel(object):

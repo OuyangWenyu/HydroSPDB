@@ -4,8 +4,9 @@ import pandas as pd
 import torch
 
 from data import *
-from data.data_input import save_datamodel, GagesModel, _basin_norm
+from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result, load_result
 from data.gages_input_dataset import GagesModels
+from explore.gages_stat import stat_every_region, ids_of_regions, split_results_to_regions
 from explore.stat import statError
 from hydroDL.master import *
 from utils import serialize_numpy, unserialize_numpy
@@ -14,6 +15,7 @@ from visual import *
 import numpy as np
 import definitions
 from visual.plot_model import plot_boxes_inds, plot_we_need
+from visual.plot_stat import plot_boxs
 
 
 class MyTestCaseGagesNonref(unittest.TestCase):
@@ -88,10 +90,7 @@ class MyTestCaseGagesNonref(unittest.TestCase):
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred')
-            flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs')
-            serialize_numpy(pred, flow_pred_file)
-            serialize_numpy(obs, flow_obs_file)
+            save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
             plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_export_result(self):
@@ -102,10 +101,7 @@ class MyTestCaseGagesNonref(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred.npy')
-        flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs.npy')
-        pred = unserialize_numpy(flow_pred_file)
-        obs = unserialize_numpy(flow_obs_file)
+        pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
         pred = pred.reshape(pred.shape[0], pred.shape[1])
         obs = obs.reshape(obs.shape[0], obs.shape[1])
         inds = statError(obs, pred)
@@ -113,6 +109,38 @@ class MyTestCaseGagesNonref(unittest.TestCase):
         inds_df = pd.DataFrame(inds)
 
         inds_df.to_csv('data_df.csv')
+
+    def test_regions_stat(self):
+        gages_data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                                     data_source_file_name='test_data_source.txt',
+                                                     stat_file_name='test_Statistics.json',
+                                                     flow_file_name='test_flow.npy',
+                                                     forcing_file_name='test_forcing.npy',
+                                                     attr_file_name='test_attr.npy',
+                                                     f_dict_file_name='test_dictFactorize.json',
+                                                     var_dict_file_name='test_dictAttribute.json',
+                                                     t_s_dict_file_name='test_dictTimeSpace.json')
+        id_regions_idx, id_regions_sites_ids = ids_of_regions(gages_data_model)
+        preds, obss, inds_dfs = split_results_to_regions(gages_data_model, self.test_epoch, id_regions_idx,
+                                                         id_regions_sites_ids)
+        regions_name = ["allref", "cntplain", "esthgnlnd", "mxwdshld", "northest", "secstplain", "seplains", "wstmnts",
+                        "wstplains", "wstxeric"]
+        frames = []
+        x_name = "regions"
+        y_name = "NSE"
+        for i in range(len(id_regions_idx)):
+            # plot box，使用seaborn库
+            keys = ["NSE"]
+            inds_test = subset_of_dict(inds_dfs[i], keys)
+            inds_test = inds_test[keys[0]].values
+            df_dict_i = {}
+            str_i = regions_name[i]
+            df_dict_i[x_name] = np.full([inds_test.size], str_i)
+            df_dict_i[y_name] = inds_test
+            df_i = pd.DataFrame(df_dict_i)
+            frames.append(df_i)
+        result = pd.concat(frames)
+        plot_boxs(result, x_name, y_name)
 
 
 if __name__ == '__main__':

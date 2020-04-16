@@ -6,7 +6,7 @@ import torch
 import definitions
 from data import GagesConfig
 from data.data_config import add_model_param
-from data.data_input import save_datamodel, GagesModel, _basin_norm
+from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result
 from data.gages_input_dataset import GagesSimInvDataModel
 from explore.stat import statError
 from hydroDL.master.master import train_lstm_siminv, test_lstm_siminv
@@ -49,7 +49,7 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
         self.config_data_sim = GagesConfig.set_subdir(self.config_file_1, self.subdir)
         self.config_data_inv = GagesConfig.set_subdir(self.config_file_2, self.subdir)
         self.config_data = GagesConfig.set_subdir(self.config_file_3, self.subdir)
-        add_model_param(self.config_data_inv, "model", seqLength=7)
+        add_model_param(self.config_data_inv, "model", seqLength=1)
         test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]
         # self.test_epoch = test_epoch_lst[0]
         # self.test_epoch = test_epoch_lst[1]
@@ -175,9 +175,9 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesSimInvDataModel(df1, df2, df3)
-            pre_trained_model_epoch = 90
-            train_lstm_siminv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
-            # train_lstm_siminv(data_model)
+            # pre_trained_model_epoch = 90
+            # train_lstm_siminv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            train_lstm_siminv(data_model)
 
     def test_siminv_test(self):
         with torch.cuda.device(0):
@@ -211,12 +211,7 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            flow_pred_file = os.path.join(df3.data_source.data_config.data_path['Temp'],
-                                          'epoch' + str(test_epoch) + 'flow_pred')
-            flow_obs_file = os.path.join(df3.data_source.data_config.data_path['Temp'],
-                                         'epoch' + str(test_epoch) + 'flow_obs')
-            serialize_numpy(pred, flow_pred_file)
-            serialize_numpy(obs, flow_obs_file)
+            save_result(df3.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
     def test_siminv_plot(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "3",

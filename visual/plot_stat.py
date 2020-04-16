@@ -22,8 +22,9 @@ def plot_boxs(data, x_name, y_name):
     # Draw a nested boxplot to show bills by day and time
     sns_box = sns.boxplot(x=x_name, y=y_name, data=data, showfliers=False)
     sns.despine(offset=10, trim=True)
+    locs, labels = plt.xticks()
+    plt.setp(labels, rotation=45)
     plt.show()
-
     return sns_box.get_figure()
 
 
