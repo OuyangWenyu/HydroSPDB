@@ -320,8 +320,8 @@ class GagesModel(DataModel):
         return data_model1
 
     @classmethod
-    def update_data_model(cls, config_data, data_model_origin, t_range_update=None, data_attr_update=False,
-                          train_stat_dict=None):
+    def update_data_model(cls, config_data, data_model_origin, sites_id_update=None, t_range_update=None,
+                          data_attr_update=False, train_stat_dict=None):
         t_s_dict = data_model_origin.t_s_dict
         data_flow = data_model_origin.data_flow
         data_forcing = data_model_origin.data_forcing
@@ -330,7 +330,20 @@ class GagesModel(DataModel):
         f_dict = data_model_origin.f_dict
         stat_dict = data_model_origin.stat_dict
         t_range = t_s_dict["t_final_range"]
-        new_source_data = GagesSource(config_data, t_range)
+        if sites_id_update is not None:
+            sites_id_origin = t_s_dict["sites_id"]
+            sites_id_new = sites_id_update
+            assert (all(x < y for x, y in zip(sites_id_origin, sites_id_origin[1:])))
+            assert (all(x < y for x, y in zip(sites_id_new, sites_id_new[1:])))
+            sites_id = np.intersect1d(sites_id_origin, sites_id_new)
+            new_source_data = GagesSource.choose_some_basins(config_data, t_range, sites_id=sites_id.tolist())
+            t_s_dict["sites_id"] = sites_id.tolist()
+            chosen_idx = [i for i in range(len(sites_id_origin)) if sites_id_origin[i] in sites_id]
+            data_flow = data_flow[chosen_idx, :]
+            data_forcing = data_forcing[chosen_idx, :, :]
+            data_attr = data_attr[chosen_idx, :]
+        else:
+            new_source_data = GagesSource(config_data, t_range)
         if data_attr_update:
             attr_lst = new_source_data.all_configs.get("attr_chosen")
             data_attr, var_dict, f_dict = new_source_data.read_attr(t_s_dict["sites_id"], attr_lst)

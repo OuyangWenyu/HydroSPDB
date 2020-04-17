@@ -76,16 +76,12 @@ def load_datamodel_case_exp(case_exp):
 class GagesModels(object):
     """the data model for GAGES-II dataset"""
 
-    def __init__(self, config_data, sites_id=None):
+    def __init__(self, config_data, **kwargs):
         # 准备训练数据
         t_train = config_data.model_dict["data"]["tRangeTrain"]
         t_test = config_data.model_dict["data"]["tRangeTest"]
         t_train_test = [t_train[0], t_test[1]]
-        if sites_id is None:
-            source_data = GagesSource(config_data, t_train_test)
-        else:
-            source_data = GagesSource.choose_some_basins(config_data, t_train_test,
-                                                         sites_id=sites_id)
+        source_data = GagesSource.choose_some_basins(config_data, t_train_test, **kwargs)
         # 构建输入数据类对象
         data_model = GagesModel(source_data)
         self.data_model_train, self.data_model_test = GagesModel.data_models_of_train_test(data_model, t_train, t_test)
@@ -595,11 +591,14 @@ class GagesExploreDataModel(object):
 
 
 class GagesDamDataModel(object):
-    def __init__(self, gages_input, nid_input):
+    def __init__(self, gages_input, nid_input, *args):
         self.gages_input = gages_input
         self.nid_input = nid_input
-        self.gage_main_dam_purpose = self.spatial_join_dam()
-        self.update_attr()
+        if len(args) == 0:
+            self.gage_main_dam_purpose = self.spatial_join_dam()
+        else:
+            self.gage_main_dam_purpose = args[0]
+        # self.update_attr()
 
     def spatial_join_dam(self):
         gage_region_dir = self.gages_input.data_source.all_configs.get("gage_region_dir")

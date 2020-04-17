@@ -24,8 +24,29 @@ class GagesSource(DataSource):
             elif criteria == "sites_id":
                 if not (all(x < y for x, y in zip(kwargs[criteria], kwargs[criteria][1:]))):
                     kwargs[criteria].sort()
+                assert type(kwargs[criteria]) == list
                 new_data_source.all_configs["flow_screen_gage_id"] = kwargs[criteria]
+            elif criteria == "DOR":
+                new_data_source.small_reservoirs_chosen(kwargs[criteria])
         return new_data_source
+
+    def small_reservoirs_chosen(self, dor_chosen):
+        """choose basins of small DOR(calculated by NID_STORAGE/RUNAVE7100)"""
+        gage_id_file = self.all_configs.get("gage_id_file")
+        data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
+        usgs_id = data_all["STAID"].values.tolist()
+        assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
+        # mm/year 1-km grid,  megaliters total storage per sq km  (1 megaliters = 1,000,000 liters = 1,000 cubic meters)
+        attr_lst = ["RUNAVE7100", "STOR_NID_2009"]
+        data_attr, var_dict, f_dict = self.read_attr(usgs_id, attr_lst)
+        run_avg = data_attr[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
+        nid_storage = data_attr[:, 1] * 1000  # m^3
+        dors = nid_storage / run_avg
+        chosen_id = [usgs_id[i] for i in range(dors.size) if dors[i] < dor_chosen]
+        if self.all_configs["flow_screen_gage_id"] is not None:
+            chosen_id = (np.intersect1d(np.array(chosen_id), self.all_configs["flow_screen_gage_id"])).tolist()
+            assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))
+        self.all_configs["flow_screen_gage_id"] = chosen_id
 
     def small_basins_chosen(self, basin_area):
         """choose small basins"""
@@ -295,7 +316,7 @@ class GagesSource(DataSource):
         sites_chosen = np.zeros(streamflow.shape[0])
         # choose the given sites
         usgs_all_sites = self.gage_dict[self.gage_fld_lst[0]]
-        if usgs_ids:
+        if usgs_ids is not None:
             sites_index = np.where(np.in1d(usgs_all_sites, usgs_ids))[0]
             sites_chosen[sites_index] = 1
         else:
@@ -346,6 +367,7 @@ class GagesSource(DataSource):
             gage_dict_new[key] = value_new
         self.gage_dict = gage_dict_new
         assert (gages_chosen_id == gage_dict_new["STAID"]).all()
+        assert (all(x < y for x, y in zip(gages_chosen_id, gages_chosen_id[1:])))
         return usgs_out, gages_chosen_id, ts
 
     @my_timer
@@ -466,6 +488,7 @@ class GagesSource(DataSource):
 
     def read_attr(self, usgs_id_lst, var_lst, is_return_dict=True):
         """指定读取某些站点的某些属性"""
+        # assert type(usgs_id_lst) == list
         assert (all(x < y for x, y in zip(usgs_id_lst, usgs_id_lst[1:])))
         attr_all, var_lst_all, var_dict, f_dict = self.read_attr_all(usgs_id_lst)
         ind_var = list()

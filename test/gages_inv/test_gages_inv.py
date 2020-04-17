@@ -61,7 +61,7 @@ class MyTestCase(unittest.TestCase):
         add_model_param(self.config_data_1, "model", seqLength=1)
         # choose some small basins, unit: SQKM
         # self.basin_area_screen = 100
-        test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]
+        test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320, 400, 500]
         # self.test_epoch = test_epoch_lst[0]
         # self.test_epoch = test_epoch_lst[1]
         # self.test_epoch = test_epoch_lst[2]
@@ -69,10 +69,12 @@ class MyTestCase(unittest.TestCase):
         # self.test_epoch = test_epoch_lst[4]
         # self.test_epoch = test_epoch_lst[5]
         # self.test_epoch = test_epoch_lst[6]
-        self.test_epoch = test_epoch_lst[7]
+        # self.test_epoch = test_epoch_lst[7]
         # self.test_epoch = test_epoch_lst[8]
         # self.test_epoch = test_epoch_lst[9]
         # self.test_epoch = test_epoch_lst[10]
+        # self.test_epoch = test_epoch_lst[11]
+        self.test_epoch = test_epoch_lst[12]
 
     def test_inv_data_temp(self):
         # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM
@@ -98,17 +100,19 @@ class MyTestCase(unittest.TestCase):
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
         t_range1_train = self.config_data_1.model_dict["data"]["tRangeTrain"]
         t_range1_test = self.config_data_1.model_dict["data"]["tRangeTest"]
-        gages_model1_train = GagesModel.update_data_model(self.config_data_1, data_model_8595, t_range1_train,
+        gages_model1_train = GagesModel.update_data_model(self.config_data_1, data_model_8595,
+                                                          t_range_update=t_range1_train,
                                                           data_attr_update=True)
         # Because we know data of period "90-95", so that we can get its statistics according to this period
-        gages_model1_test = GagesModel.update_data_model(self.config_data_1, data_model_8595, t_range1_test,
+        gages_model1_test = GagesModel.update_data_model(self.config_data_1, data_model_8595,
+                                                         t_range_update=t_range1_test,
                                                          data_attr_update=True)
         t_range2_train = self.config_data_2.model_dict["data"]["tRangeTrain"]
         t_range2_test = self.config_data_2.model_dict["data"]["tRangeTest"]
-        gages_model2_train = GagesModel.update_data_model(self.config_data_2, data_model_8595, t_range2_train,
-                                                          data_attr_update=True)
-        gages_model2_test = GagesModel.update_data_model(self.config_data_2, data_model_9505, t_range2_test,
-                                                         data_attr_update=True,
+        gages_model2_train = GagesModel.update_data_model(self.config_data_2, data_model_8595,
+                                                          t_range_update=t_range2_train, data_attr_update=True)
+        gages_model2_test = GagesModel.update_data_model(self.config_data_2, data_model_9505,
+                                                         t_range_update=t_range2_test, data_attr_update=True,
                                                          train_stat_dict=gages_model2_train.stat_dict)
         save_datamodel(gages_model1_train, "1", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
@@ -147,9 +151,9 @@ class MyTestCase(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesInvDataModel(df1, df2)
-            # pre_trained_model_epoch = 160
-            train_lstm_inv(data_model)
-            # train_lstm_inv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            pre_trained_model_epoch = 285
+            # train_lstm_inv(data_model)
+            train_lstm_inv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_inv_test(self):
         with torch.cuda.device(2):
@@ -223,52 +227,6 @@ class MyTestCase(unittest.TestCase):
         # plot map
         gauge_dict = data_model.data_source.gage_dict
         plot_map(gauge_dict, sites_df_nse, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
-
-    def test_inv_data_temp_smallres(self):
-        # TODO: reading datamodel of smallres need to be modified
-        # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM
-        config_data_1 = self.config_data_1
-        source_data_1 = GagesSource.choose_some_basins(config_data_1, config_data_1.model_dict["data"]["tRangeTrain"],
-                                                       basin_area=self.basin_area_screen)
-        df1 = DataModel(source_data_1)
-        save_datamodel(df1, "1", data_source_file_name='data_source.txt',
-                       stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
-                       attr_file_name='attr', f_dict_file_name='dictFactorize.json',
-                       var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
-
-        # data2 is made for second layer, which need to be combined with theta that is generated by lstm-inv and
-        # final dim of lstm-inv
-        config_data_2 = self.config_data_2
-        source_data_2 = GagesSource.choose_some_basins(config_data_2, config_data_2.model_dict["data"]["tRangeTrain"],
-                                                       basin_area=self.basin_area_screen)
-        df2 = DataModel(source_data_2)
-        save_datamodel(df2, "2", data_source_file_name='data_source.txt',
-                       stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
-                       attr_file_name='attr', f_dict_file_name='dictFactorize.json',
-                       var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
-
-    def test_inv_data_temp_test_smallres(self):
-        # data1 is historical data as input of LSTM-Inv, which will be a kernel for the second LSTM
-        config_data_1 = self.config_data_1
-        source_data_1 = GagesSource.choose_some_basins(config_data_1, config_data_1.model_dict["data"]["tRangeTest"],
-                                                       basin_area=self.basin_area_screen)
-        df1 = DataModel(source_data_1)
-        save_datamodel(df1, "1", data_source_file_name='test_data_source.txt',
-                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
-                       forcing_file_name='test_forcing', attr_file_name='test_attr',
-                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
-                       t_s_dict_file_name='test_dictTimeSpace.json')
-        # data2 is made for second layer, which need to be combined with theta that is generated by lstm-inv and
-        # final dim of lstm-inv
-        config_data_2 = self.config_data_2
-        source_data_2 = GagesSource.choose_some_basins(config_data_2, config_data_2.model_dict["data"]["tRangeTest"],
-                                                       basin_area=self.basin_area_screen)
-        df2 = DataModel(source_data_2)
-        save_datamodel(df2, "2", data_source_file_name='test_data_source.txt',
-                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
-                       forcing_file_name='test_forcing', attr_file_name='test_attr',
-                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
-                       t_s_dict_file_name='test_dictTimeSpace.json')
 
 
 if __name__ == '__main__':

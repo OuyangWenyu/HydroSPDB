@@ -577,7 +577,7 @@ def test_lstm_siminv(data_input, epoch=-1):
     theta_length = 10
     # generate file names and run model
     out = os.path.join(model_dict['dir']['Out'], 'model')
-    t_range = data_input.test_trange
+    t_range = data_input.lstm_model.t_s_dict["t_final_range"]
     if epoch < 0:
         epoch = opt_train["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, epoch)
@@ -592,7 +592,7 @@ def test_lstm_siminv(data_input, epoch=-1):
                         list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), data_pred)))
     pred = np.expand_dims(data_stack, axis=2)
     if opt_data['doNorm'][1] is True:
-        stat_dict = data_input.test_stat_dict
+        stat_dict = data_input.lstm_model.stat_dict
         # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         qt = _trans_norm(qt, 'usgsFlow', stat_dict, to_norm=False)

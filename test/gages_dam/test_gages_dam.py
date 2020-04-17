@@ -2,14 +2,16 @@ import unittest
 
 import definitions
 from data import GagesConfig, GagesSource, DataModel
-from data.data_input import save_datamodel, load_datamodel
-from data.gages_input_dataset import GagesDamDataModel
+from data.data_input import save_datamodel, GagesModel
+from data.gages_input_dataset import GagesDamDataModel, GagesModels
 from data.nid_input import NidModel
 from explore.stat import statError
 from hydroDL.master.master import master_train, master_test
 import numpy as np
 import os
 import pandas as pd
+
+from utils import serialize_json, unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred
 from visual.plot_model import plot_boxes_inds, plot_ind_map
@@ -24,31 +26,51 @@ class MyTestCase(unittest.TestCase):
         config_dir = definitions.CONFIG_DIR
         # self.config_file = os.path.join(config_dir, "dam/config_dam_exp1.ini")
         # self.subdir = r"dam/exp1"
-        self.config_file = os.path.join(config_dir, "dam/config_dam_exp2.ini")
-        self.subdir = r"dam/exp2"
+        # self.config_file = os.path.join(config_dir, "dam/config_dam_exp2.ini")
+        # self.subdir = r"dam/exp2"
+
+        self.config_file = os.path.join(config_dir, "dam/config_exp1.ini")
+        self.subdir = r"dam/exp1"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         # self.nid_file = 'PA_U.xlsx'
         self.nid_file = 'OH_U.xlsx'
 
     def test_data_temp_dam(self):
-        config_data_1 = self.config_data
-        source_data_1 = GagesSource(config_data_1, config_data_1.model_dict["data"]["tRangeTrain"])
-        df1 = DataModel(source_data_1)
-        save_datamodel(df1, data_source_file_name='data_source.txt',
+        gages_model = GagesModels(self.config_data)
+        save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
                        var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
+        save_datamodel(gages_model.data_model_test, data_source_file_name='test_data_source.txt',
+                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+                       forcing_file_name='test_forcing', attr_file_name='test_attr',
+                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+                       t_s_dict_file_name='test_dictTimeSpace.json')
+        print("read and save data model")
+
+    def test_gages_dam_attr(self):
+        df = GagesModel.load_datamodel(self.config_data.data_path["Temp"], data_source_file_name='data_source.txt',
+                                       stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                       forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                       f_dict_file_name='dictFactorize.json',
+                                       var_dict_file_name='dictAttribute.json',
+                                       t_s_dict_file_name='dictTimeSpace.json')
+        # nid_input = NidModel()
+        nid_input = NidModel(self.nid_file)
+        data_input = GagesDamDataModel(df, nid_input)
+        serialize_json(data_input.gage_main_dam_purpose, "test_dict.json")
 
     def test_dam_train(self):
-        df = load_datamodel(self.config_data.data_path["Temp"], data_source_file_name='data_source.txt',
-                            stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                            forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                            f_dict_file_name='dictFactorize.json',
-                            var_dict_file_name='dictAttribute.json',
-                            t_s_dict_file_name='dictTimeSpace.json')
-        nid_input = NidModel()
-        # nid_input = NidModel(self.nid_file)
-        data_input = GagesDamDataModel(df, nid_input)
+        df = GagesModel.load_datamodel(self.config_data.data_path["Temp"], data_source_file_name='data_source.txt',
+                                       stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                       forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                       f_dict_file_name='dictFactorize.json',
+                                       var_dict_file_name='dictAttribute.json',
+                                       t_s_dict_file_name='dictTimeSpace.json')
+        # nid_input = NidModel()
+        nid_input = NidModel(self.nid_file)
+        gage_main_dam_purpose = unserialize_json("test_dict.json")
+        data_input = GagesDamDataModel(df, nid_input, gage_main_dam_purpose)
         master_train(data_input.gages_input)
 
     def test_data_temp_test_dam(self):
@@ -62,12 +84,13 @@ class MyTestCase(unittest.TestCase):
                        t_s_dict_file_name='test_dictTimeSpace.json')
 
     def test_dam_test(self):
-        df_test = load_datamodel(self.config_data.data_path["Temp"], data_source_file_name='test_data_source.txt',
-                                 stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                                 forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                                 f_dict_file_name='test_dictFactorize.json',
-                                 var_dict_file_name='test_dictAttribute.json',
-                                 t_s_dict_file_name='test_dictTimeSpace.json')
+        df_test = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                            data_source_file_name='test_data_source.txt',
+                                            stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                            forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                            f_dict_file_name='test_dictFactorize.json',
+                                            var_dict_file_name='test_dictAttribute.json',
+                                            t_s_dict_file_name='test_dictTimeSpace.json')
         nid_input = NidModel()
         # nid_input = NidModel(self.nid_file)
         data_input_test = GagesDamDataModel(df_test, nid_input)
