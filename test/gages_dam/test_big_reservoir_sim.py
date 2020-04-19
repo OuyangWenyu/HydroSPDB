@@ -21,9 +21,9 @@ class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """choose basins with small DOR """
         config_dir = definitions.CONFIG_DIR
-        self.sim_config_file = os.path.join(config_dir, "dam/config1_exp2.ini")
-        self.config_file = os.path.join(config_dir, "dam/config2_exp2.ini")
-        self.subdir = "dam/exp2"
+        self.sim_config_file = os.path.join(config_dir, "dam/config1_exp5.ini")
+        self.config_file = os.path.join(config_dir, "dam/config2_exp5.ini")
+        self.subdir = "dam/exp5"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.sim_config_data = GagesConfig.set_subdir(self.sim_config_file, self.subdir)
         add_model_param(self.config_data, "model", seqLength=1)
@@ -47,7 +47,7 @@ class MyTestCase(unittest.TestCase):
         # 读取模型配置文件
         config_data = self.config_data
         # according to paper "High-resolution mapping of the world's reservoirs and dams for sustainable river-flow management"
-        dor = -0.02
+        dor = 0.02
         source_data = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTrain"],
                                                      DOR=dor)
         sites_id = source_data.all_configs['flow_screen_gage_id']

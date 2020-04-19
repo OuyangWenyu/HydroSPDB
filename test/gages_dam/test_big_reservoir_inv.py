@@ -23,9 +23,9 @@ class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """choose basins with small DOR """
         config_dir = definitions.CONFIG_DIR
-        self.config_file_1 = os.path.join(config_dir, "dam/config1_exp3.ini")
-        self.config_file_2 = os.path.join(config_dir, "dam/config2_exp3.ini")
-        self.subdir = r"dam/exp3"
+        self.config_file_1 = os.path.join(config_dir, "dam/config1_exp6.ini")
+        self.config_file_2 = os.path.join(config_dir, "dam/config2_exp6.ini")
+        self.subdir = r"dam/exp6"
         self.config_data_1 = GagesConfig.set_subdir(self.config_file_1, self.subdir)
         self.config_data_2 = GagesConfig.set_subdir(self.config_file_2, self.subdir)
         add_model_param(self.config_data_1, "model", seqLength=1)
@@ -39,10 +39,10 @@ class MyTestCase(unittest.TestCase):
         # self.test_epoch = test_epoch_lst[4]
         # self.test_epoch = test_epoch_lst[5]
         # self.test_epoch = test_epoch_lst[6]
-        self.test_epoch = test_epoch_lst[7]
+        # self.test_epoch = test_epoch_lst[7]
         # self.test_epoch = test_epoch_lst[8]
         # self.test_epoch = test_epoch_lst[9]
-        # self.test_epoch = test_epoch_lst[10]
+        self.test_epoch = test_epoch_lst[10]
         # self.test_epoch = test_epoch_lst[11]
         # self.test_epoch = test_epoch_lst[12]
 
@@ -51,7 +51,7 @@ class MyTestCase(unittest.TestCase):
         # 读取模型配置文件
         config_data = self.config_data_1
         # according to paper "High-resolution mapping of the world's reservoirs and dams for sustainable river-flow management"
-        dor = -0.02
+        dor = 0.02
         source_data = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTrain"],
                                                      DOR=dor)
         sites_id = source_data.all_configs['flow_screen_gage_id']
@@ -129,9 +129,9 @@ class MyTestCase(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesInvDataModel(df1, df2)
-            # pre_trained_model_epoch = 285
-            train_lstm_inv(data_model)
-            # train_lstm_inv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            pre_trained_model_epoch = 165
+            # train_lstm_inv(data_model)
+            train_lstm_inv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_inv_test(self):
         with torch.cuda.device(0):

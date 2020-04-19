@@ -1,6 +1,6 @@
 """各类日用工具"""
 import json
-import os
+import geopandas as gpd
 import pickle
 import smtplib
 import ssl
@@ -71,3 +71,12 @@ def serialize_numpy(my_array, my_file):
 def unserialize_numpy(my_file):
     y = np.load(my_file)
     return y
+
+
+def serialize_geopandas(gpd_df, my_file):
+    gpd_df.to_file(my_file)
+
+
+def unserialize_geopandas(my_file):
+    gpd_df = gpd.read_file(my_file)
+    return gpd_df

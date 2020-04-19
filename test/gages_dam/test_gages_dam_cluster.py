@@ -2,7 +2,7 @@ import unittest
 
 import definitions
 from data import GagesConfig, GagesSource, DataModel
-from data.data_input import save_datamodel, load_datamodel
+from data.data_input import save_datamodel
 from data.gages_input_dataset import GagesExploreDataModel, GagesDamDataModel
 from data.nid_input import NidModel
 from explore.stat import statError

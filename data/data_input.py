@@ -322,39 +322,52 @@ class GagesModel(DataModel):
     @classmethod
     def update_data_model(cls, config_data, data_model_origin, sites_id_update=None, t_range_update=None,
                           data_attr_update=False, train_stat_dict=None):
-        t_s_dict = data_model_origin.t_s_dict
-        data_flow = data_model_origin.data_flow
-        data_forcing = data_model_origin.data_forcing
-        data_attr = data_model_origin.data_attr
-        var_dict = data_model_origin.var_dict
-        f_dict = data_model_origin.f_dict
-        stat_dict = data_model_origin.stat_dict
-        t_range = t_s_dict["t_final_range"]
+        t_s_dict_origin = data_model_origin.t_s_dict
+        data_flow_origin = data_model_origin.data_flow
+        data_forcing_origin = data_model_origin.data_forcing
+        data_attr_origin = data_model_origin.data_attr
+        var_dict_origin = data_model_origin.var_dict
+        f_dict_origin = data_model_origin.f_dict
+        stat_dict_origin = data_model_origin.stat_dict
         if sites_id_update is not None:
-            sites_id_origin = t_s_dict["sites_id"]
+            t_s_dict = {}
+            t_range_origin_cpy = t_s_dict_origin["t_final_range"].copy()
+            sites_id_origin_cpy = t_s_dict_origin["sites_id"].copy()
             sites_id_new = sites_id_update
-            assert (all(x < y for x, y in zip(sites_id_origin, sites_id_origin[1:])))
+            assert (all(x < y for x, y in zip(sites_id_origin_cpy, sites_id_origin_cpy[1:])))
             assert (all(x < y for x, y in zip(sites_id_new, sites_id_new[1:])))
-            sites_id = np.intersect1d(sites_id_origin, sites_id_new)
-            new_source_data = GagesSource.choose_some_basins(config_data, t_range, sites_id=sites_id.tolist())
+            sites_id = np.intersect1d(sites_id_origin_cpy, sites_id_new)
+            new_source_data = GagesSource.choose_some_basins(config_data, t_range_origin_cpy,
+                                                             sites_id=sites_id.tolist())
+            t_s_dict["t_final_range"] = t_range_origin_cpy
             t_s_dict["sites_id"] = sites_id.tolist()
-            chosen_idx = [i for i in range(len(sites_id_origin)) if sites_id_origin[i] in sites_id]
-            data_flow = data_flow[chosen_idx, :]
-            data_forcing = data_forcing[chosen_idx, :, :]
-            data_attr = data_attr[chosen_idx, :]
+            chosen_idx = [i for i in range(len(sites_id_origin_cpy)) if sites_id_origin_cpy[i] in sites_id]
+            data_flow = data_flow_origin[chosen_idx, :]
+            data_forcing = data_forcing_origin[chosen_idx, :, :]
+            data_attr = data_attr_origin[chosen_idx, :]
         else:
-            new_source_data = GagesSource(config_data, t_range)
+            t_range_origin_cpy = t_s_dict_origin["t_final_range"].copy()
+            t_s_dict = copy.deepcopy(t_s_dict_origin)
+            new_source_data = GagesSource(config_data, t_range_origin_cpy)
+            data_flow = data_flow_origin.copy()
+            data_forcing = data_forcing_origin.copy()
+            data_attr = data_attr_origin.copy()
         if data_attr_update:
             attr_lst = new_source_data.all_configs.get("attr_chosen")
             data_attr, var_dict, f_dict = new_source_data.read_attr(t_s_dict["sites_id"], attr_lst)
-        data_model = cls(new_source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict,
+        else:
+            var_dict = var_dict_origin.copy()
+            f_dict = f_dict_origin.copy()
+        data_model = cls(new_source_data, data_flow, data_forcing, data_attr, var_dict, f_dict, stat_dict_origin,
                          t_s_dict)
         if t_range_update is not None:
-            t_range = t_range_update
+            sites_id_temp = data_model.t_s_dict['sites_id'].copy()
+            t_range = t_range_update.copy()
             stat_dict_temp = {}
             t_s_dict_temp = {}
             start_index = int(
-                (np.datetime64(t_range[0]) - np.datetime64(t_s_dict["t_final_range"][0])) / np.timedelta64(1, 'D'))
+                (np.datetime64(t_range[0]) - np.datetime64(data_model.t_s_dict["t_final_range"][0])) / np.timedelta64(1,
+                                                                                                                      'D'))
             assert start_index >= 0
             t_lst_temp = hydro_time.t_range_days(t_range)
             end_index = start_index + t_lst_temp.size
@@ -363,7 +376,7 @@ class GagesModel(DataModel):
 
             data_model = cls(new_source_data, data_flow, data_forcing, data_attr,
                              var_dict, f_dict, stat_dict_temp, t_s_dict_temp)
-            t_s_dict_temp['sites_id'] = data_model_origin.t_s_dict['sites_id']
+            t_s_dict_temp['sites_id'] = sites_id_temp
             t_s_dict_temp['t_final_range'] = t_range
             data_model.t_s_dict = t_s_dict_temp
             data_model.data_source.t_range = t_range

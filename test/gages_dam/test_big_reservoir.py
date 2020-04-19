@@ -14,38 +14,17 @@ class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """choose basins with small DOR """
         config_dir = definitions.CONFIG_DIR
-        # self.config_file = os.path.join(config_dir, "smallres/config_smallres_ex4.ini")
-        # self.subdir = r"smallres/exp4"
-        # self.config_file = os.path.join(config_dir, "smallres/config_smallres_ex5.ini")
-        # self.subdir = r"smallres/exp5"
-        # self.config_file = os.path.join(config_dir, "smallres/config_smallres_ex6.ini")
-        # self.subdir = r"smallres/exp6"
-
-        self.config_file = os.path.join(config_dir, "dam/config_exp1.ini")
-        self.subdir = r"dam/exp1"
+        self.config_file = os.path.join(config_dir, "dam/config_exp4.ini")
+        self.subdir = r"dam/exp4"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
-
-    def test_gages_data_model(self):
-        dor = 0.02
-        gages_model = GagesModels(self.config_data, DOR=dor)
-        save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
-                       stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
-                       attr_file_name='attr', f_dict_file_name='dictFactorize.json',
-                       var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
-        save_datamodel(gages_model.data_model_test, data_source_file_name='test_data_source.txt',
-                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
-                       forcing_file_name='test_forcing', attr_file_name='test_attr',
-                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
-                       t_s_dict_file_name='test_dictTimeSpace.json')
-        print("read and save data model")
 
     def test_some_reservoirs(self):
         """choose some small reservoirs to train and test"""
         # 读取模型配置文件
         config_data = self.config_data
         # according to paper "High-resolution mapping of the world's reservoirs and dams for sustainable river-flow management"
-        dor = -0.02
+        dor = 0.02
         source_data = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTrain"],
                                                      DOR=dor)
         sites_id = source_data.all_configs['flow_screen_gage_id']
@@ -91,9 +70,9 @@ class MyTestCase(unittest.TestCase):
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(2):
-            # pre_trained_model_epoch = 240
-            master_train(data_model)
-            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            pre_trained_model_epoch = 120
+            # master_train(data_model)
+            master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

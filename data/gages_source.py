@@ -27,10 +27,10 @@ class GagesSource(DataSource):
                 assert type(kwargs[criteria]) == list
                 new_data_source.all_configs["flow_screen_gage_id"] = kwargs[criteria]
             elif criteria == "DOR":
-                new_data_source.small_reservoirs_chosen(kwargs[criteria])
+                new_data_source.dor_reservoirs_chosen(kwargs[criteria])
         return new_data_source
 
-    def small_reservoirs_chosen(self, dor_chosen):
+    def dor_reservoirs_chosen(self, dor_chosen):
         """choose basins of small DOR(calculated by NID_STORAGE/RUNAVE7100)"""
         gage_id_file = self.all_configs.get("gage_id_file")
         data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
@@ -42,7 +42,10 @@ class GagesSource(DataSource):
         run_avg = data_attr[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
         nid_storage = data_attr[:, 1] * 1000  # m^3
         dors = nid_storage / run_avg
-        chosen_id = [usgs_id[i] for i in range(dors.size) if dors[i] < dor_chosen]
+        if dor_chosen < 0:
+            chosen_id = [usgs_id[i] for i in range(dors.size) if dors[i] < -dor_chosen]
+        else:
+            chosen_id = [usgs_id[i] for i in range(dors.size) if dors[i] >= dor_chosen]
         if self.all_configs["flow_screen_gage_id"] is not None:
             chosen_id = (np.intersect1d(np.array(chosen_id), self.all_configs["flow_screen_gage_id"])).tolist()
             assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))

@@ -25,15 +25,20 @@ def load_dataconfig_case_exp(case_exp):
     if case == "inv" or case == "simulate":
         config_file_i = os.path.join(config_dir, case + "/config2_" + exp + ".ini")
         subdir = case + "/" + exp
-        config_data_i = GagesConfig.set_subdir(config_file_i, subdir)
     elif case == "siminv":
         config_file_i = os.path.join(config_dir, case + "/config3_" + exp + ".ini")
         subdir = case + "/" + exp
-        config_data_i = GagesConfig.set_subdir(config_file_i, subdir)
+    elif case == 'dam':
+        config_file_i = os.path.join(config_dir, case + "/config_" + exp + ".ini")
+        subdir = case + "/" + exp
+        if not os.path.isfile(config_file_i):
+            config_file_i = os.path.join(config_dir, case + "/config2_" + exp + ".ini")
+            if not os.path.isfile(config_file_i):
+                config_file_i = os.path.join(config_dir, case + "/config3_" + exp + ".ini")
     else:
         config_file_i = os.path.join(config_dir, case + "/config_" + exp + ".ini")
         subdir = case + "/" + exp
-        config_data_i = GagesConfig.set_subdir(config_file_i, subdir)
+    config_data_i = GagesConfig.set_subdir(config_file_i, subdir)
     return config_data_i
 
 
@@ -590,17 +595,52 @@ class GagesExploreDataModel(object):
         return data_model_i
 
 
+def which_is_main_purpose(dams_purposes_of_a_basin, storages_of_a_basin, care_1purpose=False):
+    """if care_1purpose=True, consider every purpose seperately in multi-target dam"""
+    assert type(dams_purposes_of_a_basin) == list
+    assert type(storages_of_a_basin) == list
+    assert len(dams_purposes_of_a_basin) == len(storages_of_a_basin)
+    if care_1purpose:
+        all_purposes = []
+        for j in range(len(dams_purposes_of_a_basin)):
+            if type(dams_purposes_of_a_basin[j]) == float:
+                print("this purpose is unknown, set it to X")
+                dams_purposes_of_a_basin[j] = 'X'
+            purposes_str_i = [dams_purposes_of_a_basin[j][i:i + 1] for i in
+                              range(0, len(dams_purposes_of_a_basin[j]), 1)]
+            all_purposes = all_purposes + purposes_str_i
+        all_purposes_unique = np.unique(all_purposes)
+        purpose_storages = []
+        for purpose in all_purposes_unique:
+            purpose_storage = 0
+            for i in range(len(dams_purposes_of_a_basin)):
+                if purpose in dams_purposes_of_a_basin[i]:
+                    purpose_storage = purpose_storage + storages_of_a_basin[i]
+            purpose_storages.append(purpose_storage)
+        main_purpose = all_purposes_unique[purpose_storages.index(max(purpose_storages))]
+    else:
+        purposes = np.array(dams_purposes_of_a_basin)
+        storages = np.array(storages_of_a_basin)
+        u, indices = np.unique(purposes, return_inverse=True)
+        max_index = np.amax(indices)
+        dict_i = {}
+        for i in range(max_index + 1):
+            dict_i[u[i]] = np.sum(storages[np.where(indices == i)])
+        main_purpose = max(dict_i.items(), key=operator.itemgetter(1))[0]
+    return main_purpose
+
+
 class GagesDamDataModel(object):
-    def __init__(self, gages_input, nid_input, *args):
+    def __init__(self, gages_input, nid_input, care_1purpose=False, *args):
         self.gages_input = gages_input
         self.nid_input = nid_input
         if len(args) == 0:
-            self.gage_main_dam_purpose = self.spatial_join_dam()
+            self.gage_main_dam_purpose = self.spatial_join_dam(care_1purpose)
         else:
             self.gage_main_dam_purpose = args[0]
         # self.update_attr()
 
-    def spatial_join_dam(self):
+    def spatial_join_dam(self, care_1purpose):
         gage_region_dir = self.gages_input.data_source.all_configs.get("gage_region_dir")
         region_shapefiles = self.gages_input.data_source.all_configs.get("regions")
         # read sites from shapefile of region, get id from it.
@@ -628,18 +668,26 @@ class GagesDamDataModel(object):
                     if gages_id_dam[index_i] == u1_i:
                         purposes.append(spatial_dam["PURPOSES"].iloc[index_i])
                         storages.append(spatial_dam["NID_STORAGE"].iloc[index_i])
-                purposes = np.array(purposes)
-                storages = np.array(storages)
-                u, indices = np.unique(purposes, return_inverse=True)
-                max_index = np.amax(indices)
-                dict_i = {}
-                for i in range(max_index + 1):
-                    dict_i[u[i]] = np.sum(storages[np.where(indices == i)])
-                main_purpose = max(dict_i.items(), key=operator.itemgetter(1))[0]
+                main_purpose = which_is_main_purpose(purposes, storages, care_1purpose=care_1purpose)
                 main_purposes.append(main_purpose)
             d = dict(zip(u1.tolist(), main_purposes))
             dam_dict = {**dam_dict, **d}
-        return dam_dict
+        # sorted by keys(gages_id)
+        dam_dict_sorted = {}
+        for key in sorted(dam_dict.keys()):
+            dam_dict_sorted[key] = dam_dict[key]
+        return dam_dict_sorted
+
+    def choose_which_purpose(self, purpose=None):
+        if purpose is None:
+            return self.gages_input
+        sites_id = []
+        for key, value in self.gage_main_dam_purpose.items():
+            if value == purpose:
+                sites_id.append(key)
+        assert (all(x < y for x, y in zip(sites_id, sites_id[1:])))
+        self.gages_input = GagesModel.update_data_model(self.gages_input.data_source.data_config, self.gages_input,
+                                                        sites_id_update=sites_id)
 
     def update_attr(self):
         dam_dict = self.gage_main_dam_purpose

@@ -7,6 +7,20 @@ import geopandas as gpd
 from pyproj import CRS
 from shapely.geometry import Point
 
+from utils import serialize_pickle
+from utils.hydro_util import serialize_geopandas, unserialize_pickle, unserialize_geopandas
+
+
+def save_nidinput(nid_model, data_path, num_str=None, **kwargs):
+    if num_str is not None:
+        data_path = os.path.join(data_path, num_str)
+    if not os.path.isdir(data_path):
+        os.makedirs(data_path)
+    nid_source_file = os.path.join(data_path, kwargs['nid_source_file_name'])
+    nid_data_file = os.path.join(data_path, kwargs['nid_data_file_name'])
+    serialize_pickle(nid_model.nid_source, nid_source_file)
+    serialize_geopandas(nid_model.nid_data, nid_data_file)
+
 
 class NidConfig(object):
     nidUrl = 'https://nid.sec.usace.army.mil/ords/NID_R.DOWNLOADFILE?InFileName={nidFile}'
@@ -50,8 +64,23 @@ class NidSource(object):
 class NidModel(object):
     """data formatter， utilizing function of DataSource object to read data and transform"""
 
-    def __init__(self, nid_file='NID2018_U.xlsx'):
+    def __init__(self, nid_file='NID2018_U.xlsx', *args):
         """:parameter data_source: DataSource object"""
-        nid_config = NidConfig(nid_file)
-        self.nid_source = NidSource(nid_config)
-        self.nid_data = self.nid_source.read_nid()
+        if len(args) == 0:
+            nid_config = NidConfig(nid_file)
+            self.nid_source = NidSource(nid_config)
+            self.nid_data = self.nid_source.read_nid()
+        else:
+            self.nid_source = args[0]
+            self.nid_data = args[1]
+
+    @classmethod
+    def load_nidmodel(cls, data_path, num_str=None, nid_file='NID2018_U.xlsx', **kwargs):
+        if num_str is not None:
+            data_path = os.path.join(data_path, num_str)
+        nid_source_file = os.path.join(data_path, kwargs['nid_source_file_name'])
+        nid_data_file = os.path.join(data_path, kwargs['nid_data_file_name'])
+        nid_source = unserialize_pickle(nid_source_file)
+        nid_data = unserialize_geopandas(nid_data_file)
+        nid_model = cls(nid_file, nid_source, nid_data)
+        return nid_model
