@@ -6,7 +6,7 @@ import definitions
 from data import GagesConfig, GagesSource, DataModel
 from data.data_config import add_model_param
 from data.data_input import save_datamodel, GagesModel
-from data.gages_input_dataset import GagesDamDataModel, GagesModels, GagesSimDataModel
+from data.gages_input_dataset import GagesDamDataModel, GagesModels, GagesSimDataModel, choose_which_purpose
 from data.nid_input import NidModel, save_nidinput
 from explore.stat import statError
 from hydroDL.master.master import master_train, master_test, master_train_natural_flow
@@ -139,11 +139,11 @@ class MyTestCase(unittest.TestCase):
                 os.path.join(self.config_data.data_path["Temp"], "2", "dam_main_purpose_dict.json"))
             data_input = GagesDamDataModel(df, nid_input, True, gage_main_dam_purpose)
             purpose_chosen = 'C'
-            data_input.choose_which_purpose(purpose=purpose_chosen)
-            data_model = GagesSimDataModel(data_model1, data_input.gages_input)
-            # pre_trained_model_epoch = 25
-            # master_train_natural_flow(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
-            master_train_natural_flow(data_model)
+            gages_input = choose_which_purpose(data_input, purpose=purpose_chosen)
+            data_model = GagesSimDataModel(data_model1, gages_input)
+            pre_trained_model_epoch = 230
+            master_train_natural_flow(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            # master_train_natural_flow(data_model)
 
     def test_data_temp_test_dam(self):
         config_data_test = self.config_data

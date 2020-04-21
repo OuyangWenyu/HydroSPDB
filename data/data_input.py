@@ -337,6 +337,7 @@ class GagesModel(DataModel):
             assert (all(x < y for x, y in zip(sites_id_origin_cpy, sites_id_origin_cpy[1:])))
             assert (all(x < y for x, y in zip(sites_id_new, sites_id_new[1:])))
             sites_id = np.intersect1d(sites_id_origin_cpy, sites_id_new)
+            assert sites_id.size > 0
             new_source_data = GagesSource.choose_some_basins(config_data, t_range_origin_cpy,
                                                              sites_id=sites_id.tolist())
             t_s_dict["t_final_range"] = t_range_origin_cpy
@@ -399,6 +400,19 @@ class GagesModel(DataModel):
         data_model.stat_dict = stat_dict_temp
 
         return data_model
+
+    def update_datamodel_dir(self, new_temp_dir, new_out_dir):
+        """update dir of gagesmodel"""
+        if not os.path.isdir(new_temp_dir):
+            os.makedirs(new_temp_dir)
+        if not os.path.isdir(new_out_dir):
+            os.makedirs(new_out_dir)
+        self.update_model_param("dir", Out=new_temp_dir, Temp=new_out_dir)
+        self.data_source.data_config.data_path["Out"] = new_out_dir
+        self.data_source.data_config.data_path["Temp"] = new_temp_dir
+        self.data_source.all_configs["temp_dir"] = new_temp_dir
+        self.data_source.all_configs["out_dir"] = new_out_dir
+        print("update temp and out dir")
 
     def update_model_param(self, opt, **kwargs):
         for key in kwargs:

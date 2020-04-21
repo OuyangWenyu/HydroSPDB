@@ -6,7 +6,8 @@ import definitions
 from data import GagesConfig, GagesSource, DataModel
 from data.data_config import add_model_param
 from data.data_input import save_datamodel, GagesModel
-from data.gages_input_dataset import GagesDamDataModel, GagesModels, GagesSimDataModel, GagesInvDataModel
+from data.gages_input_dataset import GagesDamDataModel, GagesModels, GagesSimDataModel, GagesInvDataModel, \
+    choose_which_purpose
 from data.nid_input import NidModel, save_nidinput
 from explore.stat import statError
 from hydroDL.master.master import master_train, master_test, master_train_natural_flow, train_lstm_inv
@@ -118,10 +119,10 @@ class MyTestCase(unittest.TestCase):
 
             purpose_chosen = 'C'
             data_input1 = GagesDamDataModel(df1, nid_input, True, gage_main_dam_purpose)
-            data_input1.choose_which_purpose(purpose=purpose_chosen)
+            gages_input1 = choose_which_purpose(data_input1, purpose=purpose_chosen)
             data_input2 = GagesDamDataModel(df2, nid_input, True, gage_main_dam_purpose)
-            data_input2.choose_which_purpose(purpose=purpose_chosen)
-            data_model = GagesInvDataModel(data_input1.gages_input, data_input2.gages_input)
+            gages_input2 = choose_which_purpose(data_input2, purpose=purpose_chosen)
+            data_model = GagesInvDataModel(gages_input1, gages_input2)
             # pre_trained_model_epoch = 165
             train_lstm_inv(data_model)
             # train_lstm_inv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)

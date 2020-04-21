@@ -630,6 +630,25 @@ def which_is_main_purpose(dams_purposes_of_a_basin, storages_of_a_basin, care_1p
     return main_purpose
 
 
+def choose_which_purpose(gages_dam_datamodel, purpose=None):
+    assert type(gages_dam_datamodel) == GagesDamDataModel
+    if purpose is None:
+        # choose all purpose
+        sites_id_with_purposes = list(gages_dam_datamodel.gage_main_dam_purpose.keys())
+        gages_input_new = GagesModel.update_data_model(gages_dam_datamodel.gages_input.data_source.data_config,
+                                                       gages_dam_datamodel.gages_input,
+                                                       sites_id_update=sites_id_with_purposes)
+        return gages_input_new
+    sites_id = []
+    for key, value in gages_dam_datamodel.gage_main_dam_purpose.items():
+        if value == purpose:
+            sites_id.append(key)
+    assert (all(x < y for x, y in zip(sites_id, sites_id[1:])))
+    gages_input_new = GagesModel.update_data_model(gages_dam_datamodel.gages_input.data_source.data_config,
+                                                   gages_dam_datamodel.gages_input, sites_id_update=sites_id)
+    return gages_input_new
+
+
 class GagesDamDataModel(object):
     def __init__(self, gages_input, nid_input, care_1purpose=False, *args):
         self.gages_input = gages_input
@@ -677,17 +696,6 @@ class GagesDamDataModel(object):
         for key in sorted(dam_dict.keys()):
             dam_dict_sorted[key] = dam_dict[key]
         return dam_dict_sorted
-
-    def choose_which_purpose(self, purpose=None):
-        if purpose is None:
-            return self.gages_input
-        sites_id = []
-        for key, value in self.gage_main_dam_purpose.items():
-            if value == purpose:
-                sites_id.append(key)
-        assert (all(x < y for x, y in zip(sites_id, sites_id[1:])))
-        self.gages_input = GagesModel.update_data_model(self.gages_input.data_source.data_config, self.gages_input,
-                                                        sites_id_update=sites_id)
 
     def update_attr(self):
         dam_dict = self.gage_main_dam_purpose

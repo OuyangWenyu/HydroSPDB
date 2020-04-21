@@ -5,7 +5,7 @@ import torch
 import definitions
 from data import GagesConfig, GagesSource, DataModel
 from data.data_input import save_datamodel, GagesModel
-from data.gages_input_dataset import GagesDamDataModel, GagesModels
+from data.gages_input_dataset import GagesDamDataModel, GagesModels, choose_which_purpose
 from data.nid_input import NidModel, save_nidinput
 from explore.stat import statError
 from hydroDL.master.master import master_train, master_test
@@ -81,8 +81,8 @@ class MyTestCase(unittest.TestCase):
             gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
             data_input = GagesDamDataModel(df, nid_input, True, gage_main_dam_purpose)
             purpose_chosen = 'H'
-            data_input.choose_which_purpose(purpose=purpose_chosen)
-            master_train(data_input.gages_input)
+            gages_input = choose_which_purpose(data_input, purpose=purpose_chosen)
+            master_train(gages_input)
 
     def test_data_temp_test_dam(self):
         config_data_test = self.config_data

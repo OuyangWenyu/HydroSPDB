@@ -329,7 +329,12 @@ def model_train(model,
     ngrid, nt, nx = x.shape
     if c is not None:
         nx = nx + c.shape[-1]
-    # batch_size * rho must be bigger than ngrid * nt, if not, the value logged will be negative  that is wrong
+    # batch_size * rho must be smaller than ngrid * nt, if not, the value logged will be negative  that is wrong
+    while batch_size * rho >= ngrid * nt:
+        # try to use a smaller batch_size to make the model runnable
+        batch_size = int(batch_size / 10)
+    if batch_size < 1:
+        batch_size = 1
     n_iter_ep = int(np.ceil(np.log(0.01) / np.log(1 - batch_size * rho / ngrid / nt)))
     if hasattr(model, 'ctRm'):
         if model.ctRm is True:
