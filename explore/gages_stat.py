@@ -40,7 +40,6 @@ def ids_of_regions(gages_data_model):
 
 
 def split_results_to_regions(gages_data_model, epoch, id_regions_idx, id_regions_sites_ids):
-    regions_name = gages_data_model.data_source.all_configs.get("regions")
     pred_all, obs_all = load_result(gages_data_model.data_source.data_config.data_path['Temp'], epoch)
     pred_all = pred_all.reshape(pred_all.shape[0], pred_all.shape[1])
     obs_all = obs_all.reshape(obs_all.shape[0], obs_all.shape[1])

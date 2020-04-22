@@ -74,16 +74,16 @@ class MyTestCase(unittest.TestCase):
     gage_point_file = os.path.join(dir_db, 'gagesII_9322_point_shapefile/gagesII_9322_sept30_2011.shp')
 
     def setUp(self):
-        pred = unserialize_numpy(self.flow_pred_file)
-        obs = unserialize_numpy(self.flow_obs_file)
-        self.pred = pred.reshape(pred.shape[0], pred.shape[1])
-        self.obs = obs.reshape(pred.shape[0], pred.shape[1])
-        # 统计性能指标
-        self.inds = statError(self.obs, self.pred)
-        t_s_dict = unserialize_json(self.t_s_dict_file)
-        sites = np.array(t_s_dict["sites_id"])
+        # pred = unserialize_numpy(self.flow_pred_file)
+        # obs = unserialize_numpy(self.flow_obs_file)
+        # self.pred = pred.reshape(pred.shape[0], pred.shape[1])
+        # self.obs = obs.reshape(pred.shape[0], pred.shape[1])
+        # # 统计性能指标
+        # self.inds = statError(self.obs, self.pred)
+        # t_s_dict = unserialize_json(self.t_s_dict_file)
+        # sites = np.array(t_s_dict["sites_id"])
         self.keys = ["NSE"]
-        self.inds_test = subset_of_dict(self.inds, self.keys)
+        # self.inds_test = subset_of_dict(self.inds, self.keys)
 
         self.test_epoch = 300
 
@@ -92,6 +92,7 @@ class MyTestCase(unittest.TestCase):
         # cases_exps = ["basic_exp18", "simulate_exp10", "inv_exp1", "siminv_exp1"]
         # cases_exps = ["dam_exp4", "dam_exp5", "dam_exp6"]
         cases_exps = ["dam_exp1", "dam_exp2", "dam_exp3"]
+        cases_exps_legends = ["dam-lstm", "dam-with-natural-flow", "dam-with-kernel"]
         for case_exp in cases_exps:
             config_data_i = load_dataconfig_case_exp(case_exp)
             pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
@@ -100,7 +101,7 @@ class MyTestCase(unittest.TestCase):
             inds_i = statError(obs_i, pred_i)
             x, y = ecdf(inds_i[self.keys[0]])
             xs.append(x)
-        plot_ecdfs(xs, y, cases_exps)
+        plot_ecdfs(xs, y, cases_exps_legends)
 
     def test_plot_box(self):
         """测试可视化代码"""
