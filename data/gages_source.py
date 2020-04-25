@@ -28,7 +28,43 @@ class GagesSource(DataSource):
                 new_data_source.all_configs["flow_screen_gage_id"] = kwargs[criteria]
             elif criteria == "DOR":
                 new_data_source.dor_reservoirs_chosen(kwargs[criteria])
+            elif criteria == 'major_dam':
+                new_data_source.major_dams_chosen(kwargs[criteria])
+            elif criteria == 'ref':
+                new_data_source.ref_or_nonref_chosen(kwargs[criteria])
         return new_data_source
+
+    def ref_or_nonref_chosen(self, ref="Ref"):
+        assert ref in ["Ref", "Non-ref"]
+        if ref == "Ref":
+            ref_num = 1
+        else:
+            ref_num = 0
+        gage_id_file = self.all_configs.get("gage_id_file")
+        data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
+        usgs_id = data_all["STAID"].values.tolist()
+        assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
+        attr_lst = ["CLASS"]
+        data_attr, var_dict, f_dict = self.read_attr(usgs_id, attr_lst)
+        chosen_id = [usgs_id[i] for i in range(data_attr.size) if data_attr[:, 0][i] == ref_num]
+        if self.all_configs["flow_screen_gage_id"] is not None:
+            chosen_id = (np.intersect1d(np.array(chosen_id), self.all_configs["flow_screen_gage_id"])).tolist()
+            assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))
+        self.all_configs["flow_screen_gage_id"] = chosen_id
+
+    def major_dams_chosen(self, major_dam_num=1):
+        """choose basins of major dams"""
+        gage_id_file = self.all_configs.get("gage_id_file")
+        data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
+        usgs_id = data_all["STAID"].values.tolist()
+        assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
+        attr_lst = ["MAJ_NDAMS_2009"]
+        data_attr, var_dict, f_dict = self.read_attr(usgs_id, attr_lst)
+        chosen_id = [usgs_id[i] for i in range(data_attr.size) if data_attr[:, 0][i] >= major_dam_num]
+        if self.all_configs["flow_screen_gage_id"] is not None:
+            chosen_id = (np.intersect1d(np.array(chosen_id), self.all_configs["flow_screen_gage_id"])).tolist()
+            assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))
+        self.all_configs["flow_screen_gage_id"] = chosen_id
 
     def dor_reservoirs_chosen(self, dor_chosen):
         """choose basins of small DOR(calculated by NID_STORAGE/RUNAVE7100)"""

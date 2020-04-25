@@ -90,9 +90,10 @@ class MyTestCase(unittest.TestCase):
     def test_plot_ecdf_together(self):
         xs = []
         # cases_exps = ["basic_exp18", "simulate_exp10", "inv_exp1", "siminv_exp1"]
+        cases_exps = ["basic_exp18", "simulate_exp1"]
         # cases_exps = ["dam_exp4", "dam_exp5", "dam_exp6"]
-        cases_exps = ["dam_exp1", "dam_exp2", "dam_exp3"]
-        cases_exps_legends = ["dam-lstm", "dam-with-natural-flow", "dam-with-kernel"]
+        # cases_exps = ["dam_exp1", "dam_exp2", "dam_exp3"]
+        # cases_exps_legends = ["dam-lstm", "dam-with-natural-flow", "dam-with-kernel"]
         for case_exp in cases_exps:
             config_data_i = load_dataconfig_case_exp(case_exp)
             pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
@@ -101,7 +102,7 @@ class MyTestCase(unittest.TestCase):
             inds_i = statError(obs_i, pred_i)
             x, y = ecdf(inds_i[self.keys[0]])
             xs.append(x)
-        plot_ecdfs(xs, y, cases_exps_legends)
+        plot_ecdfs(xs, y, cases_exps)
 
     def test_plot_box(self):
         """测试可视化代码"""

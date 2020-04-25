@@ -234,6 +234,41 @@ def master_test(data_model, epoch=-1):
         return pred, obs
 
 
+def master_test_with_pretrained_model(data_model, pretrained_model_file, pretrained_name):
+    """test data_model with a pretrained model"""
+    model_dict = data_model.data_source.data_config.model_dict
+    opt_data = model_dict['data']
+    opt_model = model_dict['model']
+    # 测试和训练使用的batch_size, rho是一样的
+    batch_size, rho = model_dict['train']['miniBatch']
+    x, obs, c = data_model.load_data(model_dict)
+
+    # generate file names and run model
+    t_range = data_model.t_s_dict["t_final_range"]
+    save_dir = os.path.join(model_dict['dir']['Out'], pretrained_name)
+    if not os.path.isdir(save_dir):
+        os.mkdir(save_dir)
+    file_name = '_'.join([str(t_range[0]), str(t_range[1])])
+    file_path = os.path.join(save_dir, file_name + '.csv')
+    print('output files:', file_path)
+
+    print('Runing new results')
+    model = torch.load(pretrained_model_file)
+    model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
+
+    # load previous result并反归一化为标准量纲
+    data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
+    # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
+    pred = np.expand_dims(data_pred, axis=2)
+    if opt_data['doNorm'][1] is True:
+        stat_dict = data_model.stat_dict
+        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
+        pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+        obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+
+    return pred, obs
+
+
 def master_train_easy_lstm(data_model):
     """training main function for stacked lstm"""
     model_dict = data_model.data_source.data_config.model_dict

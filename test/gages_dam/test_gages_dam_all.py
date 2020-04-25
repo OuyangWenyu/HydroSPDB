@@ -62,16 +62,7 @@ class MyTestCase(unittest.TestCase):
     def test_dam_test(self):
         with torch.cuda.device(1):
             quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-            data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
-            data_model_train = GagesModel.load_datamodel(data_dir,
-                                                         data_source_file_name='data_source.txt',
-                                                         stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                                         forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                                         f_dict_file_name='dictFactorize.json',
-                                                         var_dict_file_name='dictAttribute.json',
-                                                         t_s_dict_file_name='dictTimeSpace.json')
-
-            gages_model_train = GagesModel.update_data_model(self.config_data, data_model_train)
+            data_dir = os.path.join(quick_data_dir, "allnonref-dam_95-05_nan-0.1_00-1.0")
             data_model_test = GagesModel.load_datamodel(data_dir,
                                                         data_source_file_name='test_data_source.txt',
                                                         stat_file_name='test_Statistics.json',
@@ -81,15 +72,7 @@ class MyTestCase(unittest.TestCase):
                                                         f_dict_file_name='test_dictFactorize.json',
                                                         var_dict_file_name='test_dictAttribute.json',
                                                         t_s_dict_file_name='test_dictTimeSpace.json')
-            gages_model_test = GagesModel.update_data_model(self.config_data, data_model_test,
-                                                            train_stat_dict=gages_model_train.stat_dict)
-
-            nid_dir = os.path.join("/".join(self.config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
-            nid_input = NidModel.load_nidmodel(nid_dir, nid_file=self.nid_file,
-                                               nid_source_file_name='nid_source.txt', nid_data_file_name='nid_data.shp')
-            gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
-            data_input = GagesDamDataModel(gages_model_test, nid_input, True, gage_main_dam_purpose)
-            gages_input = choose_which_purpose(data_input)
+            gages_input = GagesModel.update_data_model(self.config_data, data_model_test)
             pred, obs = master_test(gages_input, epoch=self.test_epoch)
             basin_area = gages_input.data_source.read_attr(gages_input.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                            is_return_dict=False)
@@ -102,14 +85,18 @@ class MyTestCase(unittest.TestCase):
             plot_we_need(gages_input, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_purposes_seperate(self):
-        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
-                                               data_source_file_name='test_data_source.txt',
-                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                                               f_dict_file_name='test_dictFactorize.json',
-                                               var_dict_file_name='test_dictAttribute.json',
-                                               t_s_dict_file_name='test_dictTimeSpace.json')
-
+        quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
+        data_dir = os.path.join(quick_data_dir, "allnonref-dam_95-05_nan-0.1_00-1.0")
+        data_model_test = GagesModel.load_datamodel(data_dir,
+                                                    data_source_file_name='test_data_source.txt',
+                                                    stat_file_name='test_Statistics.json',
+                                                    flow_file_name='test_flow.npy',
+                                                    forcing_file_name='test_forcing.npy',
+                                                    attr_file_name='test_attr.npy',
+                                                    f_dict_file_name='test_dictFactorize.json',
+                                                    var_dict_file_name='test_dictAttribute.json',
+                                                    t_s_dict_file_name='test_dictTimeSpace.json')
+        data_model = GagesModel.update_data_model(self.config_data, data_model_test)
         nid_dir = os.path.join("/".join(self.config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
         gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
         gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())
@@ -135,7 +122,7 @@ class MyTestCase(unittest.TestCase):
         pred_all, obs_all = load_result(self.config_data.data_path["Temp"], self.test_epoch)
         pred_all = pred_all.reshape(pred_all.shape[0], pred_all.shape[1])
         obs_all = obs_all.reshape(obs_all.shape[0], obs_all.shape[1])
-        for i in range(0, 1):
+        for i in range(9, len(gage_main_dam_purpose_unique)):
             pred = pred_all[id_regions_idx[i], :]
             obs = obs_all[id_regions_idx[i], :]
             inds = statError(obs, pred)
@@ -173,15 +160,18 @@ class MyTestCase(unittest.TestCase):
                      lat_col="LAT_GAGE")
 
     def test_purposes_inds(self):
-        gages_data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
-                                                     data_source_file_name='test_data_source.txt',
-                                                     stat_file_name='test_Statistics.json',
-                                                     flow_file_name='test_flow.npy',
-                                                     forcing_file_name='test_forcing.npy',
-                                                     attr_file_name='test_attr.npy',
-                                                     f_dict_file_name='test_dictFactorize.json',
-                                                     var_dict_file_name='test_dictAttribute.json',
-                                                     t_s_dict_file_name='test_dictTimeSpace.json')
+        quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
+        data_dir = os.path.join(quick_data_dir, "allnonref-dam_95-05_nan-0.1_00-1.0")
+        data_model = GagesModel.load_datamodel(data_dir,
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        gages_data_model = GagesModel.update_data_model(self.config_data, data_model)
         nid_dir = os.path.join("/".join(self.config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
         gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
         gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())

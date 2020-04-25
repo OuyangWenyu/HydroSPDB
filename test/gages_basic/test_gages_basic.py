@@ -29,10 +29,10 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp11"
         # self.config_file = os.path.join(config_dir, "basic/config_exp14.ini")
         # self.subdir = r"basic/exp14"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp17.ini")
-        # self.subdir = r"basic/exp17"
-        self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
-        self.subdir = r"basic/exp19"
+        self.config_file = os.path.join(config_dir, "basic/config_exp16.ini")
+        self.subdir = r"basic/exp16"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
+        # self.subdir = r"basic/exp19"
 
         # different regions seperately
         # self.config_file = os.path.join(config_dir, "basic/config_exp2.ini")
@@ -106,7 +106,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='dictFactorize.json',
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(2):
+        with torch.cuda.device(0):
             # pre_trained_model_epoch = 255
             master_train(data_model)
             # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)

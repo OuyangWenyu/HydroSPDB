@@ -80,8 +80,8 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='dictFactorize.json',
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(2):
-            pre_trained_model_epoch = 130
+        with torch.cuda.device(0):
+            pre_trained_model_epoch = 255
             # master_train(data_model)
             master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 

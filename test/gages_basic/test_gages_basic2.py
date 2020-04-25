@@ -22,10 +22,6 @@ from visual.plot_stat import plot_ecdf
 class MyTestCaseGages(unittest.TestCase):
     def setUp(self) -> None:
         config_dir = definitions.CONFIG_DIR
-        # allnonref 95-03 train  03-05 test
-        # self.config_file = os.path.join(config_dir, "basic/config_exp20.ini")
-        # self.subdir = r"basic/exp20"
-
         # 85-95 train  95-05 test
         # self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
         # self.subdir = r"basic/exp12"

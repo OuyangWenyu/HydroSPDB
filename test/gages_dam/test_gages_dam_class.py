@@ -171,9 +171,10 @@ class MyTestCase(unittest.TestCase):
             pred = pred.reshape(pred.shape[0], pred.shape[1])
             obs = obs.reshape(pred.shape[0], pred.shape[1])
             inds = statError(obs, pred)
+            inds_df = pd.DataFrame(inds)
             print(gage_main_dam_purpose_unique[i])
-            print(inds.median(axis=0))
-            print(inds.mean(axis=0))
+            print(inds_df.median(axis=0))
+            print(inds_df.mean(axis=0))
             # plot_we_need(data_model, obs, pred, show_me_num=1, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
 
