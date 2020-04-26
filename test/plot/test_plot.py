@@ -176,7 +176,8 @@ class MyTestCase(unittest.TestCase):
         data_ts = [[data_ts_obs_np[i], data_ts_pred_np[i]] for i in range(data_ts_obs_np.shape[0])]
         print(data_ts)
         t = np.arange(6).tolist()
-        plot_ts_map(data_map, data_ts, lat, lon, t)
+        sites_id = ["01", "02", "03", "04", "05"]
+        plot_ts_map(data_map, data_ts, lat, lon, t, sites_id)
 
     def test_click(self):
         import matplotlib

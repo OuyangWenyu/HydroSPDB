@@ -3,7 +3,7 @@ import unittest
 import definitions
 from data import GagesConfig, GagesSource, DataModel
 from data.data_config import add_model_param
-from data.data_input import save_datamodel, load_datamodel
+from data.data_input import save_datamodel, GagesModel
 from data.gages_input_dataset import GagesForecastDataModel
 from explore.stat import statError
 from hydroDL.master.master import train_lstm_forecast, test_lstm_forecast
@@ -53,18 +53,19 @@ class MyTestCase(unittest.TestCase):
                        var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
 
     def test_forecast_train(self):
-        sim_df = load_datamodel(self.sim_config_data.data_path["Temp"], "1", data_source_file_name='data_source.txt',
-                                stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                f_dict_file_name='dictFactorize.json',
-                                var_dict_file_name='dictAttribute.json',
-                                t_s_dict_file_name='dictTimeSpace.json')
-        df = load_datamodel(self.config_data.data_path["Temp"], "2", data_source_file_name='data_source.txt',
-                            stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                            forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                            f_dict_file_name='dictFactorize.json',
-                            var_dict_file_name='dictAttribute.json',
-                            t_s_dict_file_name='dictTimeSpace.json')
+        sim_df = GagesModel.load_datamodel(self.sim_config_data.data_path["Temp"], "1",
+                                           data_source_file_name='data_source.txt',
+                                           stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                           forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                           f_dict_file_name='dictFactorize.json',
+                                           var_dict_file_name='dictAttribute.json',
+                                           t_s_dict_file_name='dictTimeSpace.json')
+        df = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "2", data_source_file_name='data_source.txt',
+                                       stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                       forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                       f_dict_file_name='dictFactorize.json',
+                                       var_dict_file_name='dictAttribute.json',
+                                       t_s_dict_file_name='dictTimeSpace.json')
         data_input = GagesForecastDataModel(sim_df, df)
         train_lstm_forecast(data_input)
 
@@ -88,19 +89,20 @@ class MyTestCase(unittest.TestCase):
                        t_s_dict_file_name='test_dictTimeSpace.json')
 
     def test_forecast_test(self):
-        sim_df = load_datamodel(self.sim_config_data.data_path["Temp"], "1",
-                                data_source_file_name='test_data_source.txt',
-                                stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                                forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                                f_dict_file_name='test_dictFactorize.json',
-                                var_dict_file_name='test_dictAttribute.json',
-                                t_s_dict_file_name='test_dictTimeSpace.json')
-        df = load_datamodel(self.config_data.data_path["Temp"], "2", data_source_file_name='test_data_source.txt',
-                            stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                            forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                            f_dict_file_name='test_dictFactorize.json',
-                            var_dict_file_name='test_dictAttribute.json',
-                            t_s_dict_file_name='test_dictTimeSpace.json')
+        sim_df = GagesModel.load_datamodel(self.sim_config_data.data_path["Temp"], "1",
+                                           data_source_file_name='test_data_source.txt',
+                                           stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                           forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                           f_dict_file_name='test_dictFactorize.json',
+                                           var_dict_file_name='test_dictAttribute.json',
+                                           t_s_dict_file_name='test_dictTimeSpace.json')
+        df = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "2",
+                                       data_source_file_name='test_data_source.txt',
+                                       stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                       forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                       f_dict_file_name='test_dictFactorize.json',
+                                       var_dict_file_name='test_dictAttribute.json',
+                                       t_s_dict_file_name='test_dictTimeSpace.json')
 
         data_input = GagesForecastDataModel(sim_df, df)
         pred, obs = test_lstm_forecast(data_input)
