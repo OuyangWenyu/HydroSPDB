@@ -1,16 +1,16 @@
 import os
 import unittest
+from functools import reduce
 
 import torch
 import pandas as pd
 
 from data import *
-from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result
-from data.gages_input_dataset import GagesModels
+from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result, load_result
+from data.gages_input_dataset import GagesModels, load_dataconfig_case_exp, GagesTsDataModel
 from explore.stat import statError
 from hydroDL.master import *
 import definitions
-from utils import serialize_numpy, unserialize_numpy
 from visual.plot_model import plot_we_need
 import numpy as np
 from matplotlib import pyplot
@@ -18,9 +18,10 @@ from matplotlib import pyplot
 
 class MyTestCaseGages(unittest.TestCase):
     def setUp(self) -> None:
+        """use GAGES-II time series data"""
         config_dir = definitions.CONFIG_DIR
-        self.config_file = os.path.join(config_dir, "basic/config_exp17.ini")
-        self.subdir = r"basic/exp17"
+        self.config_file = os.path.join(config_dir, "gagests/config_exp1.ini")
+        self.subdir = r"gagests/exp1"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
 
@@ -80,8 +81,9 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(0):
-            # pre_trained_model_epoch = 170
-            master_train(data_model)
+            datats_model = GagesTsDataModel(data_model)
+            # pre_trained_model_epoch = 240
+            master_train(datats_model)
             # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_test_gages(self):
@@ -112,10 +114,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred.npy')
-        flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs.npy')
-        pred = unserialize_numpy(flow_pred_file)
-        obs = unserialize_numpy(flow_obs_file)
+        pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
         pred = pred.reshape(pred.shape[0], pred.shape[1])
         obs = obs.reshape(obs.shape[0], obs.shape[1])
         inds = statError(obs, pred)
@@ -123,6 +122,35 @@ class MyTestCaseGages(unittest.TestCase):
         inds_df = pd.DataFrame(inds)
 
         inds_df.to_csv(os.path.join(self.config_data.data_path["Out"], 'data_df.csv'))
+
+    def test_multi_cases_stat_together(self):
+        cases_exps = ["basic_exp14", "basic_exp14", "basic_exp2", "basic_exp3", "basic_exp4",
+                      "basic_exp5", "basic_exp6", "basic_exp7", "basic_exp8", "basic_exp9"]
+        inds_medians = []
+        inds_means = []
+        pred = []
+        obs = []
+        for case_exp in cases_exps:
+            config_data_i = load_dataconfig_case_exp(case_exp)
+            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            pred.append(pred_i)
+            obs.append(obs_i)
+            inds_i = statError(obs_i, pred_i)
+            inds_df_i = pd.DataFrame(inds_i)
+            inds_medians.append(inds_df_i.median(axis=0))
+            inds_means.append(inds_df_i.mean(axis=0))
+        print(pd.DataFrame(inds_medians)["NSE"])
+        print(pd.DataFrame(inds_means)["NSE"])
+        pred_stack = reduce(lambda a, b: np.vstack((a, b)),
+                            list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), pred)))
+        obs_stack = reduce(lambda a, b: np.vstack((a, b)),
+                           list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), obs)))
+        inds = statError(obs_stack, pred_stack)
+        inds_df = pd.DataFrame(inds)
+        print(inds_df.median(axis=0))
+        print(inds_df.mean(axis=0))
 
     def test_explore_gages_prcp_log(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

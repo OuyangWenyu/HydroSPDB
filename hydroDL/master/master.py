@@ -251,11 +251,12 @@ def master_test_with_pretrained_model(data_model, pretrained_model_file, pretrai
     file_name = '_'.join([str(t_range[0]), str(t_range[1])])
     file_path = os.path.join(save_dir, file_name + '.csv')
     print('output files:', file_path)
-
-    print('Runing new results')
-    model = torch.load(pretrained_model_file)
-    model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
-
+    if not os.path.isfile(file_path):
+        print('Runing new results')
+        model = torch.load(pretrained_model_file)
+        model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
+    else:
+        print('Loaded previous results')
     # load previous result并反归一化为标准量纲
     data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
     # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化

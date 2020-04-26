@@ -5,7 +5,7 @@ import torch
 import pandas as pd
 
 from data import *
-from data.data_input import save_datamodel, GagesModel, _basin_norm
+from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result
 from data.gages_input_dataset import GagesModels
 from explore.stat import statError
 from hydroDL.master import *
@@ -50,6 +50,7 @@ class MyTestCaseGages(unittest.TestCase):
         # self.config_file = os.path.join(config_dir, "basic/config_exp7.ini")
         # self.subdir = r"basic/exp7"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
+        self.test_epoch = 300
 
     def test_gages_data_model(self):
         gages_model = GagesModels(self.config_data)
@@ -119,8 +120,8 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        with torch.cuda.device(2):
-            pred, obs = master_test(data_model, epoch=300)
+        with torch.cuda.device(0):
+            pred, obs = master_test(data_model, epoch=self.test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)
             mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
@@ -128,10 +129,7 @@ class MyTestCaseGages(unittest.TestCase):
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred')
-            flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs')
-            serialize_numpy(pred, flow_pred_file)
-            serialize_numpy(obs, flow_obs_file)
+            save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
             plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_export_result(self):

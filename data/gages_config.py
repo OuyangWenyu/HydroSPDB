@@ -128,6 +128,12 @@ class GagesConfig(DataConfig):
         gage_id_file = os.path.join(gage_files_dir, 'conterm_basinid.txt')
         attr_url = data_params.get("attrUrl")
 
+        # GAGES-II time series dataset dir
+        gagests_dir = os.path.join(dir_db, "59692a64e4b0d1f9f05f")
+        population_file = os.path.join(gagests_dir, "Dataset8_Population-Housing", "Dataset8_Population-Housing",
+                                       "PopulationHousing.txt")
+        wateruse_file = os.path.join(gagests_dir, "Dataset10_WaterUse", "Dataset10_WaterUse", "WaterUse_1985-2010.txt")
+
         return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
                                        regions=ref_nonref_regions,
                                        flow_dir=flow_dir, flow_url=flow_url, flow_screen_gage_id=flow_screen_gage_id,
@@ -138,4 +144,5 @@ class GagesConfig(DataConfig):
                                        attr_chosen=attr_chosen, attr_dir=attr_dir, attr_url=attr_url,
                                        gage_files_dir=gage_files_dir, gage_id_file=gage_id_file,
                                        gage_region_dir=gage_region_dir, gage_point_file=gagesii_points_file,
-                                       huc4_shp_file=huc4_shp_file, t_range_all=t_range_all)
+                                       huc4_shp_file=huc4_shp_file, t_range_all=t_range_all,
+                                       population_file=population_file, wateruse_file=wateruse_file)

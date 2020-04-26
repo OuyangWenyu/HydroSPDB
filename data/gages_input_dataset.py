@@ -2,11 +2,13 @@
 import copy
 import operator
 import os
+from calendar import isleap
+
 import pandas as pd
 import torch
 import numpy as np
 import geopandas as gpd
-
+from scipy import constants, interpolate
 import definitions
 from data import DataModel, GagesSource, GagesConfig
 from data.data_config import update_config_item
@@ -90,6 +92,140 @@ class GagesModels(object):
         # 构建输入数据类对象
         data_model = GagesModel(source_data)
         self.data_model_train, self.data_model_test = GagesModel.data_models_of_train_test(data_model, t_train, t_test)
+
+
+class GagesTsDataModel(object):
+    """the data model for GAGES-II dataset with GAGES-II time series data"""
+
+    def __init__(self, data_model):
+        self.data_model = data_model
+        self.data_source = data_model.data_source
+        self.water_use_years, self.pop_years = self.read_gagesii_tsdata()
+
+    def read_gagesii_tsdata(self):
+        # deal with water use and population data, interpolate the data for every year of 1980-2015
+        t_range_all = self.data_source.all_configs["t_range_all"]
+        all_start_year = int(t_range_all[0].split("-")[0])
+        # left closed right open interval
+        all_end_year = int(t_range_all[1].split("-")[0])
+        num_of_years = int(
+            (np.datetime64(str(all_end_year)) - np.datetime64(str(all_start_year))) / np.timedelta64(1, 'Y'))
+        # closed interval
+        water_use_start_year = 1985
+        water_use_end_year = 2010
+        assert all_start_year < water_use_start_year
+        assert water_use_end_year < all_end_year
+        water_use_start_year_idx = water_use_start_year - all_start_year
+        water_use_end_year_idx = water_use_end_year - all_start_year
+        # closed interval
+        pop_start_year = 1990
+        pop_end_year = 2010
+        assert all_start_year < pop_start_year
+        assert pop_end_year < all_end_year
+        pop_start_year_idx = pop_start_year - all_start_year
+        pop_end_year_idx = pop_end_year - all_start_year
+
+        ids_now = self.data_model.t_s_dict["sites_id"]
+        assert (all(x < y for x, y in zip(ids_now, ids_now[1:])))
+        attr_lst = ["DRAIN_SQKM"]
+        basins_area, var_dict, f_dict = self.data_source.read_attr(ids_now, attr_lst)
+
+        # mean freshwater withdrawals in units of millions of gallons per day per square kilometer for five-year periods from 1985 to 2010
+        water_use_df = pd.read_csv(self.data_source.all_configs["wateruse_file"], sep=',', dtype={0: str})
+        water_use_df.sort_values(by=['STAID'])
+        water_use_np = water_use_df.iloc[:, 1:].values
+        vectorized_unit_trans = np.vectorize(lambda gal: gal * (10 ** 6) * constants.gallon)
+        water_use_np = vectorized_unit_trans(water_use_np)
+
+        def interpolate_wateruse(water_use_y):
+            # 1985-1990-1995-2000-2005-2010
+            water_use_x = np.linspace(water_use_start_year_idx, water_use_end_year_idx, num=6)
+            water_use_xs = np.linspace(0, num_of_years - 1, num=num_of_years)
+            # interpolate by (x,y)，apply to xs
+            water_use_ys = interpolate.UnivariateSpline(water_use_x, water_use_y, s=0)(water_use_xs)
+            return water_use_ys
+
+        water_use_interpolates = np.apply_along_axis(interpolate_wateruse, 1, water_use_np)
+        water_use_interpolates[np.where(water_use_interpolates < 0)] = 0
+        water_use_newdf = pd.DataFrame(water_use_interpolates, index=water_use_df["STAID"])
+        water_use_chosen_df = water_use_newdf.loc[ids_now]
+        # avg value for per sqkm -> avg value for a basin
+        water_use_basin = water_use_chosen_df.values * basins_area
+        time_range = np.arange(all_start_year, all_end_year)
+        water_use_chosen = pd.DataFrame(water_use_basin, index=water_use_chosen_df.index, columns=time_range)
+
+        # one series for population density, in units of persons per square kilometer (sq km) and one for housing unit density, in units of housing units per sq km
+        population_and_house_df = pd.read_csv(self.data_source.all_configs["population_file"], sep=',', dtype={0: str})
+        population_and_house_df.sort_values(by=['STAID'])
+        population_np = population_and_house_df.iloc[:, 1:4].values
+
+        def interpolate_pop(pop_y):
+            """only 3 years data, UnivariateSpline can't work, so just repeat it:
+            80-95 use 90 data; 95-05 use 00 data; 05-15 use 10 data"""
+            pop_ys = np.array(
+                pop_y[0].repeat(15).tolist() + pop_y[1].repeat(10).tolist() + pop_y[2].repeat(10).tolist())
+            return pop_ys
+
+        population_interpolates = np.apply_along_axis(interpolate_pop, 1, population_np)
+        population_interpolates[np.where(population_interpolates < 0)] = 0
+        population_newdf = pd.DataFrame(population_interpolates, index=population_and_house_df["STAID"])
+        pop_chosen_df = population_newdf.loc[ids_now]
+        # avg value for per sqkm -> avg value for a basin
+        population_basin = pop_chosen_df.values * basins_area
+        pop_chosen = pd.DataFrame(population_basin, index=pop_chosen_df.index, columns=time_range)
+
+        return water_use_chosen, pop_chosen
+
+    def load_data(self):
+        model_dict = self.data_model.data_source.data_config.model_dict
+        opt_data = model_dict["data"]
+        rm_nan_x = opt_data['rmNan'][0]
+        x, y, c = self.data_model.load_data(model_dict)
+        # concatenate water use and pop data with attr data
+        t_range_all = self.data_source.all_configs.model_dict["t_range_all"]
+        all_start_year = int(t_range_all[0].split("-")[0])
+        water_use_df = self.water_use_years
+        start_date_str = self.data_model.t_s_dict["t_final_range"][0]
+        end_date_str = self.data_model.t_s_dict["t_final_range"][1]
+
+        def copy_every_year(start_date_str_tmp, end_date_str_tmp, all_start_year_tmp, data_df_tmp, rm_nan_tmp):
+            data_lst = []
+            start_year = int(start_date_str_tmp.split("-")[0])
+            end_year = int(end_date_str_tmp.split("-")[0])
+            start_date = np.datetime64(start_date_str_tmp)
+            start_year_final_day = np.datetime64(str(start_year) + '-12-31')
+            first_year_days_num = int((start_year_final_day - start_date) / np.timedelta64(1, 'D'))
+            first_year_data_idx = start_year - all_start_year_tmp
+            first_year_np = data_df_tmp.iloc[:, first_year_data_idx].values
+            first_year_data = np.tile(first_year_np, (first_year_np.size, first_year_days_num))
+            data_lst.append(first_year_data)
+            end_date = np.datetime64(end_date_str_tmp)
+            end_year_first_day = np.datetime64(str(end_year) + '-01-01')
+            end_year_days_num = int((end_date - end_year_first_day) / np.timedelta64(1, 'D'))
+            end_year_data_idx = end_year - all_start_year_tmp
+            end_year_np = data_df_tmp.iloc[:, end_year_data_idx].values
+            end_year_data = np.tile(first_year_np, (end_year_np.size, end_year_days_num))
+            for idx in range(first_year_data_idx + 1, end_year_data_idx):
+                data_year_np = data_df_tmp.iloc[:, idx].values
+                if isleap(start_year + idx):
+                    year_days_num = 366
+                else:
+                    year_days_num = 365
+                year_water_use = np.tile(data_year_np, (data_year_np.size, year_days_num))
+                data_lst.append(year_water_use)
+            data_lst.append(end_year_data)
+            data_c = np.array(data_lst)
+            if rm_nan_tmp:
+                data_c[np.where(np.isnan(data_c))] = 0
+            return data_c
+
+        water_use_c = copy_every_year(start_date_str, end_date_str, all_start_year, water_use_df, rm_nan_x)
+        new_c = concat_two_3darray(c, water_use_c)
+
+        pop_df = self.pop_years
+        pop_c = copy_every_year(start_date_str, end_date_str, all_start_year, pop_df, rm_nan_x)
+        new_c = concat_two_3darray(new_c, pop_c)
+        return x, y, new_c
 
 
 class GagesSimDataModel(object):
