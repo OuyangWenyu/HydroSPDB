@@ -3,6 +3,7 @@ import copy
 import operator
 import os
 from calendar import isleap
+from functools import reduce
 
 import pandas as pd
 import torch
@@ -12,7 +13,7 @@ from scipy import constants, interpolate
 import definitions
 from data import DataModel, GagesSource, GagesConfig
 from data.data_config import update_config_item
-from data.data_input import GagesModel
+from data.data_input import GagesModel, _trans_norm
 from explore import trans_norm, cal_stat
 from explore.hydro_cluster import cluster_attr_train
 from hydroDL import master_train
@@ -176,13 +177,12 @@ class GagesTsDataModel(object):
 
         return water_use_chosen, pop_chosen
 
-    def load_data(self):
-        model_dict = self.data_model.data_source.data_config.model_dict
+    def load_data(self, model_dict):
         opt_data = model_dict["data"]
         rm_nan_x = opt_data['rmNan'][0]
         x, y, c = self.data_model.load_data(model_dict)
         # concatenate water use and pop data with attr data
-        t_range_all = self.data_source.all_configs.model_dict["t_range_all"]
+        t_range_all = self.data_source.all_configs["t_range_all"]
         all_start_year = int(t_range_all[0].split("-")[0])
         water_use_df = self.water_use_years
         start_date_str = self.data_model.t_s_dict["t_final_range"][0]
@@ -194,38 +194,47 @@ class GagesTsDataModel(object):
             end_year = int(end_date_str_tmp.split("-")[0])
             start_date = np.datetime64(start_date_str_tmp)
             start_year_final_day = np.datetime64(str(start_year) + '-12-31')
-            first_year_days_num = int((start_year_final_day - start_date) / np.timedelta64(1, 'D'))
+            # start_date should be contained
+            first_year_days_num = int((start_year_final_day - start_date) / np.timedelta64(1, 'D')) + 1
             first_year_data_idx = start_year - all_start_year_tmp
             first_year_np = data_df_tmp.iloc[:, first_year_data_idx].values
-            first_year_data = np.tile(first_year_np, (first_year_np.size, first_year_days_num))
+            first_year_data = np.tile(first_year_np.reshape(first_year_np.size, 1), (1, first_year_days_num))
             data_lst.append(first_year_data)
             end_date = np.datetime64(end_date_str_tmp)
             end_year_first_day = np.datetime64(str(end_year) + '-01-01')
+            # rignt open interval, so end_date should NOT be contained
             end_year_days_num = int((end_date - end_year_first_day) / np.timedelta64(1, 'D'))
             end_year_data_idx = end_year - all_start_year_tmp
             end_year_np = data_df_tmp.iloc[:, end_year_data_idx].values
-            end_year_data = np.tile(first_year_np, (end_year_np.size, end_year_days_num))
+            end_year_data = np.tile(end_year_np.reshape(end_year_np.size, 1), (1, end_year_days_num))
             for idx in range(first_year_data_idx + 1, end_year_data_idx):
                 data_year_np = data_df_tmp.iloc[:, idx].values
-                if isleap(start_year + idx):
+                if isleap(all_start_year_tmp + idx):
                     year_days_num = 366
                 else:
                     year_days_num = 365
-                year_water_use = np.tile(data_year_np, (data_year_np.size, year_days_num))
+                year_water_use = np.tile(data_year_np.reshape(data_year_np.size, 1), (1, year_days_num))
                 data_lst.append(year_water_use)
             data_lst.append(end_year_data)
-            data_c = np.array(data_lst)
+            data_x = reduce(lambda x_tmp, y_tmp: np.hstack((x_tmp, y_tmp)), data_lst)
             if rm_nan_tmp:
-                data_c[np.where(np.isnan(data_c))] = 0
-            return data_c
+                data_x[np.where(np.isnan(data_x))] = 0
+            return data_x
 
-        water_use_c = copy_every_year(start_date_str, end_date_str, all_start_year, water_use_df, rm_nan_x)
-        new_c = concat_two_3darray(c, water_use_c)
-
+        water_use_x = copy_every_year(start_date_str, end_date_str, all_start_year, water_use_df, rm_nan_x)
+        # firstly, water_use_c should be normalized, then concatenate with x
+        water_use_x = water_use_x.reshape(water_use_x.shape[0], water_use_x.shape[1], 1)
+        var_lst = ['wu', 'pop']
+        gagests_stat_dict = {}
+        gagests_stat_dict[var_lst[0]] = cal_stat(water_use_x)
         pop_df = self.pop_years
-        pop_c = copy_every_year(start_date_str, end_date_str, all_start_year, pop_df, rm_nan_x)
-        new_c = concat_two_3darray(new_c, pop_c)
-        return x, y, new_c
+        pop_x = copy_every_year(start_date_str, end_date_str, all_start_year, pop_df, rm_nan_x)
+        pop_x = pop_x.reshape(pop_x.shape[0], pop_x.shape[1], 1)
+        gagests_stat_dict[var_lst[1]] = cal_stat(pop_x)
+        wu_pop_x = concat_two_3darray(water_use_x, pop_x)
+        wu_pop_x = _trans_norm(wu_pop_x, var_lst, gagests_stat_dict, to_norm=True)
+        new_x = concat_two_3darray(x, wu_pop_x)
+        return new_x, y, c
 
 
 class GagesSimDataModel(object):
