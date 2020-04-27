@@ -30,6 +30,7 @@ def plot_boxs(data, x_name, y_name):
 
 def plot_diff_boxes(data, row_and_col=None, y_col=None, x_col=None):
     """绘制箱型图 in one row and different cols"""
+    matplotlib.use('TkAgg')
     if type(data) != pd.DataFrame:
         data = pd.DataFrame(data)
     if y_col is None:

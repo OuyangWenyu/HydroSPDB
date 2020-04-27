@@ -83,10 +83,21 @@ def plot_box_inds(indicators):
     return box_fig
 
 
-def plot_gages_attrs_boxes(indicators):
+def plot_gages_attrs_boxes(sites1, sites2, attr_lst, attrs1, attrs2, diff_str, row_and_col=None):
     """plot boxplots of GAGES model results"""
-    data = pd.DataFrame(indicators)
-    box_fig = plot_diff_boxes(data)
+    if type(sites1) == list or type(sites2) == list:
+        sites1 = np.array(sites1)
+        sites2 = np.array(sites2)
+    sites1diff = np.tile(0, sites1.size).reshape(sites1.size, 1)
+    site2diff = np.tile(1, sites2.size).reshape(sites2.size, 1)
+    attrs1_new = np.concatenate((attrs1, sites1diff), axis=1)
+    attrs2_new = np.concatenate((attrs2, site2diff), axis=1)
+    diff_str_lst = [diff_str]
+    df1 = pd.DataFrame(attrs1_new, columns=attr_lst + diff_str_lst)
+    df2 = pd.DataFrame(attrs2_new, columns=attr_lst + diff_str_lst)
+    result = pd.concat([df1, df2])
+    box_fig = plot_diff_boxes(result, row_and_col=row_and_col, y_col=np.arange(len(attr_lst)).tolist(),
+                              x_col=len(attr_lst))
     return box_fig
 
 

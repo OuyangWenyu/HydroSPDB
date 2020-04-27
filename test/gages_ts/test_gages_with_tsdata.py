@@ -97,7 +97,8 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
         with torch.cuda.device(0):
-            pred, obs = master_test(data_model, epoch=self.test_epoch)
+            datats_model = GagesTsDataModel(data_model)
+            pred, obs = master_test(datats_model, epoch=self.test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)
             mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['PPTAVG_BASIN'],

@@ -101,6 +101,8 @@ class GagesTsDataModel(object):
     def __init__(self, data_model):
         self.data_model = data_model
         self.data_source = data_model.data_source
+        self.stat_dict = data_model.stat_dict
+        self.t_s_dict = data_model.t_s_dict
         self.water_use_years, self.pop_years = self.read_gagesii_tsdata()
 
     def read_gagesii_tsdata(self):
