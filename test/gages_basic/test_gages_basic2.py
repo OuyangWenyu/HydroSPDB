@@ -12,7 +12,7 @@ from hydroDL.master import *
 import definitions
 from utils import serialize_numpy, unserialize_numpy
 from utils.dataset_format import subset_of_dict
-from visual.plot_model import plot_we_need, plot_boxes_inds, plot_ts_obs_pred, plot_map
+from visual.plot_model import plot_we_need, plot_ts_obs_pred, plot_map
 import numpy as np
 from matplotlib import pyplot
 

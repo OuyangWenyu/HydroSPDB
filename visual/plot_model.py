@@ -6,9 +6,12 @@ import numpy as np
 import geopandas as gpd
 from pyproj import CRS
 from shapely.geometry import Point
+
+from data.data_input import GagesModel
 from explore.stat import statError
+from utils import hydro_time
 from utils.dataset_format import subset_of_dict
-from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf
+from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf, plot_ts_map
 
 
 def plot_region_seperately(gages_data_model, epoch, id_regions_idx, preds, obss, inds_dfs):
@@ -18,7 +21,7 @@ def plot_region_seperately(gages_data_model, epoch, id_regions_idx, preds, obss,
         # plot box，使用seaborn库
         keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(inds_dfs[i], keys)
-        box_fig = plot_boxes_inds(inds_test)
+        box_fig = plot_diff_boxes(inds_test)
         box_fig.savefig(os.path.join(gages_data_model.data_source.data_config.data_path["Out"],
                                      regions_name[i] + "epoch" + str(epoch) + "box_fig.png"))
         # plot ts
@@ -47,7 +50,7 @@ def plot_we_need(data_model_test, obs, pred, show_me_num=5, point_file=None, **k
     # plot box，使用seaborn库
     keys = ["Bias", "RMSE", "NSE"]
     inds_test = subset_of_dict(inds, keys)
-    box_fig = plot_boxes_inds(inds_test)
+    box_fig = plot_diff_boxes(inds_test)
     box_fig.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], "box_fig.png"))
     # plot ts
     t_s_dict = data_model_test.t_s_dict
@@ -80,8 +83,8 @@ def plot_box_inds(indicators):
     return box_fig
 
 
-def plot_boxes_inds(indicators):
-    """plot boxplots in different coordination"""
+def plot_gages_attrs_boxes(indicators):
+    """plot boxplots of GAGES model results"""
     data = pd.DataFrame(indicators)
     box_fig = plot_diff_boxes(data)
     return box_fig
@@ -159,3 +162,19 @@ def plot_map(gauge_dict, df_ind_value, save_file=None, proj_epsg=4269, percentil
         newdata.at[idx, 'geometry'] = point
 
     plot_point_map(newdata, percentile=percentile, save_file=save_file)
+
+
+def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst, pertile_range):
+    data_map = (inds_df.loc[idx_lst])[show_ind_key].values
+    all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
+    all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
+    all_sites_id = data_model.data_source.gage_dict["STAID"]
+    sites = np.array(data_model.t_s_dict['sites_id'])[idx_lst]
+    sites_index = np.array([np.where(all_sites_id == i) for i in sites]).flatten()
+    lat = all_lat[sites_index]
+    lon = all_lon[sites_index]
+    data_ts_obs_np = obs[idx_lst, :]
+    data_ts_pred_np = pred[idx_lst, :]
+    data_ts = [[data_ts_obs_np[i], data_ts_pred_np[i]] for i in range(data_ts_obs_np.shape[0])]
+    t = hydro_time.t_range_days(data_model.t_s_dict["t_final_range"]).tolist()
+    plot_ts_map(data_map.tolist(), data_ts, lat, lon, t, sites.tolist(), pertile_range=pertile_range)

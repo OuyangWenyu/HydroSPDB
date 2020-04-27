@@ -14,7 +14,7 @@ from utils.dataset_format import subset_of_dict
 from visual import *
 import numpy as np
 import definitions
-from visual.plot_model import plot_boxes_inds, plot_we_need
+from visual.plot_model import plot_we_need
 from visual.plot_stat import plot_boxs
 
 

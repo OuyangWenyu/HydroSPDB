@@ -11,9 +11,11 @@ import os
 import pandas as pd
 from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred
-from visual.plot_model import plot_boxes_inds, plot_ind_map
+from visual.plot_model import plot_ind_map
 import seaborn as sns
 import matplotlib.pyplot as plt
+
+from visual.plot_stat import plot_diff_boxes
 
 
 class MyTestCase(unittest.TestCase):
@@ -176,7 +178,7 @@ class MyTestCase(unittest.TestCase):
             # # plot box，使用seaborn库
             keys = ["Bias", "RMSE", "NSE"]
             inds_test = subset_of_dict(inds, keys)
-            box_fig = plot_boxes_inds(inds_test)
+            box_fig = plot_diff_boxes(inds_test)
             box_fig.savefig(os.path.join(data_model.data_source.data_config.data_path["Out"], "box_fig.png"))
             # plot map
             sites_df = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})

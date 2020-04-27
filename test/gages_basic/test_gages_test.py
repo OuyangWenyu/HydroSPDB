@@ -10,8 +10,8 @@ from data.data_input import GagesModel, _basin_norm, save_result, load_result
 from explore.stat import statError
 from hydroDL.master.master import master_test_with_pretrained_model
 from utils.dataset_format import subset_of_dict
-from visual.plot_model import plot_boxes_inds, plot_ts_obs_pred, plot_map
-from visual.plot_stat import plot_ecdf
+from visual.plot_model import plot_ts_obs_pred, plot_map
+from visual.plot_stat import plot_ecdf, plot_diff_boxes
 
 
 class TestForecastCase(unittest.TestCase):
@@ -86,7 +86,7 @@ class TestForecastCase(unittest.TestCase):
         # plot box，使用seaborn库
         keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(inds, keys)
-        box_fig = plot_boxes_inds(inds_test)
+        box_fig = plot_diff_boxes(inds_test)
         box_fig.savefig(os.path.join(save_dir, "box_fig.png"))
         # plot ts
         show_me_num = 5

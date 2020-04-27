@@ -28,12 +28,42 @@ def plot_boxs(data, x_name, y_name):
     return sns_box.get_figure()
 
 
-def plot_diff_boxes(data):
+def plot_diff_boxes(data, row_and_col=None, y_col=None, x_col=None):
     """绘制箱型图 in one row and different cols"""
-    subplot_num = data.shape[1]
-    f, axes = plt.subplots(1, subplot_num)
+    if type(data) != pd.DataFrame:
+        data = pd.DataFrame(data)
+    if y_col is None:
+        subplot_num = data.shape[1]
+    else:
+        subplot_num = len(y_col)
+    if row_and_col is None:
+        row_num = 1
+        col_num = subplot_num
+        f, axes = plt.subplots(row_num, col_num)
+    else:
+        assert subplot_num <= row_and_col[0] * row_and_col[1]
+        row_num = row_and_col[0]
+        col_num = row_and_col[1]
+        f, axes = plt.subplots(row_num, col_num)
     for i in range(subplot_num):
-        sns.boxplot(y=data.columns.values[i], data=data, orient='v', ax=axes[i], showfliers=False)
+        if y_col is None:
+            if row_num == 1 or col_num == 1:
+                sns.boxplot(y=data.columns.values[i], data=data, orient='v', ax=axes[i], showfliers=False)
+            else:
+                row_idx = int(i / col_num)
+                col_idx = i % col_num
+                sns.boxplot(y=data.columns.values[i], data=data, orient='v', ax=axes[row_idx, col_idx],
+                            showfliers=False)
+        else:
+            assert x_col is not None
+            if row_num == 1 or col_num == 1:
+                sns.boxplot(x=data.columns.values[x_col], y=data.columns.values[y_col[i]], data=data, orient='v',
+                            ax=axes[i], showfliers=False)
+            else:
+                row_idx = int(i / col_num)
+                col_idx = i % col_num
+                sns.boxplot(x=data.columns.values[x_col], y=data.columns.values[y_col[i]],
+                            data=data, orient='v', ax=axes[row_idx, col_idx], showfliers=False)
     plt.show()
     return f
 

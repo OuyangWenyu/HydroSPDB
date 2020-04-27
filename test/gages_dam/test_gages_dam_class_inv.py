@@ -18,7 +18,7 @@ import pandas as pd
 from utils import serialize_json, unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred
-from visual.plot_model import plot_boxes_inds, plot_ind_map
+from visual.plot_model import plot_ind_map
 
 
 class MyTestCase(unittest.TestCase):

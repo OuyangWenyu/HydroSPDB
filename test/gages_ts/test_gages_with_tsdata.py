@@ -20,8 +20,10 @@ class MyTestCaseGages(unittest.TestCase):
     def setUp(self) -> None:
         """use GAGES-II time series data"""
         config_dir = definitions.CONFIG_DIR
-        self.config_file = os.path.join(config_dir, "gagests/config_exp1.ini")
-        self.subdir = r"gagests/exp1"
+        # self.config_file = os.path.join(config_dir, "gagests/config_exp1.ini")
+        # self.subdir = r"gagests/exp1"
+        self.config_file = os.path.join(config_dir, "gagests/config_exp18.ini")
+        self.subdir = r"gagests/exp18"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
 
@@ -40,15 +42,15 @@ class MyTestCaseGages(unittest.TestCase):
 
     def test_gages_data_model_quickdata(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "allref_85-05_nan-0.1_00-1.0")
-        data_model_train = GagesModel.load_datamodel(data_dir,
-                                                     data_source_file_name='data_source.txt',
-                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                                     forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                                     f_dict_file_name='dictFactorize.json',
-                                                     var_dict_file_name='dictAttribute.json',
-                                                     t_s_dict_file_name='dictTimeSpace.json')
-        data_model_test = GagesModel.load_datamodel(data_dir,
+        data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
+        data_model_8595 = GagesModel.load_datamodel(data_dir,
+                                                    data_source_file_name='data_source.txt',
+                                                    stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                                    forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                                    f_dict_file_name='dictFactorize.json',
+                                                    var_dict_file_name='dictAttribute.json',
+                                                    t_s_dict_file_name='dictTimeSpace.json')
+        data_model_9505 = GagesModel.load_datamodel(data_dir,
                                                     data_source_file_name='test_data_source.txt',
                                                     stat_file_name='test_Statistics.json',
                                                     flow_file_name='test_flow.npy',
@@ -58,8 +60,8 @@ class MyTestCaseGages(unittest.TestCase):
                                                     var_dict_file_name='test_dictAttribute.json',
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
 
-        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_train, data_attr_update=True)
-        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_test, data_attr_update=True,
+        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_8595, data_attr_update=True)
+        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_9505, data_attr_update=True,
                                                         train_stat_dict=gages_model_train.stat_dict)
         save_datamodel(gages_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
@@ -82,9 +84,9 @@ class MyTestCaseGages(unittest.TestCase):
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(0):
             datats_model = GagesTsDataModel(data_model)
-            # pre_trained_model_epoch = 240
-            master_train(datats_model)
-            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            pre_trained_model_epoch = 160
+            # master_train(datats_model)
+            master_train(datats_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

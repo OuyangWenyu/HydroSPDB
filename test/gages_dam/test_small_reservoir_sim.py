@@ -13,8 +13,8 @@ import pandas as pd
 from hydroDL.master.master import master_train_natural_flow, master_test_natural_flow
 from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred
-from visual.plot_model import plot_boxes_inds, plot_map
-from visual.plot_stat import plot_ecdf
+from visual.plot_model import plot_map
+from visual.plot_stat import plot_ecdf, plot_diff_boxes
 
 
 class MyTestCase(unittest.TestCase):
@@ -194,7 +194,7 @@ class MyTestCase(unittest.TestCase):
         # plot box，使用seaborn库
         keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(inds, keys)
-        box_fig = plot_boxes_inds(inds_test)
+        box_fig = plot_diff_boxes(inds_test)
         box_fig.savefig(os.path.join(self.config_data.data_path["Out"], "box_fig.png"))
         # plot ts
         show_me_num = 5

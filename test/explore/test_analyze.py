@@ -1,13 +1,15 @@
 import unittest
+import numpy as np
 import pandas as pd
 import definitions
 from data import *
 import os
-import numpy as np
 from data.data_input import GagesModel, load_result
 from explore.stat import statError
-from utils import hydro_time
-from visual.plot_stat import plot_ts_map
+from visual.plot_model import plot_gages_map_and_ts
+from visual.plot_stat import plot_diff_boxes
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 class TestExploreCase(unittest.TestCase):
@@ -35,20 +37,28 @@ class TestExploreCase(unittest.TestCase):
         obs = obs.reshape(pred.shape[0], pred.shape[1])
         inds = statError(obs, pred)
         inds_df = pd.DataFrame(inds)
-        idx_lst = inds_df[(inds_df['NSE'] < 0.6)].index.tolist()
-        data_map = inds_df[(inds_df['NSE'] < 0.6)]['NSE'].values
-        all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
-        all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
-        all_sites_id = data_model.data_source.gage_dict["STAID"]
-        sites = np.array(data_model.t_s_dict['sites_id'])[idx_lst]
-        sites_index = np.array([np.where(all_sites_id == i) for i in sites]).flatten()
-        lat = all_lat[sites_index]
-        lon = all_lon[sites_index]
-        data_ts_obs_np = obs[idx_lst, :]
-        data_ts_pred_np = pred[idx_lst, :]
-        data_ts = [[data_ts_obs_np[i], data_ts_pred_np[i]] for i in range(data_ts_obs_np.shape[0])]
-        t = hydro_time.t_range_days(data_model.t_s_dict["t_final_range"]).tolist()
-        plot_ts_map(data_map.tolist(), data_ts, lat, lon, t, sites.tolist(), pertile_range=[5, 100])
+        nse_below = 0.5
+        show_ind_key = 'NSE'
+        idx_lst_small_nse = inds_df[(inds_df[show_ind_key] < nse_below)].index.tolist()
+        sites_small_nse = np.array(data_model.t_s_dict['sites_id'])[idx_lst_small_nse]
+        assert (all(x < y for x, y in zip(sites_small_nse, sites_small_nse[1:])))
+        idx_lst_big_nse = inds_df[(inds_df[show_ind_key] >= nse_below)].index.tolist()
+        sites_big_nse = np.array(data_model.t_s_dict['sites_id'])[idx_lst_big_nse]
+        assert (all(x < y for x, y in zip(sites_big_nse, sites_big_nse[1:])))
+
+        attr_lst = ["DRAIN_SQKM", "NDAMS_2009", "STOR_NID_2009"]
+        attrs_small = data_model.data_source.read_attr(sites_small_nse, attr_lst, is_return_dict=False)
+        attrs_big = data_model.data_source.read_attr(sites_big_nse, attr_lst, is_return_dict=False)
+        bad_nse = np.tile(0, sites_small_nse.size).reshape(sites_small_nse.size, 1)
+        good_nse = np.tile(1, sites_big_nse.size).reshape(sites_big_nse.size, 1)
+        attrs_bad = np.concatenate((attrs_small, bad_nse), axis=1)
+        attrs_good = np.concatenate((attrs_big, good_nse), axis=1)
+        is_nse_good = ["IS_NSE_GOOD"]
+        df_small = pd.DataFrame(attrs_bad, columns=attr_lst + is_nse_good)
+        df_big = pd.DataFrame(attrs_good, columns=attr_lst + is_nse_good)
+        result = pd.concat([df_small, df_big])
+        plot_diff_boxes(result, row_and_col=[2, 2], y_col=[0, 1, 2], x_col=3)
+        # plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst_small_nse, pertile_range=[5, 100])
 
 
 if __name__ == '__main__':

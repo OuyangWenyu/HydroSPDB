@@ -11,8 +11,8 @@ from utils import unserialize_numpy, unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual import plot_box_inds, plot_ts_obs_pred
 from visual.plot import plotCDF
-from visual.plot_model import plot_boxes_inds, plot_ind_map, plot_map
-from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs
+from visual.plot_model import plot_ind_map, plot_map
+from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs, plot_diff_boxes
 
 
 def test_stat():
@@ -109,7 +109,7 @@ class MyTestCase(unittest.TestCase):
         # plot box，使用seaborn库
         keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(self.inds, keys)
-        plot_boxes_inds(inds_test)
+        plot_diff_boxes(inds_test)
 
     def test_plot_ts(self):
         """测试可视化代码"""
