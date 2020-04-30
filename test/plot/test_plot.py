@@ -89,8 +89,13 @@ class MyTestCase(unittest.TestCase):
 
     def test_plot_ecdf_together(self):
         xs = []
+        ys = []
         # cases_exps = ["basic_exp18", "simulate_exp10", "inv_exp1", "siminv_exp1"]
-        cases_exps = ["basic_exp18", "simulate_exp1"]
+        # cases_exps = ["basic_exp18", "simulate_exp1"]
+        # cases_exps = ["basic_exp18", "gagests_exp18"]
+        # cases_exps = ["basic_exp18", "basic_exp19"]
+        cases_exps = ["dam_exp11", "dam_exp12"]
+        cases_exps_legends = ["big_stor", "small_stor"]
         # cases_exps = ["dam_exp4", "dam_exp5", "dam_exp6"]
         # cases_exps = ["dam_exp1", "dam_exp2", "dam_exp3"]
         # cases_exps_legends = ["dam-lstm", "dam-with-natural-flow", "dam-with-kernel"]
@@ -102,7 +107,8 @@ class MyTestCase(unittest.TestCase):
             inds_i = statError(obs_i, pred_i)
             x, y = ecdf(inds_i[self.keys[0]])
             xs.append(x)
-        plot_ecdfs(xs, y, cases_exps)
+            ys.append(y)
+        plot_ecdfs(xs, ys, cases_exps_legends)
 
     def test_plot_box(self):
         """测试可视化代码"""

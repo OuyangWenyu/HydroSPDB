@@ -32,7 +32,29 @@ class GagesSource(DataSource):
                 new_data_source.major_dams_chosen(kwargs[criteria])
             elif criteria == 'ref':
                 new_data_source.ref_or_nonref_chosen(kwargs[criteria])
+            elif criteria == 'STORAGE':
+                new_data_source.storage_reservors_chosen(kwargs[criteria])
         return new_data_source
+
+    def storage_reservors_chosen(self, storage=None):
+        """choose basins of specified normal storage range"""
+        if storage is None:
+            storage = [0, 50]
+        gage_id_file = self.all_configs.get("gage_id_file")
+        data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
+        usgs_id = data_all["STAID"].values.tolist()
+        assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
+        # megaliters total storage per sq km  (1 megaliters = 1,000,000 liters = 1,000 cubic meters)
+        attr_lst = ["STOR_NOR_2009"]
+        data_attr, var_dict, f_dict = self.read_attr(usgs_id, attr_lst)
+        nor_storage = data_attr[:, 0]
+        storage_lower = storage[0]
+        storage_upper = storage[1]
+        chosen_id = [usgs_id[i] for i in range(nor_storage.size) if storage_lower <= nor_storage[i] < storage_upper]
+        if self.all_configs["flow_screen_gage_id"] is not None:
+            chosen_id = (np.intersect1d(np.array(chosen_id), self.all_configs["flow_screen_gage_id"])).tolist()
+            assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))
+        self.all_configs["flow_screen_gage_id"] = chosen_id
 
     def ref_or_nonref_chosen(self, ref="Ref"):
         assert ref in ["Ref", "Non-ref"]
@@ -67,6 +89,7 @@ class GagesSource(DataSource):
         self.all_configs["flow_screen_gage_id"] = chosen_id
 
     def dor_reservoirs_chosen(self, dor_chosen):
+        # TODO : NOR / NID ?
         """choose basins of small DOR(calculated by NID_STORAGE/RUNAVE7100)"""
         gage_id_file = self.all_configs.get("gage_id_file")
         data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
@@ -123,29 +146,34 @@ class GagesSource(DataSource):
         data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
         gage_fld_lst = data_all.columns.values
         out = dict()
-        # using shapefile of all basins to check if their basin area satisfy the criteria
-        # remove stations with catchment areas greater than the HUC4 basins in which they are located
-        # firstly, get the HUC4 basin's area of the site
-        join_points_all = spatial_join(points_file, huc4_shp_file)
-        # get "AREASQKM" attribute data to filter
-        join_points = join_points_all[join_points_all["DRAIN_SQKM"] < join_points_all["AREASQKM"]]
-        gages_huc4_id = join_points['STAID'].values
+        if screen_basin_area_huc4:
+            # using shapefile of all basins to check if their basin area satisfy the criteria
+            # remove stations with catchment areas greater than the HUC4 basins in which they are located
+            # firstly, get the HUC4 basin's area of the site
+            join_points_all = spatial_join(points_file, huc4_shp_file)
+            # get "AREASQKM" attribute data to filter
+            join_points = join_points_all[join_points_all["DRAIN_SQKM"] < join_points_all["AREASQKM"]]
+            gages_huc4_id = join_points['STAID'].values
         # read sites from shapefile of region, get id from it.
         shapefiles = [os.path.join(gage_region_dir, region_shapefile + '.shp') for region_shapefile in
                       region_shapefiles]
         data = pd.DataFrame()
         df_id_region = data_all.iloc[:, 0].values
         assert (all(x < y for x, y in zip(df_id_region, df_id_region[1:])))
-        for shapefile in shapefiles:
-            shape_data = gpd.read_file(shapefile)
-            gages_id = shape_data['GAGE_ID'].values
-            if screen_basin_area_huc4:
-                gages_id = np.intersect1d(gages_id, gages_huc4_id)
-            c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
-            assert (all(x < y for x, y in zip(ind1, ind1[1:])))
-            data = pd.concat([data, data_all.iloc[ind1, :]])
-        # after screen for every regions, resort the dataframe by sites_id
-        data_all = data.sort_values(by="STAID")
+        if len(shapefiles) == 10:  # there are 10 regions in GAGES-II dataset in all
+            print("all regions included, CONUS\n")
+        else:
+            for shapefile in shapefiles:
+                shape_data = gpd.read_file(shapefile)
+                gages_id = shape_data['GAGE_ID'].values
+                if screen_basin_area_huc4:
+                    gages_id = np.intersect1d(gages_id, gages_huc4_id)
+                c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+                assert (all(x < y for x, y in zip(ind1, ind1[1:])))
+                data = pd.concat([data, data_all.iloc[ind1, :]])
+                # after screen for every regions, resort the dataframe by sites_id
+                data_all = data.sort_values(by="STAID")
+
         for s in gage_fld_lst:
             if s is gage_fld_lst[1]:
                 out[s] = data_all[s].values.tolist()

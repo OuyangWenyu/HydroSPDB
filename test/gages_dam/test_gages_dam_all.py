@@ -5,10 +5,10 @@ import torch
 import definitions
 from data import GagesConfig, GagesSource, DataModel
 from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result, load_result
-from data.gages_input_dataset import GagesDamDataModel, GagesModels, choose_which_purpose
+from data.gages_input_dataset import GagesDamDataModel, GagesModels, choose_which_purpose, load_dataconfig_case_exp
 from data.nid_input import NidModel, save_nidinput
 from explore.gages_stat import split_results_to_regions
-from explore.stat import statError
+from explore.stat import statError, ecdf
 from hydroDL.master.master import master_train, master_test
 import numpy as np
 import os
@@ -18,7 +18,7 @@ from utils import serialize_json, unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred
 from visual.plot_model import plot_ind_map, plot_we_need, plot_map
-from visual.plot_stat import plot_ecdf, plot_diff_boxes
+from visual.plot_stat import plot_ecdf, plot_diff_boxes, plot_ecdfs
 
 
 class MyTestCase(unittest.TestCase):
@@ -204,6 +204,69 @@ class MyTestCase(unittest.TestCase):
             inds_means.append(inds_dfs[i].mean(axis=0))
         print(inds_medians)
         print(inds_means)
+
+    def test_stor_seperate(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "basic/config_exp18.ini")
+        subdir = r"basic/exp18"
+        config_data = GagesConfig.set_subdir(config_file, subdir)
+        data_model = GagesModel.load_datamodel(config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        all_sites = data_model.t_s_dict["sites_id"]
+        storage_nor_1 = [0, 50]
+        storage_nor_2 = [50, 15000]  # max is 14348.6581036888
+        source_data_nor1 = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTrain"],
+                                                          STORAGE=storage_nor_1)
+        source_data_nor2 = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTrain"],
+                                                          STORAGE=storage_nor_2)
+        sites_id_nor1 = source_data_nor1.all_configs['flow_screen_gage_id']
+        sites_id_nor2 = source_data_nor2.all_configs['flow_screen_gage_id']
+        idx_lst_nor1 = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_nor1]
+        idx_lst_nor2 = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_nor2]
+
+        pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
+        pred = pred.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(pred.shape[0], pred.shape[1])
+        inds = statError(obs, pred)
+        inds_df = pd.DataFrame(inds)
+
+        keys_nse = "NSE"
+        xs = []
+        ys = []
+        cases_exps_legends_together = ["small_stor", "large_stor"]
+
+        x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_nor1])
+        xs.append(x1)
+        ys.append(y1)
+
+        x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_nor2])
+        xs.append(x2)
+        ys.append(y2)
+
+        cases_exps = ["dam_exp12", "dam_exp11"]
+        cases_exps_legends_separate = ["small_stor", "large_stor"]
+        # cases_exps = ["dam_exp4", "dam_exp5", "dam_exp6"]
+        # cases_exps = ["dam_exp1", "dam_exp2", "dam_exp3"]
+        # cases_exps_legends = ["dam-lstm", "dam-with-natural-flow", "dam-with-kernel"]
+        for case_exp in cases_exps:
+            config_data_i = load_dataconfig_case_exp(case_exp)
+            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            inds_i = statError(obs_i, pred_i)
+            x, y = ecdf(inds_i[keys_nse])
+            xs.append(x)
+            ys.append(y)
+
+        plot_ecdfs(xs, ys, cases_exps_legends_together + cases_exps_legends_separate,
+                   style=["together", "together", "separate", "separate"])
 
 
 if __name__ == '__main__':

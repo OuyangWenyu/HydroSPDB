@@ -3,6 +3,9 @@ import definitions
 import unittest
 from data import *
 import os
+
+from data.data_input import save_datamodel
+from data.gages_input_dataset import GagesModels
 from utils import *
 
 
@@ -24,7 +27,8 @@ class TestDataClassCase(unittest.TestCase):
         # 读取模型配置文件，并写入json
         serialize_json(self.config_data.model_dict, self.model_dict_file)
         # 准备训练数据
-        source_data = GagesSource(self.config_data, self.config_data.model_dict["data"]["tRangeTrain"])
+        source_data = GagesSource(self.config_data, self.config_data.model_dict["data"]["tRangeTrain"],
+                                  screen_basin_area_huc4=False)
         # 序列化保存对象
         dir_temp = source_data.all_configs["temp_dir"]
         if not os.path.isdir(dir_temp):
@@ -32,35 +36,18 @@ class TestDataClassCase(unittest.TestCase):
         my_file = os.path.join(dir_temp, 'data_source.txt')
         serialize_pickle(source_data, my_file)
 
-    def test_read_data_source_temp(self):
-        d = unserialize_pickle(self.data_source_dump)
-        print(d)
-
     def test_data_model(self):
-        source_data = unserialize_pickle(self.data_source_dump)
-        print(source_data)
-        data_model = DataModel(source_data)
-        print(data_model)
-
-        # 序列化保存对象
-        dir_temp = source_data.all_configs["temp_dir"]
-        stat_file = os.path.join(dir_temp, 'Statistics.json')
-        flow_file = os.path.join(dir_temp, 'flow')
-        forcing_file = os.path.join(dir_temp, 'forcing')
-        attr_file = os.path.join(dir_temp, 'attr')
-        f_dict_file = os.path.join(dir_temp, 'dictFactorize.json')
-        var_dict_file = os.path.join(dir_temp, 'dictAttribute.json')
-        t_s_dict_file = os.path.join(dir_temp, 'dictTimeSpace.json')
-
-        # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
-        serialize_json(data_model.stat_dict, stat_file)
-        serialize_numpy(data_model.data_flow, flow_file)
-        serialize_numpy(data_model.data_forcing, forcing_file)
-        serialize_numpy(data_model.data_attr, attr_file)
-        # dictFactorize.json is the explanation of value of categorical variables
-        serialize_json(data_model.f_dict, f_dict_file)
-        serialize_json(data_model.var_dict, var_dict_file)
-        serialize_json(data_model.t_s_dict, t_s_dict_file)
+        gages_model = GagesModels(self.config_data)
+        save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
+                       stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
+                       attr_file_name='attr', f_dict_file_name='dictFactorize.json',
+                       var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
+        save_datamodel(gages_model.data_model_test, data_source_file_name='test_data_source.txt',
+                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+                       forcing_file_name='test_forcing', attr_file_name='test_attr',
+                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+                       t_s_dict_file_name='test_dictTimeSpace.json')
+        print("read and save data model")
 
     def test_usgs_screen_streamflow(self):
         source_data = unserialize_pickle(self.data_source_dump)

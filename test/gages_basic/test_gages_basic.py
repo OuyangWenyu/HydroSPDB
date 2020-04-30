@@ -29,10 +29,10 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp11"
         # self.config_file = os.path.join(config_dir, "basic/config_exp14.ini")
         # self.subdir = r"basic/exp14"
-        self.config_file = os.path.join(config_dir, "basic/config_exp16.ini")
-        self.subdir = r"basic/exp16"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
-        # self.subdir = r"basic/exp19"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp16.ini")
+        # self.subdir = r"basic/exp16"
+        self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
+        self.subdir = r"basic/exp19"
 
         # different regions seperately
         # self.config_file = os.path.join(config_dir, "basic/config_exp2.ini")
@@ -130,7 +130,7 @@ class MyTestCaseGages(unittest.TestCase):
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
             save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
-            plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+            # plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_export_result(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

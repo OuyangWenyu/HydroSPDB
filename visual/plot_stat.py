@@ -15,6 +15,33 @@ from explore.stat import ecdf
 from utils.hydro_math import flat_data
 
 
+def plot_scatter_xyc(x_label, x, y_label, y, c_label=None, c=None, is_reg=False, xlim=None, ylim=None):
+    """scatter plot: x-y relationship with c as colorbar"""
+    if c is None:
+        df = pd.DataFrame({x_label: x, y_label: y})
+        points = plt.scatter(df[x_label], df[y_label])
+    else:
+        df = pd.DataFrame({x_label: x, y_label: y, c_label: c})
+        points = plt.scatter(df[x_label], df[y_label], c=df[c_label], s=20, cmap="Spectral")  # set style options
+        # add a color bar
+        plt.colorbar(points)
+
+    # set limits
+    if xlim is not None:
+        plt.xlim(xlim[0], xlim[1])
+    if ylim is not None:
+        plt.ylim(ylim[0], ylim[1])
+
+    # build the regression plot
+    if is_reg:
+        plot = sns.regplot(x_label, y_label, data=df, scatter=False, color=".1")
+        plot = plot.set(xlabel=x_label, ylabel=y_label)  # add labels
+    else:
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+    plt.show()
+
+
 def plot_boxs(data, x_name, y_name):
     """绘制箱型图"""
     sns.set(style="ticks", palette="pastel")
@@ -30,7 +57,7 @@ def plot_boxs(data, x_name, y_name):
 
 def plot_diff_boxes(data, row_and_col=None, y_col=None, x_col=None):
     """绘制箱型图 in one row and different cols"""
-    matplotlib.use('TkAgg')
+    # matplotlib.use('TkAgg')
     if type(data) != pd.DataFrame:
         data = pd.DataFrame(data)
     if y_col is None:
@@ -99,10 +126,12 @@ def plot_point_map(gpd_gdf, percentile=0, save_file=None):
         # plt.savefig("NSE-usa.png", bbox_inches='tight', pad_inches=0.1)
 
 
-def plot_ecdfs(xs, y, legends=None):
+def plot_ecdfs(xs, ys, legends=None, style=None):
     """Empirical cumulative distribution function"""
-    assert type(xs) == list
-    assert (all(xi < yi for xi, yi in zip(y, y[1:])))
+    assert type(xs) == type(ys) == type(legends) == type(style) == list
+    assert len(xs) == len(ys) == len(legends) == len(style)
+    for y in ys:
+        assert (all(xi < yi for xi, yi in zip(y, y[1:])))
     frames = []
     for i in range(len(xs)):
         df_dict_i = {}
@@ -112,14 +141,21 @@ def plot_ecdfs(xs, y, legends=None):
             str_i = legends[i]
         assert (all(xi < yi for xi, yi in zip(xs[i], xs[i][1:])))
         df_dict_i["x"] = xs[i]
-        df_dict_i["y"] = y
+        df_dict_i["y"] = ys[i]
         df_dict_i["case"] = np.full([xs[i].size], str_i)
+        if style is not None:
+            df_dict_i["event"] = np.full([xs[i].size], style[i])
         df_i = pd.DataFrame(df_dict_i)
         frames.append(df_i)
     df = pd.concat(frames)
     sns.set_style("ticks", {'axes.grid': True})
-    sns.lineplot(x="x", y="y", hue="case", data=df, estimator=None).set(xlim=(0, 1), xticks=np.arange(0, 1, 0.05),
-                                                                        yticks=np.arange(0, 1, 0.05))
+    if style is None:
+        sns.lineplot(x="x", y="y", hue="case", data=df, estimator=None).set(xlim=(0, 1), xticks=np.arange(0, 1, 0.05),
+                                                                            yticks=np.arange(0, 1, 0.05))
+    else:
+        sns.lineplot(x="x", y="y", hue="case", style="event", data=df, estimator=None).set(xlim=(0, 1),
+                                                                                           xticks=np.arange(0, 1, 0.05),
+                                                                                           yticks=np.arange(0, 1, 0.05))
     plt.show()
 
 

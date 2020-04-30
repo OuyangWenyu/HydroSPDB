@@ -119,12 +119,6 @@ class MyTestCase(unittest.TestCase):
         t_lst = t_range_days(t_range)
         print(t_lst)
 
-    def test_numpy(self):
-        a = np.array([[1, 2], [3, 4]])
-        print(a.flatten())
-        a = a.reshape(2, -1, 2)
-        print(a.flatten())
-
     def test_intersect(self):
         t_range = self.t_range
         t_lst = t_range_years(t_range)
@@ -164,10 +158,8 @@ class MyTestCase(unittest.TestCase):
         # subdir = r"transdata/exp9"
         # config_file = os.path.join(config_dir, "transdata/config_exp10.ini")
         # subdir = r"transdata/exp10"
-        # config_file = os.path.join(config_dir, "transdata/config_exp11.ini")
-        # subdir = r"transdata/exp11"
-        config_file = os.path.join(config_dir, "transdata/config_exp12.ini")
-        subdir = r"transdata/exp12"
+        config_file = os.path.join(config_dir, "transdata/config_exp11.ini")
+        subdir = r"transdata/exp11"
         self.config_data = GagesConfig.set_subdir(config_file, subdir)
 
     def test_data_source(self):
@@ -176,19 +168,30 @@ class MyTestCase(unittest.TestCase):
         my_file = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')
         serialize_pickle(source_data, my_file)
 
-    def test_trans_forcing_file_to_camels(self):
+    def test_trans_all_forcing_file_to_camels(self):
         data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')
         source_data = unserialize_pickle(data_source_dump)
-        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_85-90")
+        output_dir = os.path.join(self.config_data.data_path["DB"], "basin_mean_forcing")
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         region_names = [region_temp.split("_")[-1] for region_temp in source_data.all_configs['regions']]
         # forcing data file generated is named as "allref", so rename the "all"
         region_names = ["allref" if r == "all" else r for r in region_names]
-        years = np.arange(1985, 1990)
-        for year in years:
-            trans_daymet_to_camels(source_data.all_configs["forcing_dir"], output_dir, source_data.gage_dict,
-                                   region_names[0], year)
+        year_start = int(source_data.t_range[0].split("-")[0])
+        year_end = int(source_data.t_range[1].split("-")[0])
+        years = np.arange(year_start, year_end)
+        assert (all(x < y for x, y in zip(source_data.gage_dict['STAID'], source_data.gage_dict['STAID'][1:])))
+
+        config_dir = definitions.CONFIG_DIR
+        for i in range(len(region_names)):
+            config_file_i = os.path.join(config_dir, "transdata/config_exp" + str(i + 1) + ".ini")
+            subdir_i = "transdata/exp" + str(i + 1)
+            config_data_i = GagesConfig.set_subdir(config_file_i, subdir_i)
+            source_data_i = GagesSource(config_data_i, config_data_i.model_dict["data"]["tRangeTrain"],
+                                        screen_basin_area_huc4=False)
+            for year in years:
+                trans_daymet_to_camels(source_data.all_configs["forcing_dir"], output_dir, source_data_i.gage_dict,
+                                       region_names[i], year)
 
     def test_choose_some_gauge(self):
         ashu_gageid_file = os.path.join(self.config_data.data_path["DB"], "ashu", "AshuGagesId.txt")

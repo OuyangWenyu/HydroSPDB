@@ -6,12 +6,26 @@ import numpy as np
 import geopandas as gpd
 from pyproj import CRS
 from shapely.geometry import Point
-
-from data.data_input import GagesModel
+import matplotlib.pyplot as plt
+import seaborn as sns
 from explore.stat import statError
 from utils import hydro_time
 from utils.dataset_format import subset_of_dict
 from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf, plot_ts_map
+
+
+def plot_scatter_multi_attrs(data_model, inds_df, idx_lst_nse_range, attr_lst, y_var_lst):
+    """scatter plot: there are many independent vars and  dependent var"""
+    sites_all = data_model.t_s_dict["sites_id"]
+    attrs_ = data_model.data_source.read_attr(sites_all, attr_lst, is_return_dict=False)
+    x_var_values = [attrs_[idx_lst_nse_range, i] for i in range(len(attr_lst))]
+    y_var_values = [inds_df[y_var].values[idx_lst_nse_range] for y_var in y_var_lst]
+    xy_values = np.array(x_var_values + y_var_values).T
+    df = pd.DataFrame(xy_values, columns=attr_lst + y_var_lst)
+    g = sns.pairplot(df, x_vars=attr_lst, y_vars=y_var_lst, height=5, aspect=.8, kind="reg")
+    #  plot_kws=dict(s=5, edgecolor="b", linewidth=1)
+    g.axes[0, 0].set_ylim((0, 1))
+    plt.show()
 
 
 def plot_region_seperately(gages_data_model, epoch, id_regions_idx, preds, obss, inds_dfs):
