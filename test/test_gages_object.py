@@ -37,16 +37,16 @@ class TestDataClassCase(unittest.TestCase):
         serialize_pickle(source_data, my_file)
 
     def test_data_model(self):
-        gages_model = GagesModels(self.config_data)
+        gages_model = GagesModels(self.config_data, screen_basin_area_huc4=False)
         save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
                        var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
-        save_datamodel(gages_model.data_model_test, data_source_file_name='test_data_source.txt',
-                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
-                       forcing_file_name='test_forcing', attr_file_name='test_attr',
-                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
-                       t_s_dict_file_name='test_dictTimeSpace.json')
+        # save_datamodel(gages_model.data_model_test, data_source_file_name='test_data_source.txt',
+        #                stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+        #                forcing_file_name='test_forcing', attr_file_name='test_attr',
+        #                f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+        #                t_s_dict_file_name='test_dictTimeSpace.json')
         print("read and save data model")
 
     def test_usgs_screen_streamflow(self):
@@ -60,7 +60,18 @@ class TestDataClassCase(unittest.TestCase):
 
     def test_read_forcing(self):
         source_data = unserialize_pickle(self.data_source_dump)
-        usgs_id = source_data.all_configs["flow_screen_gage_id"]
+        usgs_id = ["01013500", "01022500", "01030500", "01031500",
+                   "01047000",
+                   "01052500",
+                   "01054200",
+                   "01055000",
+                   "01057000",
+                   "01073000"
+                   ] + ['03144816', '03145000', '03156000', '03157000', '03157500', '03219500', '03220000', '03221000',
+                        '03223000', '03224500', '03225500', '03226800',
+                        '02383000', '02383500', '02384500', '02385170', '02385500', '02385800', '02387000', '02387500',
+                        '02387600', '02388300', '02388320', '02388350', '02388500']
+        usgs_id.sort()
         t_range_list = hydro_time.t_range_days(["1995-10-01", "2000-10-01"])
         forcing_data = source_data.read_forcing(usgs_id, t_range_list)
         print(forcing_data)

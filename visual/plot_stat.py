@@ -10,9 +10,9 @@ import pandas as pd
 import cartopy.crs as ccrs
 from cartopy.feature import NaturalEarthFeature
 from matplotlib import gridspec
-
+from matplotlib.cm import ScalarMappable
 from explore.stat import ecdf
-from utils.hydro_math import flat_data
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def plot_scatter_xyc(x_label, x, y_label, y, c_label=None, c=None, is_reg=False, xlim=None, ylim=None):
@@ -34,7 +34,7 @@ def plot_scatter_xyc(x_label, x, y_label, y, c_label=None, c=None, is_reg=False,
 
     # build the regression plot
     if is_reg:
-        plot = sns.regplot(x_label, y_label, data=df, scatter=False, color=".1")
+        plot = sns.regplot(x_label, y_label, data=df, scatter=False)  # , color=".1"
         plot = plot.set(xlabel=x_label, ylabel=y_label)  # add labels
     else:
         plt.xlabel(x_label)
@@ -42,12 +42,77 @@ def plot_scatter_xyc(x_label, x, y_label, y, c_label=None, c=None, is_reg=False,
     plt.show()
 
 
-def plot_boxs(data, x_name, y_name):
+def swarmplot_with_cbar(cmap_str, cbar_label, ylim, *args, **kwargs):
+    fig = plt.gcf()
+    ax = sns.swarmplot(*args, **kwargs)
+    if ylim is not None:
+        plt.ylim(ylim[0], ylim[1])
+    # remove the legend, because we want to set a colorbar instead
+    ax.legend().remove()
+    # create colorbar
+    cmap = plt.get_cmap(cmap_str)
+    for key in kwargs:
+        # if any criteria is not matched, we can filter this site
+        if key == 'hue':
+            hue_name = kwargs[key]
+        if key == 'data':
+            df = kwargs[key]
+        if key == 'palette':
+            color_str = kwargs[key]
+    assert color_str == cmap_str
+    norm = plt.Normalize(df[hue_name].min(), df[hue_name].max())
+    sm = ScalarMappable(norm=norm, cmap=cmap)
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=ax)
+    cbar.set_label(cbar_label, labelpad=10)
+    plt.show()
+    return fig
+
+
+def plot_boxs(data, x_name, y_name, uniform_color=None, swarm_plot=False, hue=None, colormap=False, xlim=None,
+              ylim=None):
     """绘制箱型图"""
     sns.set(style="ticks", palette="pastel")
-
     # Draw a nested boxplot to show bills by day and time
-    sns_box = sns.boxplot(x=x_name, y=y_name, data=data, showfliers=False)
+    if uniform_color is not None:
+        sns_box = sns.boxplot(x=x_name, y=y_name, data=data, color=uniform_color, showfliers=False)
+    else:
+        sns_box = sns.boxplot(x=x_name, y=y_name, data=data, showfliers=False)
+    if swarm_plot:
+        if hue is not None:
+            if colormap:
+                # Create a matplotlib colormap from the sns seagreen color palette
+                cmap = sns.light_palette("seagreen", reverse=False, as_cmap=True)
+                # Normalize to the range of possible values from df["c"]
+                norm = matplotlib.colors.Normalize(vmin=data[hue].min(), vmax=data[hue].max())
+                # create a color dictionary (value in c : color from colormap)
+                colors = {}
+                for cval in data[hue]:
+                    colors.update({cval: cmap(norm(cval))})
+
+                # plot the swarmplot with the colors dictionary as palette, s=2 means size is 2
+                sns_box = sns.swarmplot(x=x_name, y=y_name, hue=hue, s=2, data=data, palette=colors)
+                # remove the legend, because we want to set a colorbar instead
+                plt.gca().legend_.remove()
+                # create colorbar
+                divider = make_axes_locatable(plt.gca())
+                ax_cb = divider.new_horizontal(size="5%", pad=0.05)
+                fig = sns_box.get_figure()
+                fig.add_axes(ax_cb)
+                cb1 = matplotlib.colorbar.ColorbarBase(ax_cb, cmap=cmap,
+                                                       norm=norm,
+                                                       orientation='vertical')
+                cb1.set_label('Some Units')
+            else:
+                palette = sns.light_palette("seagreen", reverse=False, n_colors=10)
+                sns_box = sns.swarmplot(x=x_name, y=y_name, hue=hue, s=2, data=data, palette=palette)
+        else:
+            sns_box = sns.swarmplot(x=x_name, y=y_name, data=data, color=".2")
+        if xlim is not None:
+            plt.xlim(xlim[0], xlim[1])
+        if ylim is not None:
+            plt.ylim(ylim[0], ylim[1])
+
     sns.despine(offset=10, trim=True)
     locs, labels = plt.xticks()
     plt.setp(labels, rotation=45)

@@ -84,12 +84,13 @@ def load_datamodel_case_exp(case_exp):
 class GagesModels(object):
     """the data model for GAGES-II dataset"""
 
-    def __init__(self, config_data, **kwargs):
+    def __init__(self, config_data, screen_basin_area_huc4=True, **kwargs):
         # 准备训练数据
         t_train = config_data.model_dict["data"]["tRangeTrain"]
         t_test = config_data.model_dict["data"]["tRangeTest"]
         t_train_test = [t_train[0], t_test[1]]
-        source_data = GagesSource.choose_some_basins(config_data, t_train_test, **kwargs)
+        source_data = GagesSource.choose_some_basins(config_data, t_train_test,
+                                                     screen_basin_area_huc4=screen_basin_area_huc4, **kwargs)
         # 构建输入数据类对象
         data_model = GagesModel(source_data)
         self.data_model_train, self.data_model_test = GagesModel.data_models_of_train_test(data_model, t_train, t_test)

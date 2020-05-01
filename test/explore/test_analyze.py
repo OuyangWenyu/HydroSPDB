@@ -5,9 +5,12 @@ import definitions
 from data import *
 import os
 from data.data_input import GagesModel, load_result
+from explore.gages_stat import split_results_to_regions
 from explore.stat import statError
+from utils import unserialize_json
+from utils.dataset_format import subset_of_dict
 from visual.plot_model import plot_gages_map_and_ts, plot_gages_attrs_boxes, plot_scatter_multi_attrs
-from visual.plot_stat import plot_diff_boxes, plot_scatter_xyc
+from visual.plot_stat import plot_diff_boxes, plot_scatter_xyc, plot_boxs, swarmplot_with_cbar
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -99,7 +102,7 @@ class TestExploreCase(unittest.TestCase):
         show_ind_key = 'NSE'
         idx_lst = np.arange(len(self.data_model.t_s_dict["sites_id"])).tolist()
 
-        nse_range = [-10, 0]
+        nse_range = [0.5, 1]
         idx_lst_small_nse = inds_df[
             (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
         plot_gages_map_and_ts(self.data_model, self.obs, self.pred, inds_df, show_ind_key, idx_lst_small_nse,
@@ -117,7 +120,9 @@ class TestExploreCase(unittest.TestCase):
             (inds_df_now[show_ind_key] >= nse_range[0]) & (inds_df_now[show_ind_key] < nse_range[1])].index.tolist()
         nse_values = self.inds_df["NSE"].values[idx_lst_nse_range]
         df = pd.DataFrame({elev_var: attrs_elev[idx_lst_nse_range, 0], show_ind_key: nse_values})
-        sns.jointplot(x=elev_var, y=show_ind_key, data=df, kind="reg")
+        g = sns.jointplot(x=elev_var, y=show_ind_key, data=df, kind="reg")
+        g.ax_marg_x.set_xlim(0, 3000)
+        g.ax_marg_y.set_ylim(0, 1)
         plt.show()
 
     def test_x_y_color_scatter(self):
@@ -150,6 +155,90 @@ class TestExploreCase(unittest.TestCase):
         idx_lst_nse_range = inds_df_now[
             (inds_df_now[show_ind_key] >= nse_range[0]) & (inds_df_now[show_ind_key] < nse_range[1])].index.tolist()
         plot_scatter_multi_attrs(self.data_model, self.inds_df, idx_lst_nse_range, attr_lst, y_var_lst)
+
+    def test_scatter_dor(self):
+        attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
+        sites_nonref = self.data_model.t_s_dict["sites_id"]
+        attrs_runavg_stor = self.data_model.data_source.read_attr(sites_nonref, attr_lst, is_return_dict=False)
+        run_avg = attrs_runavg_stor[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
+        nor_storage = attrs_runavg_stor[:, 1] * 1000  # m^3
+        dors = nor_storage / run_avg
+        inds_df_now = self.inds_df
+        nse_range = [0, 1]
+        show_ind_key = 'NSE'
+        idx_lst_nse_range = inds_df_now[
+            (inds_df_now[show_ind_key] >= nse_range[0]) & (inds_df_now[show_ind_key] < nse_range[1])].index.tolist()
+        nse_values = self.inds_df["NSE"].values[idx_lst_nse_range]
+        df = pd.DataFrame({"DOR": dors[idx_lst_nse_range], show_ind_key: nse_values})
+        plot_scatter_xyc("DOR", dors[idx_lst_nse_range], show_ind_key, nse_values, is_reg=True, ylim=[0, 1])
+        # g = sns.jointplot(x="DOR", y=show_ind_key, data=df, kind="reg")
+        # g.ax_marg_x.set_xlim(0, 1)
+        # g.ax_marg_y.set_ylim(0, 1)
+        plt.show()
+
+    def test_scatter_dam_purpose(self):
+        attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
+        sites_nonref = self.data_model.t_s_dict["sites_id"]
+        attrs_runavg_stor = self.data_model.data_source.read_attr(sites_nonref, attr_lst, is_return_dict=False)
+        run_avg = attrs_runavg_stor[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
+        nor_storage = attrs_runavg_stor[:, 1] * 1000  # m^3
+        dors = nor_storage / run_avg
+
+        nid_dir = os.path.join("/".join(self.config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
+        gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
+        gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())
+        gage_main_dam_purpose_unique = np.unique(gage_main_dam_purpose_lst)
+        purpose_regions = {}
+        for i in range(gage_main_dam_purpose_unique.size):
+            sites_id = []
+            for key, value in gage_main_dam_purpose.items():
+                if value == gage_main_dam_purpose_unique[i]:
+                    sites_id.append(key)
+            assert (all(x < y for x, y in zip(sites_id, sites_id[1:])))
+            purpose_regions[gage_main_dam_purpose_unique[i]] = sites_id
+        id_regions_idx = []
+        id_regions_sites_ids = []
+        df_id_region = np.array(self.data_model.t_s_dict["sites_id"])
+        for key, value in purpose_regions.items():
+            gages_id = value
+            c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+            assert (all(x < y for x, y in zip(ind1, ind1[1:])))
+            assert (all(x < y for x, y in zip(c, c[1:])))
+            id_regions_idx.append(ind1)
+            id_regions_sites_ids.append(c)
+        preds, obss, inds_dfs = split_results_to_regions(self.data_model, self.test_epoch, id_regions_idx,
+                                                         id_regions_sites_ids)
+        regions_name = gage_main_dam_purpose_unique
+        frames = []
+        x_name = "purposes"
+        y_name = "NSE"
+        # hue_name = "DOR"
+        hue_name = "STOR"
+        for i in range(len(id_regions_idx)):
+            # plot box，使用seaborn库
+            keys = ["NSE"]
+            inds_test = subset_of_dict(inds_dfs[i], keys)
+            inds_test = inds_test[keys[0]].values
+            df_dict_i = {}
+            str_i = regions_name[i]
+            df_dict_i[x_name] = np.full([inds_test.size], str_i)
+            df_dict_i[y_name] = inds_test
+            # df_dict_i[hue_name] = dors[id_regions_idx[i]]
+            df_dict_i[hue_name] = nor_storage[id_regions_idx[i]]
+            df_i = pd.DataFrame(df_dict_i)
+            frames.append(df_i)
+        result = pd.concat(frames)
+        # can remove high hue value to keep a good map
+        # plot_boxs(result, x_name, y_name, uniform_color="skyblue", swarm_plot=True, hue=hue_name, colormap=True,
+        #           ylim=[-0.6, 1.0])
+        cmap_str = 'viridis'
+        # cmap = plt.get_cmap('Spectral')
+        cbar_label = hue_name
+
+        plt.title('Distribution of different purposes')
+        # swarmplot_with_cbar(cmap_str, cbar_label, [-1, 1.0], x=x_name, y=y_name, hue=hue_name, palette=cmap_str,
+        #                     data=result)
+        swarmplot_with_cbar(cmap_str, cbar_label, None, x=x_name, y=y_name, hue=hue_name, palette=cmap_str, data=result)
 
 
 if __name__ == '__main__':

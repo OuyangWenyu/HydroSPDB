@@ -25,7 +25,7 @@ class MyTestCase(unittest.TestCase):
         """the function need to be run region by region"""
         data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')
         source_data = unserialize_pickle(data_source_dump)
-        output_dir = os.path.join(self.config_data.data_path["DB"], "basin_mean_forcing")
+        output_dir = os.path.join(self.config_data.data_path["DB"], "basin_mean_forcing", "daymet")
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         region_names = [region_temp.split("_")[-1] for region_temp in source_data.all_configs['regions']]

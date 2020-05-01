@@ -15,9 +15,9 @@ class GagesSource(DataSource):
         super().__init__(config_data, t_range, screen_basin_area_huc4)
 
     @classmethod
-    def choose_some_basins(cls, config_data, t_range, **kwargs):
+    def choose_some_basins(cls, config_data, t_range, screen_basin_area_huc4=True, **kwargs):
         """choose some basins according to given condition, different conditions but only one for once"""
-        new_data_source = cls(config_data, t_range)
+        new_data_source = cls(config_data, t_range, screen_basin_area_huc4=screen_basin_area_huc4)
         for criteria in kwargs:
             if criteria == "basin_area":
                 new_data_source.small_basins_chosen(kwargs[criteria])
@@ -96,7 +96,8 @@ class GagesSource(DataSource):
         usgs_id = data_all["STAID"].values.tolist()
         assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
         # mm/year 1-km grid,  megaliters total storage per sq km  (1 megaliters = 1,000,000 liters = 1,000 cubic meters)
-        attr_lst = ["RUNAVE7100", "STOR_NID_2009"]
+        # attr_lst = ["RUNAVE7100", "STOR_NID_2009"]
+        attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
         data_attr, var_dict, f_dict = self.read_attr(usgs_id, attr_lst)
         run_avg = data_attr[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
         nid_storage = data_attr[:, 1] * 1000  # m^3
@@ -153,7 +154,8 @@ class GagesSource(DataSource):
             join_points_all = spatial_join(points_file, huc4_shp_file)
             # get "AREASQKM" attribute data to filter
             join_points = join_points_all[join_points_all["DRAIN_SQKM"] < join_points_all["AREASQKM"]]
-            gages_huc4_id = join_points['STAID'].values
+            join_points_sorted = join_points.sort_values(by="STAID")
+            gages_huc4_id = join_points_sorted['STAID'].values
         # read sites from shapefile of region, get id from it.
         shapefiles = [os.path.join(gage_region_dir, region_shapefile + '.shp') for region_shapefile in
                       region_shapefiles]
@@ -162,6 +164,11 @@ class GagesSource(DataSource):
         assert (all(x < y for x, y in zip(df_id_region, df_id_region[1:])))
         if len(shapefiles) == 10:  # there are 10 regions in GAGES-II dataset in all
             print("all regions included, CONUS\n")
+            if screen_basin_area_huc4:
+                assert (all(x < y for x, y in zip(gages_huc4_id, gages_huc4_id[1:])))
+                c, ind1, ind2 = np.intersect1d(df_id_region, gages_huc4_id, return_indices=True)
+                data = data_all.iloc[ind1, :]
+                data_all = data.sort_values(by="STAID")
         else:
             for shapefile in shapefiles:
                 shape_data = gpd.read_file(shapefile)
@@ -187,42 +194,70 @@ class GagesSource(DataSource):
         if url_forcing is None:
             # 个人定义的：google drive上的forcing数据文件夹名和forcing类型一样的
             dir_name = self.all_configs.get("forcing_type")
-            download_dir_name = self.all_configs.get("forcing_dir")
-            if not os.path.isdir(download_dir_name):
-                os.mkdir(download_dir_name)
-            # 如果已经有了数据，那么就不必再下载了
-            regions = self.all_configs["regions"]
-            regions_shps = [r.split('_')[-1] for r in regions]
-            # forcing data file generated is named as "allref", so rename the "all"
-            regions_shps = ["allref" if r == "all" else r for r in regions_shps]
-            year_range_list = hydro_time.t_range_years(self.t_range)
-            # 如果有某个文件没有，那么就下载数据
-            shp_files_now = []
-            for f_name in os.listdir(download_dir_name):
-                if f_name.endswith('.csv'):
-                    shp_files_now.append(f_name)
-            is_download = False
-            for r_shp in regions_shps:
-                r_files = [dir_name + "_" + r_shp + "_mean_" + str(t_range_temp) + ".csv" for t_range_temp in
-                           year_range_list]
-                r_file_is_download = []
-                for r_file_temp in r_files:
-                    if r_file_temp not in shp_files_now:
-                        is_download_temp = True
-                        r_file_is_download.append(is_download_temp)
-                if True in r_file_is_download:
-                    is_download = True
-                    break
+            download_dir_name = os.path.join(self.all_configs.get("root_dir"), "gagesII_forcing",
+                                             self.all_configs.get("forcing_type"))
+            formatter_dir_name = self.all_configs.get("forcing_dir")
+            is_format = False
+            if download_dir_name != formatter_dir_name:
+                if not os.path.isdir(formatter_dir_name):
+                    os.mkdir(formatter_dir_name)
+                # if formatter data has existed, that is ok
+                gage_id_file = self.all_configs.get("gage_id_file")
+                data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
+                gage_ids = data_all["STAID"].values
+                files_lst = []
+                for root, dirs, files in os.walk(formatter_dir_name):
+                    files_lst = files_lst + files
+                file_sites_id_lst = []
+                for file_tmp in files_lst:
+                    file_sites_id_lst.append(str(file_tmp.split("_")[0]))
+                file_sites_id = np.sort(np.array(file_sites_id_lst))
+                if (gage_ids == file_sites_id).all():
+                    print("forcing data Ready!")
+                    is_format = True
+            if not is_format:
+                if not os.path.isdir(download_dir_name):
+                    os.mkdir(download_dir_name)
+                # 如果已经有了数据，那么就不必再下载了
+                regions = self.all_configs["regions"]
+                regions_shps = [r.split('_')[-1] for r in regions]
+                # forcing data file generated is named as "allref", so rename the "all"
+                regions_shps = ["allref" if r == "all" else r for r in regions_shps]
+                year_range_list = hydro_time.t_range_years(self.t_range)
+                # 如果有某个文件没有，那么就下载数据
+                shp_files_now = []
+                for f_name in os.listdir(download_dir_name):
+                    if f_name.endswith('.csv'):
+                        shp_files_now.append(f_name)
+                is_download = False
+                for r_shp in regions_shps:
+                    r_files = [dir_name + "_" + r_shp + "_mean_" + str(t_range_temp) + ".csv" for t_range_temp in
+                               year_range_list]
+                    r_file_is_download = []
+                    for r_file_temp in r_files:
+                        if r_file_temp not in shp_files_now:
+                            is_download_temp = True
+                            r_file_is_download.append(is_download_temp)
+                    if True in r_file_is_download:
+                        is_download = True
+                        break
 
-            if is_download:
-                # 然后下载数据到这个文件夹下，这里从google drive下载数据
-                print("Downloading dataset from google drive ...")
-                # Firstly, move the creds file to the following directory manually
-                client_secrets_file = os.path.join(self.all_configs["root_dir"], "mycreds.txt")
-                download_google_drive(client_secrets_file, dir_name, download_dir_name)
-            else:
-                print("forcing downloading finished")
-        print("forcing data Ready!")
+                if is_download:
+                    # 然后下载数据到这个文件夹下，这里从google drive下载数据
+                    print("Downloading dataset from google drive ...")
+                    # Firstly, move the creds file to the following directory manually
+                    client_secrets_file = os.path.join(self.all_configs["root_dir"], "mycreds.txt")
+                    download_google_drive(client_secrets_file, dir_name, download_dir_name)
+                else:
+                    print("forcing downloading finished")
+
+                if download_dir_name != formatter_dir_name:
+                    # data need to be formatted TODO: manual func temporally
+                    print(
+                        "Please run the function 'test_data_source' and 'test_trans_all_forcing_file_to_camels' in "
+                        "'test_util'")
+                else:
+                    print("forcing data Ready!")
 
     def prepare_flow_data(self, gage_dict, gage_fld_lst):
         """检查数据是否齐全，不够的话进行下载，下载数据的时间范围要设置的大一些，这里暂时例子都是以1980-01-01到2015-12-31
@@ -305,8 +340,19 @@ class GagesSource(DataSource):
             data_temp = pd.concat([data_temp, pd.DataFrame(columns=['flow', 'mode'])])
         else:
             data_temp = df_flow.loc[:, columns]
-
-        # 处理下负值
+        # fix flow which is not numeric data
+        data_temp.loc[data_temp['flow'] == "Ice", 'flow'] = np.nan
+        data_temp.loc[data_temp['flow'] == "Ssn", 'flow'] = np.nan
+        data_temp.loc[data_temp['flow'] == "Tst", 'flow'] = np.nan
+        data_temp.loc[data_temp['flow'] == "Eqp", 'flow'] = np.nan
+        data_temp.loc[data_temp['flow'] == "Rat", 'flow'] = np.nan
+        data_temp.loc[data_temp['flow'] == "Dis", 'flow'] = np.nan
+        data_temp.loc[data_temp['flow'] == "Bkw", 'flow'] = np.nan
+        data_temp.loc[data_temp['flow'] == "***", 'flow'] = np.nan
+        data_temp.loc[data_temp['flow'] == "Mnt", 'flow'] = np.nan
+        data_temp.loc[data_temp['flow'] == "ZFL", 'flow'] = np.nan
+        print(usgs_id)
+        # set negative value -- nan
         obs = data_temp['flow'].astype('float').values
         # 看看warning是哪个站点：01606500 and other 3-5 ones. For 01606500, 时间索引为2828的站点为nan，不过不影响计算。
         if usgs_id == '01606500':
@@ -383,6 +429,7 @@ class GagesSource(DataSource):
         sites_chosen = np.zeros(streamflow.shape[0])
         # choose the given sites
         usgs_all_sites = self.gage_dict[self.gage_fld_lst[0]]
+        assert len(usgs_all_sites) == streamflow.shape[0]
         if usgs_ids is not None:
             sites_index = np.where(np.in1d(usgs_all_sites, usgs_ids))[0]
             sites_chosen[sites_index] = 1
@@ -391,6 +438,7 @@ class GagesSource(DataSource):
             sites_chosen = np.ones(streamflow.shape[0])
         # choose data in given time range
         all_t_list = hydro_time.t_range_days(self.t_range)
+        assert all_t_list.size == streamflow.shape[1]
         t_lst = all_t_list
         if time_range:
             # calculate the day length
@@ -444,51 +492,93 @@ class GagesSource(DataSource):
         x: ndarray -- 1d-axis:gages, 2d-axis: day, 3d-axis: forcing vst
         """
         data_folder = os.path.join(self.all_configs.get("forcing_dir"))
-        dataset = self.all_configs.get("forcing_type")
-        var_lst = self.all_configs.get("forcing_chosen")
-        regions = self.all_configs.get("regions")
-        # different files for different years
-        t_start_year = hydro_time.get_year(t_range_lst[0])
-        t_end_year = hydro_time.get_year(t_range_lst[-1])
-        # arange是左闭右开的，所以+1
-        t_lst_years = np.arange(t_start_year, t_end_year + 1).astype(str)
-        data_temps = pd.DataFrame()
-        region_names = [region_temp.split("_")[-1] for region_temp in regions]
-        # forcing data file generated is named as "allref", so rename the "all"
-        region_names = ["allref" if r == "all" else r for r in region_names]
-        for year in t_lst_years:
-            # to match the file of the given year
-            for f_name in os.listdir(data_folder):
-                # 首先判断是不是在给定的region内的
-                for region_name in region_names:
-                    if fnmatch.fnmatch(f_name, dataset + '_' + region_name + '_mean_' + year + '.csv'):
-                        data_file = os.path.join(data_folder, f_name)
-                        data_temp = pd.read_csv(data_file, sep=',', dtype={'gage_id': str})
-                        frames_temp = [data_temps, data_temp]
-                        data_temps = pd.concat(frames_temp)
-        # choose data in given time and sites. if there is no value for site in usgs_id_lst, just error(because every
-        # site should have forcing). using dataframe mostly will make data type easy to handle with
-        sites_forcing = data_temps.iloc[:, 0].values
-        sites_index = [i for i in range(sites_forcing.size) if sites_forcing[i] in usgs_id_lst]
-        data_sites_chosen = data_temps.iloc[sites_index, :]
-        t_range_forcing = np.array(data_sites_chosen.iloc[:, 1].values.astype(str), dtype='datetime64[D]')
-        t_index = [j for j in range(t_range_forcing.size) if t_range_forcing[j] in t_range_lst]
-        data_chosen = data_sites_chosen.iloc[t_index, :]
-        # when year is a leap year, only 365d will be provided by gee datasets. better to fill it with nan
-        # number of days are different in different years, so reshape can't be used
-        x = np.empty([len(usgs_id_lst), t_range_lst.size, len(var_lst)])
-        for k in range(len(usgs_id_lst)):
-            data_k = data_chosen[data_chosen['gage_id'] == usgs_id_lst[k]]
-            out = np.full([t_range_lst.size, len(var_lst)], np.nan)
-            # df中的date是字符串，转换为datetime，方可与tLst求交集
-            df_date = data_k.iloc[:, 1]
-            date = df_date.values.astype('datetime64[D]')
-            c, ind1, ind2 = np.intersect1d(t_range_lst, date, return_indices=True)
-            data_chosen_var = data_k[var_lst]
-            out[ind1, :] = data_chosen_var.iloc[ind2, :].values
-            x[k, :, :] = out
+        download_dir_name = os.path.join(self.all_configs.get("root_dir"), "gagesII_forcing",
+                                         self.all_configs.get("forcing_type"))
+        assert (all(x < y for x, y in zip(usgs_id_lst, usgs_id_lst[1:])))
+        assert (all(x < y for x, y in zip(t_range_lst, t_range_lst[1:])))
+        if data_folder == download_dir_name:
+            dataset = self.all_configs.get("forcing_type")
+            var_lst = self.all_configs.get("forcing_chosen")
+            regions = self.all_configs.get("regions")
+            # different files for different years
+            t_start_year = hydro_time.get_year(t_range_lst[0])
+            t_end_year = hydro_time.get_year(t_range_lst[-1])
+            # arange是左闭右开的，所以+1
+            t_lst_years = np.arange(t_start_year, t_end_year + 1).astype(str)
+            data_temps = pd.DataFrame()
+            region_names = [region_temp.split("_")[-1] for region_temp in regions]
+            # forcing data file generated is named as "allref", so rename the "all"
+            region_names = ["allref" if r == "all" else r for r in region_names]
+            for year in t_lst_years:
+                # to match the file of the given year
+                for f_name in os.listdir(data_folder):
+                    # 首先判断是不是在给定的region内的
+                    for region_name in region_names:
+                        if fnmatch.fnmatch(f_name, dataset + '_' + region_name + '_mean_' + year + '.csv'):
+                            data_file = os.path.join(data_folder, f_name)
+                            data_temp = pd.read_csv(data_file, sep=',', dtype={'gage_id': str})
+                            frames_temp = [data_temps, data_temp]
+                            data_temps = pd.concat(frames_temp)
+            # choose data in given time and sites. if there is no value for site in usgs_id_lst, just error(because
+            # every site should have forcing). using dataframe mostly will make data type easy to handle with
+            sites_forcing = data_temps.iloc[:, 0].values
+            sites_index = [i for i in range(sites_forcing.size) if sites_forcing[i] in usgs_id_lst]
+            data_sites_chosen = data_temps.iloc[sites_index, :]
+            t_range_forcing = np.array(data_sites_chosen.iloc[:, 1].values.astype(str), dtype='datetime64[D]')
+            t_index = [j for j in range(t_range_forcing.size) if t_range_forcing[j] in t_range_lst]
+            data_chosen = data_sites_chosen.iloc[t_index, :]
+            # when year is a leap year, only 365d will be provided by gee datasets. better to fill it with nan
+            # number of days are different in different years, so reshape can't be used
+            x = np.empty([len(usgs_id_lst), t_range_lst.size, len(var_lst)])
+            for k in range(len(usgs_id_lst)):
+                data_k = data_chosen[data_chosen['gage_id'] == usgs_id_lst[k]]
+                out = np.full([t_range_lst.size, len(var_lst)], np.nan)
+                # df中的date是字符串，转换为datetime，方可与tLst求交集
+                df_date = data_k.iloc[:, 1]
+                date = df_date.values.astype('datetime64[D]')
+                c, ind1, ind2 = np.intersect1d(t_range_lst, date, return_indices=True)
+                data_chosen_var = data_k[var_lst]
+                out[ind1, :] = data_chosen_var.iloc[ind2, :].values
+                x[k, :, :] = out
 
-        return x
+            return x
+        else:
+            print("reading formatted data:")
+            var_lst = self.all_configs["forcing_chosen"]
+            nt = t_range_lst.shape[0]
+            x = np.empty([len(usgs_id_lst), nt, len(var_lst)])
+            for k in range(len(usgs_id_lst)):
+                data = self.read_forcing_gage(usgs_id_lst[k], var_lst, t_range_lst,
+                                              dataset=self.all_configs["forcing_type"])
+                x[k, :, :] = data
+            return x
+
+    def read_forcing_gage(self, usgs_id, var_lst, t_range_list, dataset='daymet'):
+        gage_dict = self.gage_dict
+        ind = np.argwhere(gage_dict['STAID'] == usgs_id)[0][0]
+        huc = gage_dict['HUC02'][ind]
+
+        data_folder = self.all_configs["forcing_dir"]
+        data_file = os.path.join(data_folder, huc, '%s_lump_%s_forcing.txt' % (usgs_id, dataset))
+        print("reading", usgs_id, "forcing data")
+        data_temp = pd.read_csv(data_file, sep=r'\s+', header=None, skiprows=1)
+
+        df_date = data_temp[[0, 1, 2]]
+        df_date.columns = ['year', 'month', 'day']
+        date = pd.to_datetime(df_date).values.astype('datetime64[D]')
+        # daymet file not for leap year, there is no data in 12.31 in leap year
+        nf = len(var_lst)
+        assert (all(x < y for x, y in zip(date, date[1:])))
+        [c, ind1, ind2] = np.intersect1d(date, t_range_list, return_indices=True)
+        assert date[0] <= t_range_list[0] and date[-1] >= t_range_list[-1]
+        nt = t_range_list.size
+        out = np.empty([nt, nf])
+        var_lst_in_file = ["dayl(s)", "prcp(mm/day)", "srad(W/m2)", "swe(mm)", "tmax(C)", "tmin(C)", "vp(Pa)"]
+        for k in range(nf):
+            # assume all files are of same columns. May check later.
+            ind = [i for i in range(len(var_lst_in_file)) if var_lst[k] in var_lst_in_file[i]][0]
+            out[ind2, k] = data_temp[ind + 4].values[ind1]
+        return out
 
     def read_attr_all(self, gages_ids):
         """读取GAGES-II下的属性数据，目前是将用到的几个属性所属的那个属性大类下的所有属性的统计值都计算一下

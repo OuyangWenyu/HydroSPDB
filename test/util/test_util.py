@@ -171,7 +171,7 @@ class MyTestCase(unittest.TestCase):
     def test_trans_all_forcing_file_to_camels(self):
         data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')
         source_data = unserialize_pickle(data_source_dump)
-        output_dir = os.path.join(self.config_data.data_path["DB"], "basin_mean_forcing")
+        output_dir = os.path.join(self.config_data.data_path["DB"], "basin_mean_forcing", "daymet")
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         region_names = [region_temp.split("_")[-1] for region_temp in source_data.all_configs['regions']]
@@ -201,8 +201,8 @@ class MyTestCase(unittest.TestCase):
         # np.array(
         #     ['01013500', '01401650', '01585500', '02120780', '02324400', '03139000', '04086600', '05087500',
         #      '05539900', '06468170', '07184000', '08158810', '09404450', '11055800', '12134500', '14166500'])
-        data_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_85-90")
-        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_ashu_85-90")
+        data_dir = os.path.join(self.config_data.data_path["DB"], "basin_mean_forcing", "daymet")
+        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_ashu")
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')

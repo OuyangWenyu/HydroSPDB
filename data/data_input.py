@@ -320,6 +320,38 @@ class GagesModel(DataModel):
         return data_model1
 
     @classmethod
+    def update_gages_model(cls, data_model_origin, config_data, t_range_update=None, train_stat_dict=None, **kwargs):
+        """update data model according to config_data
+        :parameters
+            kwargs: gages_source parameters
+        """
+        if t_range_update is None:
+            t_range_update = data_model_origin.t_s_dict["t_final_range"]
+        new_source_data = GagesSource.choose_some_basins(config_data, t_range_update, **kwargs)
+        sites_id_origin_copy = data_model_origin.t_s_dict["sites_id"].copy()
+        sites_id_new_source_data = new_source_data.gage_dict["STAID"]
+        chosen_idx_new_source_data = [i for i in range(len(sites_id_origin_copy)) if
+                                      sites_id_origin_copy[i] in sites_id_new_source_data]
+
+        start_index = int((np.datetime64(t_range_update[0]) - np.datetime64(
+            data_model_origin.t_s_dict["t_final_range"][0])) / np.timedelta64(1, 'D'))
+        t_lst_temp = hydro_time.t_range_days(t_range_update)
+        end_index = start_index + t_lst_temp.size
+        assert start_index >= 0
+
+        data_flow_new_source_data = data_model_origin.data_flow[chosen_idx_new_source_data, start_index:end_index]
+        sites_id_screen_new_source_data = new_source_data.all_configs['flow_screen_gage_id']
+        if sites_id_screen_new_source_data is not None:
+            sites_id_intersect = np.intersect1d(sites_id_new_source_data, sites_id_screen_new_source_data)
+        else:
+            sites_id_intersect = sites_id_new_source_data
+        data_flow_screen, sites_id_update, t_range_list_screen = new_source_data.usgs_screen_streamflow(
+            data_flow_new_source_data, usgs_ids=sites_id_intersect)
+        data_attr_update = True
+        return cls.update_data_model(config_data, data_model_origin, sites_id_update, t_range_update,
+                                     data_attr_update, train_stat_dict)
+
+    @classmethod
     def update_data_model(cls, config_data, data_model_origin, sites_id_update=None, t_range_update=None,
                           data_attr_update=False, train_stat_dict=None):
         t_s_dict_origin = data_model_origin.t_s_dict
