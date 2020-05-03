@@ -348,12 +348,18 @@ class GagesModel(DataModel):
         data_flow_screen, sites_id_update, t_range_list_screen = new_source_data.usgs_screen_streamflow(
             data_flow_new_source_data, usgs_ids=sites_id_intersect)
         data_attr_update = True
+
+        screen_basin_area_huc4 = False
+        for screen_basin_area_huc4_key in kwargs:
+            if screen_basin_area_huc4_key == "screen_basin_area_huc4":
+                screen_basin_area_huc4 = kwargs[screen_basin_area_huc4_key]
+                break
         return cls.update_data_model(config_data, data_model_origin, sites_id_update, t_range_update,
-                                     data_attr_update, train_stat_dict)
+                                     data_attr_update, train_stat_dict, screen_basin_area_huc4=screen_basin_area_huc4)
 
     @classmethod
     def update_data_model(cls, config_data, data_model_origin, sites_id_update=None, t_range_update=None,
-                          data_attr_update=False, train_stat_dict=None):
+                          data_attr_update=False, train_stat_dict=None, screen_basin_area_huc4=False):
         t_s_dict_origin = data_model_origin.t_s_dict
         data_flow_origin = data_model_origin.data_flow
         data_forcing_origin = data_model_origin.data_forcing
@@ -371,6 +377,7 @@ class GagesModel(DataModel):
             sites_id = np.intersect1d(sites_id_origin_cpy, sites_id_new)
             assert sites_id.size > 0
             new_source_data = GagesSource.choose_some_basins(config_data, t_range_origin_cpy,
+                                                             screen_basin_area_huc4=screen_basin_area_huc4,
                                                              sites_id=sites_id.tolist())
             t_s_dict["t_final_range"] = t_range_origin_cpy
             t_s_dict["sites_id"] = sites_id.tolist()
@@ -381,7 +388,8 @@ class GagesModel(DataModel):
         else:
             t_range_origin_cpy = t_s_dict_origin["t_final_range"].copy()
             t_s_dict = copy.deepcopy(t_s_dict_origin)
-            new_source_data = GagesSource(config_data, t_range_origin_cpy)
+            new_source_data = GagesSource.choose_some_basins(config_data, t_range_origin_cpy,
+                                                             screen_basin_area_huc4=screen_basin_area_huc4)
             data_flow = data_flow_origin.copy()
             data_forcing = data_forcing_origin.copy()
             data_attr = data_attr_origin.copy()

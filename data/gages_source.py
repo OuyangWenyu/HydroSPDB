@@ -17,7 +17,7 @@ class GagesSource(DataSource):
     @classmethod
     def choose_some_basins(cls, config_data, t_range, **kwargs):
         """choose some basins according to given condition, different conditions but only one for once"""
-        screen_basin_area_huc4 = False
+        screen_basin_area_huc4 = True
         for screen_basin_area_huc4_key in kwargs:
             if screen_basin_area_huc4_key == "screen_basin_area_huc4":
                 screen_basin_area_huc4 = kwargs[screen_basin_area_huc4_key]
@@ -35,7 +35,7 @@ class GagesSource(DataSource):
                 new_data_source.dor_reservoirs_chosen(kwargs[criteria])
             elif criteria == 'dam_num':
                 new_data_source.dam_num_chosen(kwargs[criteria])
-            elif criteria == 'major_dam':
+            elif criteria == 'major_dam_num':
                 new_data_source.major_dams_chosen(kwargs[criteria])
             elif criteria == 'ref':
                 new_data_source.ref_or_nonref_chosen(kwargs[criteria])
@@ -98,7 +98,7 @@ class GagesSource(DataSource):
             assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))
         self.all_configs["flow_screen_gage_id"] = chosen_id
 
-    def major_dams_chosen(self, major_dam_num=1):
+    def major_dams_chosen(self, major_dam_num=0):
         """choose basins of major dams"""
         gage_id_file = self.all_configs.get("gage_id_file")
         data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
@@ -106,7 +106,11 @@ class GagesSource(DataSource):
         assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
         attr_lst = ["MAJ_NDAMS_2009"]
         data_attr, var_dict, f_dict = self.read_attr(usgs_id, attr_lst)
-        chosen_id = [usgs_id[i] for i in range(data_attr.size) if data_attr[:, 0][i] >= major_dam_num]
+        if type(major_dam_num) == list:
+            chosen_id = [usgs_id[i] for i in range(data_attr.size) if
+                         major_dam_num[0] <= data_attr[:, 0][i] < major_dam_num[1]]
+        else:
+            chosen_id = [usgs_id[i] for i in range(data_attr.size) if data_attr[:, 0][i] == major_dam_num]
         if self.all_configs["flow_screen_gage_id"] is not None:
             chosen_id = (np.intersect1d(np.array(chosen_id), self.all_configs["flow_screen_gage_id"])).tolist()
             assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))

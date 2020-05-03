@@ -24,10 +24,12 @@ class MyTestCaseGages(unittest.TestCase):
         config_dir = definitions.CONFIG_DIR
         # self.config_file = os.path.join(config_dir, "basic/config_exp1.ini")
         # self.subdir = r"basic/exp1"
-        self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
-        self.subdir = r"basic/exp11"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
+        # self.subdir = r"basic/exp11"
         # self.config_file = os.path.join(config_dir, "basic/config_exp13.ini")
         # self.subdir = r"basic/exp13"
+        self.config_file = os.path.join(config_dir, "basic/config_exp25.ini")
+        self.subdir = r"basic/exp25"
 
         # all nonref regions
         # self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
@@ -61,21 +63,43 @@ class MyTestCaseGages(unittest.TestCase):
         # self.test_epoch = test_epoch_lst[10]
 
     def test_gages_data_model(self):
+        gages_model = GagesModels(self.config_data, screen_basin_area_huc4=False)
+        save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
+                       stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
+                       attr_file_name='attr', f_dict_file_name='dictFactorize.json',
+                       var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
+        save_datamodel(gages_model.data_model_test, data_source_file_name='test_data_source.txt',
+                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+                       forcing_file_name='test_forcing', attr_file_name='test_attr',
+                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+                       t_s_dict_file_name='test_dictTimeSpace.json')
+        print("read and save data model")
+
+    def test_gages_data_model(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        data_model_quick = GagesModel.load_datamodel(quick_data_dir,
+        data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        data_model_train = GagesModel.load_datamodel(data_dir,
                                                      data_source_file_name='data_source.txt',
                                                      stat_file_name='Statistics.json', flow_file_name='flow.npy',
                                                      forcing_file_name='forcing.npy', attr_file_name='attr.npy',
                                                      f_dict_file_name='dictFactorize.json',
                                                      var_dict_file_name='dictAttribute.json',
                                                      t_s_dict_file_name='dictTimeSpace.json')
+        data_model_test = GagesModel.load_datamodel(data_dir,
+                                                    data_source_file_name='test_data_source.txt',
+                                                    stat_file_name='test_Statistics.json',
+                                                    flow_file_name='test_flow.npy',
+                                                    forcing_file_name='test_forcing.npy',
+                                                    attr_file_name='test_attr.npy',
+                                                    f_dict_file_name='test_dictFactorize.json',
+                                                    var_dict_file_name='test_dictAttribute.json',
+                                                    t_s_dict_file_name='test_dictTimeSpace.json')
 
-        gages_model_train = GagesModel.update_gages_model(data_model_quick, self.config_data,
-                                                          t_range_update=self.config_data.model_dict["data"][
-                                                              "tRangeTrain"])
-        gages_model_test = GagesModel.update_gages_model(data_model_quick, self.config_data,
-                                                         t_range_update=self.config_data.model_dict["data"][
-                                                             "tRangeTest"], train_stat_dict=gages_model_train.stat_dict)
+        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_train, data_attr_update=True,
+                                                         screen_basin_area_huc4=False)
+        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_test, data_attr_update=True,
+                                                        train_stat_dict=gages_model_train.stat_dict,
+                                                        screen_basin_area_huc4=False)
         save_datamodel(gages_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
