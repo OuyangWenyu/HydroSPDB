@@ -15,8 +15,13 @@ class GagesSource(DataSource):
         super().__init__(config_data, t_range, screen_basin_area_huc4)
 
     @classmethod
-    def choose_some_basins(cls, config_data, t_range, screen_basin_area_huc4=True, **kwargs):
+    def choose_some_basins(cls, config_data, t_range, **kwargs):
         """choose some basins according to given condition, different conditions but only one for once"""
+        screen_basin_area_huc4 = False
+        for screen_basin_area_huc4_key in kwargs:
+            if screen_basin_area_huc4_key == "screen_basin_area_huc4":
+                screen_basin_area_huc4 = kwargs[screen_basin_area_huc4_key]
+                break
         new_data_source = cls(config_data, t_range, screen_basin_area_huc4=screen_basin_area_huc4)
         for criteria in kwargs:
             if criteria == "basin_area":
@@ -28,6 +33,8 @@ class GagesSource(DataSource):
                 new_data_source.all_configs["flow_screen_gage_id"] = kwargs[criteria]
             elif criteria == "DOR":
                 new_data_source.dor_reservoirs_chosen(kwargs[criteria])
+            elif criteria == 'dam_num':
+                new_data_source.dam_num_chosen(kwargs[criteria])
             elif criteria == 'major_dam':
                 new_data_source.major_dams_chosen(kwargs[criteria])
             elif criteria == 'ref':
@@ -51,6 +58,23 @@ class GagesSource(DataSource):
         storage_lower = storage[0]
         storage_upper = storage[1]
         chosen_id = [usgs_id[i] for i in range(nor_storage.size) if storage_lower <= nor_storage[i] < storage_upper]
+        if self.all_configs["flow_screen_gage_id"] is not None:
+            chosen_id = (np.intersect1d(np.array(chosen_id), self.all_configs["flow_screen_gage_id"])).tolist()
+            assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))
+        self.all_configs["flow_screen_gage_id"] = chosen_id
+
+    def dam_num_chosen(self, dam_num=0):
+        """choose basins of dams"""
+        gage_id_file = self.all_configs.get("gage_id_file")
+        data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
+        usgs_id = data_all["STAID"].values.tolist()
+        assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
+        attr_lst = ["NDAMS_2009"]
+        data_attr, var_dict, f_dict = self.read_attr(usgs_id, attr_lst)
+        if type(dam_num) == list:
+            chosen_id = [usgs_id[i] for i in range(data_attr.size) if dam_num[0] <= data_attr[:, 0][i] < dam_num[1]]
+        else:
+            chosen_id = [usgs_id[i] for i in range(data_attr.size) if data_attr[:, 0][i] == dam_num]
         if self.all_configs["flow_screen_gage_id"] is not None:
             chosen_id = (np.intersect1d(np.array(chosen_id), self.all_configs["flow_screen_gage_id"])).tolist()
             assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))
@@ -178,8 +202,8 @@ class GagesSource(DataSource):
                 c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
                 assert (all(x < y for x, y in zip(ind1, ind1[1:])))
                 data = pd.concat([data, data_all.iloc[ind1, :]])
-                # after screen for every regions, resort the dataframe by sites_id
-                data_all = data.sort_values(by="STAID")
+            # after screen for every regions, resort the dataframe by sites_id
+            data_all = data.sort_values(by="STAID")
 
         for s in gage_fld_lst:
             if s is gage_fld_lst[1]:
