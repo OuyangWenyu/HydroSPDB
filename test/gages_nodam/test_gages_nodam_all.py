@@ -34,7 +34,7 @@ class MyTestCase(unittest.TestCase):
         # self.nid_file = 'PA_U.xlsx'
         # self.nid_file = 'OH_U.xlsx'
         self.nid_file = 'NID2018_U.xlsx'
-        self.test_epoch = 300
+        self.test_epoch = 370
 
     def test_gages_data_model(self):
         config_data = self.config_data
@@ -86,15 +86,13 @@ class MyTestCase(unittest.TestCase):
                                                           var_dict_file_name='dictAttribute.json',
                                                           t_s_dict_file_name='dictTimeSpace.json')
 
-            master_train(gages_model_train)
-            # pre_trained_model_epoch = 80
-            # master_train(gages_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
+            # master_train(gages_model_train)
+            pre_trained_model_epoch = 350
+            master_train(gages_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_dam_test(self):
-        with torch.cuda.device(1):
-            quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-            data_dir = os.path.join(quick_data_dir, "allnonref-dam_95-05_nan-0.1_00-1.0")
-            data_model_test = GagesModel.load_datamodel(data_dir,
+        with torch.cuda.device(2):
+            data_model_test = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
                                                         data_source_file_name='test_data_source.txt',
                                                         stat_file_name='test_Statistics.json',
                                                         flow_file_name='test_flow.npy',
@@ -103,17 +101,16 @@ class MyTestCase(unittest.TestCase):
                                                         f_dict_file_name='test_dictFactorize.json',
                                                         var_dict_file_name='test_dictAttribute.json',
                                                         t_s_dict_file_name='test_dictTimeSpace.json')
-            gages_input = GagesModel.update_data_model(self.config_data, data_model_test)
-            pred, obs = master_test(gages_input, epoch=self.test_epoch)
-            basin_area = gages_input.data_source.read_attr(gages_input.t_s_dict["sites_id"], ['DRAIN_SQKM'],
-                                                           is_return_dict=False)
-            mean_prep = gages_input.data_source.read_attr(gages_input.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
-                                                          is_return_dict=False)
+            pred, obs = master_test(data_model_test, epoch=self.test_epoch)
+            basin_area = data_model_test.data_source.read_attr(data_model_test.t_s_dict["sites_id"], ['DRAIN_SQKM'],
+                                                               is_return_dict=False)
+            mean_prep = data_model_test.data_source.read_attr(data_model_test.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
+                                                              is_return_dict=False)
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            save_result(gages_input.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
-            plot_we_need(gages_input, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+            save_result(data_model_test.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
+            plot_we_need(data_model_test, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_purposes_seperate(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")

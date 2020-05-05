@@ -85,15 +85,13 @@ class MyTestCase(unittest.TestCase):
                                                           f_dict_file_name='dictFactorize.json',
                                                           var_dict_file_name='dictAttribute.json',
                                                           t_s_dict_file_name='dictTimeSpace.json')
-            master_train(gages_model_train)
-            # pre_trained_model_epoch = 80
-            # master_train(gages_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
+            # master_train(gages_model_train)
+            pre_trained_model_epoch = 100
+            master_train(gages_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_dam_test(self):
         with torch.cuda.device(1):
-            quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-            data_dir = os.path.join(quick_data_dir, "allnonref-dam_95-05_nan-0.1_00-1.0")
-            data_model_test = GagesModel.load_datamodel(data_dir,
+            data_model_test = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
                                                         data_source_file_name='test_data_source.txt',
                                                         stat_file_name='test_Statistics.json',
                                                         flow_file_name='test_flow.npy',

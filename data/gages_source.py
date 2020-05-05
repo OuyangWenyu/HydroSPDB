@@ -587,14 +587,14 @@ class GagesSource(DataSource):
         huc = gage_dict['HUC02'][ind]
 
         data_folder = self.all_configs["forcing_dir"]
-        data_file = os.path.join(data_folder, huc, '%s_lump_%s_forcing.txt' % (usgs_id, dataset))
+        # original daymet file not for leap year, there is no data in 12.31 in leap year, so files which have been interpolated for nan value have name "_leap"
+        data_file = os.path.join(data_folder, huc, '%s_lump_%s_forcing_leap.txt' % (usgs_id, dataset))
         print("reading", usgs_id, "forcing data")
         data_temp = pd.read_csv(data_file, sep=r'\s+', header=None, skiprows=1)
 
         df_date = data_temp[[0, 1, 2]]
         df_date.columns = ['year', 'month', 'day']
         date = pd.to_datetime(df_date).values.astype('datetime64[D]')
-        # daymet file not for leap year, there is no data in 12.31 in leap year
         nf = len(var_lst)
         assert (all(x < y for x, y in zip(date, date[1:])))
         [c, ind1, ind2] = np.intersect1d(date, t_range_list, return_indices=True)

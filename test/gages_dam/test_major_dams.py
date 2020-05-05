@@ -20,18 +20,35 @@ class MyTestCase(unittest.TestCase):
         self.config_file = os.path.join(config_dir, "dam/config_exp13.ini")
         self.subdir = r"dam/exp13"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
+        self.conus_config_file = os.path.join(config_dir, "basic/config_exp25.ini")
+        self.conus_subdir = r"basic/exp25"
+        self.conus_config_data = GagesConfig.set_subdir(self.conus_config_file, self.conus_subdir)
         self.test_epoch = 300
 
     def test_major_dam_interscet_camels(self):
         # choose basins with major dams' num >= 1
         t_train = self.config_data.model_dict["data"]["tRangeTrain"]
         camels_source_data = CamelsSource(self.camels_config_data, t_train)
-        source_data = GagesSource.choose_some_basins(self.config_data, t_train, major_dam=1)
+        conus_source_data = GagesSource.choose_some_basins(self.conus_config_data, t_train,
+                                                           screen_basin_area_huc4=False, major_dam_num=0)
         camels_ids = np.array(camels_source_data.gage_dict["id"])
         assert (all(x < y for x, y in zip(camels_ids, camels_ids[1:])))
-        gages_id = np.array(source_data.all_configs["flow_screen_gage_id"])
+        gages_id = np.array(conus_source_data.all_configs["flow_screen_gage_id"])
         intersect_ids = np.intersect1d(camels_ids, gages_id)
+        print(intersect_ids.size)
         print(intersect_ids)
+        source_data_ref = GagesSource.choose_some_basins(self.conus_config_data, t_train, screen_basin_area_huc4=False,
+                                                         ref='Ref')
+        gages_id_ref = np.array(source_data_ref.all_configs["flow_screen_gage_id"])
+        intersect_ids_ref = np.intersect1d(gages_id, gages_id_ref)
+        print(intersect_ids_ref.size)
+        print(intersect_ids_ref)
+        source_data_nonref = GagesSource.choose_some_basins(self.conus_config_data, t_train,
+                                                            screen_basin_area_huc4=False, ref='Non-ref')
+        gages_id_nonref = np.array(source_data_nonref.all_configs["flow_screen_gage_id"])
+        intersect_ids_nonref = np.intersect1d(gages_id, gages_id_nonref)
+        print(intersect_ids_nonref.size)
+        print(intersect_ids_nonref)
 
     def test_nonref_interscet_camels(self):
         t_train = self.config_data.model_dict["data"]["tRangeTrain"]

@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 
 import definitions
 from data import GagesConfig, GagesSource
-from utils import serialize_pickle, unserialize_pickle
+from utils import serialize_pickle, unserialize_pickle, hydro_time
 from utils.dataset_format import trans_daymet_to_camels, subset_of_dict
 from utils.hydro_time import t_range_years, t_range_days, get_year
 from datetime import datetime, timedelta
@@ -192,6 +192,46 @@ class MyTestCase(unittest.TestCase):
             for year in years:
                 trans_daymet_to_camels(source_data.all_configs["forcing_dir"], output_dir, source_data_i.gage_dict,
                                        region_names[i], year)
+
+    def test_insert_leap_year_value(self):
+        """interpolation for the 12.31 data in leap year"""
+        data_dir = os.path.join(self.config_data.data_path["DB"], "basin_mean_forcing", "daymet")
+        subdir_str = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10L", "10U", "11", "12", "13", "14", "15",
+                      "16", "17", "18"]
+        t_range = ["1980-01-01", "2020-01-01"]
+        col_lst = ["dayl(s)", "prcp(mm/day)", "srad(W/m2)", "swe(mm)", "tmax(C)", "tmin(C)", "vp(Pa)"]
+        for i in range(len(subdir_str)):
+            subdir = os.path.join(data_dir, subdir_str[i])
+            path_list = os.listdir(subdir)
+            path_list.sort()  # 对读取的路径进行排序
+            for filename in path_list:
+                data_file = os.path.join(subdir, filename)
+                is_leap_file_name = data_file[-8:]
+                if "leap" in is_leap_file_name:
+                    continue
+                print("reading", data_file)
+                data_temp = pd.read_csv(data_file, sep=r'\s+')
+                data_temp.rename(columns={'Mnth': 'Month'}, inplace=True)
+                df_date = data_temp[['Year', 'Month', 'Day']]
+                date = pd.to_datetime(df_date).values.astype('datetime64[D]')
+                # daymet file not for leap year, there is no data in 12.31 in leap year
+                assert (all(x < y for x, y in zip(date, date[1:])))
+                t_range_list = hydro_time.t_range_days(t_range)
+                [c, ind1, ind2] = np.intersect1d(date, t_range_list, return_indices=True)
+                assert date[0] <= t_range_list[0] and date[-1] >= t_range_list[-1]
+                nt = t_range_list.size
+                out = np.full([nt, 7], np.nan)
+                out[ind2, :] = data_temp[col_lst].values[ind1]
+                x = pd.DataFrame(out, columns=col_lst)
+                x_intepolate = x.interpolate(method='linear', limit_direction='forward', axis=0)
+                csv_date = pd.to_datetime(t_range_list)
+                year_month_day_hour = pd.DataFrame(
+                    [[dt.year, dt.month, dt.day, dt.hour] for dt in csv_date], columns=['Year', 'Mnth', 'Day', "Hr"])
+                # concat
+                new_data_df = pd.concat([year_month_day_hour, x_intepolate], axis=1)
+                output_file = data_file[:-4] + "_leap.txt"
+                new_data_df.to_csv(output_file, header=True, index=False, sep=' ', float_format='%.2f')
+                os.remove(data_file)
 
     def test_choose_some_gauge(self):
         ashu_gageid_file = os.path.join(self.config_data.data_path["DB"], "ashu", "AshuGagesId.txt")

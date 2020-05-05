@@ -49,7 +49,7 @@ class MyTestCaseGages(unittest.TestCase):
         # self.config_file = os.path.join(config_dir, "basic/config_exp9.ini")
         # self.subdir = r"basic/exp9"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
-        test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]
+        test_epoch_lst = [100, 150, 200, 220, 250, 280, 290, 300, 310, 320, 350]
         # self.test_epoch = test_epoch_lst[0]
         # self.test_epoch = test_epoch_lst[1]
         # self.test_epoch = test_epoch_lst[2]
@@ -57,8 +57,8 @@ class MyTestCaseGages(unittest.TestCase):
         # self.test_epoch = test_epoch_lst[4]
         # self.test_epoch = test_epoch_lst[5]
         # self.test_epoch = test_epoch_lst[6]
-        self.test_epoch = test_epoch_lst[7]
-        # self.test_epoch = test_epoch_lst[8]
+        # self.test_epoch = test_epoch_lst[7]
+        self.test_epoch = test_epoch_lst[8]
         # self.test_epoch = test_epoch_lst[9]
         # self.test_epoch = test_epoch_lst[10]
 
@@ -75,7 +75,7 @@ class MyTestCaseGages(unittest.TestCase):
                        t_s_dict_file_name='test_dictTimeSpace.json')
         print("read and save data model")
 
-    def test_gages_data_model(self):
+    def test_gages_data_model_readquickdata(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
         data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
         data_model_train = GagesModel.load_datamodel(data_dir,
@@ -120,9 +120,9 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(0):
-            # pre_trained_model_epoch = 240
-            master_train(data_model)
-            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            pre_trained_model_epoch = 100
+            # master_train(data_model)
+            master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
