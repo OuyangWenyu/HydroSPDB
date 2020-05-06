@@ -25,14 +25,14 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp9"
         # self.config_file = os.path.join(config_dir, "basic/config_exp10.ini")
         # self.subdir = r"basic/exp10"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
-        # self.subdir = r"basic/exp11"
+        self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
+        self.subdir = r"basic/exp11"
         # self.config_file = os.path.join(config_dir, "basic/config_exp14.ini")
         # self.subdir = r"basic/exp14"
         # self.config_file = os.path.join(config_dir, "basic/config_exp16.ini")
         # self.subdir = r"basic/exp16"
-        self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
-        self.subdir = r"basic/exp19"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
+        # self.subdir = r"basic/exp19"
 
         # different regions seperately
         # self.config_file = os.path.join(config_dir, "basic/config_exp2.ini")
@@ -67,7 +67,7 @@ class MyTestCaseGages(unittest.TestCase):
 
     def test_gages_data_model_quickdata(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
+        data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
         data_model_train = GagesModel.load_datamodel(data_dir,
                                                      data_source_file_name='data_source.txt',
                                                      stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -85,9 +85,11 @@ class MyTestCaseGages(unittest.TestCase):
                                                     var_dict_file_name='test_dictAttribute.json',
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
 
-        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_train, data_attr_update=True)
+        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_train, data_attr_update=True,
+                                                         screen_basin_area_huc4=False)
         gages_model_test = GagesModel.update_data_model(self.config_data, data_model_test, data_attr_update=True,
-                                                        train_stat_dict=gages_model_train.stat_dict)
+                                                        train_stat_dict=gages_model_train.stat_dict,
+                                                        screen_basin_area_huc4=False)
         save_datamodel(gages_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
@@ -108,9 +110,9 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(0):
-            # pre_trained_model_epoch = 255
-            master_train(data_model)
-            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            pre_trained_model_epoch = 320
+            # master_train(data_model)
+            master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

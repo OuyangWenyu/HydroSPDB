@@ -34,7 +34,7 @@ class MyTestCase(unittest.TestCase):
         # self.nid_file = 'PA_U.xlsx'
         # self.nid_file = 'OH_U.xlsx'
         self.nid_file = 'NID2018_U.xlsx'
-        self.test_epoch = 370
+        self.test_epoch = 300
 
     def test_gages_data_model(self):
         config_data = self.config_data
@@ -86,9 +86,9 @@ class MyTestCase(unittest.TestCase):
                                                           var_dict_file_name='dictAttribute.json',
                                                           t_s_dict_file_name='dictTimeSpace.json')
 
-            # master_train(gages_model_train)
-            pre_trained_model_epoch = 350
-            master_train(gages_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
+            master_train(gages_model_train)
+            # pre_trained_model_epoch = 350
+            # master_train(gages_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_dam_test(self):
         with torch.cuda.device(2):

@@ -77,7 +77,7 @@ class MyTestCase(unittest.TestCase):
         print("read and save data model")
 
     def test_dam_train(self):
-        with torch.cuda.device(1):
+        with torch.cuda.device(0):
             gages_model_train = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
                                                           data_source_file_name='data_source.txt',
                                                           stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -85,9 +85,9 @@ class MyTestCase(unittest.TestCase):
                                                           f_dict_file_name='dictFactorize.json',
                                                           var_dict_file_name='dictAttribute.json',
                                                           t_s_dict_file_name='dictTimeSpace.json')
-            # master_train(gages_model_train)
-            pre_trained_model_epoch = 100
-            master_train(gages_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
+            master_train(gages_model_train)
+            # pre_trained_model_epoch = 100
+            # master_train(gages_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_dam_test(self):
         with torch.cuda.device(1):

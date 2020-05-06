@@ -86,9 +86,9 @@ class MyTestCase(unittest.TestCase):
                                                           f_dict_file_name='dictFactorize.json',
                                                           var_dict_file_name='dictAttribute.json',
                                                           t_s_dict_file_name='dictTimeSpace.json')
-            # master_train(gages_model_train)
-            pre_trained_model_epoch = 130
-            master_train(gages_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
+            master_train(gages_model_train)
+            # pre_trained_model_epoch = 130
+            # master_train(gages_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_dam_test(self):
         with torch.cuda.device(1):

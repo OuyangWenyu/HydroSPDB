@@ -41,7 +41,32 @@ class GagesSource(DataSource):
                 new_data_source.ref_or_nonref_chosen(kwargs[criteria])
             elif criteria == 'STORAGE':
                 new_data_source.storage_reservors_chosen(kwargs[criteria])
+            elif criteria == 'ecoregion':
+                new_data_source.ecoregion_chosen(kwargs[criteria])
         return new_data_source
+
+    def ecoregion_chosen(self, ecoregion):
+        assert type(ecoregion) == tuple
+        assert ecoregion[0] in ["ECO2_CODE", "ECO3_CODE"]
+        if ecoregion[0] == "ECO2_CODE":
+            assert ecoregion[1] in [5.2, 5.3, 6.2, 7.1, 8.1, 8.2, 8.3, 8.4, 8.5, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1, 10.2,
+                                    10.4, 11.1, 12.1, 13.1]
+            attr_name = "ECO2_BAS_DOM"
+        else:
+            assert ecoregion[1] in np.arange(1, 85)
+            attr_name = "ECO3_BAS_DOM"
+        gage_id_file = self.all_configs.get("gage_id_file")
+        data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
+        usgs_id = data_all["STAID"].values.tolist()
+        assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
+        attr_lst = [attr_name]
+        data_attr, var_dict, f_dict = self.read_attr(usgs_id, attr_lst)
+        eco_names = data_attr[:, 0]
+        chosen_id = [usgs_id[i] for i in range(eco_names.size) if eco_names[i] == ecoregion[1]]
+        if self.all_configs["flow_screen_gage_id"] is not None:
+            chosen_id = (np.intersect1d(np.array(chosen_id), self.all_configs["flow_screen_gage_id"])).tolist()
+            assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))
+        self.all_configs["flow_screen_gage_id"] = chosen_id
 
     def storage_reservors_chosen(self, storage=None):
         """choose basins of specified normal storage range"""
