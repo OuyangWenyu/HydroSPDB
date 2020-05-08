@@ -5,7 +5,7 @@ import time
 import os
 import pandas as pd
 
-from utils.hydro_math import random_index, select_subset, select_subset_batch_first
+from utils.hydro_math import random_index, select_subset, select_subset_batch_first, select_subset_seq
 from . import rnn
 from torch.utils.tensorboard import SummaryWriter
 
@@ -530,6 +530,54 @@ def random_subset(x, y, dim_subset):
         x_tensor = x_tensor.cuda()
         y_tensor = y_tensor.cuda()
     return x_tensor, y_tensor
+
+
+def model_train_storage(model, qx, c, natflow, y, lossFun, *, seq_length_storage=100, n_epoch=500, mini_batch=[100, 30],
+                        save_epoch=100, save_folder=None, pre_trained_model_epoch=1):
+    batchSize, rho = mini_batch
+    ngrid, nt, nx = qx.shape
+    nIterEp = int(np.ceil(np.log(0.01) / np.log(1 - batchSize * rho / ngrid / nt)))
+
+    if torch.cuda.is_available():
+        lossFun = lossFun.cuda()
+        model = model.cuda()
+
+    optim = torch.optim.Adadelta(model.parameters())
+    model.zero_grad()
+    if save_folder is not None:
+        runFile = os.path.join(save_folder, str(n_epoch) + 'epoch_run.csv')
+        rf = open(runFile, 'w+')
+    for iEpoch in range(pre_trained_model_epoch, n_epoch + 1):
+        lossEp = 0
+        t0 = time.time()
+        for iIter in range(0, nIterEp):
+            # training iterations
+            iGrid, iT = random_index(ngrid, nt, [batchSize, rho])
+            xTrain = select_subset(qx, iGrid, iT, rho, c=c)
+            # iGrid and iT of xTrain and x_storage_train should be same
+            x_storage_train = select_subset_seq(natflow, iGrid, iT, rho, c=c)
+            # iTs of xtTrain and yTrain should be same
+            yTrain = select_subset(y, iGrid, iT, rho)
+            yP, Param_storage = model(x_storage_train, xTrain)  # will also send in the y for inversion generator
+            loss = lossFun(yP, yTrain)
+            loss.backward()
+            optim.step()
+            model.zero_grad()
+            lossEp = lossEp + loss.item()
+        # print loss
+        lossEp = lossEp / nIterEp
+        logStr = 'Epoch {} Loss {:.3f} time {:.2f}'.format(iEpoch, lossEp, time.time() - t0)
+        print(logStr)
+        # save model and loss
+        if save_folder is not None:
+            rf.write(logStr + '\n')
+            if iEpoch % save_epoch == 0:
+                # save model
+                modelFile = os.path.join(save_folder, 'model_Ep' + str(iEpoch) + '.pt')
+                torch.save(model, modelFile)
+    if save_folder is not None:
+        rf.close()
+    return model
 
 
 def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[100, 30], save_epoch=100,

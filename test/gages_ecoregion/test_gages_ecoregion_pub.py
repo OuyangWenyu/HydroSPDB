@@ -43,6 +43,7 @@ class MyTestCaseGages(unittest.TestCase):
                           ("ECO2_CODE", 8.5), ("ECO2_CODE", 9.2), ("ECO2_CODE", 9.3), ("ECO2_CODE", 9.4),
                           ("ECO2_CODE", 9.5), ("ECO2_CODE", 9.6), ("ECO2_CODE", 10.1), ("ECO2_CODE", 10.2),
                           ("ECO2_CODE", 10.4), ("ECO2_CODE", 11.1), ("ECO2_CODE", 12.1), ("ECO2_CODE", 13.1)]
+        self.split_num = 3
 
     def test_split_nomajordam_ecoregion(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
@@ -74,7 +75,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                               screen_basin_area_huc4=False, major_dam_num=[1, 2000])
         majordam_sites_id = majordam_source_data.all_configs['flow_screen_gage_id']
         majordam_in_conus = np.intersect1d(conus_sites_id, majordam_sites_id)
-        split_num = 3
+
         all_index_lst_train = []
         sites_lst_train = []
         all_index_lst_test = []
@@ -83,7 +84,7 @@ class MyTestCaseGages(unittest.TestCase):
         sites_lst_test_majordam = []
         random_seed = 1
         np.random.seed(random_seed)
-        kf = KFold(n_splits=split_num, shuffle=True, random_state=random_seed)
+        kf = KFold(n_splits=self.split_num, shuffle=True, random_state=random_seed)
         eco_name_chosen = []
         for eco_name in self.eco_names:
             eco_source_data = GagesSource.choose_some_basins(self.config_data,
@@ -92,7 +93,7 @@ class MyTestCaseGages(unittest.TestCase):
             eco_sites_id = eco_source_data.all_configs['flow_screen_gage_id']
             sites_id_inter = np.intersect1d(nomajordam_in_conus, eco_sites_id)
             majordam_sites_id_inter = np.intersect1d(majordam_in_conus, eco_sites_id)
-            if sites_id_inter.size < split_num or majordam_sites_id_inter.size < 1:
+            if sites_id_inter.size < self.split_num or majordam_sites_id_inter.size < 1:
                 continue
             for train, test in kf.split(sites_id_inter):
                 all_index_lst_train.append(train)
@@ -107,13 +108,13 @@ class MyTestCaseGages(unittest.TestCase):
                     all_index_lst_test_majordam.append(majordam_test_chosen_idx)
                     sites_lst_test_majordam.append(majordam_sites_id_inter[majordam_test_chosen_idx])
             eco_name_chosen.append(eco_name)
-        for i in range(split_num):
-            sites_ids_train_ilst = [sites_lst_train[j] for j in range(len(sites_lst_train)) if j % split_num == i]
+        for i in range(self.split_num):
+            sites_ids_train_ilst = [sites_lst_train[j] for j in range(len(sites_lst_train)) if j % self.split_num == i]
             sites_ids_train_i = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_train_ilst))
-            sites_ids_test_ilst = [sites_lst_test[j] for j in range(len(sites_lst_test)) if j % split_num == i]
+            sites_ids_test_ilst = [sites_lst_test[j] for j in range(len(sites_lst_test)) if j % self.split_num == i]
             sites_ids_test_i = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_test_ilst))
             sites_ids_test_majordam_ilst = [sites_lst_test_majordam[j] for j in range(len(sites_lst_test_majordam)) if
-                                            j % split_num == i]
+                                            j % self.split_num == i]
             sites_ids_test_majordam_i = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_test_majordam_ilst))
             subdir_i = os.path.join(self.subdir, str(i))
             config_data_i = GagesConfig.set_subdir(self.config_file, subdir_i)
@@ -147,25 +148,59 @@ class MyTestCaseGages(unittest.TestCase):
                            t_s_dict_file_name='test_dictTimeSpace_majordam.json')
             print("save ecoregion " + str(i) + " data model")
 
-    def test_test_gages(self):
-        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
-                                               data_source_file_name='test_data_source.txt',
-                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                                               f_dict_file_name='test_dictFactorize.json',
-                                               var_dict_file_name='test_dictAttribute.json',
-                                               t_s_dict_file_name='test_dictTimeSpace.json')
+    def test_train_pub_ecoregion(self):
         with torch.cuda.device(1):
-            pred, obs = master_test(data_model, epoch=self.test_epoch)
-            basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
-                                                          is_return_dict=False)
-            mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
-                                                         is_return_dict=False)
-            mean_prep = mean_prep / 365 * 10
-            pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
-            obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
-            plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+            for i in range(self.split_num):
+                data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"], str(i),
+                                                       data_source_file_name='data_source.txt',
+                                                       stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                                       forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                                       f_dict_file_name='dictFactorize.json',
+                                                       var_dict_file_name='dictAttribute.json',
+                                                       t_s_dict_file_name='dictTimeSpace.json')
+                master_train(data_model)
+
+    def test_test_pub_ecoregion(self):
+        for i in range(self.split_num):
+            data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"], str(i),
+                                                   data_source_file_name='test_data_source.txt',
+                                                   stat_file_name='test_Statistics.json',
+                                                   flow_file_name='test_flow.npy',
+                                                   forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                                   f_dict_file_name='test_dictFactorize.json',
+                                                   var_dict_file_name='test_dictAttribute.json',
+                                                   t_s_dict_file_name='test_dictTimeSpace.json')
+            data_model_majordam = GagesModel.load_datamodel(self.config_data.data_path["Temp"], str(i),
+                                                            data_source_file_name='test_data_source_majordam.txt',
+                                                            stat_file_name='test_Statistics_majordam.json',
+                                                            flow_file_name='test_flow_majordam.npy',
+                                                            forcing_file_name='test_forcing_majordam.npy',
+                                                            attr_file_name='test_attr_majordam.npy',
+                                                            f_dict_file_name='test_dictFactorize_majordam.json',
+                                                            var_dict_file_name='test_dictAttribute_majordam.json',
+                                                            t_s_dict_file_name='test_dictTimeSpace_majordam.json')
+            with torch.cuda.device(1):
+                pred, obs = master_test(data_model, epoch=self.test_epoch)
+                basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
+                                                              is_return_dict=False)
+                mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
+                                                             is_return_dict=False)
+                mean_prep = mean_prep / 365 * 10
+                pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
+                obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
+                save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
+
+                pred_majordam, obs_majordam = master_test(data_model_majordam, epoch=self.test_epoch)
+                basin_area_majordam = data_model_majordam.data_source.read_attr(
+                    data_model_majordam.t_s_dict["sites_id"], ['DRAIN_SQKM'], is_return_dict=False)
+                mean_prep_majordam = data_model_majordam.data_source.read_attr(data_model_majordam.t_s_dict["sites_id"],
+                                                                               ['PPTAVG_BASIN'],
+                                                                               is_return_dict=False)
+                mean_prep_majordam = mean_prep_majordam / 365 * 10
+                pred_majordam = _basin_norm(pred_majordam, basin_area_majordam, mean_prep_majordam, to_norm=False)
+                obs_majordam = _basin_norm(obs_majordam, basin_area_majordam, mean_prep_majordam, to_norm=False)
+                save_result(data_model_majordam.data_source.data_config.data_path['Temp'], self.test_epoch,
+                            pred_majordam, obs_majordam, pred_name='flow_pred_majordam', obs_name='flow_obs_majordam')
 
     def test_export_result(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

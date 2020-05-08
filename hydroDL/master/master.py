@@ -495,6 +495,40 @@ def master_test_natural_flow(model_input, epoch=-1):
     return pred, obs
 
 
+def train_lstm_storage(data_model, pre_trained_model_epoch=-1):
+    model_dict = data_model.data_model_storage.data_source.data_config.model_dict
+    opt_model = model_dict['model']
+    opt_train = model_dict['train']
+    seq_length_storage = opt_model["storageLength"]
+    # qx and y data have been cut
+    qx, c, natflow, y = data_model.load_data()
+    theta_length = 1
+    # ((qx+c), (natflow(t-T:t)+c), theta=1)
+    opt_model['nx'] = (qx.shape[-1] + c.shape[-1], seq_length_storage + c.shape[-1], theta_length)
+    opt_model['ny'] = y.shape[-1]
+    # loss
+    loss_fun = crit.RmseLoss()
+    # model
+    output_dir = model_dict['dir']['Out']
+    model_save_dir = os.path.join(output_dir, 'model')
+    if not os.path.isdir(model_save_dir):
+        os.mkdir(model_save_dir)
+    if pre_trained_model_epoch > 1:
+        pre_trained_model_file = os.path.join(model_save_dir, 'model_Ep' + str(pre_trained_model_epoch) + '.pt')
+        model_storage = rnn.CudnnLstmModelInvKernelPretrain(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                            hidden_size=opt_model['hiddenSize'],
+                                                            pretrian_model_file=pre_trained_model_file)
+    else:
+        model_storage = rnn.CudnnLstmModelStorage(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                  hidden_size_stroage=int(opt_model['hiddenSize'] / 4),
+                                                  hidden_size=opt_model['hiddenSize'])
+    # train model
+    model_run.model_train_storage(model_storage, qx, c, natflow, y, loss_fun, seq_length_storage=seq_length_storage,
+                                  n_epoch=opt_train['nEpoch'], mini_batch=opt_train['miniBatch'],
+                                  save_epoch=opt_train['saveEpoch'], save_folder=model_save_dir,
+                                  pre_trained_model_epoch=pre_trained_model_epoch)
+
+
 def train_lstm_inv(data_model, pre_trained_model_epoch=1):
     """call lstm inv model to train"""
     model_dict = data_model.model_dict1

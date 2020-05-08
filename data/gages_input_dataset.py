@@ -18,6 +18,7 @@ from explore import trans_norm, cal_stat
 from explore.hydro_cluster import cluster_attr_train
 from hydroDL import master_train
 from hydroDL.model import model_run
+from utils import hydro_time
 from utils.dataset_format import subset_of_dict
 from utils.hydro_math import concat_two_3darray, copy_attr_array_in2d
 
@@ -238,6 +239,42 @@ class GagesTsDataModel(object):
         wu_pop_x = _trans_norm(wu_pop_x, var_lst, gagests_stat_dict, to_norm=True)
         new_x = concat_two_3darray(x, wu_pop_x)
         return new_x, y, c
+
+
+class GagesJulianDataModel(object):
+    def __init__(self, data_model_natflow, data_model_lstm):
+        self.sim_data_model = GagesSimDataModel(data_model_natflow, data_model_lstm)
+        self.data_model2 = self.sim_data_model.data_model2
+
+    def load_data(self, model_dict):
+        qx, y, c = self.sim_data_model.load_data(model_dict)
+        julian_date = hydro_time.t_range_to_julian(self.sim_data_model.t_s_dict["t_final_range"])
+        sites_num = c.shape[0]
+        sites_julian = np.tile(julian_date, (sites_num, 1))
+        sites_julian_concat = sites_julian.reshape(sites_julian.shape[0], sites_julian.shape[1], 1)
+        var_lst = ['julian']
+        julian_stat_dict = {}
+        julian_stat_dict[var_lst[0]] = cal_stat(sites_julian_concat)
+        julian_x = _trans_norm(sites_julian_concat, var_lst, julian_stat_dict, to_norm=True)
+        x = concat_two_3darray(qx, julian_x)
+        return x, y, c
+
+
+class GagesStorageDataModel(object):
+    def __init__(self, data_model_natflow, data_model_storage):
+        self.sim_data_model = GagesSimDataModel(data_model_natflow, data_model_storage)
+        self.data_model_natflow = data_model_natflow
+        self.data_model_storage = data_model_storage
+
+    def load_data(self):
+        model_dict = self.data_model_storage.data_source.data_config.model_dict
+        qx, y, c = self.sim_data_model.load_data(model_dict)
+        # cut data: because the input of LSTM_storage need previous days' data
+        storage_seq_length = model_dict['model']["storageLength"]
+        qx_cut = qx[:, storage_seq_length - 1:, :]
+        y_cut = y[:, storage_seq_length - 1:, :]
+        natflow = self.sim_data_model.natural_flow
+        return qx_cut, c, natflow, y_cut
 
 
 class GagesSimDataModel(object):

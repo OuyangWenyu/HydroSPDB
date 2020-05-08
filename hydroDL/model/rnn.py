@@ -680,3 +680,22 @@ class CudnnLstmModelInvKernelPretrain(torch.nn.Module):
     def forward(self, xh, xt, do_drop_mc=False, dropout_false=False):
         out_lstm, param = self.lstm_inv(xh, xt)
         return out_lstm, param
+
+
+class CudnnLstmModelStorage(torch.nn.Module):
+    def __init__(self, nx, ny, hidden_size_stroage, hidden_size, dr=0.5):
+        super(CudnnLstmModelStorage, self).__init__()
+        self.nx = nx  # (qx+c, natflow(t-T:t)+c, theta=1)
+        self.ny = ny
+        self.hidden_size_stroage = hidden_size_stroage
+        self.hiddenSize = hidden_size
+        self.lstm_storage = CudnnLstmModel(nx=nx[1], ny=nx[2], hidden_size=hidden_size_stroage,
+                                           dr=dr)
+        self.lstm = CudnnLstmModel(nx=nx[0] + nx[2], ny=ny, hidden_size=hidden_size, dr=dr)
+
+    def forward(self, qnc, qxc):
+        gen = self.lstm_storage(qnc)
+        # storage of different time and different sites should be different, so just concatenate gen with qxc
+        x1 = torch.cat((qxc, gen), dim=len(gen.shape) - 1)  # by default cat along dim=0
+        out_lstm = self.lstm(x1)
+        return out_lstm, gen

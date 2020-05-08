@@ -11,7 +11,7 @@ import definitions
 from data import GagesConfig, GagesSource
 from utils import serialize_pickle, unserialize_pickle, hydro_time
 from utils.dataset_format import trans_daymet_to_camels, subset_of_dict
-from utils.hydro_time import t_range_years, t_range_days, get_year
+from utils.hydro_time import t_range_years, t_range_days, get_year, t_range_to_julian
 from datetime import datetime, timedelta
 
 
@@ -118,6 +118,10 @@ class MyTestCase(unittest.TestCase):
         t_range = self.t_range
         t_lst = t_range_days(t_range)
         print(t_lst)
+
+    def test_t_julian(self):
+        t_range = t_range_to_julian(["1985-10-01", "1995-10-01"])
+        print(t_range)
 
     def test_intersect(self):
         t_range = self.t_range

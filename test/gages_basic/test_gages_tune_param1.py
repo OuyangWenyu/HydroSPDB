@@ -23,8 +23,6 @@ class MyTestCaseGages(unittest.TestCase):
         config_dir = definitions.CONFIG_DIR
         self.config_file = os.path.join(config_dir, "basic/config_exp21.ini")
         self.subdir = r"basic/exp21"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp24.ini")
-        # self.subdir = r"basic/exp24"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
 
     def test_gages_data_model(self):
@@ -85,7 +83,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(1):
-            pre_trained_model_epoch = 70
+            pre_trained_model_epoch = 270
             # master_train(data_model)
             master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 

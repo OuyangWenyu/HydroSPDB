@@ -3,9 +3,9 @@ import unittest
 import torch
 
 import definitions
-from data import GagesConfig, GagesSource, DataModel
+from data import GagesConfig
 from data.data_input import save_datamodel, GagesModel, save_result, load_result, _basin_norm
-from data.gages_input_dataset import GagesExploreDataModel, GagesDamDataModel, choose_which_purpose
+from data.gages_input_dataset import GagesDamDataModel, choose_which_purpose
 from data.nid_input import NidModel
 from explore.stat import statError
 from hydroDL.master.master import master_train, master_test
@@ -14,9 +14,6 @@ import os
 import pandas as pd
 
 from utils import unserialize_json
-from utils.dataset_format import subset_of_dict
-from visual import plot_ts_obs_pred
-from visual.plot_model import plot_ind_map, plot_we_need
 
 
 class MyTestCase(unittest.TestCase):

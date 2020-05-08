@@ -17,10 +17,10 @@ from utils.hydro_math import copy_attr_array_in2d, concat_two_3darray, random_in
     select_subset_batch_first
 
 
-def save_result(save_dir, epoch, pred, obs):
+def save_result(save_dir, epoch, pred, obs, pred_name='flow_pred', obs_name='flow_obs'):
     """save the pred value of testing period and obs value"""
-    flow_pred_file = os.path.join(save_dir, 'epoch' + str(epoch) + 'flow_pred')
-    flow_obs_file = os.path.join(save_dir, 'epoch' + str(epoch) + 'flow_obs')
+    flow_pred_file = os.path.join(save_dir, 'epoch' + str(epoch) + pred_name)
+    flow_obs_file = os.path.join(save_dir, 'epoch' + str(epoch) + obs_name)
     serialize_numpy(pred, flow_pred_file)
     serialize_numpy(obs, flow_obs_file)
 

@@ -121,3 +121,30 @@ def select_subset_batch_first(x, i_grid, i_t, rho, *, c=None):
     if torch.cuda.is_available():
         out = out.cuda()
     return out
+
+
+def select_subset_seq(x, i_grid, i_t, rho, *, c=None, seq_len=100):
+    assert len(x.shape) == 2
+    if x.shape[0] < len(i_grid):
+        raise ValueError('grid num should be smaller than x.shape[0]')
+    if x.shape[1] < rho or x.shape[1] < seq_len:
+        raise ValueError('time length option should be larger than rho and seq_len')
+    batch_size = i_grid.shape[0]
+    x_tensor = torch.zeros([rho, batch_size, seq_len], requires_grad=False)
+    for k in range(batch_size):
+        x_temp = x[i_grid[k]:i_grid[k] + 1, np.arange(i_t[k], i_t[k] + seq_len - 1 + rho)]
+        temp = np.zeros([rho, 1, seq_len])
+        for i in range(temp.shape[0]):
+            temp[i, :, :] = x_temp[:, i:i + seq_len]
+        x_tensor[:, k:k + 1, :] = torch.from_numpy(temp)
+
+    if c is not None:
+        nc = c.shape[-1]
+        temp = np.repeat(np.reshape(c[i_grid, :], [batch_size, 1, nc]), rho, axis=1)
+        c_tensor = torch.from_numpy(np.swapaxes(temp, 1, 0)).float()
+        out = torch.cat((x_tensor, c_tensor), 2)
+    else:
+        out = x_tensor
+    if torch.cuda.is_available():
+        out = out.cuda()
+    return out
