@@ -495,7 +495,7 @@ def master_test_natural_flow(model_input, epoch=-1):
     return pred, obs
 
 
-def train_lstm_storage(data_model, pre_trained_model_epoch=-1):
+def train_lstm_storage(data_model, pre_trained_model_epoch=1):
     model_dict = data_model.data_model_storage.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_train = model_dict['train']
@@ -515,9 +515,10 @@ def train_lstm_storage(data_model, pre_trained_model_epoch=-1):
         os.mkdir(model_save_dir)
     if pre_trained_model_epoch > 1:
         pre_trained_model_file = os.path.join(model_save_dir, 'model_Ep' + str(pre_trained_model_epoch) + '.pt')
-        model_storage = rnn.CudnnLstmModelInvKernelPretrain(nx=opt_model['nx'], ny=opt_model['ny'],
-                                                            hidden_size=opt_model['hiddenSize'],
-                                                            pretrian_model_file=pre_trained_model_file)
+        model_storage = rnn.CudnnLstmModelStoragePretrain(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                          hidden_size_stroage=int(opt_model['hiddenSize'] / 4),
+                                                          hidden_size=opt_model['hiddenSize'],
+                                                          pretrian_model_file=pre_trained_model_file)
     else:
         model_storage = rnn.CudnnLstmModelStorage(nx=opt_model['nx'], ny=opt_model['ny'],
                                                   hidden_size_stroage=int(opt_model['hiddenSize'] / 4),
@@ -527,6 +528,39 @@ def train_lstm_storage(data_model, pre_trained_model_epoch=-1):
                                   n_epoch=opt_train['nEpoch'], mini_batch=opt_train['miniBatch'],
                                   save_epoch=opt_train['saveEpoch'], save_folder=model_save_dir,
                                   pre_trained_model_epoch=pre_trained_model_epoch)
+
+
+def test_lstm_storage(data_input, epoch=-1):
+    model_dict = data_input.data_model_storage.data_source.data_config.model_dict
+    opt_data = model_dict['data']
+    opt_model = model_dict['model']
+    opt_train = model_dict['train']
+    # 测试和训练使用的batch_size, rho是一样的
+    batch_size, rho = opt_train['miniBatch']
+
+    seq_length_storage = opt_model["storageLength"]
+    # qx and y data have been cut
+    qx, c, natflow, y = data_input.load_data()
+    # generate file names and run model
+    out = os.path.join(model_dict['dir']['Out'], 'model')
+    t_range = data_input.data_model_storage.t_s_dict["t_final_range"]
+    if epoch < 0:
+        epoch = opt_train["nEpoch"]
+    file_path = name_pred(model_dict, out, t_range, epoch)
+    print('output files:', file_path)
+    model = model_run.model_load(out, epoch)
+    data_pred, data_params = model_run.model_test_storage(model, qx, c, natflow, seq_length_storage, batch_size)
+
+    data_stack = reduce(lambda a, b: np.vstack((a, b)),
+                        list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), data_pred)))
+    pred = np.expand_dims(data_stack, axis=2)
+    if opt_data['doNorm'][1] is True:
+        stat_dict = data_input.lstm_model.stat_dict
+        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
+        pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+        y = _trans_norm(y, 'usgsFlow', stat_dict, to_norm=False)
+
+    return pred, y
 
 
 def train_lstm_inv(data_model, pre_trained_model_epoch=1):

@@ -6,9 +6,9 @@ import definitions
 from data import GagesConfig, GagesSource
 from data.data_config import add_model_param
 from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result
-from data.gages_input_dataset import GagesSimInvDataModel, GagesStorageDataModel
+from data.gages_input_dataset import GagesStorageDataModel
 from explore.stat import statError
-from hydroDL.master.master import test_lstm_siminv, train_lstm_storage
+from hydroDL.master.master import train_lstm_storage, test_lstm_storage
 import numpy as np
 import os
 import pandas as pd
@@ -143,11 +143,11 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesStorageDataModel(df1, df2)
-            # pre_trained_model_epoch = 100
-            # train_lstm_siminv(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
-            train_lstm_storage(data_model)
+            pre_trained_model_epoch = 290
+            train_lstm_storage(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            # train_lstm_storage(data_model)
 
-    def test_siminv_test(self):
+    def test_storage_test(self):
         with torch.cuda.device(0):
             df1 = GagesModel.load_datamodel(self.config_data_natflow.data_path["Temp"], "1",
                                             data_source_file_name='test_data_source.txt',
@@ -164,22 +164,15 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                             f_dict_file_name='test_dictFactorize.json',
                                             var_dict_file_name='test_dictAttribute.json',
                                             t_s_dict_file_name='test_dictTimeSpace.json')
-            df3 = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "3",
-                                            data_source_file_name='test_data_source.txt',
-                                            stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                                            forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                                            f_dict_file_name='test_dictFactorize.json',
-                                            var_dict_file_name='test_dictAttribute.json',
-                                            t_s_dict_file_name='test_dictTimeSpace.json')
-            data_model = GagesSimInvDataModel(df1, df2, df3)
+            data_model = GagesStorageDataModel(df1, df2)
             test_epoch = self.test_epoch
-            pred, obs = test_lstm_siminv(data_model, epoch=test_epoch)
-            basin_area = df3.data_source.read_attr(df3.t_s_dict["sites_id"], ['DRAIN_SQKM'], is_return_dict=False)
-            mean_prep = df3.data_source.read_attr(df3.t_s_dict["sites_id"], ['PPTAVG_BASIN'], is_return_dict=False)
+            pred, obs = test_lstm_storage(data_model, epoch=test_epoch)
+            basin_area = df2.data_source.read_attr(df2.t_s_dict["sites_id"], ['DRAIN_SQKM'], is_return_dict=False)
+            mean_prep = df2.data_source.read_attr(df2.t_s_dict["sites_id"], ['PPTAVG_BASIN'], is_return_dict=False)
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            save_result(df3.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
+            save_result(df2.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
     def test_siminv_plot(self):
         data_model = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "3",

@@ -93,8 +93,8 @@ class MyTestCaseGages(unittest.TestCase):
 
     def test_train_gages(self):
         with torch.cuda.device(1):
-            for eco_name in self.eco_names:
-                data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"], str(eco_name[1]),
+            for i in range(7, len(self.eco_names)):
+                data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"], str(self.eco_names[i][1]),
                                                        data_source_file_name='data_source.txt',
                                                        stat_file_name='Statistics.json', flow_file_name='flow.npy',
                                                        forcing_file_name='forcing.npy', attr_file_name='attr.npy',

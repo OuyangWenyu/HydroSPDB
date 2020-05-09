@@ -19,11 +19,20 @@ class TestExploreCase(unittest.TestCase):
     def setUp(self):
         """analyze result of model"""
         config_dir = definitions.CONFIG_DIR
-        self.ref_config_file = os.path.join(config_dir, "basic/config_exp2.ini")
-        self.ref_subdir = r"basic/exp2"
-        self.ref_config_data = GagesConfig.set_subdir(self.ref_config_file, self.ref_subdir)
-        self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
-        self.subdir = r"basic/exp18"
+        # self.ref_config_file = os.path.join(config_dir, "basic/config_exp2.ini")
+        # self.ref_subdir = r"basic/exp2"
+        # self.ref_config_data = GagesConfig.set_subdir(self.ref_config_file, self.ref_subdir)
+        # self.nonref_config_file = os.path.join(config_dir, "basic/config_exp18.ini")
+        # self.nonref_subdir = r"basic/exp18"
+        # self.nonref_config_data = GagesConfig.set_subdir(self.nonref_config_file, self.nonref_subdir)
+        self.nomajordam_config_file = os.path.join(config_dir, "nodam/config_exp2.ini")
+        self.nomajordam_subdir = r"nodam/exp2"
+        self.nomajordam_config_data = GagesConfig.set_subdir(self.nomajordam_config_file, self.nomajordam_subdir)
+        self.majordam_config_file = os.path.join(config_dir, "majordam/config_exp1.ini")
+        self.majordam_subdir = r"majordam/exp1"
+        self.majordam_config_data = GagesConfig.set_subdir(self.majordam_config_file, self.majordam_subdir)
+        self.config_file = os.path.join(config_dir, "basic/config_exp25.ini")
+        self.subdir = r"basic/exp25"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
 
@@ -37,15 +46,25 @@ class TestExploreCase(unittest.TestCase):
                                                     var_dict_file_name='test_dictAttribute.json',
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
 
-        self.ref_data_model = GagesModel.load_datamodel(self.ref_config_data.data_path["Temp"],
-                                                        data_source_file_name='test_data_source.txt',
-                                                        stat_file_name='test_Statistics.json',
-                                                        flow_file_name='test_flow.npy',
-                                                        forcing_file_name='test_forcing.npy',
-                                                        attr_file_name='test_attr.npy',
-                                                        f_dict_file_name='test_dictFactorize.json',
-                                                        var_dict_file_name='test_dictAttribute.json',
-                                                        t_s_dict_file_name='test_dictTimeSpace.json')
+        self.nomajordam_data_model = GagesModel.load_datamodel(self.nomajordam_config_data.data_path["Temp"],
+                                                               data_source_file_name='test_data_source.txt',
+                                                               stat_file_name='test_Statistics.json',
+                                                               flow_file_name='test_flow.npy',
+                                                               forcing_file_name='test_forcing.npy',
+                                                               attr_file_name='test_attr.npy',
+                                                               f_dict_file_name='test_dictFactorize.json',
+                                                               var_dict_file_name='test_dictAttribute.json',
+                                                               t_s_dict_file_name='test_dictTimeSpace.json')
+
+        self.majordam_data_model = GagesModel.load_datamodel(self.majordam_config_data.data_path["Temp"],
+                                                             data_source_file_name='test_data_source.txt',
+                                                             stat_file_name='test_Statistics.json',
+                                                             flow_file_name='test_flow.npy',
+                                                             forcing_file_name='test_forcing.npy',
+                                                             attr_file_name='test_attr.npy',
+                                                             f_dict_file_name='test_dictFactorize.json',
+                                                             var_dict_file_name='test_dictAttribute.json',
+                                                             t_s_dict_file_name='test_dictTimeSpace.json')
 
         attrBasin = ['ELEV_MEAN_M_BASIN', 'SLOPE_PCT', 'DRAIN_SQKM']
         attrLandcover = ['FORESTNLCD06', 'BARRENNLCD06', 'DECIDNLCD06', 'EVERGRNLCD06', 'MIXEDFORNLCD06', 'SHRUBNLCD06',
@@ -62,8 +81,8 @@ class TestExploreCase(unittest.TestCase):
         attrLC06Basin = ['DEVNLCD06', 'FORESTNLCD06', 'PLANTNLCD06']
         attrPopInfrastr = ['ROADS_KM_SQ_KM']
         attrProtAreas = ['PADCAT1_PCT_BASIN', 'PADCAT2_PCT_BASIN']
-        # self.attr_lst = attrLandscapePat + attrLC06Basin + attrPopInfrastr + attrProtAreas
-        self.attr_lst = attrHydroModDams
+        self.attr_lst = attrLandscapePat + attrLC06Basin + attrPopInfrastr + attrProtAreas
+        # self.attr_lst = attrHydroModOther
 
         # plot is_nse_good
         pred, obs = load_result(self.data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
@@ -74,7 +93,7 @@ class TestExploreCase(unittest.TestCase):
 
     def test_analyze_isref(self):
         sites_nonref = self.data_model.t_s_dict["sites_id"]
-        sites_ref = self.ref_data_model.t_s_dict["sites_id"]
+        sites_ref = self.nomajordam_data_model.t_s_dict["sites_id"]
         attrs_nonref = self.data_model.data_source.read_attr(sites_nonref, self.attr_lst, is_return_dict=False)
         attrs_ref = self.data_model.data_source.read_attr(sites_ref, self.attr_lst, is_return_dict=False)
         plot_gages_attrs_boxes(sites_nonref, sites_ref, self.attr_lst, attrs_nonref, attrs_ref, diff_str="IS_REF",
@@ -212,8 +231,8 @@ class TestExploreCase(unittest.TestCase):
         frames = []
         x_name = "purposes"
         y_name = "NSE"
-        # hue_name = "DOR"
-        hue_name = "STOR"
+        hue_name = "DOR"
+        # hue_name = "STOR"
         for i in range(len(id_regions_idx)):
             # plot box，使用seaborn库
             keys = ["NSE"]
@@ -223,8 +242,8 @@ class TestExploreCase(unittest.TestCase):
             str_i = regions_name[i]
             df_dict_i[x_name] = np.full([inds_test.size], str_i)
             df_dict_i[y_name] = inds_test
-            # df_dict_i[hue_name] = dors[id_regions_idx[i]]
-            df_dict_i[hue_name] = nor_storage[id_regions_idx[i]]
+            df_dict_i[hue_name] = dors[id_regions_idx[i]]
+            # df_dict_i[hue_name] = nor_storage[id_regions_idx[i]]
             df_i = pd.DataFrame(df_dict_i)
             frames.append(df_i)
         result = pd.concat(frames)
@@ -236,9 +255,9 @@ class TestExploreCase(unittest.TestCase):
         cbar_label = hue_name
 
         plt.title('Distribution of different purposes')
-        # swarmplot_with_cbar(cmap_str, cbar_label, [-1, 1.0], x=x_name, y=y_name, hue=hue_name, palette=cmap_str,
-        #                     data=result)
-        swarmplot_with_cbar(cmap_str, cbar_label, None, x=x_name, y=y_name, hue=hue_name, palette=cmap_str, data=result)
+        swarmplot_with_cbar(cmap_str, cbar_label, [-1, 1.0], x=x_name, y=y_name, hue=hue_name, palette=cmap_str,
+                            data=result)
+        # swarmplot_with_cbar(cmap_str, cbar_label, None, x=x_name, y=y_name, hue=hue_name, palette=cmap_str, data=result)
 
 
 if __name__ == '__main__':

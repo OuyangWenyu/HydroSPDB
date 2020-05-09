@@ -55,8 +55,8 @@ class MyTestCaseGages(unittest.TestCase):
         # self.test_epoch = test_epoch_lst[4]
         # self.test_epoch = test_epoch_lst[5]
         # self.test_epoch = test_epoch_lst[6]
-        # self.test_epoch = test_epoch_lst[7]
-        self.test_epoch = test_epoch_lst[8]
+        self.test_epoch = test_epoch_lst[7]
+        # self.test_epoch = test_epoch_lst[8]
         # self.test_epoch = test_epoch_lst[9]
         # self.test_epoch = test_epoch_lst[10]
 

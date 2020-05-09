@@ -580,6 +580,57 @@ def model_train_storage(model, qx, c, natflow, y, lossFun, *, seq_length_storage
     return model
 
 
+def model_test_storage(model, qx, c, natflow, seq_len, batch_size):
+    ngrid, nt, nx = qx.shape
+    if c is not None:
+        nc = c.shape[-1]
+    if torch.cuda.is_available():
+        model = model.cuda()
+
+    model.train(mode=False)
+    i_s = np.arange(0, ngrid, batch_size)
+    i_e = np.append(i_s[1:], ngrid)
+
+    y_out_list = []
+    param_list = []
+    for i in range(0, len(i_s)):
+        print('batch {}'.format(i))
+        xt_temp = qx[i_s[i]:i_e[i], :, :]
+        # len of natflow and qx are different
+        xh_2d_temp = natflow[i_s[i]:i_e[i], :]
+        xh_temp = np.zeros([xt_temp.shape[0], xt_temp.shape[1], seq_len])
+
+        for k in range(xh_temp.shape[1]):
+            xh_temp[:, k, :] = xh_2d_temp[:, k:k + seq_len]
+
+        # for j in range(xh_temp.shape[0]):
+        #     xh_every_site = xh_2d_temp[j:j + 1, :]
+        #     for k in range(xh_temp.shape[1]):
+        #         xh_temp[j, k, :] = xh_every_site[:, k:k + seq_len]
+
+        if c is not None:
+            c_temp = np.repeat(np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
+            xh_temp = torch.from_numpy(np.swapaxes(np.concatenate([xh_temp, c_temp], 2), 1, 0)).float()
+            xt_temp = torch.from_numpy(np.swapaxes(np.concatenate([xt_temp, c_temp], 2), 1, 0)).float()
+        xhTest = torch.from_numpy(np.swapaxes(xh_temp, 1, 0)).float()
+        xtTest = torch.from_numpy(np.swapaxes(xt_temp, 1, 0)).float()
+        if torch.cuda.is_available():
+            xhTest = xhTest.cuda()
+            xtTest = xtTest.cuda()
+
+        y_p, param = model(xhTest, xtTest)
+        y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
+        param_out = param.detach().cpu().numpy().swapaxes(0, 1)
+
+        y_out_list.append(y_out)
+        param_list.append(param_out)
+
+    # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
+    model.zero_grad()
+    torch.cuda.empty_cache()
+    return y_out_list, param_list
+
+
 def model_train_inv(model, xqch, xct, qt, lossFun, *, n_epoch=500, mini_batch=[100, 30], save_epoch=100,
                     save_folder=None, pre_trained_model_epoch=1):
     batchSize, rho = mini_batch

@@ -23,8 +23,8 @@ class TestForecastCase(unittest.TestCase):
         self.nomajordam_subdir = r"nodam/exp2"
         self.nomajordam_config_data = GagesConfig.set_subdir(self.nomajordam_config_file, self.nomajordam_subdir)
         # all ref regions
-        self.majordam_config_file = os.path.join(config_dir, "dam/config_exp17.ini")
-        self.majordam_subdir = r"dam/exp17"
+        self.majordam_config_file = os.path.join(config_dir, "majordam/config_exp1.ini")
+        self.majordam_subdir = r"majordam/exp1"
         self.majordam_config_data = GagesConfig.set_subdir(self.majordam_config_file, self.majordam_subdir)
 
         test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]

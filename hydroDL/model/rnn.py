@@ -699,3 +699,17 @@ class CudnnLstmModelStorage(torch.nn.Module):
         x1 = torch.cat((qxc, gen), dim=len(gen.shape) - 1)  # by default cat along dim=0
         out_lstm = self.lstm(x1)
         return out_lstm, gen
+
+
+class CudnnLstmModelStoragePretrain(torch.nn.Module):
+    def __init__(self, *, nx, ny, hidden_size_stroage, hidden_size, pretrian_model_file):
+        super(CudnnLstmModelStoragePretrain, self).__init__()
+        self.nx = nx
+        self.ny = ny
+        self.hidden_size_stroage = hidden_size_stroage
+        self.hidden_size = hidden_size
+        self.lstm_storage = torch.load(pretrian_model_file)
+
+    def forward(self, qnc, qxc, do_drop_mc=False, dropout_false=False):
+        out_lstm, param = self.lstm_storage(qnc, qxc)
+        return out_lstm, param

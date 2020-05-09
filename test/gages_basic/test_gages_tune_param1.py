@@ -24,6 +24,7 @@ class MyTestCaseGages(unittest.TestCase):
         self.config_file = os.path.join(config_dir, "basic/config_exp21.ini")
         self.subdir = r"basic/exp21"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
+        self.test_epoch = 300
 
     def test_gages_data_model(self):
         gages_model = GagesModels(self.config_data)
@@ -40,7 +41,8 @@ class MyTestCaseGages(unittest.TestCase):
 
     def test_gages_data_model_quickdata(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        # data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         data_model_train = GagesModel.load_datamodel(data_dir,
                                                      data_source_file_name='data_source.txt',
                                                      stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -82,10 +84,10 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='dictFactorize.json',
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(1):
-            pre_trained_model_epoch = 270
-            # master_train(data_model)
-            master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+        with torch.cuda.device(2):
+            # pre_trained_model_epoch = 270
+            master_train(data_model)
+            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
@@ -96,7 +98,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
         with torch.cuda.device(0):
-            pred, obs = master_test(data_model, epoch=300)
+            pred, obs = master_test(data_model, epoch=self.test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)
             mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['PPTAVG_BASIN'],

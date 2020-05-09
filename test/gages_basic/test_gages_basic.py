@@ -50,7 +50,7 @@ class MyTestCaseGages(unittest.TestCase):
         # self.config_file = os.path.join(config_dir, "basic/config_exp7.ini")
         # self.subdir = r"basic/exp7"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
-        self.test_epoch = 300
+        self.test_epoch = 350
 
     def test_gages_data_model(self):
         gages_model = GagesModels(self.config_data)
@@ -132,7 +132,7 @@ class MyTestCaseGages(unittest.TestCase):
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
             save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
-            # plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+            plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_export_result(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
