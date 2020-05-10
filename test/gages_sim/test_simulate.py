@@ -46,7 +46,8 @@ class MyTestCase(unittest.TestCase):
 
     def test_gages_sim_data_model(self):
         quick_data_dir = os.path.join(self.config_data_natflow.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        # data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         data_model_8595 = GagesModel.load_datamodel(data_dir,
                                                     data_source_file_name='data_source.txt',
                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -79,18 +80,21 @@ class MyTestCase(unittest.TestCase):
 
         gages_model_train_natflow = GagesModel.update_data_model(self.config_data_natflow, data_model_8595,
                                                                  sites_id_update=nomajordam_in_conus,
-                                                                 data_attr_update=True)
+                                                                 data_attr_update=True, screen_basin_area_huc4=False)
         gages_model_test_natflow = GagesModel.update_data_model(self.config_data_natflow, data_model_9505,
                                                                 sites_id_update=nomajordam_in_conus,
                                                                 data_attr_update=True,
-                                                                train_stat_dict=gages_model_train_natflow.stat_dict)
+                                                                train_stat_dict=gages_model_train_natflow.stat_dict,
+                                                                screen_basin_area_huc4=False)
 
         gages_model_train_lstm = GagesModel.update_data_model(self.config_data_lstm, data_model_8595,
-                                                              sites_id_update=majordam_in_conus, data_attr_update=True)
+                                                              sites_id_update=majordam_in_conus, data_attr_update=True,
+                                                              screen_basin_area_huc4=False)
 
         gages_model_test_lstm = GagesModel.update_data_model(self.config_data_lstm, data_model_9505,
                                                              sites_id_update=majordam_in_conus, data_attr_update=True,
-                                                             train_stat_dict=gages_model_train_lstm.stat_dict)
+                                                             train_stat_dict=gages_model_train_lstm.stat_dict,
+                                                             screen_basin_area_huc4=False)
 
         save_datamodel(gages_model_train_natflow, "1", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',

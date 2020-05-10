@@ -9,7 +9,8 @@ from data.data_config import add_model_param
 from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result
 from data.gages_input_dataset import GagesSimInvDataModel, GagesSimDataModel, GagesJulianDataModel
 from explore.stat import statError
-from hydroDL.master.master import train_lstm_siminv, test_lstm_siminv, master_train_natural_flow
+from hydroDL.master.master import train_lstm_siminv, test_lstm_siminv, master_train_natural_flow, \
+    master_test_natural_flow
 import numpy as np
 import os
 import pandas as pd
@@ -47,7 +48,8 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
 
     def test_siminv_data_temp(self):
         quick_data_dir = os.path.join(self.config_data_natflow.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        # data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         data_model_8595 = GagesModel.load_datamodel(data_dir,
                                                     data_source_file_name='data_source.txt',
                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -80,18 +82,21 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
 
         gages_model_train_natflow = GagesModel.update_data_model(self.config_data_natflow, data_model_8595,
                                                                  sites_id_update=nomajordam_in_conus,
-                                                                 data_attr_update=True)
+                                                                 data_attr_update=True, screen_basin_area_huc4=False)
         gages_model_test_natflow = GagesModel.update_data_model(self.config_data_natflow, data_model_9505,
                                                                 sites_id_update=nomajordam_in_conus,
                                                                 data_attr_update=True,
-                                                                train_stat_dict=gages_model_train_natflow.stat_dict)
+                                                                train_stat_dict=gages_model_train_natflow.stat_dict,
+                                                                screen_basin_area_huc4=False)
 
         gages_model_train_lstm = GagesModel.update_data_model(self.config_data_lstm, data_model_8595,
-                                                              sites_id_update=majordam_in_conus, data_attr_update=True)
+                                                              sites_id_update=majordam_in_conus, data_attr_update=True,
+                                                              screen_basin_area_huc4=False)
 
         gages_model_test_lstm = GagesModel.update_data_model(self.config_data_lstm, data_model_9505,
                                                              sites_id_update=majordam_in_conus, data_attr_update=True,
-                                                             train_stat_dict=gages_model_train_lstm.stat_dict)
+                                                             train_stat_dict=gages_model_train_lstm.stat_dict,
+                                                             screen_basin_area_huc4=False)
 
         save_datamodel(gages_model_train_natflow, "1", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
@@ -114,7 +119,7 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
         print("read and save data model")
 
     def test_train_julian(self):
-        with torch.cuda.device(2):
+        with torch.cuda.device(1):
             data_model1 = GagesModel.load_datamodel(self.config_data_natflow.data_path["Temp"], "1",
                                                     data_source_file_name='data_source.txt',
                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -136,7 +141,7 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
             master_train_natural_flow(data_model)
 
     def test_siminv_test(self):
-        with torch.cuda.device(0):
+        with torch.cuda.device(1):
             df1 = GagesModel.load_datamodel(self.config_data_natflow.data_path["Temp"], "1",
                                             data_source_file_name='test_data_source.txt',
                                             stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
@@ -152,25 +157,18 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                             f_dict_file_name='test_dictFactorize.json',
                                             var_dict_file_name='test_dictAttribute.json',
                                             t_s_dict_file_name='test_dictTimeSpace.json')
-            df3 = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "3",
-                                            data_source_file_name='test_data_source.txt',
-                                            stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                                            forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                                            f_dict_file_name='test_dictFactorize.json',
-                                            var_dict_file_name='test_dictAttribute.json',
-                                            t_s_dict_file_name='test_dictTimeSpace.json')
-            data_model = GagesSimInvDataModel(df1, df2, df3)
+            data_model = GagesJulianDataModel(df1, df2)
             test_epoch = self.test_epoch
-            pred, obs = test_lstm_siminv(data_model, epoch=test_epoch)
-            basin_area = df3.data_source.read_attr(df3.t_s_dict["sites_id"], ['DRAIN_SQKM'], is_return_dict=False)
-            mean_prep = df3.data_source.read_attr(df3.t_s_dict["sites_id"], ['PPTAVG_BASIN'], is_return_dict=False)
+            pred, obs = master_test_natural_flow(data_model, epoch=test_epoch)
+            basin_area = df2.data_source.read_attr(df2.t_s_dict["sites_id"], ['DRAIN_SQKM'], is_return_dict=False)
+            mean_prep = df2.data_source.read_attr(df2.t_s_dict["sites_id"], ['PPTAVG_BASIN'], is_return_dict=False)
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            save_result(df3.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
+            save_result(df2.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
     def test_siminv_plot(self):
-        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "3",
+        data_model = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "2",
                                                data_source_file_name='test_data_source.txt',
                                                stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
                                                forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
@@ -190,12 +188,12 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
         inds = statError(obs, pred)
         inds['STAID'] = data_model.t_s_dict["sites_id"]
         inds_df = pd.DataFrame(inds)
-        inds_df.to_csv(os.path.join(self.config_data.data_path["Out"], 'data_df.csv'))
+        inds_df.to_csv(os.path.join(self.config_data_lstm.data_path["Out"], 'data_df.csv'))
         # plot box，使用seaborn库
         keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(inds, keys)
         box_fig = plot_diff_boxes(inds_test)
-        box_fig.savefig(os.path.join(self.config_data.data_path["Out"], "box_fig.png"))
+        box_fig.savefig(os.path.join(self.config_data_lstm.data_path["Out"], "box_fig.png"))
         # plot ts
         show_me_num = 5
         t_s_dict = data_model.t_s_dict
@@ -205,7 +203,7 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
         time_start = np.datetime64(t_range[0]) + np.timedelta64(time_seq_length - 1, 'D')
         t_range[0] = np.datetime_as_string(time_start, unit='D')
         ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
-        ts_fig.savefig(os.path.join(self.config_data.data_path["Out"], "ts_fig.png"))
+        ts_fig.savefig(os.path.join(self.config_data_lstm.data_path["Out"], "ts_fig.png"))
 
         # plot nse ecdf
         sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})

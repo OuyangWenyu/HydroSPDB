@@ -21,12 +21,15 @@ class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """choose basins with small DOR """
         config_dir = definitions.CONFIG_DIR
-        self.sim_config_file = os.path.join(config_dir, "dam/config1_exp2.ini")
-        self.config_file = os.path.join(config_dir, "dam/config2_exp2.ini")
-        self.subdir = "dam/exp2"
-        self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
-        self.sim_config_data = GagesConfig.set_subdir(self.sim_config_file, self.subdir)
-        add_model_param(self.config_data, "model", seqLength=1)
+        # self.sim_config_file = os.path.join(config_dir, "dam/config1_exp2.ini")
+        # self.config_file = os.path.join(config_dir, "dam/config2_exp2.ini")
+        # self.subdir = "dam/exp2"
+        self.sim_config_file = os.path.join(config_dir, "simulate/config1_exp3.ini")
+        self.config_file = os.path.join(config_dir, "simulate/config2_exp3.ini")
+        self.subdir = "simulate/exp3"
+        self.config_data_natflow = GagesConfig.set_subdir(self.sim_config_file, self.subdir)
+        self.config_data_lstm = GagesConfig.set_subdir(self.config_file, self.subdir)
+        add_model_param(self.config_data_lstm, "model", seqLength=1)
         # choose some small basins, unit: SQKM
         # self.basin_area_screen = 100
         test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]
@@ -45,23 +48,15 @@ class MyTestCase(unittest.TestCase):
     def test_some_reservoirs(self):
         """choose some small reservoirs for 2nd lstm not for simulate"""
         # 读取模型配置文件
-        config_data = self.config_data
+        config_data = self.config_data_lstm
         # according to paper "High-resolution mapping of the world's reservoirs and dams for sustainable river-flow management"
-        dor = -0.02
+        dor = -0.02  # meaning dor < 0.02
         source_data = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTrain"],
-                                                     DOR=dor)
-        sites_id = source_data.all_configs['flow_screen_gage_id']
+                                                     screen_basin_area_huc4=False, DOR=dor)
+        sites_id_dor = source_data.all_configs['flow_screen_gage_id']
 
-        quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        sim_data_dir = os.path.join(quick_data_dir, "allref_85-05_nan-0.1_00-1.0")
-        data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
-        data_model_sim8595 = GagesModel.load_datamodel(sim_data_dir,
-                                                       data_source_file_name='data_source.txt',
-                                                       stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                                       forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                                       f_dict_file_name='dictFactorize.json',
-                                                       var_dict_file_name='dictAttribute.json',
-                                                       t_s_dict_file_name='dictTimeSpace.json')
+        quick_data_dir = os.path.join(self.config_data_lstm.data_path["DB"], "quickdata")
+        data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         data_model_8595 = GagesModel.load_datamodel(data_dir,
                                                     data_source_file_name='data_source.txt',
                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -69,15 +64,6 @@ class MyTestCase(unittest.TestCase):
                                                     f_dict_file_name='dictFactorize.json',
                                                     var_dict_file_name='dictAttribute.json',
                                                     t_s_dict_file_name='dictTimeSpace.json')
-        data_model_sim9505 = GagesModel.load_datamodel(sim_data_dir,
-                                                       data_source_file_name='test_data_source.txt',
-                                                       stat_file_name='test_Statistics.json',
-                                                       flow_file_name='test_flow.npy',
-                                                       forcing_file_name='test_forcing.npy',
-                                                       attr_file_name='test_attr.npy',
-                                                       f_dict_file_name='test_dictFactorize.json',
-                                                       var_dict_file_name='test_dictAttribute.json',
-                                                       t_s_dict_file_name='test_dictTimeSpace.json')
         data_model_9505 = GagesModel.load_datamodel(data_dir,
                                                     data_source_file_name='test_data_source.txt',
                                                     stat_file_name='test_Statistics.json',
@@ -87,31 +73,55 @@ class MyTestCase(unittest.TestCase):
                                                     f_dict_file_name='test_dictFactorize.json',
                                                     var_dict_file_name='test_dictAttribute.json',
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
+        conus_sites_id_all = data_model_8595.t_s_dict["sites_id"]
+        nomajordam_source_data = GagesSource.choose_some_basins(self.config_data_natflow,
+                                                                self.config_data_natflow.model_dict["data"][
+                                                                    "tRangeTrain"],
+                                                                screen_basin_area_huc4=False, major_dam_num=0)
+        nomajordam_sites_id = nomajordam_source_data.all_configs['flow_screen_gage_id']
+        # In no major dam case, all sites are chosen as natural flow generator
+        nomajordam_in_conus = np.intersect1d(conus_sites_id_all, nomajordam_sites_id)
 
-        sim_gages_model_train = GagesModel.update_data_model(self.sim_config_data, data_model_sim8595,
-                                                             data_attr_update=True)
-        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_8595, sites_id_update=sites_id,
-                                                         data_attr_update=True)
-        sim_gages_model_test = GagesModel.update_data_model(self.sim_config_data, data_model_sim9505,
-                                                            data_attr_update=True,
-                                                            train_stat_dict=sim_gages_model_train.stat_dict)
-        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_9505, sites_id_update=sites_id,
-                                                        data_attr_update=True,
-                                                        train_stat_dict=gages_model_train.stat_dict)
-        save_datamodel(sim_gages_model_train, "1", data_source_file_name='data_source.txt',
+        conus_sites_id_dor = np.intersect1d(conus_sites_id_all, sites_id_dor)
+        majordam_source_data = GagesSource.choose_some_basins(self.config_data_natflow,
+                                                              self.config_data_natflow.model_dict["data"][
+                                                                  "tRangeTrain"],
+                                                              screen_basin_area_huc4=False, major_dam_num=[1, 2000])
+        majordam_sites_id = majordam_source_data.all_configs['flow_screen_gage_id']
+        majordam_in_conus = np.intersect1d(conus_sites_id_dor, majordam_sites_id)
+
+        gages_model_train_natflow = GagesModel.update_data_model(self.config_data_natflow, data_model_8595,
+                                                                 sites_id_update=nomajordam_in_conus,
+                                                                 data_attr_update=True, screen_basin_area_huc4=False)
+        gages_model_test_natflow = GagesModel.update_data_model(self.config_data_natflow, data_model_9505,
+                                                                sites_id_update=nomajordam_in_conus,
+                                                                data_attr_update=True,
+                                                                train_stat_dict=gages_model_train_natflow.stat_dict,
+                                                                screen_basin_area_huc4=False)
+
+        gages_model_train_lstm = GagesModel.update_data_model(self.config_data_lstm, data_model_8595,
+                                                              sites_id_update=majordam_in_conus, data_attr_update=True,
+                                                              screen_basin_area_huc4=False)
+
+        gages_model_test_lstm = GagesModel.update_data_model(self.config_data_lstm, data_model_9505,
+                                                             sites_id_update=majordam_in_conus, data_attr_update=True,
+                                                             train_stat_dict=gages_model_train_lstm.stat_dict,
+                                                             screen_basin_area_huc4=False)
+
+        save_datamodel(gages_model_train_natflow, "1", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
                        var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
-        save_datamodel(sim_gages_model_test, "1", data_source_file_name='test_data_source.txt',
+        save_datamodel(gages_model_test_natflow, "1", data_source_file_name='test_data_source.txt',
                        stat_file_name='test_Statistics.json', flow_file_name='test_flow',
                        forcing_file_name='test_forcing', attr_file_name='test_attr',
                        f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
                        t_s_dict_file_name='test_dictTimeSpace.json')
-        save_datamodel(gages_model_train, "2", data_source_file_name='data_source.txt',
+        save_datamodel(gages_model_train_lstm, "2", data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
                        var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
-        save_datamodel(gages_model_test, "2", data_source_file_name='test_data_source.txt',
+        save_datamodel(gages_model_test_lstm, "2", data_source_file_name='test_data_source.txt',
                        stat_file_name='test_Statistics.json', flow_file_name='test_flow',
                        forcing_file_name='test_forcing', attr_file_name='test_attr',
                        f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
@@ -121,7 +131,7 @@ class MyTestCase(unittest.TestCase):
     def test_train_gages_sim(self):
         with torch.cuda.device(1):
             # load model from npy data and then update some params for the test func
-            data_model1 = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "1",
+            data_model1 = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "1",
                                                     data_source_file_name='data_source.txt',
                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
                                                     forcing_file_name='forcing.npy', attr_file_name='attr.npy',
@@ -129,7 +139,7 @@ class MyTestCase(unittest.TestCase):
                                                     var_dict_file_name='dictAttribute.json',
                                                     t_s_dict_file_name='dictTimeSpace.json')
             data_model1.update_model_param('train', nEpoch=300)
-            data_model2 = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "2",
+            data_model2 = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "2",
                                                     data_source_file_name='data_source.txt',
                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
                                                     forcing_file_name='forcing.npy', attr_file_name='attr.npy',
@@ -143,7 +153,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_test_gages_sim(self):
         with torch.cuda.device(1):
-            data_model1 = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "1",
+            data_model1 = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "1",
                                                     data_source_file_name='test_data_source.txt',
                                                     stat_file_name='test_Statistics.json',
                                                     flow_file_name='test_flow.npy',
@@ -153,7 +163,7 @@ class MyTestCase(unittest.TestCase):
                                                     var_dict_file_name='test_dictAttribute.json',
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
             data_model1.update_model_param('train', nEpoch=300)
-            data_model2 = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "2",
+            data_model2 = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "2",
                                                     data_source_file_name='test_data_source.txt',
                                                     stat_file_name='test_Statistics.json',
                                                     flow_file_name='test_flow.npy',
@@ -175,7 +185,7 @@ class MyTestCase(unittest.TestCase):
                         obs)
 
     def test_sim_plot(self):
-        data_model2 = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "2",
+        data_model2 = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "2",
                                                 data_source_file_name='test_data_source.txt',
                                                 stat_file_name='test_Statistics.json',
                                                 flow_file_name='test_flow.npy',
@@ -190,12 +200,12 @@ class MyTestCase(unittest.TestCase):
         inds = statError(obs, pred)
         inds['STAID'] = data_model2.t_s_dict["sites_id"]
         inds_df = pd.DataFrame(inds)
-        inds_df.to_csv(os.path.join(self.config_data.data_path["Out"], 'data_df.csv'))
+        inds_df.to_csv(os.path.join(self.config_data_lstm.data_path["Out"], 'data_df.csv'))
         # plot box，使用seaborn库
         keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(inds, keys)
         box_fig = plot_diff_boxes(inds_test)
-        box_fig.savefig(os.path.join(self.config_data.data_path["Out"], "box_fig.png"))
+        box_fig.savefig(os.path.join(self.config_data_lstm.data_path["Out"], "box_fig.png"))
         # plot ts
         show_me_num = 5
         t_s_dict = data_model2.t_s_dict
@@ -205,7 +215,7 @@ class MyTestCase(unittest.TestCase):
         time_start = np.datetime64(t_range[0]) + np.timedelta64(time_seq_length - 1, 'D')
         t_range[0] = np.datetime_as_string(time_start, unit='D')
         ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
-        ts_fig.savefig(os.path.join(self.config_data.data_path["Out"], "ts_fig.png"))
+        ts_fig.savefig(os.path.join(self.config_data_lstm.data_path["Out"], "ts_fig.png"))
 
         # plot nse ecdf
         sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})

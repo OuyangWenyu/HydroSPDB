@@ -25,8 +25,8 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp9"
         # self.config_file = os.path.join(config_dir, "basic/config_exp10.ini")
         # self.subdir = r"basic/exp10"
-        self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
-        self.subdir = r"basic/exp11"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp11.ini")
+        # self.subdir = r"basic/exp11"
         # self.config_file = os.path.join(config_dir, "basic/config_exp14.ini")
         # self.subdir = r"basic/exp14"
         # self.config_file = os.path.join(config_dir, "basic/config_exp16.ini")
@@ -35,8 +35,8 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp19"
 
         # different regions seperately
-        # self.config_file = os.path.join(config_dir, "basic/config_exp2.ini")
-        # self.subdir = r"basic/exp2"
+        self.config_file = os.path.join(config_dir, "basic/config_exp2.ini")
+        self.subdir = r"basic/exp2"
         # self.config_file = os.path.join(config_dir, "basic/config_exp5.ini")
         # self.subdir = r"basic/exp5"
         # self.config_file = os.path.join(config_dir, "basic/config_exp8.ini")
@@ -50,10 +50,10 @@ class MyTestCaseGages(unittest.TestCase):
         # self.config_file = os.path.join(config_dir, "basic/config_exp7.ini")
         # self.subdir = r"basic/exp7"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
-        self.test_epoch = 350
+        self.test_epoch = 300
 
     def test_gages_data_model(self):
-        gages_model = GagesModels(self.config_data)
+        gages_model = GagesModels(self.config_data, screen_basin_area_huc4=False)
         save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',

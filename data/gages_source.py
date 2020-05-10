@@ -142,8 +142,7 @@ class GagesSource(DataSource):
         self.all_configs["flow_screen_gage_id"] = chosen_id
 
     def dor_reservoirs_chosen(self, dor_chosen):
-        # TODO : NOR / NID ?
-        """choose basins of small DOR(calculated by NID_STORAGE/RUNAVE7100)"""
+        """choose basins of small DOR(calculated by NOR_STORAGE/RUNAVE7100)"""
         gage_id_file = self.all_configs.get("gage_id_file")
         data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
         usgs_id = data_all["STAID"].values.tolist()
@@ -153,8 +152,8 @@ class GagesSource(DataSource):
         attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
         data_attr, var_dict, f_dict = self.read_attr(usgs_id, attr_lst)
         run_avg = data_attr[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
-        nid_storage = data_attr[:, 1] * 1000  # m^3
-        dors = nid_storage / run_avg
+        nor_storage = data_attr[:, 1] * 1000  # m^3
+        dors = nor_storage / run_avg
         if dor_chosen < 0:
             chosen_id = [usgs_id[i] for i in range(dors.size) if dors[i] < -dor_chosen]
         else:

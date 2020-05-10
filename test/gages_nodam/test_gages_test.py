@@ -19,12 +19,12 @@ class TestForecastCase(unittest.TestCase):
         """use model trained in no-major-dam regions to test with-major-dam regions """
         config_dir = definitions.CONFIG_DIR
         # no major dam regions
-        self.nomajordam_config_file = os.path.join(config_dir, "nodam/config_exp2.ini")
-        self.nomajordam_subdir = r"nodam/exp2"
+        self.nomajordam_config_file = os.path.join(config_dir, "nodam/config_exp3.ini")
+        self.nomajordam_subdir = r"nodam/exp3"
         self.nomajordam_config_data = GagesConfig.set_subdir(self.nomajordam_config_file, self.nomajordam_subdir)
         # all ref regions
-        self.majordam_config_file = os.path.join(config_dir, "majordam/config_exp1.ini")
-        self.majordam_subdir = r"majordam/exp1"
+        self.majordam_config_file = os.path.join(config_dir, "majordam/config_exp2.ini")
+        self.majordam_subdir = r"majordam/exp2"
         self.majordam_config_data = GagesConfig.set_subdir(self.majordam_config_file, self.majordam_subdir)
 
         test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]

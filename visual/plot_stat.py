@@ -193,8 +193,14 @@ def plot_point_map(gpd_gdf, percentile=0, save_file=None):
 
 def plot_ecdfs(xs, ys, legends=None, style=None):
     """Empirical cumulative distribution function"""
-    assert type(xs) == type(ys) == type(legends) == type(style) == list
-    assert len(xs) == len(ys) == len(legends) == len(style)
+    assert type(xs) == type(ys) == list
+    assert len(xs) == len(ys)
+    if legends is not None:
+        assert type(legends) == list
+        assert len(ys) == len(legends)
+    if style is not None:
+        assert type(style) == list
+        assert len(ys) == len(style)
     for y in ys:
         assert (all(xi < yi for xi, yi in zip(y, y[1:])))
     frames = []

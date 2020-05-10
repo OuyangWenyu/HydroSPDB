@@ -31,8 +31,8 @@ class TestExploreCase(unittest.TestCase):
         self.majordam_config_file = os.path.join(config_dir, "majordam/config_exp1.ini")
         self.majordam_subdir = r"majordam/exp1"
         self.majordam_config_data = GagesConfig.set_subdir(self.majordam_config_file, self.majordam_subdir)
-        self.config_file = os.path.join(config_dir, "basic/config_exp25.ini")
-        self.subdir = r"basic/exp25"
+        self.config_file = os.path.join(config_dir, "basic/config_exp23.ini")
+        self.subdir = r"basic/exp23"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
 
@@ -217,17 +217,21 @@ class TestExploreCase(unittest.TestCase):
             purpose_regions[gage_main_dam_purpose_unique[i]] = sites_id
         id_regions_idx = []
         id_regions_sites_ids = []
+        regions_name = []
+        show_min_num = 10
         df_id_region = np.array(self.data_model.t_s_dict["sites_id"])
         for key, value in purpose_regions.items():
             gages_id = value
             c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+            if c.size < show_min_num:
+                continue
             assert (all(x < y for x, y in zip(ind1, ind1[1:])))
             assert (all(x < y for x, y in zip(c, c[1:])))
             id_regions_idx.append(ind1)
             id_regions_sites_ids.append(c)
+            regions_name.append(key)
         preds, obss, inds_dfs = split_results_to_regions(self.data_model, self.test_epoch, id_regions_idx,
                                                          id_regions_sites_ids)
-        regions_name = gage_main_dam_purpose_unique
         frames = []
         x_name = "purposes"
         y_name = "NSE"

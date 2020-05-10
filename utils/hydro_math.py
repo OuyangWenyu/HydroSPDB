@@ -39,6 +39,22 @@ def interpNan1d(x, mode='linear'):
     return x
 
 
+def find_integer_factors_close_to_square_root(integer):
+    start = int(np.sqrt(integer))
+    factor = integer / start
+    while not is_integer(factor):
+        start += 1
+        factor = integer / start
+    return int(factor), start
+
+
+def is_integer(number):
+    if int(number) == number:
+        return True
+    else:
+        return False
+
+
 def concat_two_3darray(arr1, arr2):
     arr3 = np.zeros([arr1.shape[0], arr1.shape[1], arr1.shape[2] + arr2.shape[2]])
     for j in range(arr1.shape[0]):

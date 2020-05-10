@@ -48,7 +48,8 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
 
     def test_siminv_data_temp(self):
         quick_data_dir = os.path.join(self.config_data_natflow.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        # data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         data_model_8595 = GagesModel.load_datamodel(data_dir,
                                                     data_source_file_name='data_source.txt',
                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -143,9 +144,9 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesStorageDataModel(df1, df2)
-            pre_trained_model_epoch = 290
-            train_lstm_storage(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
-            # train_lstm_storage(data_model)
+            # pre_trained_model_epoch = 290
+            # train_lstm_storage(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            train_lstm_storage(data_model)
 
     def test_storage_test(self):
         with torch.cuda.device(0):
