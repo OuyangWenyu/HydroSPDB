@@ -22,7 +22,7 @@ class MyTestCase(unittest.TestCase):
         self.test_epoch = 300
 
     def test_gages_data_model(self):
-        dor = 0.02
+        dor = - 0.02
         gages_model = GagesModels(self.config_data, screen_basin_area_huc4=False, DOR=dor)
         save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',

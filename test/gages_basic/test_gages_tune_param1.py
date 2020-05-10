@@ -97,7 +97,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        with torch.cuda.device(0):
+        with torch.cuda.device(2):
             pred, obs = master_test(data_model, epoch=self.test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)

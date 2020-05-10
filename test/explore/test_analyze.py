@@ -11,6 +11,7 @@ from utils import unserialize_json
 from utils.dataset_format import subset_of_dict
 from visual.plot_model import plot_gages_map_and_ts, plot_gages_attrs_boxes, plot_scatter_multi_attrs
 from visual.plot_stat import plot_diff_boxes, plot_scatter_xyc, plot_boxs, swarmplot_with_cbar
+from matplotlib import pyplot
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -262,6 +263,102 @@ class TestExploreCase(unittest.TestCase):
         swarmplot_with_cbar(cmap_str, cbar_label, [-1, 1.0], x=x_name, y=y_name, hue=hue_name, palette=cmap_str,
                             data=result)
         # swarmplot_with_cbar(cmap_str, cbar_label, None, x=x_name, y=y_name, hue=hue_name, palette=cmap_str, data=result)
+
+    def test_explore_gages_prcp_log(self):
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='data_source.txt',
+                                               stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                               forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                               f_dict_file_name='dictFactorize.json',
+                                               var_dict_file_name='dictAttribute.json',
+                                               t_s_dict_file_name='dictTimeSpace.json')
+        i = np.random.randint(data_model.data_forcing.shape[0], size=1)
+        print(i)
+        a = data_model.data_forcing[i, :, 1].flatten()
+        series = a[~np.isnan(a)]
+        series = series[np.where(series >= 0)]
+        # series = series[np.where(series > 0)]
+        pyplot.plot(series)
+        pyplot.show()
+        # histogram
+        pyplot.hist(series)
+        pyplot.show()
+        # sqrt transform
+        transform = np.sqrt(series)
+        pyplot.figure(1)
+        # line plot
+        pyplot.subplot(211)
+        pyplot.plot(transform)
+        # histogram
+        pyplot.subplot(212)
+        pyplot.hist(transform)
+        pyplot.show()
+        transform = np.log(series + 1)
+        # transform = np.log(series + 0.1)
+        pyplot.figure(1)
+        # line plot
+        pyplot.subplot(211)
+        pyplot.plot(transform)
+        # histogram
+        pyplot.subplot(212)
+        pyplot.hist(transform)
+        pyplot.show()
+        # transform = stats.boxcox(series, lmbda=0.0)
+        # pyplot.figure(1)
+        # # line plot
+        # pyplot.subplot(211)
+        # pyplot.plot(transform)
+        # # histogram
+        # pyplot.subplot(212)
+        # pyplot.hist(transform)
+        # pyplot.show()
+        # for j in range(data_model.data_forcing.shape[2]):
+        #     x_explore_j = data_model.data_forcing[i, :, j].flatten()
+        #     plot_dist(x_explore_j)
+
+    def test_explore_gages_prcp_basin(self):
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='data_source.txt',
+                                               stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                               forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                               f_dict_file_name='dictFactorize.json',
+                                               var_dict_file_name='dictAttribute.json',
+                                               t_s_dict_file_name='dictTimeSpace.json')
+        basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
+                                                      is_return_dict=False)
+        mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
+                                                     is_return_dict=False)
+        flow = data_model.data_flow
+        temparea = np.tile(basin_area, (1, flow.shape[1]))
+        tempprep = np.tile(mean_prep / 365 * 10, (1, flow.shape[1]))
+        flowua = (flow * 0.0283168 * 3600 * 24) / (
+                (temparea * (10 ** 6)) * (tempprep * 10 ** (-3)))  # unit (m^3/day)/(m^3/day)
+        i = np.random.randint(data_model.data_forcing.shape[0], size=1)
+        a = flow[i].flatten()
+        series = a[~np.isnan(a)]
+        # series = series[np.where(series >= 0)]
+        # series = series[np.where(series > 0)]
+        pyplot.figure(1)
+        # line plot
+        pyplot.subplot(211)
+        pyplot.plot(series)
+        # histogram
+        pyplot.subplot(212)
+        pyplot.hist(series)
+        pyplot.show()
+
+        b = flowua[i].flatten()
+        transform = b[~np.isnan(b)]
+        # transform = series[np.where(transform >= 0)]
+        # series = series[np.where(series > 0)]
+        pyplot.figure(1)
+        # line plot
+        pyplot.subplot(211)
+        pyplot.plot(transform)
+        # histogram
+        pyplot.subplot(212)
+        pyplot.hist(transform)
+        pyplot.show()
 
 
 if __name__ == '__main__':

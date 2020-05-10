@@ -1,7 +1,6 @@
 import unittest
 
-import torch
-
+from functools import reduce
 import definitions
 from data import GagesConfig, GagesSource, DataModel
 from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result, load_result
@@ -35,6 +34,71 @@ class MyTestCase(unittest.TestCase):
         # self.nid_file = 'OH_U.xlsx'
         self.nid_file = 'NID2018_U.xlsx'
         self.test_epoch = 300
+
+    def test_multi_cases_in_one_exp_stat_together(self):
+        experiment = "ecoregion_exp1"
+        cases = ["5.2", "5.3", "6.2", "7.1", "8.1", "8.2", "8.3", "8.4", "8.5", "9.2", "9.3", "9.4", "9.5",
+                 "9.6", "10.1", "10.2", "10.4", "11.1", "12.1", "13.1"]
+        pred = []
+        obs = []
+        config_data_i = load_dataconfig_case_exp(experiment)
+        for case in cases:
+            temp_dir = os.path.join(config_data_i.data_path['Temp'], case)
+            pred_i, obs_i = load_result(temp_dir, self.test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            pred.append(pred_i)
+            obs.append(obs_i)
+        pred_stack = reduce(lambda a, b: np.vstack((a, b)),
+                            list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), pred)))
+        obs_stack = reduce(lambda a, b: np.vstack((a, b)),
+                           list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), obs)))
+        inds = statError(obs_stack, pred_stack)
+        inds_df = pd.DataFrame(inds)
+        print(inds_df.median(axis=0))
+        print(inds_df.mean(axis=0))
+
+        keys_nse = "NSE"
+        xs = []
+        ys = []
+        cases_exps_legends = ["separate", "together"]
+
+        x1, y1 = ecdf(inds_df[keys_nse])
+        xs.append(x1)
+        ys.append(y1)
+
+        pooling_experiment = "basic_exp23"
+        config_data_pooling = load_dataconfig_case_exp(pooling_experiment)
+        pred, obs = load_result(config_data_pooling.data_path['Temp'], self.test_epoch)
+        pred = pred.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(pred.shape[0], pred.shape[1])
+        inds_pooling = statError(obs, pred)
+        inds_pooling_df = pd.DataFrame(inds_pooling)
+        x2, y2 = ecdf(inds_pooling_df[keys_nse])
+        xs.append(x2)
+        ys.append(y2)
+        plot_ecdfs(xs, ys, cases_exps_legends)
+
+    def test_multi_cases_stat_together(self):
+        cases_exps = ["basic_exp14", "basic_exp15", "basic_exp2", "basic_exp3", "basic_exp4",
+                      "basic_exp5", "basic_exp6", "basic_exp7", "basic_exp8", "basic_exp9"]
+        pred = []
+        obs = []
+        for case_exp in cases_exps:
+            config_data_i = load_dataconfig_case_exp(case_exp)
+            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            pred.append(pred_i)
+            obs.append(obs_i)
+        pred_stack = reduce(lambda a, b: np.vstack((a, b)),
+                            list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), pred)))
+        obs_stack = reduce(lambda a, b: np.vstack((a, b)),
+                           list(map(lambda x: x.reshape(x.shape[0], x.shape[1]), obs)))
+        inds = statError(obs_stack, pred_stack)
+        inds_df = pd.DataFrame(inds)
+        print(inds_df.median(axis=0))
+        print(inds_df.mean(axis=0))
 
     def test_purposes_seperate(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
@@ -204,13 +268,13 @@ class MyTestCase(unittest.TestCase):
 
         # 0: compare w/wo in conus ; 1: 0 + major dam with natflow; 2: 0 + seperate cases
         # compare_item = 0
-        # compare_item = 1
-        compare_item = 2
+        compare_item = 1
+        # compare_item = 2
         if compare_item == 0:
             plot_ecdfs(xs, ys, cases_exps_legends_together)
         elif compare_item == 1:
-            cases_exps = ["simualte_exp2"]
-            cases_exps_legends_separate = ["major_dam_natflow"]
+            cases_exps = ["simulate_exp2", "storage_exp1"]
+            cases_exps_legends_separate = ["major_dam_natflow", "major_dam_natflow_julian"]
             for case_exp in cases_exps:
                 config_data_i = load_dataconfig_case_exp(case_exp)
                 pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
@@ -282,7 +346,26 @@ class MyTestCase(unittest.TestCase):
         x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_dor2])
         xs.append(x2)
         ys.append(y2)
-        plot_ecdfs(xs, ys, cases_exps_legends_together)
+
+        # compare_item = 0
+        compare_item = 1
+        if compare_item == 0:
+            plot_ecdfs(xs, ys, cases_exps_legends_together)
+        elif compare_item == 1:
+            cases_exps = ["dam_exp17", "dam_exp18"]
+            cases_exps_legends_separate = ["small_dor", "large_dor"]
+            for case_exp in cases_exps:
+                config_data_i = load_dataconfig_case_exp(case_exp)
+                pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
+                pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+                obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+                inds_i = statError(obs_i, pred_i)
+                x, y = ecdf(inds_i[keys_nse])
+                xs.append(x)
+                ys.append(y)
+
+            plot_ecdfs(xs, ys, cases_exps_legends_together + cases_exps_legends_separate,
+                       style=["together", "together", "separate", "separate"])
 
     def test_stor_seperate(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

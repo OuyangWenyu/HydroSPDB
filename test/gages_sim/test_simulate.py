@@ -31,7 +31,7 @@ class MyTestCase(unittest.TestCase):
         self.config_data_lstm = GagesConfig.set_subdir(self.config_file_lstm, self.subdir)
         self.config_data_natflow = GagesConfig.set_subdir(self.config_file_natflow, self.subdir)
         add_model_param(self.config_data_lstm, "model", seqLength=1)
-        test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 305, 310, 320]
+        test_epoch_lst = [100, 200, 220, 250, 280, 290, 295, 300, 310, 320]
         # self.test_epoch = test_epoch_lst[0]
         # self.test_epoch = test_epoch_lst[1]
         # self.test_epoch = test_epoch_lst[2]
@@ -39,10 +39,9 @@ class MyTestCase(unittest.TestCase):
         # self.test_epoch = test_epoch_lst[4]
         # self.test_epoch = test_epoch_lst[5]
         # self.test_epoch = test_epoch_lst[6]
-        self.test_epoch = test_epoch_lst[7]
+        # self.test_epoch = test_epoch_lst[7]
         # self.test_epoch = test_epoch_lst[8]
-        # self.test_epoch = test_epoch_lst[9]
-        # self.test_epoch = test_epoch_lst[10]
+        self.test_epoch = test_epoch_lst[9]
 
     def test_gages_sim_data_model(self):
         quick_data_dir = os.path.join(self.config_data_natflow.data_path["DB"], "quickdata")

@@ -131,7 +131,7 @@ class MyTestCase(unittest.TestCase):
     def test_train_gages_sim(self):
         with torch.cuda.device(1):
             # load model from npy data and then update some params for the test func
-            data_model1 = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "1",
+            data_model1 = GagesModel.load_datamodel(self.config_data_natflow.data_path["Temp"], "1",
                                                     data_source_file_name='data_source.txt',
                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
                                                     forcing_file_name='forcing.npy', attr_file_name='attr.npy',

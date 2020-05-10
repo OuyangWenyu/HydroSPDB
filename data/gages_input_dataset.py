@@ -26,7 +26,7 @@ from utils.hydro_math import concat_two_3darray, copy_attr_array_in2d
 def load_dataconfig_case_exp(case_exp):
     config_dir = definitions.CONFIG_DIR
     (case, exp) = case_exp.split("_")
-    if case == "inv" or case == "simulate":
+    if case == "inv" or case == "simulate" or case == "storage":
         config_file_i = os.path.join(config_dir, case + "/config2_" + exp + ".ini")
         subdir = case + "/" + exp
     elif case == "siminv":

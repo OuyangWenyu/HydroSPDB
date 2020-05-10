@@ -32,7 +32,7 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
         self.config_data_natflow = GagesConfig.set_subdir(self.config_file_natflow, self.subdir)
         self.config_data_lstm = GagesConfig.set_subdir(self.config_file_lstm, self.subdir)
         add_model_param(self.config_data_lstm, "model", seqLength=1)
-        test_epoch_lst = [100, 200, 220, 250, 270, 280, 290, 300, 310, 320, 400, 500]
+        test_epoch_lst = [100, 200, 220, 250, 270, 280, 290, 300, 310, 320, 400]
         # self.test_epoch = test_epoch_lst[0]
         # self.test_epoch = test_epoch_lst[1]
         # self.test_epoch = test_epoch_lst[2]
@@ -40,11 +40,10 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
         # self.test_epoch = test_epoch_lst[4]
         # self.test_epoch = test_epoch_lst[5]
         # self.test_epoch = test_epoch_lst[6]
-        self.test_epoch = test_epoch_lst[7]
+        # self.test_epoch = test_epoch_lst[7]
         # self.test_epoch = test_epoch_lst[8]
         # self.test_epoch = test_epoch_lst[9]
-        # self.test_epoch = test_epoch_lst[10]
-        # self.test_epoch = test_epoch_lst[11]
+        self.test_epoch = test_epoch_lst[10]
 
     def test_siminv_data_temp(self):
         quick_data_dir = os.path.join(self.config_data_natflow.data_path["DB"], "quickdata")
@@ -136,11 +135,11 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                                     var_dict_file_name='dictAttribute.json',
                                                     t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesJulianDataModel(data_model1, data_model2)
-            # pre_trained_model_epoch = 150
-            # master_train_natural_flow(data_model, pre_trained_model_epoch)
-            master_train_natural_flow(data_model)
+            pre_trained_model_epoch = 270
+            master_train_natural_flow(data_model, pre_trained_model_epoch)
+            # master_train_natural_flow(data_model)
 
-    def test_siminv_test(self):
+    def test_storage_julian_test(self):
         with torch.cuda.device(1):
             df1 = GagesModel.load_datamodel(self.config_data_natflow.data_path["Temp"], "1",
                                             data_source_file_name='test_data_source.txt',
@@ -167,7 +166,7 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
             save_result(df2.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
-    def test_siminv_plot(self):
+    def test_storage_julian_plot(self):
         data_model = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "2",
                                                data_source_file_name='test_data_source.txt',
                                                stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
