@@ -9,13 +9,15 @@ from sklearn.model_selection import KFold
 from data import *
 from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result, load_result
 from data.gages_input_dataset import GagesModels, load_dataconfig_case_exp
-from explore.stat import statError
+from explore.stat import statError, ecdf
 from hydroDL.master import *
 import definitions
 from utils import serialize_numpy, unserialize_numpy
 from visual.plot_model import plot_we_need
 import numpy as np
 from matplotlib import pyplot
+
+from visual.plot_stat import plot_ecdfs
 
 
 class MyTestCaseGages(unittest.TestCase):
@@ -151,7 +153,7 @@ class MyTestCaseGages(unittest.TestCase):
 
     def test_train_pub_ecoregion(self):
         with torch.cuda.device(2):
-            for i in range(self.split_num):
+            for i in range(2, self.split_num):
                 data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"], str(i),
                                                        data_source_file_name='data_source.txt',
                                                        stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -180,7 +182,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                             f_dict_file_name='test_dictFactorize_majordam.json',
                                                             var_dict_file_name='test_dictAttribute_majordam.json',
                                                             t_s_dict_file_name='test_dictTimeSpace_majordam.json')
-            with torch.cuda.device(1):
+            with torch.cuda.device(2):
                 pred, obs = master_test(data_model, epoch=self.test_epoch)
                 basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                               is_return_dict=False)
@@ -191,7 +193,8 @@ class MyTestCaseGages(unittest.TestCase):
                 obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
                 save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
 
-                pred_majordam, obs_majordam = master_test(data_model_majordam, epoch=self.test_epoch)
+                pred_majordam, obs_majordam = master_test(data_model_majordam, epoch=self.test_epoch,
+                                                          save_file_suffix="majordam")
                 basin_area_majordam = data_model_majordam.data_source.read_attr(
                     data_model_majordam.t_s_dict["sites_id"], ['DRAIN_SQKM'], is_return_dict=False)
                 mean_prep_majordam = data_model_majordam.data_source.read_attr(data_model_majordam.t_s_dict["sites_id"],
@@ -203,22 +206,55 @@ class MyTestCaseGages(unittest.TestCase):
                 save_result(data_model_majordam.data_source.data_config.data_path['Temp'], self.test_epoch,
                             pred_majordam, obs_majordam, pred_name='flow_pred_majordam', obs_name='flow_obs_majordam')
 
-    def test_export_result(self):
-        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
-                                               data_source_file_name='test_data_source.txt',
-                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                                               f_dict_file_name='test_dictFactorize.json',
-                                               var_dict_file_name='test_dictAttribute.json',
-                                               t_s_dict_file_name='test_dictTimeSpace.json')
-        pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
-        pred = pred.reshape(pred.shape[0], pred.shape[1])
-        obs = obs.reshape(obs.shape[0], obs.shape[1])
-        inds = statError(obs, pred)
-        inds['STAID'] = data_model.t_s_dict["sites_id"]
-        inds_df = pd.DataFrame(inds)
+    def test_comp_result(self):
+        for i in range(self.split_num):
+            data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"], str(i),
+                                                   data_source_file_name='test_data_source.txt',
+                                                   stat_file_name='test_Statistics.json',
+                                                   flow_file_name='test_flow.npy',
+                                                   forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                                   f_dict_file_name='test_dictFactorize.json',
+                                                   var_dict_file_name='test_dictAttribute.json',
+                                                   t_s_dict_file_name='test_dictTimeSpace.json')
+            data_model_majordam = GagesModel.load_datamodel(self.config_data.data_path["Temp"], str(i),
+                                                            data_source_file_name='test_data_source_majordam.txt',
+                                                            stat_file_name='test_Statistics_majordam.json',
+                                                            flow_file_name='test_flow_majordam.npy',
+                                                            forcing_file_name='test_forcing_majordam.npy',
+                                                            attr_file_name='test_attr_majordam.npy',
+                                                            f_dict_file_name='test_dictFactorize_majordam.json',
+                                                            var_dict_file_name='test_dictAttribute_majordam.json',
+                                                            t_s_dict_file_name='test_dictTimeSpace_majordam.json')
+            pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
+            pred = pred.reshape(pred.shape[0], pred.shape[1])
+            obs = obs.reshape(obs.shape[0], obs.shape[1])
+            inds = statError(obs, pred)
+            inds['STAID'] = data_model.t_s_dict["sites_id"]
+            inds_df = pd.DataFrame(inds)
 
-        inds_df.to_csv(os.path.join(self.config_data.data_path["Out"], 'data_df.csv'))
+            pred_majordam, obs_majordam = load_result(data_model_majordam.data_source.data_config.data_path['Temp'],
+                                                      self.test_epoch, pred_name='flow_pred_majordam',
+                                                      obs_name='flow_obs_majordam')
+            pred_majordam = pred_majordam.reshape(pred_majordam.shape[0], pred_majordam.shape[1])
+            obs_majordam = obs_majordam.reshape(obs_majordam.shape[0], obs_majordam.shape[1])
+            inds_majordam = statError(obs_majordam, pred_majordam)
+            inds_majordam['STAID'] = data_model_majordam.t_s_dict["sites_id"]
+            inds_majordam_df = pd.DataFrame(inds_majordam)
+
+            keys_nse = "NSE"
+            xs = []
+            ys = []
+            cases_exps_legends_together = ["no_major_dam", "major_dam"]
+
+            x1, y1 = ecdf(inds_df[keys_nse])
+            xs.append(x1)
+            ys.append(y1)
+
+            x2, y2 = ecdf(inds_majordam_df[keys_nse])
+            xs.append(x2)
+            ys.append(y2)
+
+            plot_ecdfs(xs, ys, cases_exps_legends_together)
 
 
 if __name__ == '__main__':

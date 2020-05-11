@@ -35,6 +35,25 @@ class MyTestCase(unittest.TestCase):
         self.nid_file = 'NID2018_U.xlsx'
         self.test_epoch = 300
 
+    def test_plot_ecdf_together(self):
+        xs = []
+        ys = []
+        cases_exps = ["basic_exp21", "basic_exp22", "basic_exp23", "basic_exp24"]
+        cases_exps_legends = ["miniBatch = [100, 200]	hiddenSize = 256",
+                              "miniBatch = [100, 100]	hiddenSize = 256",
+                              "miniBatch = [100, 365]	hiddenSize = 256",
+                              "miniBatch = [100, 365]	hiddenSize = 128"]
+        for case_exp in cases_exps:
+            config_data_i = load_dataconfig_case_exp(case_exp)
+            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            inds_i = statError(obs_i, pred_i)
+            x, y = ecdf(inds_i["NSE"])
+            xs.append(x)
+            ys.append(y)
+        plot_ecdfs(xs, ys, cases_exps_legends)
+
     def test_multi_cases_in_one_exp_stat_together(self):
         experiment = "ecoregion_exp1"
         cases = ["5.2", "5.3", "6.2", "7.1", "8.1", "8.2", "8.3", "8.4", "8.5", "9.2", "9.3", "9.4", "9.5",
@@ -220,6 +239,61 @@ class MyTestCase(unittest.TestCase):
             inds_means.append(inds_dfs[i].mean(axis=0))
         print(inds_medians)
         print(inds_means)
+
+    def test_comp_same_dor_sim_or_basic_cases(self):
+        dam_experiment = "dam_exp11"
+        config_data_dam = load_dataconfig_case_exp(dam_experiment)
+        data_model_dam = GagesModel.load_datamodel(config_data_dam.data_path["Temp"],
+                                                   data_source_file_name='test_data_source.txt',
+                                                   stat_file_name='test_Statistics.json',
+                                                   flow_file_name='test_flow.npy',
+                                                   forcing_file_name='test_forcing.npy',
+                                                   attr_file_name='test_attr.npy',
+                                                   f_dict_file_name='test_dictFactorize.json',
+                                                   var_dict_file_name='test_dictAttribute.json',
+                                                   t_s_dict_file_name='test_dictTimeSpace.json')
+        all_sites_dam = data_model_dam.t_s_dict["sites_id"]
+        dor_1 = - 0.02
+        # dor_2 = 0.02
+        source_data_dor1 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_1)
+        # source_data_dor2 = GagesSource.choose_some_basins(self.config_data,
+        #                                                   self.config_data.model_dict["data"]["tRangeTrain"],
+        #                                                   screen_basin_area_huc4=False,
+        #                                                   DOR=dor_2)
+        sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+        # sites_id_dor2 = source_data_dor2.all_configs['flow_screen_gage_id']
+        idx_lst_dor1 = [i for i in range(len(all_sites_dam)) if all_sites_dam[i] in sites_id_dor1]
+        # idx_lst_dor2 = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_dor2]
+
+        keys_nse = "NSE"
+        xs = []
+        ys = []
+        cases_exps_legends_together = ["small_dor_major_dam", "small_dor_major_dam_natflow"]
+
+        pred_dam, obs_dam = load_result(config_data_dam.data_path['Temp'], self.test_epoch)
+        pred_dam = pred_dam.reshape(pred_dam.shape[0], pred_dam.shape[1])
+        obs_dam = obs_dam.reshape(pred_dam.shape[0], pred_dam.shape[1])
+        inds_dam = statError(obs_dam, pred_dam)
+        inds_dam_df = pd.DataFrame(inds_dam)
+        x1, y1 = ecdf(inds_dam_df[keys_nse].iloc[idx_lst_dor1])
+        xs.append(x1)
+        ys.append(y1)
+
+        natflow_experiment = "simulate_exp3"
+        config_data_natflow = load_dataconfig_case_exp(natflow_experiment)
+        pred, obs = load_result(config_data_natflow.data_path['Temp'], self.test_epoch)
+        pred = pred.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(pred.shape[0], pred.shape[1])
+        inds = statError(obs, pred)
+        inds_df = pd.DataFrame(inds)
+        x2, y2 = ecdf(inds_df[keys_nse])
+        xs.append(x2)
+        ys.append(y2)
+
+        plot_ecdfs(xs, ys, cases_exps_legends_together)
 
     def test_w_wo_majordam_pooling_seperate_cases(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

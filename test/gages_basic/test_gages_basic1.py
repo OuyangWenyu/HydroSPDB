@@ -19,13 +19,15 @@ class MyTestCaseGages(unittest.TestCase):
         config_dir = definitions.CONFIG_DIR
         # self.config_file = os.path.join(config_dir, "basic/config_exp1.ini")
         # self.subdir = r"basic/exp1"
-        self.config_file = os.path.join(config_dir, "basic/config_exp20.ini")
-        self.subdir = r"basic/exp20"
+        self.config_file = os.path.join(config_dir, "basic/config_exp5.ini")
+        self.subdir = r"basic/exp5"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp20.ini")
+        # self.subdir = r"basic/exp20"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
-        self.test_epoch = 320
+        self.test_epoch = 300
 
     def test_gages_data_model(self):
-        gages_model = GagesModels(self.config_data)
+        gages_model = GagesModels(self.config_data, screen_basin_area_huc4=False)
         save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
@@ -82,9 +84,9 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(2):
-            pre_trained_model_epoch = 180
-            # master_train(data_model)
-            master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            # pre_trained_model_epoch = 180
+            master_train(data_model)
+            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

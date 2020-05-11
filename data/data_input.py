@@ -25,10 +25,10 @@ def save_result(save_dir, epoch, pred, obs, pred_name='flow_pred', obs_name='flo
     serialize_numpy(obs, flow_obs_file)
 
 
-def load_result(save_dir, epoch):
+def load_result(save_dir, epoch, pred_name='flow_pred', obs_name='flow_obs'):
     """load the pred value of testing period and obs value"""
-    flow_pred_file = os.path.join(save_dir, 'epoch' + str(epoch) + 'flow_pred.npy')
-    flow_obs_file = os.path.join(save_dir, 'epoch' + str(epoch) + 'flow_obs.npy')
+    flow_pred_file = os.path.join(save_dir, 'epoch' + str(epoch) + pred_name + '.npy')
+    flow_obs_file = os.path.join(save_dir, 'epoch' + str(epoch) + obs_name + '.npy')
     pred = unserialize_numpy(flow_pred_file)
     obs = unserialize_numpy(flow_obs_file)
     return pred, obs

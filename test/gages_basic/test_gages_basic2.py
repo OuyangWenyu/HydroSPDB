@@ -22,18 +22,19 @@ from visual.plot_stat import plot_ecdf
 class MyTestCaseGages(unittest.TestCase):
     def setUp(self) -> None:
         config_dir = definitions.CONFIG_DIR
-        # 85-95 train  95-05 test
+        self.config_file = os.path.join(config_dir, "basic/config_exp6.ini")
+        self.subdir = r"basic/exp6"
         # self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
         # self.subdir = r"basic/exp12"
         # self.config_file = os.path.join(config_dir, "basic/config_exp13.ini")
         # self.subdir = r"basic/exp13"
-        self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
-        self.subdir = r"basic/exp18"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
+        # self.subdir = r"basic/exp18"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
 
     def test_gages_data_model(self):
-        gages_model = GagesModels(self.config_data)
+        gages_model = GagesModels(self.config_data, screen_basin_area_huc4=False)
         save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',

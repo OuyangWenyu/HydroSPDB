@@ -144,7 +144,7 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesStorageDataModel(df1, df2)
-            pre_trained_model_epoch = 170
+            pre_trained_model_epoch = 280
             train_lstm_storage(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
             # train_lstm_storage(data_model)
 

@@ -161,7 +161,7 @@ def master_train(data_model, valid_size=0, pre_trained_model_epoch=1):
         return model
 
 
-def master_test(data_model, epoch=-1):
+def master_test(data_model, epoch=-1, save_file_suffix=None):
     """:parameter
         data_model：测试使用的数据
         model_dict：测试时的模型配置
@@ -180,7 +180,7 @@ def master_test(data_model, epoch=-1):
     if epoch < 0:
         epoch = model_dict['train']["nEpoch"]
     model_file = os.path.join(out, 'model_Ep' + str(epoch) + '.pt')
-    file_path = name_pred(model_dict, out, t_range, epoch)
+    file_path = name_pred(model_dict, out, t_range, epoch, suffix=save_file_suffix)
     print('output files:', file_path)
     if not os.path.isfile(model_file):
         model_file = os.path.join(out, 'checkpoint.pt')
