@@ -713,3 +713,37 @@ class CudnnLstmModelStoragePretrain(torch.nn.Module):
     def forward(self, qnc, qxc, do_drop_mc=False, dropout_false=False):
         out_lstm, param = self.lstm_storage(qnc, qxc)
         return out_lstm, param
+
+
+class CudnnLstmModelStorageSeq2One(torch.nn.Module):
+    def __init__(self, nx, ny, hidden_size_stroage, hidden_size, dr=0.5):
+        super(CudnnLstmModelStorageSeq2One, self).__init__()
+        self.nx = nx  # (qx+c, natflow(t-T:t)+c, theta=1)
+        self.ny = ny
+        self.hidden_size_stroage = hidden_size_stroage
+        self.hiddenSize = hidden_size
+        self.lstm_storage = CudnnLstmModel(nx=nx[1], ny=nx[2], hidden_size=hidden_size_stroage,
+                                           dr=dr)
+        self.lstm = CudnnLstmModel(nx=nx[0] + nx[2], ny=ny, hidden_size=hidden_size, dr=dr)
+
+    def forward(self, qnc, qxc):
+        gen = self.lstm_storage(qnc)
+        # seq to one
+        param = gen[-1, :, :].repeat(qxc.shape[0], 1, 1)
+        x1 = torch.cat((qxc, param), dim=len(param.shape) - 1)  # by default cat along dim=0
+        out_lstm = self.lstm(x1)
+        return out_lstm, param
+
+
+class CudnnLstmModelStorageSeq2OnePretrain(torch.nn.Module):
+    def __init__(self, *, nx, ny, hidden_size_stroage, hidden_size, pretrian_model_file):
+        super(CudnnLstmModelStorageSeq2OnePretrain, self).__init__()
+        self.nx = nx
+        self.ny = ny
+        self.hidden_size_stroage = hidden_size_stroage
+        self.hidden_size = hidden_size
+        self.lstm_storage = torch.load(pretrian_model_file)
+
+    def forward(self, qnc, qxc, do_drop_mc=False, dropout_false=False):
+        out_lstm, param = self.lstm_storage(qnc, qxc)
+        return out_lstm, param

@@ -244,7 +244,7 @@ class MyTestCaseGages(unittest.TestCase):
             keys_nse = "NSE"
             xs = []
             ys = []
-            cases_exps_legends_together = ["no_major_dam", "major_dam"]
+            cases_exps_legends_together = ["PUB_test_in_no-major-dam_basins", "PUB_test_in_major-dam_basins"]
 
             x1, y1 = ecdf(inds_df[keys_nse])
             xs.append(x1)

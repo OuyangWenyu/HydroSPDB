@@ -239,14 +239,16 @@ class MyTestCase(unittest.TestCase):
 
     def test_choose_some_gauge(self):
         ashu_gageid_file = os.path.join(self.config_data.data_path["DB"], "ashu", "AshuGagesId.txt")
-        gauge_df = pd.read_csv(ashu_gageid_file, dtype={"STAID": str})
+        farshid_gageid_file = os.path.join(self.config_data.data_path["DB"], "farshid", "sites.csv")
+        gauge_df = pd.read_csv(farshid_gageid_file, dtype={"STAID": str})
         gauge_list = gauge_df["STAID"].values
 
         # np.array(
         #     ['01013500', '01401650', '01585500', '02120780', '02324400', '03139000', '04086600', '05087500',
         #      '05539900', '06468170', '07184000', '08158810', '09404450', '11055800', '12134500', '14166500'])
         data_dir = os.path.join(self.config_data.data_path["DB"], "basin_mean_forcing", "daymet")
-        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_ashu")
+        # output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_ashu")
+        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_farshid")
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')
@@ -258,11 +260,11 @@ class MyTestCase(unittest.TestCase):
         for j in index:
             huc_id = source_data.gage_dict['HUC02'][j]
             data_huc_dir = os.path.join(data_dir, huc_id)
-            src = os.path.join(data_huc_dir, source_data.gage_dict['STAID'][j] + '_lump_daymet_forcing.txt')
+            src = os.path.join(data_huc_dir, source_data.gage_dict['STAID'][j] + '_lump_daymet_forcing_leap.txt')
             output_huc_dir = os.path.join(output_dir, huc_id)
             if not os.path.isdir(output_huc_dir):
                 os.mkdir(output_huc_dir)
-            dst = os.path.join(output_huc_dir, source_data.gage_dict['STAID'][j] + '_lump_daymet_forcing.txt')
+            dst = os.path.join(output_huc_dir, source_data.gage_dict['STAID'][j] + '_lump_daymet_forcing_leap.txt')
             print("write into", dst)
             shutil.copy(src, dst)
 

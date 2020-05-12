@@ -610,10 +610,11 @@ def model_test_storage(model, qx, c, natflow, seq_len, batch_size):
 
         if c is not None:
             c_temp = np.repeat(np.reshape(c[i_s[i]:i_e[i], :], [i_e[i] - i_s[i], 1, nc]), nt, axis=1)
-            xh_temp = torch.from_numpy(np.swapaxes(np.concatenate([xh_temp, c_temp], 2), 1, 0)).float()
-            xt_temp = torch.from_numpy(np.swapaxes(np.concatenate([xt_temp, c_temp], 2), 1, 0)).float()
-        xhTest = torch.from_numpy(np.swapaxes(xh_temp, 1, 0)).float()
-        xtTest = torch.from_numpy(np.swapaxes(xt_temp, 1, 0)).float()
+            xhTest = torch.from_numpy(np.swapaxes(np.concatenate([xh_temp, c_temp], 2), 1, 0)).float()
+            xtTest = torch.from_numpy(np.swapaxes(np.concatenate([xt_temp, c_temp], 2), 1, 0)).float()
+        else:
+            xhTest = torch.from_numpy(np.swapaxes(xh_temp, 1, 0)).float()
+            xtTest = torch.from_numpy(np.swapaxes(xt_temp, 1, 0)).float()
         if torch.cuda.is_available():
             xhTest = xhTest.cuda()
             xtTest = xtTest.cuda()

@@ -253,8 +253,9 @@ class TestExploreCase(unittest.TestCase):
             frames.append(df_i)
         result = pd.concat(frames)
         # can remove high hue value to keep a good map
+        plot_boxs(result, x_name, y_name, ylim=[-1.0, 1.0])
         # plot_boxs(result, x_name, y_name, uniform_color="skyblue", swarm_plot=True, hue=hue_name, colormap=True,
-        #           ylim=[-0.6, 1.0])
+        #           ylim=[-1.0, 1.0])
         cmap_str = 'viridis'
         # cmap = plt.get_cmap('Spectral')
         cbar_label = hue_name
