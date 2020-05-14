@@ -165,7 +165,7 @@ class MyTestCaseGages(unittest.TestCase):
 
     def test_train_pub_ecoregion(self):
         with torch.cuda.device(1):
-            for i in range(0, self.split_num):
+            for i in range(1, self.split_num):
                 data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"], str(i),
                                                        data_source_file_name='data_source.txt',
                                                        stat_file_name='Statistics.json', flow_file_name='flow.npy',
