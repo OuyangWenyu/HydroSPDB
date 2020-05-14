@@ -35,14 +35,93 @@ class MyTestCase(unittest.TestCase):
         self.nid_file = 'NID2018_U.xlsx'
         self.test_epoch = 300
 
+    def test_export_result(self):
+        # data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+        #                                        data_source_file_name='test_data_source.txt',
+        #                                        stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+        #                                        forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+        #                                        f_dict_file_name='test_dictFactorize.json',
+        #                                        var_dict_file_name='test_dictAttribute.json',
+        #                                        t_s_dict_file_name='test_dictTimeSpace.json')
+
+        config_dir = definitions.CONFIG_DIR
+        # camels_config_file = os.path.join(config_dir, "basic/config_exp1.ini")
+        # camels_subdir = r"basic/exp1"
+        # camels_config_data = GagesConfig.set_subdir(camels_config_file, camels_subdir)
+        # data_model = GagesModel.load_datamodel(camels_config_data.data_path["Temp"],
+        #                                        data_source_file_name='test_data_source.txt',
+        #                                        stat_file_name='test_Statistics.json',
+        #                                        flow_file_name='test_flow.npy',
+        #                                        forcing_file_name='test_forcing.npy',
+        #                                        attr_file_name='test_attr.npy',
+        #                                        f_dict_file_name='test_dictFactorize.json',
+        #                                        var_dict_file_name='test_dictAttribute.json',
+        #                                        t_s_dict_file_name='test_dictTimeSpace.json')
+
+        # config_file = os.path.join(config_dir, "nodam/config_exp3.ini")
+        # subdir = r"nodam/exp3"
+        config_file = os.path.join(config_dir, "majordam/config_exp2.ini")
+        subdir = r"majordam/exp2"
+        config_data = GagesConfig.set_subdir(config_file, subdir)
+        data_model = GagesModel.load_datamodel(config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
+        pred = pred.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(obs.shape[0], obs.shape[1])
+        inds = statError(obs, pred)
+        inds['STAID'] = data_model.t_s_dict["sites_id"]
+        inds_df = pd.DataFrame(inds)
+        print(inds_df.median())
+
+        # inds_df.to_csv(os.path.join(self.config_data.data_path["Out"], 'data_df.csv'))
+
+    def test_camels_dataset(self):
+        config_dir = definitions.CONFIG_DIR
+        camels_config_file = os.path.join(config_dir, "basic/config_exp1.ini")
+        camels_subdir = r"basic/exp1"
+        camels_config_data = GagesConfig.set_subdir(camels_config_file, camels_subdir)
+        camels_data_model = GagesModel.load_datamodel(camels_config_data.data_path["Temp"],
+                                                      data_source_file_name='test_data_source.txt',
+                                                      stat_file_name='test_Statistics.json',
+                                                      flow_file_name='test_flow.npy',
+                                                      forcing_file_name='test_forcing.npy',
+                                                      attr_file_name='test_attr.npy',
+                                                      f_dict_file_name='test_dictFactorize.json',
+                                                      var_dict_file_name='test_dictAttribute.json',
+                                                      t_s_dict_file_name='test_dictTimeSpace.json')
+        all_sites_camels = camels_data_model.t_s_dict["sites_id"]
+        dor_1 = - 0.02
+        dor_2 = 0.02
+        source_data_dor1 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_1)
+        source_data_dor2 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_2)
+        sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+        sites_id_dor2 = source_data_dor2.all_configs['flow_screen_gage_id']
+        print(np.intersect1d(all_sites_camels, sites_id_dor1))
+        print(np.intersect1d(all_sites_camels, sites_id_dor2))
+
     def test_plot_ecdf_together(self):
         xs = []
         ys = []
-        cases_exps = ["basic_exp21", "basic_exp22", "basic_exp23", "basic_exp24"]
-        cases_exps_legends = ["miniBatch = [100, 200]	hiddenSize = 256",
-                              "miniBatch = [100, 100]	hiddenSize = 256",
-                              "miniBatch = [100, 365]	hiddenSize = 256",
-                              "miniBatch = [100, 365]	hiddenSize = 128"]
+        # cases_exps = ["basic_exp21", "basic_exp22", "basic_exp23", "basic_exp24"]
+        # cases_exps_legends = ["miniBatch = [100, 200]	hiddenSize = 256",
+        #                       "miniBatch = [100, 100]	hiddenSize = 256",
+        #                       "miniBatch = [100, 365]	hiddenSize = 256",
+        #                       "miniBatch = [100, 365]	hiddenSize = 128"]
+        cases_exps = ["basic_exp20", "basic_exp23", "basic_exp25"]
+        cases_exps_legends = ["attr20", "attr23", "attr25"]
         for case_exp in cases_exps:
             config_data_i = load_dataconfig_case_exp(case_exp)
             pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
@@ -388,8 +467,9 @@ class MyTestCase(unittest.TestCase):
         if compare_item == 0:
             plot_ecdfs(xs, ys, cases_exps_legends_together)
         elif compare_item == 1:
-            cases_exps = ["simulate_exp2", "storage_exp1", "storage_exp2"]
-            cases_exps_legends_separate = ["major_dam_natflow", "major_dam_natflow_julian","major_dam_natflow_storage"]
+            cases_exps = ["simulate_exp2", "storage_exp1", "storage_exp2", "storage_exp3"]
+            cases_exps_legends_separate = ["major_dam_natflow", "major_dam_natflow_julian", "major_dam_natflow_storage",
+                                           "major_dam_natflow_storage_seq2one"]
             for case_exp in cases_exps:
                 config_data_i = load_dataconfig_case_exp(case_exp)
                 pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)

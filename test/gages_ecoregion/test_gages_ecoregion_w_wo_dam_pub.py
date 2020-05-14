@@ -13,6 +13,7 @@ from explore.stat import statError, ecdf
 from hydroDL.master import *
 import definitions
 from utils import serialize_numpy, unserialize_numpy
+from utils.hydro_math import random_choice_no_return
 from visual.plot_model import plot_we_need
 import numpy as np
 from matplotlib import pyplot
@@ -23,8 +24,8 @@ from visual.plot_stat import plot_ecdfs
 class MyTestCaseGages(unittest.TestCase):
     def setUp(self) -> None:
         config_dir = definitions.CONFIG_DIR
-        self.config_file = os.path.join(config_dir, "ecoregion/config_exp2.ini")
-        self.subdir = r"ecoregion/exp2"
+        self.config_file = os.path.join(config_dir, "ecoregion/config_exp3.ini")
+        self.subdir = r"ecoregion/exp3"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         test_epoch_lst = [100, 150, 200, 220, 250, 280, 290, 300, 310, 320, 350]
         # self.test_epoch = test_epoch_lst[0]
@@ -77,12 +78,10 @@ class MyTestCaseGages(unittest.TestCase):
         majordam_sites_id = majordam_source_data.all_configs['flow_screen_gage_id']
         majordam_in_conus = np.intersect1d(conus_sites_id, majordam_sites_id)
 
-        all_index_lst_train = []
         sites_lst_train = []
-        all_index_lst_test = []
-        sites_lst_test = []
-        all_index_lst_test_majordam = []
+        sites_lst_test_nomajordam = []
         sites_lst_test_majordam = []
+
         random_seed = 1
         np.random.seed(random_seed)
         kf = KFold(n_splits=self.split_num, shuffle=True, random_state=random_seed)
@@ -92,27 +91,42 @@ class MyTestCaseGages(unittest.TestCase):
                                                              self.config_data.model_dict["data"]["tRangeTrain"],
                                                              screen_basin_area_huc4=False, ecoregion=eco_name)
             eco_sites_id = eco_source_data.all_configs['flow_screen_gage_id']
-            sites_id_inter = np.intersect1d(nomajordam_in_conus, eco_sites_id)
+            nomajordam_sites_id_inter = np.intersect1d(nomajordam_in_conus, eco_sites_id)
             majordam_sites_id_inter = np.intersect1d(majordam_in_conus, eco_sites_id)
-            if sites_id_inter.size < self.split_num or majordam_sites_id_inter.size < 1:
-                continue
-            for train, test in kf.split(sites_id_inter):
-                all_index_lst_train.append(train)
-                sites_lst_train.append(sites_id_inter[train])
-                all_index_lst_test.append(test)
-                sites_lst_test.append(sites_id_inter[test])
-                if majordam_sites_id_inter.size < test.size:
-                    all_index_lst_test_majordam.append(np.arange(majordam_sites_id_inter.size))
-                    sites_lst_test_majordam.append(majordam_sites_id_inter)
-                else:
-                    majordam_test_chosen_idx = np.random.choice(majordam_sites_id_inter.size, test.size, replace=False)
-                    all_index_lst_test_majordam.append(majordam_test_chosen_idx)
-                    sites_lst_test_majordam.append(majordam_sites_id_inter[majordam_test_chosen_idx])
+
+            if nomajordam_sites_id_inter.size < majordam_sites_id_inter.size:
+                if nomajordam_sites_id_inter.size < self.split_num:
+                    continue
+                for train, test in kf.split(nomajordam_sites_id_inter):
+                    sites_lst_train_nomajordam = nomajordam_sites_id_inter[train]
+                    sites_lst_test_nomajordam.append(nomajordam_sites_id_inter[test])
+
+                    majordam_chosen_lst = random_choice_no_return(majordam_sites_id_inter, [train.size, test.size])
+                    sites_lst_train_majordam = majordam_chosen_lst[0]
+                    sites_lst_test_majordam.append(majordam_chosen_lst[1])
+
+                    sites_lst_train.append(np.sort(np.append(sites_lst_train_nomajordam, sites_lst_train_majordam)))
+
+            else:
+                if majordam_sites_id_inter.size < self.split_num:
+                    continue
+                for train, test in kf.split(majordam_sites_id_inter):
+                    sites_lst_train_majordam = majordam_sites_id_inter[train]
+                    sites_lst_test_majordam.append(majordam_sites_id_inter[test])
+
+                    nomajordam_chosen_lst = random_choice_no_return(nomajordam_sites_id_inter,
+                                                                        [train.size, test.size])
+                    sites_lst_train_nomajordam = nomajordam_chosen_lst[0]
+                    sites_lst_test_nomajordam.append(nomajordam_chosen_lst[1])
+
+                    sites_lst_train.append(np.sort(np.append(sites_lst_train_nomajordam, sites_lst_train_majordam)))
+
             eco_name_chosen.append(eco_name)
         for i in range(self.split_num):
             sites_ids_train_ilst = [sites_lst_train[j] for j in range(len(sites_lst_train)) if j % self.split_num == i]
             sites_ids_train_i = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_train_ilst))
-            sites_ids_test_ilst = [sites_lst_test[j] for j in range(len(sites_lst_test)) if j % self.split_num == i]
+            sites_ids_test_ilst = [sites_lst_test_nomajordam[j] for j in range(len(sites_lst_test_nomajordam)) if
+                                   j % self.split_num == i]
             sites_ids_test_i = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_test_ilst))
             sites_ids_test_majordam_ilst = [sites_lst_test_majordam[j] for j in range(len(sites_lst_test_majordam)) if
                                             j % self.split_num == i]
@@ -150,7 +164,7 @@ class MyTestCaseGages(unittest.TestCase):
             print("save ecoregion " + str(i) + " data model")
 
     def test_train_pub_ecoregion(self):
-        with torch.cuda.device(2):
+        with torch.cuda.device(1):
             for i in range(0, self.split_num):
                 data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"], str(i),
                                                        data_source_file_name='data_source.txt',
@@ -180,7 +194,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                             f_dict_file_name='test_dictFactorize_majordam.json',
                                                             var_dict_file_name='test_dictAttribute_majordam.json',
                                                             t_s_dict_file_name='test_dictTimeSpace_majordam.json')
-            with torch.cuda.device(2):
+            with torch.cuda.device(1):
                 pred, obs = master_test(data_model, epoch=self.test_epoch)
                 basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                               is_return_dict=False)

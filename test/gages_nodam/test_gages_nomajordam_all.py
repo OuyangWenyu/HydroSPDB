@@ -36,7 +36,7 @@ class MyTestCase(unittest.TestCase):
         # self.nid_file = 'PA_U.xlsx'
         # self.nid_file = 'OH_U.xlsx'
         self.nid_file = 'NID2018_U.xlsx'
-        self.test_epoch = 300
+        self.test_epoch = 400
 
     def test_gages_data_model(self):
         config_data = self.config_data

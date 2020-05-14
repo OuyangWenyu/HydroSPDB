@@ -5,7 +5,7 @@ import torch
 import pandas as pd
 
 from data import *
-from data.data_input import save_datamodel, GagesModel, _basin_norm
+from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result
 from data.gages_input_dataset import GagesModels
 from explore.stat import statError
 from hydroDL.master import *
@@ -17,14 +17,14 @@ from visual.plot_model import plot_we_need
 class MyTestCaseGages(unittest.TestCase):
     def setUp(self) -> None:
         config_dir = definitions.CONFIG_DIR
-        # self.config_file = os.path.join(config_dir, "basic/config_exp1.ini")
-        # self.subdir = r"basic/exp1"
-        self.config_file = os.path.join(config_dir, "basic/config_exp5.ini")
-        self.subdir = r"basic/exp5"
+        self.config_file = os.path.join(config_dir, "basic/config_exp1.ini")
+        self.subdir = r"basic/exp1"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp5.ini")
+        # self.subdir = r"basic/exp5"
         # self.config_file = os.path.join(config_dir, "basic/config_exp20.ini")
         # self.subdir = r"basic/exp20"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
-        self.test_epoch = 300
+        self.test_epoch = 390
 
     def test_gages_data_model(self):
         gages_model = GagesModels(self.config_data, screen_basin_area_huc4=False)
@@ -41,7 +41,8 @@ class MyTestCaseGages(unittest.TestCase):
 
     def test_gages_data_model_quickdata(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        # data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
+        data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         data_model_train = GagesModel.load_datamodel(data_dir,
                                                      data_source_file_name='data_source.txt',
                                                      stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -84,9 +85,9 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(2):
-            # pre_trained_model_epoch = 180
-            master_train(data_model)
-            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            pre_trained_model_epoch = 400
+            # master_train(data_model)
+            master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
@@ -105,10 +106,7 @@ class MyTestCaseGages(unittest.TestCase):
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred')
-            flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs')
-            serialize_numpy(pred, flow_pred_file)
-            serialize_numpy(obs, flow_obs_file)
+            save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
             plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_export_result(self):

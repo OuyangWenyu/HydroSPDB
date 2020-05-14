@@ -11,6 +11,7 @@ import definitions
 from data import GagesConfig, GagesSource
 from utils import serialize_pickle, unserialize_pickle, hydro_time
 from utils.dataset_format import trans_daymet_to_camels, subset_of_dict
+from utils.hydro_math import random_choice_no_return
 from utils.hydro_time import t_range_years, t_range_days, get_year, t_range_to_julian
 from datetime import datetime, timedelta
 
@@ -122,6 +123,14 @@ class MyTestCase(unittest.TestCase):
     def test_t_julian(self):
         t_range = t_range_to_julian(["1985-10-01", "1995-10-01"])
         print(t_range)
+
+    def test_random_choice_no_return(self):
+        # arr = [2, 3, 4, 5, 6, 7, 8, 9, 1]
+        arr = np.arange(10)
+        # arr = ["2", "3", "4", "5", "6", "7", "8", "9", "1"]
+        num_lst = [2, 3]
+        results = random_choice_no_return(arr, num_lst)
+        print(results)
 
     def test_intersect(self):
         t_range = self.t_range

@@ -147,9 +147,9 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
                                             var_dict_file_name='dictAttribute.json',
                                             t_s_dict_file_name='dictTimeSpace.json')
             data_model = GagesStorageDataModel(df1, df2)
-            pre_trained_model_epoch = 60
-            train_lstm_storage(data_model, pre_trained_model_epoch=pre_trained_model_epoch, seq2one=True)
-            # train_lstm_storage(data_model, seq2one=True)
+            pre_trained_model_epoch = 170
+            train_lstm_storage(data_model, pre_trained_model_epoch=pre_trained_model_epoch, hidden_size_storage=256)
+            # train_lstm_storage(data_model, hidden_size_storage=256)
 
     def test_storage_test(self):
         with torch.cuda.device(0):
@@ -178,8 +178,8 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
             save_result(df2.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
-    def test_siminv_plot(self):
-        data_model = GagesModel.load_datamodel(self.config_data_lstm.data_path["Temp"], "3",
+    def test_storage_plot(self):
+        data_model = GagesModel.load_datamodel(self.config_data_storage.data_path["Temp"], "2",
                                                data_source_file_name='test_data_source.txt',
                                                stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
                                                forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
@@ -199,12 +199,12 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
         inds = statError(obs, pred)
         inds['STAID'] = data_model.t_s_dict["sites_id"]
         inds_df = pd.DataFrame(inds)
-        inds_df.to_csv(os.path.join(self.config_data_lstm.data_path["Out"], 'data_df.csv'))
+        inds_df.to_csv(os.path.join(self.config_data_storage.data_path["Out"], 'data_df.csv'))
         # plot box，使用seaborn库
         keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(inds, keys)
         box_fig = plot_diff_boxes(inds_test)
-        box_fig.savefig(os.path.join(self.config_data_lstm.data_path["Out"], "box_fig.png"))
+        box_fig.savefig(os.path.join(self.config_data_storage.data_path["Out"], "box_fig.png"))
         # plot ts
         show_me_num = 5
         t_s_dict = data_model.t_s_dict
@@ -214,7 +214,7 @@ class MyTestCaseSimulateAndInv(unittest.TestCase):
         time_start = np.datetime64(t_range[0]) + np.timedelta64(time_seq_length - 1, 'D')
         t_range[0] = np.datetime_as_string(time_start, unit='D')
         ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
-        ts_fig.savefig(os.path.join(self.config_data_lstm.data_path["Out"], "ts_fig.png"))
+        ts_fig.savefig(os.path.join(self.config_data_storage.data_path["Out"], "ts_fig.png"))
 
         # plot nse ecdf
         sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})

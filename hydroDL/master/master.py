@@ -495,7 +495,7 @@ def master_test_natural_flow(model_input, epoch=-1):
     return pred, obs
 
 
-def train_lstm_storage(data_model, pre_trained_model_epoch=1, seq2one=False):
+def train_lstm_storage(data_model, pre_trained_model_epoch=1, seq2one=False, hidden_size_storage=-1):
     model_dict = data_model.data_model_storage.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_train = model_dict['train']
@@ -513,27 +513,30 @@ def train_lstm_storage(data_model, pre_trained_model_epoch=1, seq2one=False):
     model_save_dir = os.path.join(output_dir, 'model')
     if not os.path.isdir(model_save_dir):
         os.mkdir(model_save_dir)
+
+    if hidden_size_storage < 0:
+        # default value is 1/4 opt_model['hiddenSize']
+        hidden_size_storage = int(opt_model['hiddenSize'] / 4)
     if pre_trained_model_epoch > 1:
         pre_trained_model_file = os.path.join(model_save_dir, 'model_Ep' + str(pre_trained_model_epoch) + '.pt')
         if seq2one:
             model_storage = rnn.CudnnLstmModelStorageSeq2OnePretrain(nx=opt_model['nx'], ny=opt_model['ny'],
-                                                                     hidden_size_stroage=int(
-                                                                         opt_model['hiddenSize'] / 4),
+                                                                     hidden_size_stroage=hidden_size_storage,
                                                                      hidden_size=opt_model['hiddenSize'],
                                                                      pretrian_model_file=pre_trained_model_file)
         else:
             model_storage = rnn.CudnnLstmModelStoragePretrain(nx=opt_model['nx'], ny=opt_model['ny'],
-                                                              hidden_size_stroage=int(opt_model['hiddenSize'] / 4),
+                                                              hidden_size_stroage=hidden_size_storage,
                                                               hidden_size=opt_model['hiddenSize'],
                                                               pretrian_model_file=pre_trained_model_file)
     else:
         if seq2one:
             model_storage = rnn.CudnnLstmModelStorageSeq2One(nx=opt_model['nx'], ny=opt_model['ny'],
-                                                             hidden_size_stroage=int(opt_model['hiddenSize'] / 4),
+                                                             hidden_size_stroage=hidden_size_storage,
                                                              hidden_size=opt_model['hiddenSize'])
         else:
             model_storage = rnn.CudnnLstmModelStorage(nx=opt_model['nx'], ny=opt_model['ny'],
-                                                      hidden_size_stroage=int(opt_model['hiddenSize'] / 4),
+                                                      hidden_size_stroage=hidden_size_storage,
                                                       hidden_size=opt_model['hiddenSize'])
     # train model
     model_run.model_train_storage(model_storage, qx, c, natflow, y, loss_fun, seq_length_storage=seq_length_storage,
