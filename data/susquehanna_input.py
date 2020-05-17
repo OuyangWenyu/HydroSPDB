@@ -1,3 +1,7 @@
+import collections
+import os
+from configparser import ConfigParser
+
 from data import wrap_master, DataConfig
 
 
@@ -6,7 +10,7 @@ class SusquehannaModels(object):
         print()
 
 
-class CamelsConfig(DataConfig):
+class SusquehannaConfig(DataConfig):
     def __init__(self, config_file):
         super().__init__(config_file)
         opt_data, opt_train, opt_model, opt_loss = self.init_model_param()
@@ -40,19 +44,14 @@ class CamelsConfig(DataConfig):
         forcing_url = cfg.get(section, options[2])
         forcing_lst = eval(cfg.get(section, options[3]))
 
-        # streamflow
-        streamflow_dir = cfg.get(section, options[4])
-        gage_id_screen = eval(cfg.get(section, options[5]))
-
         # attribute
-        attr_dir = cfg.get(section, options[6])
-        attr_url = eval(cfg.get(section, options[7]))
-        attr_str_sel = eval(cfg.get(section, options[8]))
+        attr_dir = cfg.get(section, options[4])
+        attr_url = eval(cfg.get(section, options[5]))
+        attr_str_sel = eval(cfg.get(section, options[6]))
 
         opt_data = collections.OrderedDict(varT=forcing_lst, forcingDir=forcing_dir, forcingType=forcing_type,
                                            forcingUrl=forcing_url,
-                                           varC=attr_str_sel, attrDir=attr_dir, attrUrl=attr_url,
-                                           streamflowDir=streamflow_dir, gageIdScreen=gage_id_screen)
+                                           varC=attr_str_sel, attrDir=attr_dir, attrUrl=attr_url)
 
         return opt_data
 
@@ -63,10 +62,8 @@ class CamelsConfig(DataConfig):
 
         data_params = self.init_data_param()
         # 站点的shp file
-        camels_shp_file = os.path.join(dir_db, "basin_set_full_res", "HCDN_nhru_final_671.shp")
-        # 径流数据配置
-        flow_dir = os.path.join(dir_db, data_params.get("streamflowDir"))
-        flow_screen_gage_id = data_params.get("gageIdScreen")
+        susquehanna_huc10_shp_file = os.path.join(dir_db, "shpfile", "HUC10_Susquehanna.shp")
+        susquehanna_huc8_shp_file = os.path.join(dir_db, "shpfile", "HUC8_Susquehanna.shp")
         # 所选forcing
         forcing_chosen = data_params.get("varT")
         forcing_dir = os.path.join(dir_db, data_params.get("forcingDir"))
@@ -78,12 +75,9 @@ class CamelsConfig(DataConfig):
         attr_url = data_params.get("attrUrl")
         attr_chosen = data_params.get("varC")
         attr_dir = os.path.join(dir_db, data_params.get("attrDir"))
-        gauge_id_dir = "basin_timeseries_v1p2_metForcing_obsFlow/basin_dataset_public_v1p2/basin_metadata"
-        gauge_id_file = os.path.join(dir_db, gauge_id_dir, 'gauge_information.txt')
 
         return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
-                                       flow_dir=flow_dir, flow_screen_gage_id=flow_screen_gage_id,
                                        forcing_chosen=forcing_chosen, forcing_dir=forcing_dir,
                                        forcing_type=forcing_type, forcing_url=forcing_url,
                                        attr_url=attr_url, attr_chosen=attr_chosen, attr_dir=attr_dir,
-                                       gauge_id_file=gauge_id_file, gauge_shp_file=camels_shp_file)
+                                       huc10_shpfile=susquehanna_huc10_shp_file, huc8_shpfile=susquehanna_huc8_shp_file)
