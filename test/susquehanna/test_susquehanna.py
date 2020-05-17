@@ -5,7 +5,7 @@ import torch
 
 import definitions
 from data.data_input import save_datamodel, CamelsModel, _basin_norm
-from data.susquehanna_input import SusquehannaConfig, SusquehannaModels
+from data.susquehanna_input import SusquehannaConfig, SusquehannaSource, SusquehannaModel
 from hydroDL.master.master import master_test
 from utils import serialize_numpy
 from visual.plot_model import plot_we_need
@@ -20,27 +20,11 @@ class MyTestCase(unittest.TestCase):
         self.subdir = r"susquehanna/exp1"
         self.config_data = SusquehannaConfig.set_subdir(self.config_file, self.subdir)
 
-    def test_camels_data_model(self):
-        camels_model = SusquehannaModels(self.config_data)
-        save_datamodel(camels_model.data_model_train, data_source_file_name='data_source.txt',
-                       stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
-                       attr_file_name='attr', f_dict_file_name='dictFactorize.json',
-                       var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
-        save_datamodel(camels_model.data_model_test, data_source_file_name='test_data_source.txt',
-                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
-                       forcing_file_name='test_forcing', attr_file_name='test_attr',
-                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
-                       t_s_dict_file_name='test_dictTimeSpace.json')
-        print("read and save data model")
-
-    def test_test_camels(self):
-        data_model = CamelsModel.load_datamodel(self.config_data.data_path["Temp"],
-                                                data_source_file_name='test_data_source.txt',
-                                                stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                                                forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                                                f_dict_file_name='test_dictFactorize.json',
-                                                var_dict_file_name='test_dictAttribute.json',
-                                                t_s_dict_file_name='test_dictTimeSpace.json')
+    def test_Susquehanna(self):
+        t_test = self.config_data.model_dict["data"]["tRangeTest"]
+        source_data = SusquehannaSource(self.config_data, t_test)
+        # 构建输入数据类对象
+        data_model = SusquehannaModel(source_data)
         with torch.cuda.device(1):
             # pred, obs = master_test(data_model)
             pred, obs = master_test(data_model, epoch=300)

@@ -10,6 +10,7 @@ from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 from data import wrap_master, DataConfig, DataSource, DataModel
 from data.data_input import _trans_norm
 from explore import cal_stat_gamma, cal_stat
+from utils import hydro_time
 
 
 class SusquehannaSource(DataSource):
@@ -43,29 +44,31 @@ class SusquehannaSource(DataSource):
             out[s] = data[s].values
         return out, field_lst
 
+    def usgs_screen_streamflow(self, streamflow, usgs_ids=None, time_range=None):
+        usgs_out = None
+        gages_chosen_id = self.gage_dict["HUC10"]
+        ts = hydro_time.t_range_days(self.t_range)
+        return usgs_out, gages_chosen_id, ts
+
     def read_forcing_gage(self, usgs_id, var_lst, t_range_list, dataset='daymet'):
         forcing_lst = self.all_configs["forcing_chosen"]
-        gage_dict = self.gage_dict
-        ind = np.argwhere(gage_dict['id'] == usgs_id)[0][0]
-        huc = gage_dict['huc'][ind]
-
         data_folder = self.all_configs["forcing_dir"]
-        data_file = os.path.join(data_folder, str(huc).zfill(2), '%s_lump_%s_forcing_leap.txt' % (usgs_id, dataset))
-        data_temp = pd.read_csv(data_file, sep=r'\s+', header=None, skiprows=4)
+        data_file = os.path.join(data_folder, '%s_lump_%s_forcing_leap.txt' % (usgs_id, dataset))
+        data_temp = pd.read_csv(data_file, sep=r'\s+', header=None, skiprows=1)
 
         df_date = data_temp[[0, 1, 2]]
         df_date.columns = ['year', 'month', 'day']
         date = pd.to_datetime(df_date).values.astype('datetime64[D]')
-
         nf = len(var_lst)
+        assert (all(x < y for x, y in zip(date, date[1:])))
         [c, ind1, ind2] = np.intersect1d(date, t_range_list, return_indices=True)
-        nt = c.shape[0]
+        assert date[0] <= t_range_list[0] and date[-1] >= t_range_list[-1]
+        nt = t_range_list.size
         out = np.empty([nt, nf])
-
+        var_lst_in_file = ["dayl(s)", "prcp(mm/day)", "srad(W/m2)", "swe(mm)", "tmax(C)", "tmin(C)", "vp(Pa)"]
         for k in range(nf):
-            # assume all files are of same columns. May check later.
-            ind = forcing_lst.index(var_lst[k])
-            out[:, k] = data_temp[ind + 4].values[ind1]
+            ind = [i for i in range(len(var_lst_in_file)) if var_lst[k] in var_lst_in_file[i]][0]
+            out[ind2, k] = data_temp[ind + 4].values[ind1]
         return out
 
     def read_forcing(self, usgs_id_lst, t_range_list):
@@ -78,56 +81,26 @@ class SusquehannaSource(DataSource):
             x[k, :, :] = data
         return x
 
-    def read_attr_all(self, *, save_dict=False):
-        data_folder = self.all_configs["attr_dir"]
+    def read_attr(self, usgs_id_lst, var_lst):
         f_dict = dict()  # factorize dict
-        var_dict = dict()
-        var_lst = list()
+        var_dict = self.gage_fld_lst
+        var_lst = self.gage_fld_lst
         out_lst = list()
-        key_lst = ['topo', 'clim', 'hydro', 'vege', 'soil', 'geol']
         gage_dict = self.gage_dict
-        for key in key_lst:
-            data_file = os.path.join(data_folder, 'camels_' + key + '.txt')
-            data_temp = pd.read_csv(data_file, sep=';')
-            var_lst_temp = list(data_temp.columns[1:])
-            var_dict[key] = var_lst_temp
-            var_lst.extend(var_lst_temp)
-            k = 0
-            n_gage = len(gage_dict['id'])
-            out_temp = np.full([n_gage, len(var_lst_temp)], np.nan)
-            for field in var_lst_temp:
-                if is_string_dtype(data_temp[field]):
-                    value, ref = pd.factorize(data_temp[field], sort=True)
-                    out_temp[:, k] = value
-                    f_dict[field] = ref.tolist()
-                elif is_numeric_dtype(data_temp[field]):
-                    out_temp[:, k] = data_temp[field].values
-                k = k + 1
-            out_lst.append(out_temp)
-        out = np.concatenate(out_lst, 1)
-        if save_dict is True:
-            file_name = os.path.join(data_folder, 'dictFactorize.json')
-            with open(file_name, 'w') as fp:
-                json.dump(f_dict, fp, indent=4)
-            file_name = os.path.join(data_folder, 'dictAttribute.json')
-            with open(file_name, 'w') as fp:
-                json.dump(var_dict, fp, indent=4)
-        return out, var_lst, var_dict, f_dict
-
-    def read_attr(self, usgs_id_lst, var_lst, is_return_dict=True):
-        attr_all, var_lst_all, var_dict, f_dict = self.read_attr_all()
-        ind_var = list()
-        for var in var_lst:
-            ind_var.append(var_lst_all.index(var))
-        gage_dict = self.gage_dict
-        id_lst_all = gage_dict['id']
-        c, ind_grid, ind2 = np.intersect1d(id_lst_all, usgs_id_lst, return_indices=True)
-        temp = attr_all[ind_grid, :]
-        out = temp[:, ind_var]
-        if is_return_dict:
-            return out, var_dict, f_dict
+        if "HUC10" in self.all_configs["attr_chosen"]:
+            data_file = self.all_configs["huc10_shpfile"]
         else:
-            return out
+            data_file = self.all_configs["huc8_shpfile"]
+        data_temp = gpd.read_file(data_file)
+        k = 0
+        n_gage = len(gage_dict['HUC10'])
+        out_temp = np.full([n_gage, len(var_lst)], np.nan)
+        for field in var_lst:
+            out_temp[:, k] = data_temp[field].values
+            k = k + 1
+        out_lst.append(out_temp)
+        out = np.concatenate(out_lst, 1)
+        return out, var_dict, f_dict
 
 
 class SusquehannaModel(DataModel):
@@ -164,18 +137,6 @@ class SusquehannaModel(DataModel):
         if rm_nan is True:
             data[np.where(np.isnan(data))] = 0
         return data
-
-
-class SusquehannaModels(object):
-    def __init__(self, config_data):
-        t_train = config_data.model_dict["data"]["tRangeTrain"]
-        t_test = config_data.model_dict["data"]["tRangeTest"]
-        t_train_test = [t_train[0], t_test[1]]
-        source_data = SusquehannaSource(config_data, t_train_test)
-        # 构建输入数据类对象
-        data_model = SusquehannaModel(source_data)
-        self.data_model_train, self.data_model_test = SusquehannaModel.data_models_of_train_test(data_model, t_train,
-                                                                                                 t_test)
 
 
 class SusquehannaConfig(DataConfig):
@@ -229,7 +190,6 @@ class SusquehannaConfig(DataConfig):
         dir_temp = self.data_path.get("Temp")
 
         data_params = self.init_data_param()
-        # 站点的shp file
         susquehanna_huc10_shp_file = os.path.join(dir_db, "shpfile", "HUC10_Susquehanna.shp")
         susquehanna_huc8_shp_file = os.path.join(dir_db, "shpfile", "HUC8_Susquehanna.shp")
         # 所选forcing
@@ -248,4 +208,5 @@ class SusquehannaConfig(DataConfig):
                                        forcing_chosen=forcing_chosen, forcing_dir=forcing_dir,
                                        forcing_type=forcing_type, forcing_url=forcing_url,
                                        attr_url=attr_url, attr_chosen=attr_chosen, attr_dir=attr_dir,
-                                       huc10_shpfile=susquehanna_huc10_shp_file, huc8_shpfile=susquehanna_huc8_shp_file)
+                                       huc10_shpfile=susquehanna_huc10_shp_file, huc8_shpfile=susquehanna_huc8_shp_file,
+                                       flow_screen_gage_id=None)
