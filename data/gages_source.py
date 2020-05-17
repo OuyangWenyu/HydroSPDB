@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 
+from utils.hydro_math import is_any_elem_in_a_lst
+
 
 class GagesSource(DataSource):
     def __init__(self, config_data, t_range, screen_basin_area_huc4=True):
@@ -43,7 +45,24 @@ class GagesSource(DataSource):
                 new_data_source.storage_reservors_chosen(kwargs[criteria])
             elif criteria == 'ecoregion':
                 new_data_source.ecoregion_chosen(kwargs[criteria])
+            elif criteria == 'diversion':
+                new_data_source.diversion_chosen(kwargs[criteria])
         return new_data_source
+
+    def diversion_chosen(self, diversion_strs):
+        gage_id_file = self.all_configs.get("gage_id_file")
+        data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
+        usgs_id = data_all["STAID"].values.tolist()
+        assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
+        attr_lst = ["WR_REPORT_REMARKS", "SCREENING_COMMENTS"]
+        data_attr = self.read_attr_origin(usgs_id, attr_lst)
+        diversion_strs_lower = [elem.lower() for elem in diversion_strs]
+        data_attr0_lower = np.array([elem.lower() if type(elem) == str else elem for elem in data_attr[0]])
+        data_attr1_lower = np.array([elem.lower() if type(elem) == str else elem for elem in data_attr[1]])
+        data_attr_lower = np.vstack((data_attr0_lower, data_attr1_lower)).T
+        chosen_id = [usgs_id[i] for i in range(len(usgs_id)) if
+                     is_any_elem_in_a_lst(diversion_strs_lower, data_attr_lower[i], include=True)]
+        self.all_configs["flow_screen_gage_id"] = chosen_id
 
     def ecoregion_chosen(self, ecoregion):
         assert type(ecoregion) == tuple
@@ -708,3 +727,55 @@ class GagesSource(DataSource):
             return out, var_dict, f_dict
         else:
             return out
+
+    def read_attr_origin(self, gages_ids, attr_lst):
+        dir_gage_attr = self.all_configs.get("gage_files_dir")
+        data_temp_chosen_lst = list()
+        # 读取所有属性，直接按类型判断要读取的文件名
+        var_des = pd.read_csv(os.path.join(dir_gage_attr, 'variable_descriptions.txt'), sep=',')
+        var_des_map_values = var_des['VARIABLE_TYPE'].tolist()
+        for i in range(len(var_des)):
+            var_des_map_values[i] = var_des_map_values[i].lower()
+        # 按照读取的时候的顺序对type排序
+        key_lst = list(set(var_des_map_values))
+        key_lst.sort(key=var_des_map_values.index)
+        # x_region_names属性暂不需要读入
+        key_lst.remove('x_region_names')
+
+        out_lst = []
+        # 因为选择的站点可能是站点的一部分，所以需要求交集，ind2是所选站点在conterm_文件中所有站点里的index，把这些值放到out_temp中
+        range1 = gages_ids
+        gage_id_file = self.all_configs.get("gage_id_file")
+        data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
+        range2 = data_all["STAID"].values.tolist()
+        assert (all(x < y for x, y in zip(range2, range2[1:])))
+        c, ind1, ind2 = np.intersect1d(range1, range2, return_indices=True)
+
+        for key in key_lst:
+            # in "spreadsheets-in-csv-format" directory, the name of "flow_record" file is conterm_flowrec.txt
+            if key == 'flow_record':
+                key = 'flowrec'
+            data_file = os.path.join(dir_gage_attr, 'conterm_' + key + '.txt')
+            # 各属性值的“参考来源”是不需读入的
+            if key == 'bas_classif':
+                data_temp = pd.read_csv(data_file, sep=',',
+                                        dtype={'STAID': str, "WR_REPORT_REMARKS": str, "ADR_CITATION": str,
+                                               "SCREENING_COMMENTS": str}, engine='python')
+            else:
+                data_temp = pd.read_csv(data_file, sep=',', dtype={'STAID': str})
+            if key == 'flowrec':
+                # 最后一列为空，舍弃
+                data_temp = data_temp.iloc[:, range(0, data_temp.shape[1] - 1)]
+            # 该文件下的所有属性
+            var_lst_temp = list(data_temp.columns[1:])
+            do_exist, idx_lst = is_any_elem_in_a_lst(attr_lst, var_lst_temp, return_index=True)
+            if do_exist:
+                for idx in idx_lst:
+                    idx_in_var = var_lst_temp.index(attr_lst[idx]) + 1  # +1 because var_lst_temp starts from 1
+                    out_temp = data_temp.iloc[ind2, idx_in_var].values
+                    out_lst.append(out_temp)
+            else:
+                continue
+
+        out = np.array(out_lst)
+        return out

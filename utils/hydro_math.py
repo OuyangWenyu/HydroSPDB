@@ -39,6 +39,24 @@ def interpNan1d(x, mode='linear'):
     return x
 
 
+def is_any_elem_in_a_lst(lst1, lst2, return_index=False, include=False):
+    do_exist = False
+    idx_lst = []
+    for j in range(len(lst1)):
+        if include:
+            for lst2_elem in lst2:
+                if lst1[j] in lst2_elem:
+                    idx_lst.append(j)
+                    do_exist = True
+        else:
+            if lst1[j] in lst2:
+                idx_lst.append(j)
+                do_exist = True
+    if return_index:
+        return do_exist, idx_lst
+    return do_exist
+
+
 def random_choice_no_return(arr, num_lst):
     """sampling without replacement multi-times, and the num of each time is in num_lst"""
     num_lst_arr = np.array(num_lst)
