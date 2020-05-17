@@ -13,7 +13,7 @@ from scipy import constants, interpolate
 import definitions
 from data import DataModel, GagesSource, GagesConfig
 from data.data_config import update_config_item
-from data.data_input import GagesModel, _trans_norm
+from data.data_input import GagesModel, _trans_norm, GagesModelWoBasinNorm
 from explore import trans_norm, cal_stat
 from explore.hydro_cluster import cluster_attr_train
 from hydroDL import master_train
@@ -95,6 +95,20 @@ class GagesModels(object):
         # 构建输入数据类对象
         data_model = GagesModel(source_data)
         self.data_model_train, self.data_model_test = GagesModel.data_models_of_train_test(data_model, t_train, t_test)
+
+
+class GagesModelsWoBasinNorm(object):
+    def __init__(self, config_data, screen_basin_area_huc4=True, **kwargs):
+        # 准备训练数据
+        t_train = config_data.model_dict["data"]["tRangeTrain"]
+        t_test = config_data.model_dict["data"]["tRangeTest"]
+        t_train_test = [t_train[0], t_test[1]]
+        source_data = GagesSource.choose_some_basins(config_data, t_train_test,
+                                                     screen_basin_area_huc4=screen_basin_area_huc4, **kwargs)
+        # 构建输入数据类对象
+        data_model = GagesModelWoBasinNorm(source_data)
+        self.data_model_train, self.data_model_test = GagesModelWoBasinNorm.data_models_of_train_test(data_model,
+                                                                                                      t_train, t_test)
 
 
 class GagesTsDataModel(object):

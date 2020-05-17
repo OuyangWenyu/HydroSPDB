@@ -564,6 +564,45 @@ def _basin_norm(x, basin_area, mean_prep, to_norm):
     return flow
 
 
+class GagesModelWoBasinNorm(GagesModel):
+    def __init__(self, data_source, *args):
+        super().__init__(data_source, *args)
+
+    def cal_stat_all(self):
+        """calculate statistics of streamflow, forcing and attributes of Gages"""
+        # streamflow
+        flow = self.data_flow
+        stat_dict = dict()
+        stat_dict['usgsFlow'] = cal_stat_gamma(flow)
+
+        # forcing
+        forcing_lst = self.data_source.all_configs["forcing_chosen"]
+        x = self.data_forcing
+        for k in range(len(forcing_lst)):
+            var = forcing_lst[k]
+            if var == 'prcp':
+                stat_dict[var] = cal_stat_gamma(x[:, :, k])
+            else:
+                stat_dict[var] = cal_stat(x[:, :, k])
+
+        # const attribute
+        attr_data = self.data_attr
+        attr_lst = self.data_source.all_configs["attr_chosen"]
+        for k in range(len(attr_lst)):
+            var = attr_lst[k]
+            stat_dict[var] = cal_stat(attr_data[:, k])
+        return stat_dict
+
+    def get_data_obs(self, rm_nan=True, to_norm=True):
+        stat_dict = self.stat_dict
+        data = self.data_flow
+        data = np.expand_dims(data, axis=2)
+        data = _trans_norm(data, 'usgsFlow', stat_dict, to_norm=to_norm)
+        if rm_nan is True:
+            data[np.where(np.isnan(data))] = 0
+        return data
+
+
 class CamelsModel(DataModel):
     def __init__(self, data_source, *args):
         super().__init__(data_source, *args)

@@ -1,11 +1,9 @@
 import collections
-import json
 import os
 from configparser import ConfigParser
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 
 from data import wrap_master, DataConfig, DataSource, DataModel
 from data.data_input import _trans_norm
@@ -30,15 +28,18 @@ class SusquehannaSource(DataSource):
             各个站点的attibutes in basinid.txt
 
         """
-        if "HUC10" in self.all_configs["attr_chosen"]:
+        if "HUC10" == self.all_configs["huc"]:
             gage_file = self.all_configs["huc10_shpfile"]
         else:
             gage_file = self.all_configs["huc8_shpfile"]
 
         data_read = gpd.read_file(gage_file)
-        data = data_read.sort_values(by="HUC10")
-        # header gives some troubles. Skip and hardcode
-        field_lst = ['HUC10', 'AreaSqKm']
+        if "HUC10" == self.all_configs["huc"]:
+            data = data_read.sort_values(by="HUC10")
+            field_lst = ['HUC10', 'AreaSqKm']
+        else:
+            data = data_read.sort_values(by="HUC8")
+            field_lst = ['HUC8', 'AreaSqKm']
         out = dict()
         for s in field_lst:
             out[s] = data[s].values
@@ -83,17 +84,22 @@ class SusquehannaSource(DataSource):
 
     def read_attr(self, usgs_id_lst, var_lst):
         f_dict = dict()  # factorize dict
-        var_dict = self.gage_fld_lst
-        var_lst = self.gage_fld_lst
+        var_dict = self.all_configs["attr_chosen"]
+        var_lst = self.all_configs["attr_chosen"]
         out_lst = list()
         gage_dict = self.gage_dict
-        if "HUC10" in self.all_configs["attr_chosen"]:
+        if "HUC10" == self.all_configs["huc"]:
             data_file = self.all_configs["huc10_shpfile"]
         else:
             data_file = self.all_configs["huc8_shpfile"]
-        data_temp = gpd.read_file(data_file)
+        data_read = gpd.read_file(data_file)
+        if "HUC10" == self.all_configs["huc"]:
+            data_temp = data_read.sort_values(by="HUC10")
+            n_gage = len(gage_dict['HUC10'])
+        else:
+            data_temp = data_read.sort_values(by="HUC8")
+            n_gage = len(gage_dict['HUC8'])
         k = 0
-        n_gage = len(gage_dict['HUC10'])
         out_temp = np.full([n_gage, len(var_lst)], np.nan)
         for field in var_lst:
             out_temp[:, k] = data_temp[field].values
@@ -128,6 +134,10 @@ class SusquehannaModel(DataModel):
             var = attr_lst[k]
             stat_dict[var] = cal_stat(attr_data[:, k])
         return stat_dict
+
+    def get_data_obs(self, rm_nan=True, to_norm=True):
+        data = self.data_flow
+        return data
 
     def get_data_ts(self, rm_nan=True, to_norm=True):
         stat_dict = self.stat_dict
@@ -166,21 +176,22 @@ class SusquehannaConfig(DataConfig):
         sections = cfg.sections()
         section = cfg.get(sections[0], 'data')
         options = cfg.options(section)
-
+        # huc10 or huc8
+        huc = cfg.get(section, options[0])
         # forcing
-        forcing_dir = cfg.get(section, options[0])
-        forcing_type = cfg.get(section, options[1])
-        forcing_url = cfg.get(section, options[2])
-        forcing_lst = eval(cfg.get(section, options[3]))
+        forcing_dir = cfg.get(section, options[1])
+        forcing_type = cfg.get(section, options[2])
+        forcing_url = cfg.get(section, options[3])
+        forcing_lst = eval(cfg.get(section, options[4]))
 
         # attribute
-        attr_dir = cfg.get(section, options[4])
-        attr_url = eval(cfg.get(section, options[5]))
-        attr_str_sel = eval(cfg.get(section, options[6]))
+        attr_dir = cfg.get(section, options[5])
+        attr_url = eval(cfg.get(section, options[6]))
+        attr_str_sel = eval(cfg.get(section, options[7]))
 
-        opt_data = collections.OrderedDict(varT=forcing_lst, forcingDir=forcing_dir, forcingType=forcing_type,
-                                           forcingUrl=forcing_url,
-                                           varC=attr_str_sel, attrDir=attr_dir, attrUrl=attr_url)
+        opt_data = collections.OrderedDict(huc=huc, varT=forcing_lst, forcingDir=forcing_dir, forcingType=forcing_type,
+                                           forcingUrl=forcing_url, varC=attr_str_sel, attrDir=attr_dir,
+                                           attrUrl=attr_url)
 
         return opt_data
 
@@ -192,7 +203,7 @@ class SusquehannaConfig(DataConfig):
         data_params = self.init_data_param()
         susquehanna_huc10_shp_file = os.path.join(dir_db, "shpfile", "HUC10_Susquehanna.shp")
         susquehanna_huc8_shp_file = os.path.join(dir_db, "shpfile", "HUC8_Susquehanna.shp")
-        # 所选forcing
+        huc = data_params["huc"]
         forcing_chosen = data_params.get("varT")
         forcing_dir = os.path.join(dir_db, data_params.get("forcingDir"))
         forcing_type = data_params.get("forcingType")
@@ -204,7 +215,7 @@ class SusquehannaConfig(DataConfig):
         attr_chosen = data_params.get("varC")
         attr_dir = os.path.join(dir_db, data_params.get("attrDir"))
 
-        return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp,
+        return collections.OrderedDict(root_dir=dir_db, out_dir=dir_out, temp_dir=dir_temp, huc=huc,
                                        forcing_chosen=forcing_chosen, forcing_dir=forcing_dir,
                                        forcing_type=forcing_type, forcing_url=forcing_url,
                                        attr_url=attr_url, attr_chosen=attr_chosen, attr_dir=attr_dir,

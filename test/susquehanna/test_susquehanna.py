@@ -4,9 +4,11 @@ import unittest
 import torch
 
 import definitions
-from data.data_input import save_datamodel, CamelsModel, _basin_norm
+from data import GagesConfig
+from data.data_input import save_datamodel
+from data.gages_input_dataset import GagesModelsWoBasinNorm
 from data.susquehanna_input import SusquehannaConfig, SusquehannaSource, SusquehannaModel
-from hydroDL.master.master import master_test
+from hydroDL.master.master import master_test, master_train
 from utils import serialize_numpy
 from visual.plot_model import plot_we_need
 
@@ -17,8 +19,30 @@ class MyTestCase(unittest.TestCase):
         to be moved to right dir manually """
         config_dir = definitions.CONFIG_DIR
         self.config_file = os.path.join(config_dir, "susquehanna/config_exp1.ini")
-        self.subdir = r"susquehanna/exp1"
+        self.subdir = r"exp1"
         self.config_data = SusquehannaConfig.set_subdir(self.config_file, self.subdir)
+
+    def test_train_gages_wo_attr(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "susquehanna/config_exp2.ini")
+        subdir = r"susquehanna/exp2"
+        config_data = GagesConfig.set_subdir(config_file, subdir)
+        dor = - 0.02
+        gages_model = GagesModelsWoBasinNorm(config_data, screen_basin_area_huc4=False, DOR=dor)
+        save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
+                       stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
+                       attr_file_name='attr', f_dict_file_name='dictFactorize.json',
+                       var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
+        save_datamodel(gages_model.data_model_test, data_source_file_name='test_data_source.txt',
+                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+                       forcing_file_name='test_forcing', attr_file_name='test_attr',
+                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+                       t_s_dict_file_name='test_dictTimeSpace.json')
+        with torch.cuda.device(2):
+            # pre_trained_model_epoch = 240
+            master_train(gages_model.data_model_train)
+            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+        print("read and train data model")
 
     def test_Susquehanna(self):
         t_test = self.config_data.model_dict["data"]["tRangeTest"]
@@ -28,12 +52,6 @@ class MyTestCase(unittest.TestCase):
         with torch.cuda.device(1):
             # pred, obs = master_test(data_model)
             pred, obs = master_test(data_model, epoch=300)
-            basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['area_gages2'],
-                                                          is_return_dict=False)
-            mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['p_mean'],
-                                                         is_return_dict=False)
-            pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
-            obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
             flow_pred_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_pred')
             flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs')
             serialize_numpy(pred, flow_pred_file)
