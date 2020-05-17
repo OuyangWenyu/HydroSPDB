@@ -34,7 +34,8 @@ class SusquehannaSource(DataSource):
         else:
             gage_file = self.all_configs["huc8_shpfile"]
 
-        data = gpd.read_file(gage_file)
+        data_read = gpd.read_file(gage_file)
+        data = data_read.sort_values(by="HUC10")
         # header gives some troubles. Skip and hardcode
         field_lst = ['HUC10', 'AreaSqKm']
         out = dict()

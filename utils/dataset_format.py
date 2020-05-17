@@ -154,6 +154,45 @@ def trans_daymet_to_camels(daymet_dir, output_dir, gage_dict, region, year):
                 new_data_df.to_csv(output_file, header=True, index=False, sep=' ', float_format='%.2f')
 
 
+def trans_susquehanna_daymet_to_camels(daymet_dir, output_dir, gage_dict, region, year):
+    name_dataset = ['gage_id', "time_start", "dayl", "prcp", "srad", "swe", "tmax", "tmin", "vp"]
+    camels_index = ['Year', 'Mnth', 'Day', 'Hr', 'dayl(s)', 'prcp(mm/day)', 'srad(W/m2)', 'swe(mm)', 'tmax(C)',
+                    'tmin(C)', 'vp(Pa)']
+    # The first three lines are:
+    #   latitude of gauge
+    #   elevation of gauge (m)
+    #   area of basin (m^2)
+    # find all dirs and files
+    for f_name in os.listdir(daymet_dir):
+        if fnmatch.fnmatch(f_name, 'daymet_' + region + '_mean_' + str(year) + '.csv'):
+            data_file = os.path.join(daymet_dir, f_name)
+            data_temp = pd.read_csv(data_file, sep=',', dtype={name_dataset[0]: str})
+            for i_basin in range(gage_dict['HUC10'].size):
+                # name csv
+                basin_data = data_temp[data_temp[name_dataset[0]] == gage_dict['HUC10'][i_basin]]
+                # get Year,Month,Day,Hour info
+                csv_date = pd.to_datetime(basin_data[name_dataset[1]])
+                year_month_day_hour = pd.DataFrame([[dt.year, dt.month, dt.day, dt.hour] for dt in csv_date],
+                                                   columns=camels_index[0:4])
+                data_df = pd.DataFrame(basin_data.iloc[:, 2:].values, columns=camels_index[4:])
+                # concat
+                new_data_df = pd.concat([year_month_day_hour, data_df], axis=1)
+                # output the result
+                if not os.path.isdir(output_dir):
+                    os.makedirs(output_dir)
+                output_file = os.path.join(output_dir, gage_dict['HUC10'][i_basin] + '_lump_daymet_forcing.txt')
+                print("output forcing data of", gage_dict['HUC10'][i_basin], "year", str(year))
+                if os.path.isfile(output_file):
+                    data_old = pd.read_csv(output_file, sep=' ')
+                    years = np.unique(data_old[camels_index[0]].values)
+                    if year in years:
+                        continue
+                    else:
+                        os.remove(output_file)
+                        new_data_df = pd.concat([data_old, new_data_df]).sort_values(by=camels_index[0:3])
+                new_data_df.to_csv(output_file, header=True, index=False, sep=' ', float_format='%.2f')
+
+
 def unzip_file(dataset_zip, path_unzip):
     """extract a zip file"""
     with zipfile.ZipFile(dataset_zip, 'r') as zip_temp:

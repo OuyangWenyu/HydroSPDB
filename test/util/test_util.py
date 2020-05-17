@@ -12,7 +12,7 @@ from data import GagesConfig, GagesSource
 from data.gages_input_dataset import GagesModels
 from data.susquehanna_input import SusquehannaSource, SusquehannaConfig
 from utils import serialize_pickle, unserialize_pickle, hydro_time
-from utils.dataset_format import trans_daymet_to_camels, subset_of_dict
+from utils.dataset_format import trans_daymet_to_camels, subset_of_dict, trans_susquehanna_daymet_to_camels
 from utils.hydro_math import random_choice_no_return
 from utils.hydro_time import t_range_years, t_range_days, get_year, t_range_to_julian
 from datetime import datetime, timedelta
@@ -322,11 +322,52 @@ class MyTestCase(unittest.TestCase):
         year_start = int(source_data.t_range[0].split("-")[0])
         year_end = int(source_data.t_range[1].split("-")[0])
         years = np.arange(year_start, year_end)
-        assert (all(x < y for x, y in zip(source_data.gage_dict['STAID'], source_data.gage_dict['STAID'][1:])))
+        assert (all(x < y for x, y in zip(source_data.gage_dict['HUC10'], source_data.gage_dict['HUC10'][1:])))
 
         for year in years:
-            trans_daymet_to_camels(source_data.all_configs["forcing_dir"], output_dir, source_data.gage_dict,
-                                   "Susquehanna", year)
+            trans_susquehanna_daymet_to_camels(source_data.all_configs["forcing_dir"], output_dir,
+                                               source_data.gage_dict,
+                                               "HUC10_Susquehanna", year)
+
+    def test_insert_susquehanan_leap_year_value(self):
+        """interpolation for the 12.31 data in leap year"""
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "transdata/config_exp12.ini")
+        subdir = r"transdata/exp12"
+        config_data = SusquehannaConfig.set_subdir(config_file, subdir)
+        data_dir = os.path.join(config_data.data_path["DB"], "basin_mean_forcing_huc10", "daymet")
+        t_range = ["1980-01-01", "2015-01-01"]
+        col_lst = ["dayl(s)", "prcp(mm/day)", "srad(W/m2)", "swe(mm)", "tmax(C)", "tmin(C)", "vp(Pa)"]
+        path_list = os.listdir(data_dir)
+        path_list.sort()  # 对读取的路径进行排序
+        for filename in path_list:
+            data_file = os.path.join(data_dir, filename)
+            is_leap_file_name = data_file[-8:]
+            if "leap" in is_leap_file_name:
+                continue
+            print("reading", data_file)
+            data_temp = pd.read_csv(data_file, sep=r'\s+')
+            data_temp.rename(columns={'Mnth': 'Month'}, inplace=True)
+            df_date = data_temp[['Year', 'Month', 'Day']]
+            date = pd.to_datetime(df_date).values.astype('datetime64[D]')
+            # daymet file not for leap year, there is no data in 12.31 in leap year
+            assert (all(x < y for x, y in zip(date, date[1:])))
+            t_range_list = hydro_time.t_range_days(t_range)
+            [c, ind1, ind2] = np.intersect1d(date, t_range_list, return_indices=True)
+            assert date[0] <= t_range_list[0] and date[-1] >= t_range_list[-1]
+            nt = t_range_list.size
+            out = np.full([nt, 7], np.nan)
+            out[ind2, :] = data_temp[col_lst].values[ind1]
+            x = pd.DataFrame(out, columns=col_lst)
+            x_intepolate = x.interpolate(method='linear', limit_direction='forward', axis=0)
+            csv_date = pd.to_datetime(t_range_list)
+            year_month_day_hour = pd.DataFrame(
+                [[dt.year, dt.month, dt.day, dt.hour] for dt in csv_date], columns=['Year', 'Mnth', 'Day', "Hr"])
+            # concat
+            new_data_df = pd.concat([year_month_day_hour, x_intepolate], axis=1)
+            output_file = data_file[:-4] + "_leap.txt"
+            new_data_df.to_csv(output_file, header=True, index=False, sep=' ', float_format='%.2f')
+            os.remove(data_file)
 
     def test_gpu(self):
         # os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cuda is TITAN
