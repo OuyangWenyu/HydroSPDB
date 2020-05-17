@@ -9,6 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 
 import definitions
 from data import GagesConfig, GagesSource
+from data.gages_input_dataset import GagesModels
 from utils import serialize_pickle, unserialize_pickle, hydro_time
 from utils.dataset_format import trans_daymet_to_camels, subset_of_dict
 from utils.hydro_math import random_choice_no_return
@@ -246,10 +247,39 @@ class MyTestCase(unittest.TestCase):
                 new_data_df.to_csv(output_file, header=True, index=False, sep=' ', float_format='%.2f')
                 os.remove(data_file)
 
+    def test_screen_some_gauge_and_save(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "transdata/config_exp12.ini")
+        subdir = r"transdata/exp12"
+        config_data = GagesConfig.set_subdir(config_file, subdir)
+
+        ref_source_data = GagesSource.choose_some_basins(self.config_data,
+                                                         self.config_data.model_dict["data"]["tRangeTrain"],
+                                                         screen_basin_area_huc4=False, ref="Ref")
+        ref_sites_id = ref_source_data.all_configs['flow_screen_gage_id']
+        ref_sites_id_df = pd.DataFrame({"STAID": ref_sites_id})
+        dapeng_dir = os.path.join(self.config_data.data_path["DB"], "dapeng")
+        if not os.path.isdir(dapeng_dir):
+            os.makedirs(dapeng_dir)
+        dapeng_v2_gageid_file = os.path.join(dapeng_dir, "v2.csv")
+        ref_sites_id_df.to_csv(dapeng_v2_gageid_file, index=False)
+
+        gages_model = GagesModels(config_data, screen_basin_area_huc4=False, major_dam_num=0)
+        sites_id_df = pd.DataFrame({"STAID": gages_model.data_model_train.t_s_dict["sites_id"]})
+        dapeng_v1_gageid_file = os.path.join(dapeng_dir, "v1.csv")
+        sites_id_df.to_csv(dapeng_v1_gageid_file, index=False)
+
+        print("read and save data screen")
+
     def test_choose_some_gauge(self):
         ashu_gageid_file = os.path.join(self.config_data.data_path["DB"], "ashu", "AshuGagesId.txt")
+
         farshid_gageid_file = os.path.join(self.config_data.data_path["DB"], "farshid", "sites.csv")
-        gauge_df = pd.read_csv(farshid_gageid_file, dtype={"STAID": str})
+
+        # dapeng_v1_gageid_file = os.path.join(self.config_data.data_path["DB"], "dapeng", "v1.csv")
+        dapeng_v2_gageid_file = os.path.join(self.config_data.data_path["DB"], "dapeng", "v2.csv")
+
+        gauge_df = pd.read_csv(dapeng_v2_gageid_file, dtype={"STAID": str})
         gauge_list = gauge_df["STAID"].values
 
         # np.array(
@@ -257,7 +287,9 @@ class MyTestCase(unittest.TestCase):
         #      '05539900', '06468170', '07184000', '08158810', '09404450', '11055800', '12134500', '14166500'])
         data_dir = os.path.join(self.config_data.data_path["DB"], "basin_mean_forcing", "daymet")
         # output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_ashu")
-        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_farshid")
+        # output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_farshid")
+        # output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_dapeng_v1")
+        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_dapeng_v2")
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')

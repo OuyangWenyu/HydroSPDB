@@ -116,6 +116,35 @@ class TestExploreCase(unittest.TestCase):
         plot_gages_attrs_boxes(sites_small_nse, sites_big_nse, self.attr_lst, attrs_small, attrs_big,
                                diff_str="IS_NSE_GOOD", row_and_col=[2, 4])
 
+    def test_choose_some_sites_and_show_map_ts(self):
+        inds_df = self.inds_df
+        show_ind_key = 'NSE'
+
+        attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
+        sites = self.data_model.t_s_dict["sites_id"]
+        attrs_runavg_stor = self.data_model.data_source.read_attr(sites, attr_lst, is_return_dict=False)
+        run_avg = attrs_runavg_stor[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
+        nor_storage = attrs_runavg_stor[:, 1] * 1000  # m^3
+        dors = nor_storage / run_avg
+        dor_chosen = 0.02
+        chosen_id_idx = [i for i in range(dors.size) if dors[i] < dor_chosen]
+
+        nse_range = [-10000, 0]
+        # nse_range = [0, 0.5]
+        idx_lst_small_nse = inds_df[
+            (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
+
+        idx_final = np.intersect1d(chosen_id_idx, idx_lst_small_nse)
+        sites_id_df = pd.DataFrame({"STAID": np.array(sites)[idx_final]})
+        attrs_basin_area = self.data_model.data_source.read_attr(np.array(sites)[idx_final], ["DRAIN_SQKM", "CLASS"],
+                                                                 is_return_dict=False)
+        print(attrs_basin_area)
+        nse_dor_sites_file = os.path.join(self.config_data.data_path["Out"], "nse-_dor-_sites.csv")
+        # nse_dor_sites_file = os.path.join(self.config_data.data_path["Out"], "nse+_dor+_sites.csv")
+        sites_id_df.to_csv(nse_dor_sites_file, index=False)
+        plot_gages_map_and_ts(self.data_model, self.obs, self.pred, inds_df, show_ind_key, idx_final,
+                              pertile_range=[0, 100])
+
     def test_map_ts(self):
         # plot map ts
         inds_df = self.inds_df
