@@ -10,6 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 import definitions
 from data import GagesConfig, GagesSource
 from data.gages_input_dataset import GagesModels
+from data.susquehanna_input import SusquehannaSource, SusquehannaConfig
 from utils import serialize_pickle, unserialize_pickle, hydro_time
 from utils.dataset_format import trans_daymet_to_camels, subset_of_dict
 from utils.hydro_math import random_choice_no_return
@@ -308,6 +309,24 @@ class MyTestCase(unittest.TestCase):
             dst = os.path.join(output_huc_dir, source_data.gage_dict['STAID'][j] + '_lump_daymet_forcing_leap.txt')
             print("write into", dst)
             shutil.copy(src, dst)
+
+    def test_trans_susquehanna_forcing_file_to_camels(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "transdata/config_exp12.ini")
+        subdir = r"transdata/exp12"
+        config_data = SusquehannaConfig.set_subdir(config_file, subdir)
+        source_data = SusquehannaSource(config_data, config_data.model_dict["data"]["tRangeTrain"])
+        output_dir = os.path.join(config_data.data_path["DB"], "basin_mean_forcing_huc10", "daymet")
+        if not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
+        year_start = int(source_data.t_range[0].split("-")[0])
+        year_end = int(source_data.t_range[1].split("-")[0])
+        years = np.arange(year_start, year_end)
+        assert (all(x < y for x, y in zip(source_data.gage_dict['STAID'], source_data.gage_dict['STAID'][1:])))
+
+        for year in years:
+            trans_daymet_to_camels(source_data.all_configs["forcing_dir"], output_dir, source_data.gage_dict,
+                                   "Susquehanna", year)
 
     def test_gpu(self):
         # os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cuda is TITAN

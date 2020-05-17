@@ -4,13 +4,11 @@ import unittest
 import torch
 
 import definitions
-from data import CamelsConfig
-from data.data_input import save_datamodel, StreamflowInputDataset, CamelsModel, _basin_norm
-from data.camels_input_dataset import CamelsModels
-from hydroDL.master.master import master_train, master_test
+from data.data_input import save_datamodel, CamelsModel, _basin_norm
+from data.susquehanna_input import SusquehannaConfig, SusquehannaModels
+from hydroDL.master.master import master_test
 from utils import serialize_numpy
 from visual.plot_model import plot_we_need
-from argparse import ArgumentParser
 
 
 class MyTestCase(unittest.TestCase):
@@ -20,10 +18,10 @@ class MyTestCase(unittest.TestCase):
         config_dir = definitions.CONFIG_DIR
         self.config_file = os.path.join(config_dir, "susquehanna/config_exp1.ini")
         self.subdir = r"susquehanna/exp1"
-        self.config_data = CamelsConfig.set_subdir(self.config_file, self.subdir)
+        self.config_data = SusquehannaConfig.set_subdir(self.config_file, self.subdir)
 
     def test_camels_data_model(self):
-        camels_model = CamelsModels(self.config_data)
+        camels_model = SusquehannaModels(self.config_data)
         save_datamodel(camels_model.data_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',
@@ -34,7 +32,6 @@ class MyTestCase(unittest.TestCase):
                        f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
                        t_s_dict_file_name='test_dictTimeSpace.json')
         print("read and save data model")
-
 
     def test_test_camels(self):
         data_model = CamelsModel.load_datamodel(self.config_data.data_path["Temp"],
