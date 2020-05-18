@@ -5,8 +5,8 @@ import torch
 
 import definitions
 from data import GagesConfig
-from data.data_input import save_datamodel
-from data.gages_input_dataset import GagesModelsWoBasinNorm
+from data.data_input import save_datamodel, _basin_norm, save_result
+from data.gages_input_dataset import GagesModelsWoBasinNorm, GagesModels
 from data.susquehanna_input import SusquehannaConfig, SusquehannaSource, SusquehannaModel
 from hydroDL.master.master import master_test, master_train
 from utils import serialize_numpy
@@ -21,6 +21,7 @@ class MyTestCase(unittest.TestCase):
         self.config_file = os.path.join(config_dir, "susquehanna/config_exp1.ini")
         self.subdir = r"exp1"
         self.config_data = SusquehannaConfig.set_subdir(self.config_file, self.subdir)
+        self.test_epoch = 300
 
     def test_train_gages_wo_attr(self):
         config_dir = definitions.CONFIG_DIR
@@ -39,9 +40,9 @@ class MyTestCase(unittest.TestCase):
                        f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
                        t_s_dict_file_name='test_dictTimeSpace.json')
         with torch.cuda.device(2):
-            # pre_trained_model_epoch = 240
-            master_train(gages_model.data_model_train)
-            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            pre_trained_model_epoch = 400
+            # master_train(gages_model.data_model_train)
+            master_train(gages_model.data_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
         print("read and train data model")
 
     def test_Susquehanna(self):
@@ -56,6 +57,52 @@ class MyTestCase(unittest.TestCase):
             flow_obs_file = os.path.join(data_model.data_source.data_config.data_path['Temp'], 'flow_obs')
             serialize_numpy(pred, flow_pred_file)
             serialize_numpy(obs, flow_obs_file)
+            plot_we_need(data_model, obs, pred, id_col="id", lon_col="lon", lat_col="lat")
+
+    def test_susquehanna_datamodel(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "susquehanna/config_exp3.ini")
+        subdir = r"exp3"
+        config_data = SusquehannaConfig.set_subdir(config_file, subdir)
+        t_test = config_data.model_dict["data"]["tRangeTest"]
+        source_data = SusquehannaSource(config_data, t_test)
+        data_model = SusquehannaModel(source_data)
+
+    def test_train_gages4susquehanna(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "susquehanna/config_exp4.ini")
+        subdir = r"susquehanna/exp4"
+        config_data = GagesConfig.set_subdir(config_file, subdir)
+        dor = - 0.02
+        gages_model = GagesModels(config_data, screen_basin_area_huc4=False, DOR=dor)
+        # save_datamodel(gages_model.data_model_train, data_source_file_name='data_source.txt',
+        #                stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
+        #                attr_file_name='attr', f_dict_file_name='dictFactorize.json',
+        #                var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
+        # save_datamodel(gages_model.data_model_test, data_source_file_name='test_data_source.txt',
+        #                stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+        #                forcing_file_name='test_forcing', attr_file_name='test_attr',
+        #                f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+        #                t_s_dict_file_name='test_dictTimeSpace.json')
+        with torch.cuda.device(2):
+            # pre_trained_model_epoch = 400
+            master_train(gages_model.data_model_train)
+            # master_train(gages_model.data_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
+        print("read and train data model")
+
+    def test_test_susquehanna(self):
+        t_test = self.config_data.model_dict["data"]["tRangeTest"]
+        source_data = SusquehannaSource(self.config_data, t_test)
+        # 构建输入数据类对象
+        data_model = SusquehannaModel(source_data)
+        with torch.cuda.device(1):
+            # pred, obs = master_test(data_model)
+            pred, obs = master_test(data_model, epoch=self.test_epoch)
+            basin_area = data_model.data_attr[:, 0]
+            mean_prep = data_model.data_attr[:, 1]
+            pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
+            obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
+            save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
             plot_we_need(data_model, obs, pred, id_col="id", lon_col="lon", lat_col="lat")
 
 

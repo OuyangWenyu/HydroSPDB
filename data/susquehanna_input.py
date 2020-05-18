@@ -85,7 +85,9 @@ class SusquehannaSource(DataSource):
     def read_attr(self, usgs_id_lst, var_lst):
         f_dict = dict()  # factorize dict
         var_dict = self.all_configs["attr_chosen"]
-        var_lst = self.all_configs["attr_chosen"]
+        var_lst = self.all_configs["attr_chosen"].copy()
+        if "PPTAVG_BASIN" in var_lst:
+            var_lst.remove("PPTAVG_BASIN")
         out_lst = list()
         gage_dict = self.gage_dict
         if "HUC10" == self.all_configs["huc"]:
@@ -112,6 +114,18 @@ class SusquehannaSource(DataSource):
 class SusquehannaModel(DataModel):
     def __init__(self, data_source, *args):
         super().__init__(data_source, *args)
+        if "PPTAVG_BASIN" in data_source.all_configs["attr_chosen"]:
+            print("no related attr data, now read from forcing data")
+            forcing_data = self.data_forcing.copy()
+            forcing_day_mean = np.mean(forcing_data, axis=1)
+            index_ppt = [i for i in range(len(data_source.all_configs["forcing_chosen"])) if
+                         data_source.all_configs["forcing_chosen"][i] == "prcp"]
+            ppt_vg_basin = forcing_day_mean[:, index_ppt[0]:index_ppt[0] + 1]
+            data_attr_origin = self.data_attr
+            data_attr = np.concatenate((data_attr_origin, ppt_vg_basin), axis=1)
+            self.data_attr = data_attr
+            stat_dict = self.cal_stat_all()
+            self.stat_dict = stat_dict
 
     def cal_stat_all(self):
         """calculate statistics of streamflow, forcing and attributes. 计算统计值，便于后面归一化处理。"""
@@ -130,9 +144,16 @@ class SusquehannaModel(DataModel):
         # const attribute
         attr_data = self.data_attr
         attr_lst = self.data_source.all_configs["attr_chosen"]
-        for k in range(len(attr_lst)):
-            var = attr_lst[k]
-            stat_dict[var] = cal_stat(attr_data[:, k])
+        if attr_data.shape[1] != len(attr_lst):
+            attr_lst_chosen = attr_lst.copy()
+            attr_lst_chosen.remove("PPTAVG_BASIN")
+            for k in range(len(attr_lst_chosen)):
+                var = attr_lst[k]
+                stat_dict[var] = cal_stat(attr_data[:, k])
+        else:
+            for k in range(len(attr_lst)):
+                var = attr_lst[k]
+                stat_dict[var] = cal_stat(attr_data[:, k])
         return stat_dict
 
     def get_data_obs(self, rm_nan=True, to_norm=True):
