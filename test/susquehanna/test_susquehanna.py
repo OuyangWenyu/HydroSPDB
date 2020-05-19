@@ -5,7 +5,7 @@ import torch
 
 import definitions
 from data import GagesConfig
-from data.data_input import save_datamodel, _basin_norm, save_result
+from data.data_input import save_datamodel, _basin_norm, save_result, GagesModelWoBasinNorm
 from data.gages_input_dataset import GagesModelsWoBasinNorm, GagesModels
 from data.susquehanna_input import SusquehannaConfig, SusquehannaSource, SusquehannaModel
 from hydroDL.master.master import master_test, master_train
@@ -21,7 +21,7 @@ class MyTestCase(unittest.TestCase):
         self.config_file = os.path.join(config_dir, "susquehanna/config_exp1.ini")
         self.subdir = r"exp1"
         self.config_data = SusquehannaConfig.set_subdir(self.config_file, self.subdir)
-        self.test_epoch = 300
+        self.test_epoch = 500
 
     def test_train_gages_wo_attr(self):
         config_dir = definitions.CONFIG_DIR
@@ -44,6 +44,25 @@ class MyTestCase(unittest.TestCase):
             # master_train(gages_model.data_model_train)
             master_train(gages_model.data_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
         print("read and train data model")
+
+    def test_test_gages_wo_attr(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "susquehanna/config_exp2.ini")
+        subdir = r"susquehanna/exp2"
+        config_data = GagesConfig.set_subdir(config_file, subdir)
+        data_model = GagesModelWoBasinNorm.load_datamodel(config_data.data_path["Temp"],
+                                                          data_source_file_name='test_data_source.txt',
+                                                          stat_file_name='test_Statistics.json',
+                                                          flow_file_name='test_flow.npy',
+                                                          forcing_file_name='test_forcing.npy',
+                                                          attr_file_name='test_attr.npy',
+                                                          f_dict_file_name='test_dictFactorize.json',
+                                                          var_dict_file_name='test_dictAttribute.json',
+                                                          t_s_dict_file_name='test_dictTimeSpace.json')
+        with torch.cuda.device(2):
+            pred, obs = master_test(data_model, epoch=self.test_epoch)
+            save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
+            plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_Susquehanna(self):
         t_test = self.config_data.model_dict["data"]["tRangeTest"]
@@ -79,16 +98,36 @@ class MyTestCase(unittest.TestCase):
         #                stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
         #                attr_file_name='attr', f_dict_file_name='dictFactorize.json',
         #                var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
-        # save_datamodel(gages_model.data_model_test, data_source_file_name='test_data_source.txt',
-        #                stat_file_name='test_Statistics.json', flow_file_name='test_flow',
-        #                forcing_file_name='test_forcing', attr_file_name='test_attr',
-        #                f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
-        #                t_s_dict_file_name='test_dictTimeSpace.json')
         with torch.cuda.device(2):
             # pre_trained_model_epoch = 400
             master_train(gages_model.data_model_train)
             # master_train(gages_model.data_model_train, pre_trained_model_epoch=pre_trained_model_epoch)
         print("read and train data model")
+
+    def test_test_gages4susquehanna(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "susquehanna/config_exp4.ini")
+        subdir = r"susquehanna/exp4"
+        config_data = GagesConfig.set_subdir(config_file, subdir)
+        dor = - 0.02
+        gages_model = GagesModels(config_data, screen_basin_area_huc4=False, DOR=dor)
+        save_datamodel(gages_model.data_model_test, data_source_file_name='test_data_source.txt',
+                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+                       forcing_file_name='test_forcing', attr_file_name='test_attr',
+                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+                       t_s_dict_file_name='test_dictTimeSpace.json')
+        data_model = gages_model.data_model_test
+        with torch.cuda.device(2):
+            pred, obs = master_test(data_model, epoch=self.test_epoch)
+            basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
+                                                          is_return_dict=False)
+            mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
+                                                         is_return_dict=False)
+            mean_prep = mean_prep / 365 * 10
+            pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
+            obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
+            save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)
+            plot_we_need(data_model, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_test_susquehanna(self):
         t_test = self.config_data.model_dict["data"]["tRangeTest"]
@@ -98,8 +137,8 @@ class MyTestCase(unittest.TestCase):
         with torch.cuda.device(1):
             # pred, obs = master_test(data_model)
             pred, obs = master_test(data_model, epoch=self.test_epoch)
-            basin_area = data_model.data_attr[:, 0]
-            mean_prep = data_model.data_attr[:, 1]
+            basin_area = data_model.data_attr[:, 0:1]
+            mean_prep = data_model.ppt_avg_basin
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
             save_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch, pred, obs)

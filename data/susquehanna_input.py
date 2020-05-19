@@ -114,13 +114,14 @@ class SusquehannaSource(DataSource):
 class SusquehannaModel(DataModel):
     def __init__(self, data_source, *args):
         super().__init__(data_source, *args)
+        print("no related attr data, now read from forcing data")
+        forcing_data = self.data_forcing.copy()
+        forcing_day_mean = np.mean(forcing_data, axis=1)
+        index_ppt = [i for i in range(len(data_source.all_configs["forcing_chosen"])) if
+                     data_source.all_configs["forcing_chosen"][i] == "prcp"]
+        ppt_vg_basin = forcing_day_mean[:, index_ppt[0]:index_ppt[0] + 1]
+        self.ppt_avg_basin = ppt_vg_basin
         if "PPTAVG_BASIN" in data_source.all_configs["attr_chosen"]:
-            print("no related attr data, now read from forcing data")
-            forcing_data = self.data_forcing.copy()
-            forcing_day_mean = np.mean(forcing_data, axis=1)
-            index_ppt = [i for i in range(len(data_source.all_configs["forcing_chosen"])) if
-                         data_source.all_configs["forcing_chosen"][i] == "prcp"]
-            ppt_vg_basin = forcing_day_mean[:, index_ppt[0]:index_ppt[0] + 1]
             data_attr_origin = self.data_attr
             data_attr = np.concatenate((data_attr_origin, ppt_vg_basin), axis=1)
             self.data_attr = data_attr

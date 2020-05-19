@@ -49,7 +49,8 @@ class GagesSource(DataSource):
                 new_data_source.diversion_chosen(kwargs[criteria])
         return new_data_source
 
-    def diversion_chosen(self, diversion_strs):
+    def diversion_chosen(self, is_divert=True):
+        diversion_strs = ["diversion", "divert"]
         gage_id_file = self.all_configs.get("gage_id_file")
         data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
         usgs_id = data_all["STAID"].values.tolist()
@@ -60,8 +61,12 @@ class GagesSource(DataSource):
         data_attr0_lower = np.array([elem.lower() if type(elem) == str else elem for elem in data_attr[0]])
         data_attr1_lower = np.array([elem.lower() if type(elem) == str else elem for elem in data_attr[1]])
         data_attr_lower = np.vstack((data_attr0_lower, data_attr1_lower)).T
-        chosen_id = [usgs_id[i] for i in range(len(usgs_id)) if
-                     is_any_elem_in_a_lst(diversion_strs_lower, data_attr_lower[i], include=True)]
+        if is_divert:
+            chosen_id = [usgs_id[i] for i in range(len(usgs_id)) if
+                         is_any_elem_in_a_lst(diversion_strs_lower, data_attr_lower[i], include=True)]
+        else:
+            chosen_id = [usgs_id[i] for i in range(len(usgs_id)) if
+                         not is_any_elem_in_a_lst(diversion_strs_lower, data_attr_lower[i], include=True)]
         self.all_configs["flow_screen_gage_id"] = chosen_id
 
     def ecoregion_chosen(self, ecoregion):

@@ -294,6 +294,77 @@ class TestExploreCase(unittest.TestCase):
                             data=result)
         # swarmplot_with_cbar(cmap_str, cbar_label, None, x=x_name, y=y_name, hue=hue_name, palette=cmap_str, data=result)
 
+    def test_scatter_diversion(self):
+        attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
+        sites_nonref = self.data_model.t_s_dict["sites_id"]
+        attrs_runavg_stor = self.data_model.data_source.read_attr(sites_nonref, attr_lst, is_return_dict=False)
+        run_avg = attrs_runavg_stor[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
+        nor_storage = attrs_runavg_stor[:, 1] * 1000  # m^3
+        dors = nor_storage / run_avg
+
+        diversion_yes = True
+        diversion_no = False
+        source_data_diversion = GagesSource.choose_some_basins(self.config_data,
+                                                               self.config_data.model_dict["data"]["tRangeTrain"],
+                                                               screen_basin_area_huc4=False,
+                                                               diversion=diversion_yes)
+        source_data_nodivert = GagesSource.choose_some_basins(self.config_data,
+                                                              self.config_data.model_dict["data"]["tRangeTrain"],
+                                                              screen_basin_area_huc4=False,
+                                                              diversion=diversion_no)
+        sites_id_diversion = source_data_diversion.all_configs['flow_screen_gage_id']
+        sites_id_nodivert = source_data_nodivert.all_configs['flow_screen_gage_id']
+
+        divert_regions = {}
+        divert_regions["diversion"] = sites_id_diversion
+        divert_regions["not_diverted"] = sites_id_nodivert
+
+        id_regions_idx = []
+        id_regions_sites_ids = []
+        regions_name = []
+        df_id_region = np.array(self.data_model.t_s_dict["sites_id"])
+        for key, value in divert_regions.items():
+            gages_id = value
+            c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+            assert (all(x < y for x, y in zip(ind1, ind1[1:])))
+            assert (all(x < y for x, y in zip(c, c[1:])))
+            id_regions_idx.append(ind1)
+            id_regions_sites_ids.append(c)
+            regions_name.append(key)
+        preds, obss, inds_dfs = split_results_to_regions(self.data_model, self.test_epoch, id_regions_idx,
+                                                         id_regions_sites_ids)
+        frames = []
+        x_name = "is_diverted"
+        y_name = "NSE"
+        hue_name = "DOR"
+        # hue_name = "STOR"
+        for i in range(len(id_regions_idx)):
+            # plot box，使用seaborn库
+            keys = ["NSE"]
+            inds_test = subset_of_dict(inds_dfs[i], keys)
+            inds_test = inds_test[keys[0]].values
+            df_dict_i = {}
+            str_i = regions_name[i]
+            df_dict_i[x_name] = np.full([inds_test.size], str_i)
+            df_dict_i[y_name] = inds_test
+            df_dict_i[hue_name] = dors[id_regions_idx[i]]
+            # df_dict_i[hue_name] = nor_storage[id_regions_idx[i]]
+            df_i = pd.DataFrame(df_dict_i)
+            frames.append(df_i)
+        result = pd.concat(frames)
+        # can remove high hue value to keep a good map
+        plot_boxs(result, x_name, y_name, ylim=[-1.0, 1.0])
+        # plot_boxs(result, x_name, y_name, uniform_color="skyblue", swarm_plot=True, hue=hue_name, colormap=True,
+        #           ylim=[-1.0, 1.0])
+        cmap_str = 'viridis'
+        # cmap = plt.get_cmap('Spectral')
+        cbar_label = hue_name
+
+        plt.title('Distribution of w/wo diversion')
+        # swarmplot_with_cbar(cmap_str, cbar_label, [-1, 1.0], x=x_name, y=y_name, hue=hue_name, palette=cmap_str,
+        #                     data=result)
+        swarmplot_with_cbar(cmap_str, cbar_label, None, x=x_name, y=y_name, hue=hue_name, palette=cmap_str, data=result)
+
     def test_explore_gages_prcp_log(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
                                                data_source_file_name='data_source.txt',
