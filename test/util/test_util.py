@@ -13,7 +13,7 @@ from data.gages_input_dataset import GagesModels
 from data.susquehanna_input import SusquehannaSource, SusquehannaConfig
 from utils import serialize_pickle, unserialize_pickle, hydro_time
 from utils.dataset_format import trans_daymet_to_camels, subset_of_dict, trans_susquehanna_daymet_to_camels
-from utils.hydro_math import random_choice_no_return
+from utils.hydro_math import random_choice_no_return, pair_comb
 from utils.hydro_time import t_range_years, t_range_days, get_year, t_range_to_julian
 from datetime import datetime, timedelta
 
@@ -133,6 +133,11 @@ class MyTestCase(unittest.TestCase):
         num_lst = [2, 3]
         results = random_choice_no_return(arr, num_lst)
         print(results)
+
+    def test_comb_pair(self):
+        # combine_attrs = [{"diversion": [False, True]}, {"DOR": [-0.02, 0.02]}]
+        combine_attrs = [{"diversion": [False]}]
+        print(pair_comb(combine_attrs))
 
     def test_intersect(self):
         t_range = self.t_range

@@ -1,6 +1,40 @@
-import numpy
 import numpy as np
 import torch
+from itertools import combinations
+
+
+def pair_comb(combine_attrs):
+    if len(combine_attrs) == 1:
+        values = list(combine_attrs[0].values())[0]
+        key = list(combine_attrs[0].keys())[0]
+        results = []
+        for value in values:
+            d = dict()
+            d[key] = value
+            results.append(d)
+        return results
+    items_all = list()
+    for dict_item in combine_attrs:
+        list_temp = list(dict_item.values())[0]
+        items_all = items_all + list_temp
+    all_combs = list(combinations(items_all, 2))
+
+    def is_in_same_item(item1, item2):
+        for dict_item in combine_attrs:
+            list_now = list(dict_item.values())[0]
+            if item1 in list_now and item2 in list_now:
+                return True
+        return False
+
+    def which_dict(item):
+        for dict_item in combine_attrs:
+            list_now = list(dict_item.values())[0]
+            if item in list_now:
+                return list(dict_item.keys())[0]
+
+    combs = [comb for comb in all_combs if not is_in_same_item(comb[0], comb[1])]
+    combs_dict = [{which_dict(comb[0]): comb[0], which_dict(comb[1]): comb[1]} for comb in combs]
+    return combs_dict
 
 
 def flat_data(x):

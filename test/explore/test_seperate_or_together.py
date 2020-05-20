@@ -35,6 +35,197 @@ class MyTestCase(unittest.TestCase):
         self.nid_file = 'NID2018_U.xlsx'
         self.test_epoch = 300
 
+    def test_diversion_pooling_seperate_cases(self):
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        all_sites = data_model.t_s_dict["sites_id"]
+
+        diversion_yes = True
+        diversion_no = False
+        source_data_diversion = GagesSource.choose_some_basins(self.config_data,
+                                                               self.config_data.model_dict["data"]["tRangeTrain"],
+                                                               screen_basin_area_huc4=False,
+                                                               diversion=diversion_yes)
+        source_data_nodivert = GagesSource.choose_some_basins(self.config_data,
+                                                              self.config_data.model_dict["data"]["tRangeTrain"],
+                                                              screen_basin_area_huc4=False,
+                                                              diversion=diversion_no)
+        sites_id_nodivert = source_data_nodivert.all_configs['flow_screen_gage_id']
+        sites_id_diversion = source_data_diversion.all_configs['flow_screen_gage_id']
+
+        idx_lst_nodivert = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_nodivert]
+        idx_lst_diversion = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_diversion]
+
+        pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
+        pred = pred.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(pred.shape[0], pred.shape[1])
+        inds = statError(obs, pred)
+        inds_df = pd.DataFrame(inds)
+
+        keys_nse = "NSE"
+        xs = []
+        ys = []
+        cases_exps_legends_together = ["no_diversion_together", "diversion_together"]
+
+        x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert])
+        xs.append(x1)
+        ys.append(y1)
+
+        x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_diversion])
+        xs.append(x2)
+        ys.append(y2)
+
+        cases_exps = ["diversion_exp2", "diversion_exp1"]
+        cases_exps_legends_separate = ["no_diversion_separate", "diversion_separate"]
+        for case_exp in cases_exps:
+            config_data_i = load_dataconfig_case_exp(case_exp)
+            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            inds_i = statError(obs_i, pred_i)
+            x, y = ecdf(inds_i[keys_nse])
+            xs.append(x)
+            ys.append(y)
+
+        plot_ecdfs(xs, ys, cases_exps_legends_together + cases_exps_legends_separate)
+
+    def test_diversion_small_dor_pooling_cases(self):
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        all_sites = data_model.t_s_dict["sites_id"]
+
+        diversion_no = False
+        source_data_nodivert = GagesSource.choose_some_basins(self.config_data,
+                                                              self.config_data.model_dict["data"]["tRangeTrain"],
+                                                              screen_basin_area_huc4=False,
+                                                              diversion=diversion_no)
+        sites_id_nodivert = source_data_nodivert.all_configs['flow_screen_gage_id']
+
+        dor_1 = - 0.02
+        source_data_dor1 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_1)
+        sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+
+        no_divert_small_dor = np.intersect1d(sites_id_nodivert, sites_id_dor1)
+
+        idx_lst_nodivert_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in no_divert_small_dor]
+        idx_lst_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_dor1]
+
+        pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
+        pred = pred.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(pred.shape[0], pred.shape[1])
+        inds = statError(obs, pred)
+        inds_df = pd.DataFrame(inds)
+
+        keys_nse = "NSE"
+        xs = []
+        ys = []
+        cases_exps_legends_together = ["not_diverted_small_dor", "small_dor"]
+
+        x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_smalldor])
+        xs.append(x1)
+        ys.append(y1)
+
+        x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_smalldor])
+        xs.append(x2)
+        ys.append(y2)
+
+        plot_ecdfs(xs, ys, cases_exps_legends_together)
+
+    def test_diversion_dor_pooling_cases(self):
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        all_sites = data_model.t_s_dict["sites_id"]
+
+        diversion_yes = True
+        diversion_no = False
+        source_data_diversion = GagesSource.choose_some_basins(self.config_data,
+                                                               self.config_data.model_dict["data"]["tRangeTrain"],
+                                                               screen_basin_area_huc4=False,
+                                                               diversion=diversion_yes)
+        source_data_nodivert = GagesSource.choose_some_basins(self.config_data,
+                                                              self.config_data.model_dict["data"]["tRangeTrain"],
+                                                              screen_basin_area_huc4=False,
+                                                              diversion=diversion_no)
+        sites_id_nodivert = source_data_nodivert.all_configs['flow_screen_gage_id']
+        sites_id_diversion = source_data_diversion.all_configs['flow_screen_gage_id']
+
+        dor_1 = - 0.02
+        dor_2 = 0.02
+        source_data_dor1 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_1)
+        source_data_dor2 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_2)
+        sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+        sites_id_dor2 = source_data_dor2.all_configs['flow_screen_gage_id']
+
+        no_divert_small_dor = np.intersect1d(sites_id_nodivert, sites_id_dor1)
+        no_divert_large_dor = np.intersect1d(sites_id_nodivert, sites_id_dor2)
+        diversion_small_dor = np.intersect1d(sites_id_diversion, sites_id_dor1)
+        diversion_large_dor = np.intersect1d(sites_id_diversion, sites_id_dor2)
+
+        idx_lst_nodivert_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in no_divert_small_dor]
+        idx_lst_nodivert_largedor = [i for i in range(len(all_sites)) if all_sites[i] in no_divert_large_dor]
+        idx_lst_diversion_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in diversion_small_dor]
+        idx_lst_diversion_largedor = [i for i in range(len(all_sites)) if all_sites[i] in diversion_large_dor]
+
+        pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
+        pred = pred.reshape(pred.shape[0], pred.shape[1])
+        obs = obs.reshape(pred.shape[0], pred.shape[1])
+        inds = statError(obs, pred)
+        inds_df = pd.DataFrame(inds)
+
+        keys_nse = "NSE"
+        xs = []
+        ys = []
+        cases_exps_legends_together = ["not_diverted_small_dor", "not_diverted_large_dor", "diversion_small_dor",
+                                       "diversion_large_dor"]
+
+        x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_smalldor])
+        xs.append(x1)
+        ys.append(y1)
+
+        x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_largedor])
+        xs.append(x2)
+        ys.append(y2)
+
+        x3, y3 = ecdf(inds_df[keys_nse].iloc[idx_lst_diversion_smalldor])
+        xs.append(x3)
+        ys.append(y3)
+
+        x4, y4 = ecdf(inds_df[keys_nse].iloc[idx_lst_diversion_largedor])
+        xs.append(x4)
+        ys.append(y4)
+
+        plot_ecdfs(xs, ys, cases_exps_legends_together)
+
     def test_export_result(self):
         # data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
         #                                        data_source_file_name='test_data_source.txt',
@@ -120,8 +311,8 @@ class MyTestCase(unittest.TestCase):
         #                       "miniBatch = [100, 100]	hiddenSize = 256",
         #                       "miniBatch = [100, 365]	hiddenSize = 256",
         #                       "miniBatch = [100, 365]	hiddenSize = 128"]
-        cases_exps = ["basic_exp20", "basic_exp23", "basic_exp25"]
-        cases_exps_legends = ["attr20", "attr23", "attr25"]
+        cases_exps = ["basic_exp19", "basic_exp20", "basic_exp23", "basic_exp25"]
+        cases_exps_legends = ["attr19", "attr20", "attr23", "attr25"]
         for case_exp in cases_exps:
             config_data_i = load_dataconfig_case_exp(case_exp)
             pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)

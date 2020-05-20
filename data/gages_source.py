@@ -17,6 +17,19 @@ class GagesSource(DataSource):
         super().__init__(config_data, t_range, screen_basin_area_huc4)
 
     @classmethod
+    def choose_some_basins_multi_crit(cls, config_data, t_range, screen_basin_area_huc4=False, **kwargs):
+        """choose some basins according to given conditions"""
+        data_source = cls(config_data, t_range, screen_basin_area_huc4=screen_basin_area_huc4)
+        sites = data_source.gage_dict["STAID"]
+        for key, value in kwargs.items():
+            d = {"screen_basin_area_huc4": screen_basin_area_huc4, key: value}
+            data_source_temp = cls.choose_some_basins(config_data, t_range, **d)
+            sites_id_temp = data_source_temp.all_configs["flow_screen_gage_id"]
+            sites = np.intersect1d(sites, sites_id_temp)
+        data_source.all_configs["flow_screen_gage_id"] = sites
+        return data_source
+
+    @classmethod
     def choose_some_basins(cls, config_data, t_range, **kwargs):
         """choose some basins according to given condition, different conditions but only one for once"""
         screen_basin_area_huc4 = True
@@ -746,7 +759,7 @@ class GagesSource(DataSource):
         key_lst.sort(key=var_des_map_values.index)
         # x_region_names属性暂不需要读入
         key_lst.remove('x_region_names')
-
+        var_lst = list()
         out_lst = []
         # 因为选择的站点可能是站点的一部分，所以需要求交集，ind2是所选站点在conterm_文件中所有站点里的index，把这些值放到out_temp中
         range1 = gages_ids
@@ -766,6 +779,11 @@ class GagesSource(DataSource):
                 data_temp = pd.read_csv(data_file, sep=',',
                                         dtype={'STAID': str, "WR_REPORT_REMARKS": str, "ADR_CITATION": str,
                                                "SCREENING_COMMENTS": str}, engine='python')
+            elif key == 'bound_qa':
+                # "DRAIN_SQKM" already exists
+                data_temp = pd.read_csv(data_file, sep=',', dtype={'STAID': str},
+                                        usecols=["STAID", "BASIN_BOUNDARY_CONFIDENCE", "NWIS_DRAIN_SQKM",
+                                                 "PCT_DIFF_NWIS", "HUC10_CHECK"])
             else:
                 data_temp = pd.read_csv(data_file, sep=',', dtype={'STAID': str})
             if key == 'flowrec':

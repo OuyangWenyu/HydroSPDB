@@ -29,12 +29,12 @@ class MyTestCaseGages(unittest.TestCase):
         # self.subdir = r"basic/exp14"
         # self.config_file = os.path.join(config_dir, "basic/config_exp16.ini")
         # self.subdir = r"basic/exp16"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
-        # self.subdir = r"basic/exp19"
+        self.config_file = os.path.join(config_dir, "basic/config_exp19.ini")
+        self.subdir = r"basic/exp19"
 
         # different regions seperately
-        self.config_file = os.path.join(config_dir, "basic/config_exp2.ini")
-        self.subdir = r"basic/exp2"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp2.ini")
+        # self.subdir = r"basic/exp2"
         # self.config_file = os.path.join(config_dir, "basic/config_exp4.ini")
         # self.subdir = r"basic/exp4"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
@@ -111,7 +111,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        with torch.cuda.device(0):
+        with torch.cuda.device(1):
             pred, obs = master_test(data_model, epoch=self.test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)

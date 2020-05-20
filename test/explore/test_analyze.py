@@ -9,6 +9,7 @@ from explore.gages_stat import split_results_to_regions
 from explore.stat import statError
 from utils import unserialize_json
 from utils.dataset_format import subset_of_dict
+from utils.hydro_math import pair_comb
 from visual.plot_model import plot_gages_map_and_ts, plot_gages_attrs_boxes, plot_scatter_multi_attrs
 from visual.plot_stat import plot_diff_boxes, plot_scatter_xyc, plot_boxs, swarmplot_with_cbar
 from matplotlib import pyplot
@@ -151,7 +152,10 @@ class TestExploreCase(unittest.TestCase):
         show_ind_key = 'NSE'
         idx_lst = np.arange(len(self.data_model.t_s_dict["sites_id"])).tolist()
 
-        nse_range = [0.5, 1]
+        # nse_range = [0.5, 1]
+        nse_range = [0, 1]
+        # nse_range = [-10000, 1]
+        # nse_range = [-10000, 0]
         idx_lst_small_nse = inds_df[
             (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
         plot_gages_map_and_ts(self.data_model, self.obs, self.pred, inds_df, show_ind_key, idx_lst_small_nse,
@@ -361,9 +365,49 @@ class TestExploreCase(unittest.TestCase):
         cbar_label = hue_name
 
         plt.title('Distribution of w/wo diversion')
-        # swarmplot_with_cbar(cmap_str, cbar_label, [-1, 1.0], x=x_name, y=y_name, hue=hue_name, palette=cmap_str,
-        #                     data=result)
-        swarmplot_with_cbar(cmap_str, cbar_label, None, x=x_name, y=y_name, hue=hue_name, palette=cmap_str, data=result)
+        swarmplot_with_cbar(cmap_str, cbar_label, [-1, 1.0], x=x_name, y=y_name, hue=hue_name, palette=cmap_str,
+                            data=result)
+        # swarmplot_with_cbar(cmap_str, cbar_label, None, x=x_name, y=y_name, hue=hue_name, palette=cmap_str, data=result)
+
+    def test_map_ts_some_criteria(self):
+        # plot map ts
+        inds_df = self.inds_df
+        show_ind_key = 'NSE'
+        idx_lst = np.arange(len(self.data_model.t_s_dict["sites_id"])).tolist()
+        diversion_yes = True
+        diversion_no = False
+        # combine_attrs = [{"diversion": [diversion_yes, diversion_no]}, {"DOR": [-0.02, 0.02]}]
+        # combine_attrs = [{"diversion": [diversion_no]}, {"DOR": [-0.02]}]
+        combine_attrs = [{"diversion": [diversion_no]}]
+        # combine_attrs = [{"diversion": [diversion_yes]}]
+        dict_lst = pair_comb(combine_attrs)
+        sites_ids = []
+        for dict_ in dict_lst:
+            source_data_i = GagesSource.choose_some_basins_multi_crit(self.config_data,
+                                                                      self.config_data.model_dict["data"][
+                                                                          "tRangeTrain"],
+                                                                      screen_basin_area_huc4=False,
+                                                                      **dict_)
+            sites_id_i = source_data_i.all_configs['flow_screen_gage_id']
+            sites_ids.append(sites_id_i)
+        idx_chosen = [i for i in range(len(idx_lst)) if self.data_model.t_s_dict["sites_id"][i] in sites_ids[0]]
+        # nse_range = [0.5, 1]
+        # nse_range = [-10000, 0]
+        # nse_range = [-10000, 1]
+        nse_range = [0, 1]
+        idx_lst_small_nse = inds_df[
+            (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
+        idx_chosen_final = np.intersect1d(idx_chosen, idx_lst_small_nse)
+        chosen_ids = np.array(self.data_model.t_s_dict["sites_id"])[idx_chosen_final]
+        print(chosen_ids)
+        attr_lst_show_me = ["STAID", "STANAME", "DRAIN_SQKM", "STATE", "COUNTYNAME_SITE", "CLASS", "AGGECOREGION",
+                            "WR_REPORT_REMARKS", "SCREENING_COMMENTS"]
+        attrs_show_me = self.data_model.data_source.read_attr_origin(chosen_ids, attr_lst_show_me).T
+        show_me = np.concatenate((chosen_ids.reshape(chosen_ids.size, 1), attrs_show_me), axis=1)
+        data_attr = pd.DataFrame(show_me, columns=attr_lst_show_me)
+        data_attr.to_csv("chosen_attr.csv")
+        plot_gages_map_and_ts(self.data_model, self.obs, self.pred, inds_df, show_ind_key, idx_chosen_final,
+                              pertile_range=[0, 100])
 
     def test_explore_gages_prcp_log(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
