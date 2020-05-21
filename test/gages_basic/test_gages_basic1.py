@@ -10,7 +10,7 @@ from data.gages_input_dataset import GagesModels
 from explore.stat import statError
 from hydroDL.master import *
 import definitions
-from utils import serialize_numpy, unserialize_numpy
+from utils import unserialize_numpy
 from visual.plot_model import plot_we_need
 
 

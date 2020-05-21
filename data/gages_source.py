@@ -261,7 +261,9 @@ class GagesSource(DataSource):
         else:
             for shapefile in shapefiles:
                 shape_data = gpd.read_file(shapefile)
-                gages_id = shape_data['GAGE_ID'].values
+                shape_data_sort = shape_data.sort_values(by="GAGE_ID")
+                gages_id = shape_data_sort['GAGE_ID'].values
+                assert (all(x < y for x, y in zip(gages_id, gages_id[1:])))
                 if screen_basin_area_huc4:
                     gages_id = np.intersect1d(gages_id, gages_huc4_id)
                 c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)

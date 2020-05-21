@@ -10,22 +10,18 @@ from explore.gages_stat import stat_every_region
 from explore.stat import statError
 from hydroDL.master import *
 import definitions
-from utils import serialize_numpy, unserialize_numpy
-from utils.dataset_format import subset_of_dict
-from visual.plot_model import plot_we_need, plot_ts_obs_pred, plot_map
+from utils import unserialize_numpy
 import numpy as np
 from matplotlib import pyplot
-
-from visual.plot_stat import plot_ecdf
 
 
 class MyTestCaseGages(unittest.TestCase):
     def setUp(self) -> None:
         config_dir = definitions.CONFIG_DIR
-        self.config_file = os.path.join(config_dir, "basic/config_exp6.ini")
-        self.subdir = r"basic/exp6"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
-        # self.subdir = r"basic/exp12"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp6.ini")
+        # self.subdir = r"basic/exp6"
+        self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
+        self.subdir = r"basic/exp12"
         # self.config_file = os.path.join(config_dir, "basic/config_exp13.ini")
         # self.subdir = r"basic/exp13"
         # self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
@@ -48,7 +44,14 @@ class MyTestCaseGages(unittest.TestCase):
 
     def test_gages_data_model_quickdata(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
+        data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
+        data_model_train = GagesModel.load_datamodel(data_dir,
+                                                     data_source_file_name='data_source.txt',
+                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                                     forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                                     f_dict_file_name='dictFactorize.json',
+                                                     var_dict_file_name='dictAttribute.json',
+                                                     t_s_dict_file_name='dictTimeSpace.json')
         data_model_test = GagesModel.load_datamodel(data_dir,
                                                     data_source_file_name='test_data_source.txt',
                                                     stat_file_name='test_Statistics.json',
@@ -59,13 +62,11 @@ class MyTestCaseGages(unittest.TestCase):
                                                     var_dict_file_name='test_dictAttribute.json',
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
 
-        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_test,
-                                                         t_range_update=self.config_data.model_dict["data"][
-                                                             "tRangeTrain"], data_attr_update=True)
-        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_test,
-                                                        t_range_update=self.config_data.model_dict["data"][
-                                                            "tRangeTest"], data_attr_update=True,
-                                                        train_stat_dict=gages_model_train.stat_dict)
+        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_train, data_attr_update=True,
+                                                         screen_basin_area_huc4=False)
+        gages_model_test = GagesModel.update_data_model(self.config_data, data_model_test, data_attr_update=True,
+                                                        train_stat_dict=gages_model_train.stat_dict,
+                                                        screen_basin_area_huc4=False)
         save_datamodel(gages_model_train, data_source_file_name='data_source.txt',
                        stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
                        attr_file_name='attr', f_dict_file_name='dictFactorize.json',

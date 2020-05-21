@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import torch
 from functools import reduce
-
+import random
 from torch.utils.data import DataLoader
 
 from data.data_config import name_pred
@@ -95,7 +95,17 @@ def master_train_1by1(data_model, valid_size=0.2):
     return model, avg_train_losses, avg_valid_losses
 
 
-def master_train(data_model, valid_size=0, pre_trained_model_epoch=1):
+def set_random_seed(seed):
+    print("Random seed:", seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+def master_train(data_model, valid_size=0, pre_trained_model_epoch=1, random_seed=1234):
+    set_random_seed(random_seed)
     model_dict = data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_loss = model_dict['loss']

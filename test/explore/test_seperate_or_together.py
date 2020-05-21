@@ -303,6 +303,14 @@ class MyTestCase(unittest.TestCase):
         print(np.intersect1d(all_sites_camels, sites_id_dor1))
         print(np.intersect1d(all_sites_camels, sites_id_dor2))
 
+        attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
+        data_attr, var_dict, f_dict = camels_data_model.data_source.read_attr(
+            np.intersect1d(all_sites_camels, sites_id_dor2), attr_lst)
+        run_avg = data_attr[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
+        nor_storage = data_attr[:, 1] * 1000  # m^3
+        dors = nor_storage / run_avg
+        print(dors)
+
     def test_plot_ecdf_together(self):
         xs = []
         ys = []

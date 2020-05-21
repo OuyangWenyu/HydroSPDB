@@ -146,6 +146,49 @@ class TestExploreCase(unittest.TestCase):
         plot_gages_map_and_ts(self.data_model, self.obs, self.pred, inds_df, show_ind_key, idx_final,
                               pertile_range=[0, 100])
 
+    def test_choose_some_sites_of_camelsid_and_show_map_ts(self):
+        inds_df = self.inds_df
+        show_ind_key = 'NSE'
+        sites = self.data_model.t_s_dict["sites_id"]
+        config_dir = definitions.CONFIG_DIR
+        camels_config_file = os.path.join(config_dir, "basic/config_exp1.ini")
+        camels_subdir = r"basic/exp1"
+        camels_config_data = GagesConfig.set_subdir(camels_config_file, camels_subdir)
+        camels_data_model = GagesModel.load_datamodel(camels_config_data.data_path["Temp"],
+                                                      data_source_file_name='test_data_source.txt',
+                                                      stat_file_name='test_Statistics.json',
+                                                      flow_file_name='test_flow.npy',
+                                                      forcing_file_name='test_forcing.npy',
+                                                      attr_file_name='test_attr.npy',
+                                                      f_dict_file_name='test_dictFactorize.json',
+                                                      var_dict_file_name='test_dictAttribute.json',
+                                                      t_s_dict_file_name='test_dictTimeSpace.json')
+        all_sites_camels = camels_data_model.t_s_dict["sites_id"]
+        dor_1 = - 0.02
+        dor_2 = 0.02
+        source_data_dor1 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_1)
+        source_data_dor2 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_2)
+        sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+        sites_id_dor2 = source_data_dor2.all_configs['flow_screen_gage_id']
+        print(np.intersect1d(all_sites_camels, sites_id_dor1))
+        chosen_id = np.intersect1d(all_sites_camels, sites_id_dor2)
+        print(chosen_id)
+        chosen_id_idx = [i for i in range(len(sites)) if sites[i] in chosen_id]
+        nse_range = [-10000, 0.5]
+        # nse_range = [0, 0.5]
+        idx_lst_small_nse = inds_df[
+            (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
+
+        idx_final = np.intersect1d(chosen_id_idx, idx_lst_small_nse)
+        plot_gages_map_and_ts(self.data_model, self.obs, self.pred, inds_df, show_ind_key, idx_final,
+                              pertile_range=[0, 100])
+
     def test_map_ts(self):
         # plot map ts
         inds_df = self.inds_df
