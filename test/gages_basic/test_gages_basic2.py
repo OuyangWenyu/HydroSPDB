@@ -18,14 +18,18 @@ from matplotlib import pyplot
 class MyTestCaseGages(unittest.TestCase):
     def setUp(self) -> None:
         config_dir = definitions.CONFIG_DIR
-        # self.config_file = os.path.join(config_dir, "basic/config_exp6.ini")
-        # self.subdir = r"basic/exp6"
-        self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
-        self.subdir = r"basic/exp12"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp13.ini")
-        # self.subdir = r"basic/exp13"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
-        # self.subdir = r"basic/exp18"
+        # self.config_file = os.path.join(config_dir, "basic/config_exp4.ini")
+        # self.subdir = r"basic/exp4"
+        # self.random_seed = 1234
+        # self.config_file = os.path.join(config_dir, "basic/config_exp8.ini")
+        # self.subdir = r"basic/exp8"
+        # self.random_seed = 1234
+        # self.config_file = os.path.join(config_dir, "basic/config_exp12.ini")
+        # self.subdir = r"basic/exp12"
+        # self.random_seed = 1234
+        self.config_file = os.path.join(config_dir, "basic/config_exp15.ini")
+        self.subdir = r"basic/exp15"
+        self.random_seed = 1111
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
 
@@ -87,9 +91,9 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(2):
-            # pre_trained_model_epoch = 330
-            master_train(data_model)
-            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            # pre_trained_model_epoch = 100
+            master_train(data_model, random_seed=self.random_seed)
+            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch, random_seed=self.random_seed)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
@@ -184,102 +188,6 @@ class MyTestCaseGages(unittest.TestCase):
             #     self.test_epoch) + "map_fig.png")
             # plot_map(gauge_dict, sites_df_nse, save_file=save_map_file, id_col="STAID", lon_col="LNG_GAGE",
             #          lat_col="LAT_GAGE")
-
-    def test_explore_gages_prcp_log(self):
-        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
-                                               data_source_file_name='data_source.txt',
-                                               stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                               forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                               f_dict_file_name='dictFactorize.json',
-                                               var_dict_file_name='dictAttribute.json',
-                                               t_s_dict_file_name='dictTimeSpace.json')
-        i = np.random.randint(data_model.data_forcing.shape[0], size=1)
-        print(i)
-        a = data_model.data_forcing[i, :, 1].flatten()
-        series = a[~np.isnan(a)]
-        series = series[np.where(series >= 0)]
-        # series = series[np.where(series > 0)]
-        pyplot.plot(series)
-        pyplot.show()
-        # histogram
-        pyplot.hist(series)
-        pyplot.show()
-        # sqrt transform
-        transform = np.sqrt(series)
-        pyplot.figure(1)
-        # line plot
-        pyplot.subplot(211)
-        pyplot.plot(transform)
-        # histogram
-        pyplot.subplot(212)
-        pyplot.hist(transform)
-        pyplot.show()
-        transform = np.log(series + 1)
-        # transform = np.log(series + 0.1)
-        pyplot.figure(1)
-        # line plot
-        pyplot.subplot(211)
-        pyplot.plot(transform)
-        # histogram
-        pyplot.subplot(212)
-        pyplot.hist(transform)
-        pyplot.show()
-        # transform = stats.boxcox(series, lmbda=0.0)
-        # pyplot.figure(1)
-        # # line plot
-        # pyplot.subplot(211)
-        # pyplot.plot(transform)
-        # # histogram
-        # pyplot.subplot(212)
-        # pyplot.hist(transform)
-        # pyplot.show()
-        # for j in range(data_model.data_forcing.shape[2]):
-        #     x_explore_j = data_model.data_forcing[i, :, j].flatten()
-        #     plot_dist(x_explore_j)
-
-    def test_explore_gages_prcp_basin(self):
-        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
-                                               data_source_file_name='data_source.txt',
-                                               stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                               forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                               f_dict_file_name='dictFactorize.json',
-                                               var_dict_file_name='dictAttribute.json',
-                                               t_s_dict_file_name='dictTimeSpace.json')
-        basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
-                                                      is_return_dict=False)
-        mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
-                                                     is_return_dict=False)
-        flow = data_model.data_flow
-        temparea = np.tile(basin_area, (1, flow.shape[1]))
-        tempprep = np.tile(mean_prep / 365 * 10, (1, flow.shape[1]))
-        flowua = (flow * 0.0283168 * 3600 * 24) / (
-                (temparea * (10 ** 6)) * (tempprep * 10 ** (-3)))  # unit (m^3/day)/(m^3/day)
-        i = np.random.randint(data_model.data_forcing.shape[0], size=1)
-        a = flow[i].flatten()
-        series = a[~np.isnan(a)]
-        # series = series[np.where(series >= 0)]
-        # series = series[np.where(series > 0)]
-        pyplot.figure(1)
-        # line plot
-        pyplot.subplot(211)
-        pyplot.plot(series)
-        # histogram
-        pyplot.subplot(212)
-        pyplot.hist(series)
-        pyplot.show()
-
-        b = flowua[i].flatten()
-        transform = b[~np.isnan(b)]
-        # transform = series[np.where(transform >= 0)]
-        # series = series[np.where(series > 0)]
-        pyplot.figure(1)
-        # line plot
-        pyplot.subplot(211)
-        pyplot.plot(transform)
-        # histogram
-        pyplot.subplot(212)
-        pyplot.hist(transform)
-        pyplot.show()
 
 
 if __name__ == '__main__':

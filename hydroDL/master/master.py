@@ -104,7 +104,7 @@ def set_random_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 
-def master_train(data_model, valid_size=0, pre_trained_model_epoch=1, random_seed=1234):
+def master_train(data_model, valid_size=0, pre_trained_model_epoch=1, random_seed=1234, drop_out=0.5):
     set_random_seed(random_seed)
     model_dict = data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
@@ -146,7 +146,8 @@ def master_train(data_model, valid_size=0, pre_trained_model_epoch=1, random_see
                                            pretrian_model_file=pre_trained_model_file)
     else:
         if opt_model['name'] == 'CudnnLstmModel':
-            model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+            model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'],
+                                       dr=drop_out)
         elif opt_model['name'] == 'LstmCloseModel':
             model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
                                        fillObs=True)

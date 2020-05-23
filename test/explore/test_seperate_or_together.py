@@ -319,8 +319,15 @@ class MyTestCase(unittest.TestCase):
         #                       "miniBatch = [100, 100]	hiddenSize = 256",
         #                       "miniBatch = [100, 365]	hiddenSize = 256",
         #                       "miniBatch = [100, 365]	hiddenSize = 128"]
-        cases_exps = ["basic_exp19", "basic_exp20", "basic_exp23", "basic_exp25"]
-        cases_exps_legends = ["attr19", "attr20", "attr23", "attr25"]
+
+        # cases_exps = ["basic_exp19", "basic_exp20", "basic_exp23", "basic_exp25"]
+        # cases_exps_legends = ["attr19", "attr20", "attr23", "attr25"]
+
+        # cases_exps = ["basic_exp1", "basic_exp2", "basic_exp3", "basic_exp4"]
+        # cases_exps_legends = ["attr1", "attr2", "attr3", "attr4"]
+
+        cases_exps = ["basic_exp1", "basic_exp5", "basic_exp6", "basic_exp7", "basic_exp8", "basic_exp9", "basic_exp10"]
+        cases_exps_legends =  ["basic_exp1", "basic_exp5", "basic_exp6", "basic_exp7", "basic_exp8", "basic_exp9", "basic_exp10"]
         for case_exp in cases_exps:
             config_data_i = load_dataconfig_case_exp(case_exp)
             pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
