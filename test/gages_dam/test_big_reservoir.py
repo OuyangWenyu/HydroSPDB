@@ -14,10 +14,11 @@ class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """choose basins with small DOR """
         config_dir = definitions.CONFIG_DIR
-        # self.config_file = os.path.join(config_dir, "dam/config_exp4.ini")
-        # self.subdir = r"dam/exp4"
-        self.config_file = os.path.join(config_dir, "dam/config_exp18.ini")
-        self.subdir = r"dam/exp18"
+        self.config_file = os.path.join(config_dir, "dam/config_exp4.ini")
+        self.subdir = r"dam/exp4"
+        self.random_seed = 1234
+        # self.config_file = os.path.join(config_dir, "dam/config_exp18.ini")
+        # self.subdir = r"dam/exp18"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
 
@@ -50,8 +51,9 @@ class MyTestCase(unittest.TestCase):
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
 
         gages_model_train = GagesModel.update_data_model(self.config_data, data_model_train, sites_id_update=sites_id,
-                                                         screen_basin_area_huc4=False)
+                                                         data_attr_update=True, screen_basin_area_huc4=False)
         gages_model_test = GagesModel.update_data_model(self.config_data, data_model_test, sites_id_update=sites_id,
+                                                        data_attr_update=True,
                                                         train_stat_dict=gages_model_train.stat_dict,
                                                         screen_basin_area_huc4=False)
         save_datamodel(gages_model_train, data_source_file_name='data_source.txt',
@@ -73,10 +75,10 @@ class MyTestCase(unittest.TestCase):
                                                f_dict_file_name='dictFactorize.json',
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(2):
+        with torch.cuda.device(1):
             # pre_trained_model_epoch = 120
-            master_train(data_model)
-            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch)
+            master_train(data_model, random_seed=self.random_seed)
+            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch, random_seed=self.random_seed)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
@@ -86,7 +88,7 @@ class MyTestCase(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        with torch.cuda.device(2):
+        with torch.cuda.device(1):
             pred, obs = master_test(data_model, epoch=self.test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)
