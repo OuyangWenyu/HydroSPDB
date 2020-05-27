@@ -191,7 +191,7 @@ def plot_point_map(gpd_gdf, percentile=0, save_file=None):
         # plt.savefig("NSE-usa.png", bbox_inches='tight', pad_inches=0.1)
 
 
-def plot_ecdfs(xs, ys, legends=None, style=None):
+def plot_ecdfs(xs, ys, legends=None, style=None, case_str="case", event_str="event", x_str="x", y_str="y"):
     """Empirical cumulative distribution function"""
     assert type(xs) == type(ys) == list
     assert len(xs) == len(ys)
@@ -207,26 +207,31 @@ def plot_ecdfs(xs, ys, legends=None, style=None):
     for i in range(len(xs)):
         df_dict_i = {}
         if legends is None:
-            str_i = "x" + str(i)
+            str_i = x_str + str(i)
         else:
             str_i = legends[i]
         assert (all(xi < yi for xi, yi in zip(xs[i], xs[i][1:])))
-        df_dict_i["x"] = xs[i]
-        df_dict_i["y"] = ys[i]
-        df_dict_i["case"] = np.full([xs[i].size], str_i)
+        df_dict_i[x_str] = xs[i]
+        df_dict_i[y_str] = ys[i]
+        df_dict_i[case_str] = np.full([xs[i].size], str_i)
         if style is not None:
-            df_dict_i["event"] = np.full([xs[i].size], style[i])
+            df_dict_i[event_str] = np.full([xs[i].size], style[i])
         df_i = pd.DataFrame(df_dict_i)
         frames.append(df_i)
     df = pd.concat(frames)
     sns.set_style("ticks", {'axes.grid': True})
     if style is None:
-        sns.lineplot(x="x", y="y", hue="case", data=df, estimator=None).set(xlim=(0, 1), xticks=np.arange(0, 1, 0.05),
-                                                                            yticks=np.arange(0, 1, 0.05))
+        sns.lineplot(x=x_str, y=y_str, hue=case_str, data=df, estimator=None).set(xlim=(0, 1),
+                                                                                  xticks=np.arange(0, 1, 0.05),
+                                                                                  yticks=np.arange(0, 1, 0.05))
     else:
-        sns.lineplot(x="x", y="y", hue="case", style="event", data=df, estimator=None).set(xlim=(0, 1),
-                                                                                           xticks=np.arange(0, 1, 0.05),
-                                                                                           yticks=np.arange(0, 1, 0.05))
+        sns.lineplot(x=x_str, y=y_str, hue=case_str, style=event_str, data=df, estimator=None).set(xlim=(0, 1),
+                                                                                                   xticks=np.arange(0,
+                                                                                                                    1,
+                                                                                                                    0.05),
+                                                                                                   yticks=np.arange(0,
+                                                                                                                    1,
+                                                                                                                    0.05))
     plt.show()
 
 

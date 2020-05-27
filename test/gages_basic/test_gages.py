@@ -22,15 +22,19 @@ class MyTestCaseGages(unittest.TestCase):
         # self.config_file = os.path.join(config_dir, "basic/config_exp7.ini")
         # self.subdir = r"basic/exp7"
         # self.random_seed = 1234
-
-        self.config_file = os.path.join(config_dir, "basic/config_exp14.ini")
-        self.subdir = r"basic/exp14"
+        self.config_file = os.path.join(config_dir, "basic/config_exp28.ini")
+        self.subdir = r"basic/exp28"
         self.random_seed = 111
+
+        # self.config_file = os.path.join(config_dir, "basic/config_exp14.ini")
+        # self.subdir = r"basic/exp14"
+        # self.random_seed = 111
         # self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
         # self.subdir = r"basic/exp18"
         # self.random_seed = 123
         # self.config_file = os.path.join(config_dir, "basic/config_exp25.ini")
         # self.subdir = r"basic/exp25"
+        # self.random_seed = 1234
 
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         test_epoch_lst = [100, 150, 200, 220, 250, 280, 290, 300, 310, 320, 350]
@@ -105,9 +109,9 @@ class MyTestCaseGages(unittest.TestCase):
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(0):
-            pre_trained_model_epoch = 230
-            # master_train(data_model, random_seed=self.random_seed)
-            master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch, random_seed=self.random_seed)
+            # pre_trained_model_epoch = 220
+            master_train(data_model, random_seed=self.random_seed)
+            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch, random_seed=self.random_seed)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

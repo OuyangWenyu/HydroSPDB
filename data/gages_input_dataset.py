@@ -13,14 +13,74 @@ from scipy import constants, interpolate
 import definitions
 from data import DataModel, GagesSource, GagesConfig
 from data.data_config import update_config_item
-from data.data_input import GagesModel, _trans_norm, GagesModelWoBasinNorm
+from data.data_input import GagesModel, _trans_norm, GagesModelWoBasinNorm, load_result
 from explore import trans_norm, cal_stat
 from explore.hydro_cluster import cluster_attr_train
+from explore.stat import statError
 from hydroDL import master_train
 from hydroDL.model import model_run
 from utils import hydro_time
 from utils.dataset_format import subset_of_dict
 from utils.hydro_math import concat_two_3darray, copy_attr_array_in2d
+
+
+def load_ensemble_result(cases_exps, test_epoch, return_value=False):
+    preds = []
+    obss = []
+    for case_exp in cases_exps:
+        config_data_i = load_dataconfig_case_exp(case_exp)
+        pred_i, obs_i = load_result(config_data_i.data_path['Temp'], test_epoch)
+        pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+        obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+        print(obs_i)
+        preds.append(pred_i)
+        obss.append(obs_i)
+    preds_np = np.array(preds)
+    obss_np = np.array(obss)
+    pred_mean = np.mean(preds_np, axis=0)
+    obs_mean = np.mean(obss_np, axis=0)
+    inds = statError(obs_mean, pred_mean)
+    inds_df = pd.DataFrame(inds)
+    if return_value:
+        return inds_df, pred_mean, obs_mean
+    return inds_df
+
+
+def load_pub_test_result(config_data, i, test_epoch):
+    """i means the ith experiment of k-fold"""
+    data_model = GagesModel.load_datamodel(config_data.data_path["Temp"], str(i),
+                                           data_source_file_name='test_data_source.txt',
+                                           stat_file_name='test_Statistics.json',
+                                           flow_file_name='test_flow.npy',
+                                           forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                           f_dict_file_name='test_dictFactorize.json',
+                                           var_dict_file_name='test_dictAttribute.json',
+                                           t_s_dict_file_name='test_dictTimeSpace.json')
+    data_model_majordam = GagesModel.load_datamodel(config_data.data_path["Temp"], str(i),
+                                                    data_source_file_name='test_data_source_largedor.txt',
+                                                    stat_file_name='test_Statistics_largedor.json',
+                                                    flow_file_name='test_flow_largedor.npy',
+                                                    forcing_file_name='test_forcing_largedor.npy',
+                                                    attr_file_name='test_attr_largedor.npy',
+                                                    f_dict_file_name='test_dictFactorize_largedor.json',
+                                                    var_dict_file_name='test_dictAttribute_largedor.json',
+                                                    t_s_dict_file_name='test_dictTimeSpace_largedor.json')
+    pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], test_epoch)
+    pred = pred.reshape(pred.shape[0], pred.shape[1])
+    obs = obs.reshape(obs.shape[0], obs.shape[1])
+    inds = statError(obs, pred)
+    inds['STAID'] = data_model.t_s_dict["sites_id"]
+    inds_df = pd.DataFrame(inds)
+
+    pred_majordam, obs_majordam = load_result(data_model_majordam.data_source.data_config.data_path['Temp'],
+                                              test_epoch, pred_name='flow_pred_largedor',
+                                              obs_name='flow_obs_largedor')
+    pred_majordam = pred_majordam.reshape(pred_majordam.shape[0], pred_majordam.shape[1])
+    obs_majordam = obs_majordam.reshape(obs_majordam.shape[0], obs_majordam.shape[1])
+    inds_majordam = statError(obs_majordam, pred_majordam)
+    inds_majordam['STAID'] = data_model_majordam.t_s_dict["sites_id"]
+    inds_majordam_df = pd.DataFrame(inds_majordam)
+    return inds_df, inds_majordam_df
 
 
 def load_dataconfig_case_exp(case_exp):
