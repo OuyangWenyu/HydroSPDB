@@ -393,7 +393,7 @@ class GagesSource(DataSource):
                 print("成功写入 " + temp_file + " 径流数据！")
         print("streamflow data Ready! ...")
 
-    def read_usge_gage(self, huc, usgs_id, t_lst, read_qc=False):
+    def read_usge_gage(self, huc, usgs_id, t_lst):
         """读取各个径流站的径流数据"""
         dir_gage_flow = self.all_configs.get("flow_dir")
         # 首先找到要读取的那个txt
@@ -414,18 +414,44 @@ class GagesSource(DataSource):
         df_flow = pd.read_csv(usgs_file, skiprows=skip_rows_index, sep='\t', dtype={'site_no': str})
         # 原数据的列名并不好用，这里修改
         columns_names = df_flow.columns.tolist()
+        columns_flow = []
+        columns_flow_cd = []
         for column_name in columns_names:
             # 00060表示径流值，00003表示均值
             # 还有一种情况：#        126801       00060     00003     Discharge, cubic feet per second (Mean)和
             # 126805       00060     00003     Discharge, cubic feet per second (Mean), PUBLISHED 都是均值，但有两套数据，这里暂时取第一套
             # TODO: first or second, it depends
             if '_00060_00003' in column_name and '_00060_00003_cd' not in column_name:
-                df_flow.rename(columns={column_name: 'flow'}, inplace=True)
-                break
+                columns_flow.append(column_name)
         for column_name in columns_names:
             if '_00060_00003_cd' in column_name:
-                df_flow.rename(columns={column_name: 'mode'}, inplace=True)
-                break
+                columns_flow_cd.append(column_name)
+
+        if len(columns_flow) > 1:
+            print("there are some columns for flow, choose one\n")
+            df_date_temp = df_flow['datetime']
+            date_temp = pd.to_datetime(df_date_temp).values.astype('datetime64[D]')
+            c_temp, ind1_temp, ind2_temp = np.intersect1d(date_temp, t_lst, return_indices=True)
+            num_nan_lst = []
+            for i in range(len(columns_flow)):
+                out_temp = np.full([len(t_lst)], np.nan)
+                df_flow_temp = df_flow[columns_flow[i]].copy()
+                out_temp[ind2_temp] = df_flow_temp[ind1_temp]
+                num_nan = np.isnan(out_temp).sum()
+                num_nan_lst.append(num_nan)
+            num_nan_np = np.array(num_nan_lst)
+            index_flow_num = np.argmin(num_nan_np)
+            df_flow.rename(columns={columns_flow[index_flow_num]: 'flow'}, inplace=True)
+            df_flow.rename(columns={columns_flow_cd[index_flow_num]: 'mode'}, inplace=True)
+        else:
+            for column_name in columns_names:
+                if '_00060_00003' in column_name and '_00060_00003_cd' not in column_name:
+                    df_flow.rename(columns={column_name: 'flow'}, inplace=True)
+                    break
+            for column_name in columns_names:
+                if '_00060_00003_cd' in column_name:
+                    df_flow.rename(columns={column_name: 'mode'}, inplace=True)
+                    break
 
         columns = ['agency_cd', 'site_no', 'datetime', 'flow', 'mode']
         if df_flow.empty:
@@ -455,10 +481,6 @@ class GagesSource(DataSource):
             print(obs)
             print(np.argwhere(np.isnan(obs)))
         obs[obs < 0] = np.nan
-        if read_qc is True:
-            # TODO：我暂时把非平均值的径流数据的读取取出了，所以read_qc暂时没用
-            qc_dict = {'A': 1, 'A:e': 2, 'M': 3}
-            qc = np.array([qc_dict[x] for x in data_temp[4]])
         # 首先判断时间范围是否一致，读取的径流数据的时间序列和要读取的径流数据时间序列交集，获取径流数据，剩余没有数据的要读取的径流数据时间序列是nan
         nt = len(t_lst)
         out = np.full([nt], np.nan)
@@ -467,14 +489,7 @@ class GagesSource(DataSource):
         date = pd.to_datetime(df_date).values.astype('datetime64[D]')
         c, ind1, ind2 = np.intersect1d(date, t_lst, return_indices=True)
         out[ind2] = obs[ind1]
-        if read_qc is True:
-            out_qc = np.full([nt], np.nan)
-            out_qc[ind2] = qc
-
-        if read_qc is True:
-            return out, out_qc
-        else:
-            return out
+        return out
 
     @my_logger
     @my_timer

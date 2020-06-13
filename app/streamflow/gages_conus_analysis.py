@@ -79,8 +79,8 @@ def cmd():
     return args
 
 
-# python gages_conus_analysis.py --cfg basic/config_exp17.ini --ctx 1 --rs 1234 --te 20 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp11.ini --ctx 2 --rs 1234 --te 20 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp37.ini --ctx 1 --rs 1234 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp11.ini --ctx 2 --rs 1234 --te 20 --train_mode False
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()
