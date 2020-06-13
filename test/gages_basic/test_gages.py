@@ -22,9 +22,12 @@ class MyTestCaseGages(unittest.TestCase):
         # self.config_file = os.path.join(config_dir, "basic/config_exp7.ini")
         # self.subdir = r"basic/exp7"
         # self.random_seed = 1234
-        self.config_file = os.path.join(config_dir, "basic/config_exp28.ini")
-        self.subdir = r"basic/exp28"
-        self.random_seed = 111
+        # self.config_file = os.path.join(config_dir, "basic/config_exp28.ini")
+        # self.subdir = r"basic/exp28"
+        # self.random_seed = 111
+        self.config_file = os.path.join(config_dir, "basic/config_exp37.ini")
+        self.subdir = r"basic/exp37"
+        self.random_seed = 1234
 
         # self.config_file = os.path.join(config_dir, "basic/config_exp14.ini")
         # self.subdir = r"basic/exp14"

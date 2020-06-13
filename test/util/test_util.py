@@ -280,22 +280,25 @@ class MyTestCase(unittest.TestCase):
     def test_choose_some_gauge(self):
         ashu_gageid_file = os.path.join(self.config_data.data_path["DB"], "ashu", "AshuGagesId.txt")
 
-        farshid_gageid_file = os.path.join(self.config_data.data_path["DB"], "farshid", "sites.csv")
+        # farshid_gageid_file = os.path.join(self.config_data.data_path["DB"], "farshid", "sites.csv")
+        farshid_gageid_file = os.path.join(self.config_data.data_path["DB"], "farshid", "gagelist1713.feather")
 
         # dapeng_v1_gageid_file = os.path.join(self.config_data.data_path["DB"], "dapeng", "v1.csv")
         dapeng_v2_gageid_file = os.path.join(self.config_data.data_path["DB"], "dapeng", "v2.csv")
 
-        gauge_df = pd.read_csv(dapeng_v2_gageid_file, dtype={"STAID": str})
-        gauge_list = gauge_df["STAID"].values
+        # gauge_df = pd.read_csv(dapeng_v2_gageid_file, dtype={"STAID": str})
+        # gauge_list = gauge_df["STAID"].values
+        gauge_df = pd.read_feather(farshid_gageid_file)
+        gauge_list = gauge_df["site_no"].values
 
         # np.array(
         #     ['01013500', '01401650', '01585500', '02120780', '02324400', '03139000', '04086600', '05087500',
         #      '05539900', '06468170', '07184000', '08158810', '09404450', '11055800', '12134500', '14166500'])
         data_dir = os.path.join(self.config_data.data_path["DB"], "basin_mean_forcing", "daymet")
         # output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_ashu")
-        # output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_farshid")
+        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_farshid")
         # output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_dapeng_v1")
-        output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_dapeng_v2")
+        # output_dir = os.path.join(self.config_data.data_path["DB"], "forcing_data_dapeng_v2")
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         data_source_dump = os.path.join(self.config_data.data_path["Temp"], 'data_source.txt')
@@ -373,6 +376,15 @@ class MyTestCase(unittest.TestCase):
             output_file = data_file[:-4] + "_leap.txt"
             new_data_df.to_csv(output_file, header=True, index=False, sep=' ', float_format='%.2f')
             os.remove(data_file)
+
+    def test_check_streamflow_data(self):
+        source_data = GagesSource(self.config_data, self.config_data.model_dict["data"]["tRangeTrain"],
+                                  screen_basin_area_huc4=False)
+        t_range_list = hydro_time.t_range_days(["1990-01-01", "2010-01-01"])
+        # data_temp = source_data.read_usge_gage("01", '01052500', t_range_list)
+        data_temp = source_data.read_usge_gage("08", '08013000', t_range_list)
+        print(data_temp)
+        print(np.argwhere(np.isnan(data_temp)))
 
     def test_gpu(self):
         # os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # cuda is TITAN

@@ -71,7 +71,8 @@ class DataModel(object):
             # read flow
             data_flow = data_source.read_usgs()
             usgs_id = data_source.all_configs["flow_screen_gage_id"]
-            assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
+            if usgs_id is not None:
+                assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
             data_flow, usgs_id, t_range_list = data_source.usgs_screen_streamflow(data_flow, usgs_ids=usgs_id)
             assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
             self.data_flow = data_flow

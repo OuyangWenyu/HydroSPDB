@@ -15,6 +15,16 @@ from explore.stat import ecdf
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
+def swarmplot_without_legend(x, y, hue, vmin, vmax, cmap, **kwargs):
+    fig = plt.gcf()
+    ax = sns.swarmplot(x, y, hue, **kwargs)
+    # remove the legend, because we want to set a colorbar instead
+    ax.legend().remove()
+    norm = plt.Normalize(vmin, vmax)
+    sm = ScalarMappable(norm=norm, cmap=cmap)
+    return fig
+
+
 def plot_scatter_xyc(x_label, x, y_label, y, c_label=None, c=None, is_reg=False, xlim=None, ylim=None):
     """scatter plot: x-y relationship with c as colorbar"""
     if c is None:

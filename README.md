@@ -46,6 +46,8 @@ conda install -c conda-forge statsmodels
 conda install -c conda-forge seaborn
 conda install -c conda-forge cartopy
 conda install -c conda-forge geoplot
+conda install -c conda-forge easydict
+conda install -c conda-forge pyarrow
 pip install xlrd
 ```
 

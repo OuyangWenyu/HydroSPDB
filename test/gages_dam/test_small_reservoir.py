@@ -17,9 +17,15 @@ class MyTestCase(unittest.TestCase):
         # self.config_file = os.path.join(config_dir, "dam/config_exp1.ini")
         # self.subdir = r"dam/exp1"
         # self.random_seed = 1234
-        self.config_file = os.path.join(config_dir, "dam/config_exp2.ini")
-        self.subdir = r"dam/exp2"
-        self.random_seed = 123
+        # self.config_file = os.path.join(config_dir, "dam/config_exp2.ini")
+        # self.subdir = r"dam/exp2"
+        # self.random_seed = 123
+        # self.config_file = os.path.join(config_dir, "dam/config_exp7.ini")
+        # self.subdir = r"dam/exp7"
+        # self.random_seed = 111
+        self.config_file = os.path.join(config_dir, "dam/config_exp8.ini")
+        self.subdir = r"dam/exp8"
+        self.random_seed = 1111
         # self.config_file = os.path.join(config_dir, "dam/config_exp17.ini")
         # self.subdir = r"dam/exp17"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
@@ -92,7 +98,7 @@ class MyTestCase(unittest.TestCase):
                                                f_dict_file_name='dictFactorize.json',
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(1):
+        with torch.cuda.device(0):
             # pre_trained_model_epoch = 240
             master_train(data_model, random_seed=self.random_seed)
             # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch, random_seed=self.random_seed)
@@ -105,7 +111,7 @@ class MyTestCase(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        with torch.cuda.device(1):
+        with torch.cuda.device(0):
             pred, obs = master_test(data_model, epoch=self.test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)

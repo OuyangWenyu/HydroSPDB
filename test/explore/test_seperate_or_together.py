@@ -1,6 +1,9 @@
 import unittest
 
 from functools import reduce
+
+import matplotlib
+
 import definitions
 from data import GagesConfig, GagesSource, DataModel
 from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result, load_result
@@ -14,9 +17,10 @@ import pandas as pd
 
 from utils import serialize_json, unserialize_json
 from utils.dataset_format import subset_of_dict
+from utils.hydro_math import is_any_elem_in_a_lst
 from visual import plot_ts_obs_pred
 from visual.plot_model import plot_ind_map, plot_we_need, plot_map, plot_gages_map_and_ts
-from visual.plot_stat import plot_ecdf, plot_diff_boxes, plot_ecdfs
+from visual.plot_stat import plot_ecdf, plot_diff_boxes, plot_ecdfs, swarmplot_without_legend
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -233,11 +237,13 @@ class MyTestCase(unittest.TestCase):
         idx_lst_diversion_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in diversion_small_dor]
         idx_lst_diversion_largedor = [i for i in range(len(all_sites)) if all_sites[i] in diversion_large_dor]
 
-        pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
-        pred = pred.reshape(pred.shape[0], pred.shape[1])
-        obs = obs.reshape(pred.shape[0], pred.shape[1])
-        inds = statError(obs, pred)
-        inds_df = pd.DataFrame(inds)
+        # pred, obs = load_result(data_model.data_source.data_config.data_path['Temp'], self.test_epoch)
+        # pred = pred.reshape(pred.shape[0], pred.shape[1])
+        # obs = obs.reshape(pred.shape[0], pred.shape[1])
+        # inds = statError(obs, pred)
+        # inds_df = pd.DataFrame(inds)
+        cases_exps = ["basic_exp12", "basic_exp13", "basic_exp14", "basic_exp15", "basic_exp16", "basic_exp18"]
+        inds_df = load_ensemble_result(cases_exps, self.test_epoch)
 
         keys_nse = "NSE"
         xs = []
@@ -262,6 +268,216 @@ class MyTestCase(unittest.TestCase):
         ys.append(y4)
 
         plot_ecdfs(xs, ys, cases_exps_legends_together)
+
+    def test_plot_3_factors_catplot(self):
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "basic/config_exp12.ini")
+        subdir = r"basic/exp12"
+        random_seed = 1234
+        test_epoch = 300
+        # test_epoch = 20
+        config_data = GagesConfig.set_subdir(config_file, subdir)
+        data_model = GagesModel.load_datamodel(config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
+        usgs_id = data_model.t_s_dict["sites_id"]
+        attrs_runavg_stor = data_model.data_source.read_attr(usgs_id, attr_lst, is_return_dict=False)
+        run_avg = attrs_runavg_stor[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
+        nor_storage = attrs_runavg_stor[:, 1] * 1000  # m^3
+        dors_value = nor_storage / run_avg
+        dors = np.full(len(usgs_id), "dor<0.02")
+        for i in range(len(usgs_id)):
+            if dors_value[i] >= 0.02:
+                dors[i] = "dor≥0.02"
+
+        diversions = np.full(len(usgs_id), "no ")
+        diversion_strs = ["diversion", "divert"]
+        attr_lst = ["WR_REPORT_REMARKS", "SCREENING_COMMENTS"]
+        data_attr = data_model.data_source.read_attr_origin(usgs_id, attr_lst)
+        diversion_strs_lower = [elem.lower() for elem in diversion_strs]
+        data_attr0_lower = np.array([elem.lower() if type(elem) == str else elem for elem in data_attr[0]])
+        data_attr1_lower = np.array([elem.lower() if type(elem) == str else elem for elem in data_attr[1]])
+        data_attr_lower = np.vstack((data_attr0_lower, data_attr1_lower)).T
+        for i in range(len(usgs_id)):
+            if is_any_elem_in_a_lst(diversion_strs_lower, data_attr_lower[i], include=True):
+                diversions[i] = "yes"
+
+        nid_dir = os.path.join("/".join(config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
+        gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
+        gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())
+        gage_main_dam_purpose_unique = np.unique(gage_main_dam_purpose_lst)
+        purpose_regions = {}
+        for i in range(gage_main_dam_purpose_unique.size):
+            sites_id = []
+            for key, value in gage_main_dam_purpose.items():
+                if value == gage_main_dam_purpose_unique[i]:
+                    sites_id.append(key)
+            assert (all(x < y for x, y in zip(sites_id, sites_id[1:])))
+            purpose_regions[gage_main_dam_purpose_unique[i]] = sites_id
+        id_regions_idx = []
+        id_regions_sites_ids = []
+        regions_name = []
+        show_min_num = 10
+        df_id_region = np.array(data_model.t_s_dict["sites_id"])
+        for key, value in purpose_regions.items():
+            gages_id = value
+            c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+            if c.size < show_min_num:
+                continue
+            assert (all(x < y for x, y in zip(ind1, ind1[1:])))
+            assert (all(x < y for x, y in zip(c, c[1:])))
+            id_regions_idx.append(ind1)
+            id_regions_sites_ids.append(c)
+            regions_name.append(key)
+        preds, obss, inds_dfs = split_results_to_regions(data_model, test_epoch, id_regions_idx,
+                                                         id_regions_sites_ids)
+        frames = []
+        x_name = "purposes"
+        y_name = "NSE"
+        hue_name = "DOR"
+        col_name = "diversion"
+        for i in range(len(id_regions_idx)):
+            # plot box，使用seaborn库
+            keys = ["NSE"]
+            inds_test = subset_of_dict(inds_dfs[i], keys)
+            inds_test = inds_test[keys[0]].values
+            df_dict_i = {}
+            str_i = regions_name[i]
+            df_dict_i[x_name] = np.full([inds_test.size], str_i)
+            df_dict_i[y_name] = inds_test
+            df_dict_i[hue_name] = dors[id_regions_idx[i]]
+            df_dict_i[col_name] = diversions[id_regions_idx[i]]
+            # df_dict_i[hue_name] = nor_storage[id_regions_idx[i]]
+            df_i = pd.DataFrame(df_dict_i)
+            frames.append(df_i)
+        result = pd.concat(frames)
+        matplotlib.use('TkAgg')
+        # g = sns.catplot(x=x_name, y=y_name, hue=hue_name, col=col_name,
+        #                 data=result, kind="swarm",
+        #                 height=4, aspect=.7)
+
+        g = sns.catplot(x=x_name, y=y_name,
+                        hue=hue_name, col=col_name,
+                        data=result, palette="Set1",
+                        kind="box", dodge=True, showfliers=False)
+        # g.set(ylim=(-1, 1))
+
+        plt.show()
+
+    def test_plot_3_factors_colorbar(self):
+        # TODO: there is something wrong when using facetgrid and searmplot at the same time
+        config_dir = definitions.CONFIG_DIR
+        config_file = os.path.join(config_dir, "basic/config_exp11.ini")
+        subdir = r"basic/exp11"
+        random_seed = 1234
+        # test_epoch = 300
+        test_epoch = 20
+        config_data = GagesConfig.set_subdir(config_file, subdir)
+        data_model = GagesModel.load_datamodel(config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
+        usgs_id = data_model.t_s_dict["sites_id"]
+        attrs_runavg_stor = data_model.data_source.read_attr(usgs_id, attr_lst, is_return_dict=False)
+        run_avg = attrs_runavg_stor[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
+        nor_storage = attrs_runavg_stor[:, 1] * 1000  # m^3
+        dors = nor_storage / run_avg
+
+        diversions = np.full(len(usgs_id), "no_diversion")
+        diversion_strs = ["diversion", "divert"]
+        attr_lst = ["WR_REPORT_REMARKS", "SCREENING_COMMENTS"]
+        data_attr = data_model.data_source.read_attr_origin(usgs_id, attr_lst)
+        diversion_strs_lower = [elem.lower() for elem in diversion_strs]
+        data_attr0_lower = np.array([elem.lower() if type(elem) == str else elem for elem in data_attr[0]])
+        data_attr1_lower = np.array([elem.lower() if type(elem) == str else elem for elem in data_attr[1]])
+        data_attr_lower = np.vstack((data_attr0_lower, data_attr1_lower)).T
+        for i in range(len(usgs_id)):
+            if is_any_elem_in_a_lst(diversion_strs_lower, data_attr_lower[i], include=True):
+                diversions[i] = "diversion"
+
+        nid_dir = os.path.join("/".join(config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
+        gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
+        gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())
+        gage_main_dam_purpose_unique = np.unique(gage_main_dam_purpose_lst)
+        purpose_regions = {}
+        for i in range(gage_main_dam_purpose_unique.size):
+            sites_id = []
+            for key, value in gage_main_dam_purpose.items():
+                if value == gage_main_dam_purpose_unique[i]:
+                    sites_id.append(key)
+            assert (all(x < y for x, y in zip(sites_id, sites_id[1:])))
+            purpose_regions[gage_main_dam_purpose_unique[i]] = sites_id
+        id_regions_idx = []
+        id_regions_sites_ids = []
+        regions_name = []
+        show_min_num = 10
+        df_id_region = np.array(data_model.t_s_dict["sites_id"])
+        for key, value in purpose_regions.items():
+            gages_id = value
+            c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+            if c.size < show_min_num:
+                continue
+            assert (all(x < y for x, y in zip(ind1, ind1[1:])))
+            assert (all(x < y for x, y in zip(c, c[1:])))
+            id_regions_idx.append(ind1)
+            id_regions_sites_ids.append(c)
+            regions_name.append(key)
+        preds, obss, inds_dfs = split_results_to_regions(data_model, test_epoch, id_regions_idx,
+                                                         id_regions_sites_ids)
+        frames = []
+        x_name = "purposes"
+        y_name = "NSE"
+        hue_name = "DOR"
+        col_name = "diversion"
+        for i in range(len(id_regions_idx)):
+            # plot box，使用seaborn库
+            keys = ["NSE"]
+            inds_test = subset_of_dict(inds_dfs[i], keys)
+            inds_test = inds_test[keys[0]].values
+            df_dict_i = {}
+            str_i = regions_name[i]
+            df_dict_i[x_name] = np.full([inds_test.size], str_i)
+            df_dict_i[y_name] = inds_test
+            df_dict_i[hue_name] = dors[id_regions_idx[i]]
+            df_dict_i[col_name] = diversions[id_regions_idx[i]]
+            # df_dict_i[hue_name] = nor_storage[id_regions_idx[i]]
+            df_i = pd.DataFrame(df_dict_i)
+            frames.append(df_i)
+        result = pd.concat(frames)
+        matplotlib.use('TkAgg')
+        g = sns.FacetGrid(result, col=col_name)  # ,  palette = 'seismic'
+        plt.title('Distribution of different purposes')
+        vmin = result[hue_name].min()
+        vmax = result[hue_name].max()
+        cmap = sns.diverging_palette(240, 10, l=65, center="dark", as_cmap=True)
+
+        g = g.map(swarmplot_without_legend, x_name, y_name, hue_name, vmin=vmin, vmax=vmax, cmap=cmap)
+
+        # Make space for the colorbar
+        g.fig.subplots_adjust(right=.92)
+
+        # Define a new Axes where the colorbar will go
+        cax = g.fig.add_axes([.94, .25, .02, .6])
+
+        # Get a mappable object with the same colormap as the data
+        points = plt.scatter([], [], c=[], vmin=vmin, vmax=vmax, cmap=cmap)
+
+        # Draw the colorbar
+        g.fig.colorbar(points, cax=cax)
+        plt.show()
 
     def test_export_result(self):
         # data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
@@ -309,6 +525,155 @@ class MyTestCase(unittest.TestCase):
         print(inds_df.median())
 
         # inds_df.to_csv(os.path.join(self.config_data.data_path["Out"], 'data_df.csv'))
+
+    def test_conus_ensemble_result_for_smalldor_and_largedor_separate_and_together(self):
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        all_sites = data_model.t_s_dict["sites_id"]
+
+        dor_1 = - 0.02
+        dor_2 = 0.02
+        source_data_dor1 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_1)
+        source_data_dor2 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_2)
+        sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+        sites_id_dor2 = source_data_dor2.all_configs['flow_screen_gage_id']
+        idx_lst_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_dor1]
+        idx_lst_largedor = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_dor2]
+
+        cases_exps = ["basic_exp12", "basic_exp13", "basic_exp14", "basic_exp15", "basic_exp16", "basic_exp18"]
+        inds_df = load_ensemble_result(cases_exps, self.test_epoch)
+        keys_nse = "NSE"
+        xs = []
+        ys = []
+        cases_exps_legends_together = ["small_dor", "large_dor"]
+
+        x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_smalldor])
+        xs.append(x1)
+        ys.append(y1)
+
+        x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_largedor])
+        xs.append(x2)
+        ys.append(y2)
+
+        # compare_item = 0
+        compare_item = 1
+        if compare_item == 0:
+            plot_ecdfs(xs, ys, cases_exps_legends_together)
+        elif compare_item == 1:
+            cases_exps = ["dam_exp1", "dam_exp2", "dam_exp3", "dam_exp7", "dam_exp8", "dam_exp9"]
+            inds_df_smalldor = load_ensemble_result(cases_exps, self.test_epoch)
+            x3, y3 = ecdf(inds_df_smalldor[keys_nse])
+            xs.append(x3)
+            ys.append(y3)
+            cases_exps = ["dam_exp4", "dam_exp5", "dam_exp6", "dam_exp13", "dam_exp16", "dam_exp19"]
+            inds_df_largedor = load_ensemble_result(cases_exps, self.test_epoch)
+            x4, y4 = ecdf(inds_df_largedor[keys_nse])
+            xs.append(x4)
+            ys.append(y4)
+            cases_exps_legends_separate = ["small_dor", "large_dor"]
+            plot_ecdfs(xs, ys, cases_exps_legends_together + cases_exps_legends_separate,
+                       style=["together", "together", "separate", "separate"], case_str="dor_value",
+                       event_str="is_pooling_together", x_str="NSE", y_str="CDF")
+
+    def test_conus_ensemble_result_for_smalldor(self):
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        all_sites = data_model.t_s_dict["sites_id"]
+
+        dor_1 = - 0.02
+        dor_2 = 0.02
+        source_data_dor1 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_1)
+        source_data_dor2 = GagesSource.choose_some_basins(self.config_data,
+                                                          self.config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_2)
+        sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+        sites_id_dor2 = source_data_dor2.all_configs['flow_screen_gage_id']
+        idx_lst_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_dor1]
+        idx_lst_largedor = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_dor2]
+
+        cases_exps = ["basic_exp12", "basic_exp13", "basic_exp14", "basic_exp15", "basic_exp16", "basic_exp18"]
+        inds_df = load_ensemble_result(cases_exps, self.test_epoch)
+
+        keys_nse = "NSE"
+        xs = []
+        ys = []
+        cases_exps_legends = ["all_basins", "basins_with_small_dor", "basins_with_large_dor"]
+
+        x1, y1 = ecdf(inds_df[keys_nse])
+        xs.append(x1)
+        ys.append(y1)
+
+        x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_smalldor])
+        xs.append(x2)
+        ys.append(y2)
+
+        x3, y3 = ecdf(inds_df[keys_nse].iloc[idx_lst_largedor])
+        xs.append(x3)
+        ys.append(y3)
+
+        plot_ecdfs(xs, ys, cases_exps_legends, x_str="NSE", y_str="CDF")
+
+    def test_conus_result_for_camels531(self):
+        camels531_gageid_file = os.path.join(self.config_data.data_path["DB"], "camels531", "CAMELS531.txt")
+        gauge_df = pd.read_csv(camels531_gageid_file, dtype={"GaugeID": str})
+        gauge_list = gauge_df["GaugeID"].values
+        all_sites_camels_531 = np.sort([str(gauge).zfill(8) for gauge in gauge_list])
+
+        data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json',
+                                               flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy',
+                                               attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        all_sites = data_model.t_s_dict["sites_id"]
+
+        idx_lst_camels = [i for i in range(len(all_sites)) if all_sites[i] in all_sites_camels_531]
+        cases_exps = ["basic_exp12", "basic_exp13", "basic_exp14", "basic_exp15", "basic_exp16", "basic_exp18"]
+        inds_df = load_ensemble_result(cases_exps, self.test_epoch)
+
+        keys_nse = "NSE"
+        xs = []
+        ys = []
+        cases_exps_legends = ["521sites_in_CAMELS_trained_in_CONUS", "trained_only_in_521sites_in_CAMELS"]
+
+        x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_camels])
+        xs.append(x1)
+        ys.append(y1)
+
+        cases_exps_camels = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp35", "basic_exp36"]
+        inds_df_camels = load_ensemble_result(cases_exps_camels, self.test_epoch)
+        x2, y2 = ecdf(inds_df_camels[keys_nse])
+        xs.append(x2)
+        ys.append(y2)
+
+        plot_ecdfs(xs, ys, cases_exps_legends, x_str="NSE", y_str="CDF")
 
     def test_conus_result_for_camels_dataset(self):
         config_dir = definitions.CONFIG_DIR
@@ -921,7 +1286,7 @@ class MyTestCase(unittest.TestCase):
 
             plot_ecdfs(xs, ys, cases_exps_legends_together + cases_exps_legends_separate,
                        style=["together", "together", "separate", "separate"], case_str="dor_value",
-                       event_str="is_pooling_together")
+                       event_str="is_pooling_together", x_str="NSE", y_str="CDF")
 
     def test_stor_seperate(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],

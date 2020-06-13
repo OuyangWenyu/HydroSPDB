@@ -45,6 +45,10 @@ class GagesSource(DataSource):
                 if not (all(x < y for x, y in zip(kwargs[criteria], kwargs[criteria][1:]))):
                     kwargs[criteria].sort()
                 assert type(kwargs[criteria]) == list
+                if new_data_source.all_configs["flow_screen_gage_id"] is not None:
+                    chosen_id = (np.intersect1d(np.array(kwargs[criteria]),
+                                                new_data_source.all_configs["flow_screen_gage_id"])).tolist()
+                    assert (all(x < y for x, y in zip(chosen_id, chosen_id[1:])))
                 new_data_source.all_configs["flow_screen_gage_id"] = kwargs[criteria]
             elif criteria == "DOR":
                 new_data_source.dor_reservoirs_chosen(kwargs[criteria])
@@ -414,6 +418,7 @@ class GagesSource(DataSource):
             # 00060表示径流值，00003表示均值
             # 还有一种情况：#        126801       00060     00003     Discharge, cubic feet per second (Mean)和
             # 126805       00060     00003     Discharge, cubic feet per second (Mean), PUBLISHED 都是均值，但有两套数据，这里暂时取第一套
+            # TODO: first or second, it depends
             if '_00060_00003' in column_name and '_00060_00003_cd' not in column_name:
                 df_flow.rename(columns={column_name: 'flow'}, inplace=True)
                 break
