@@ -32,7 +32,8 @@ def conus_lstm(args):
     print("train and test in CONUS: \n")
     config_file = os.path.join(config_dir, exp_config_file)
     temp_file_subname = exp_config_file.split("/")
-    subdir = temp_file_subname[0] + "/" + temp_file_subname[1][-9:-4]
+    subexp = temp_file_subname[1].split("_")[1][:-4]
+    subdir = temp_file_subname[0] + "/" + subexp
     config_data = GagesConfig.set_subdir(config_file, subdir)
     gages_model = GagesModels(config_data, screen_basin_area_huc4=False)
     gages_model_train = gages_model.data_model_train
@@ -40,17 +41,15 @@ def conus_lstm(args):
     with torch.cuda.device(gpu_num):
         if train_mode:
             master_train(gages_model_train, random_seed=random_seed)
-        else:
-            pred, obs = master_test(gages_model_test, epoch=test_epoch)
-            basin_area = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"], ['DRAIN_SQKM'],
-                                                                is_return_dict=False)
-            mean_prep = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
-                                                               is_return_dict=False)
-            mean_prep = mean_prep / 365 * 10
-            pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
-            obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            save_result(gages_model_test.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
-            plot_we_need(gages_model_test, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+        pred, obs = master_test(gages_model_test, epoch=test_epoch)
+        basin_area = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"], ['DRAIN_SQKM'],
+                                                            is_return_dict=False)
+        mean_prep = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
+                                                           is_return_dict=False)
+        mean_prep = mean_prep / 365 * 10
+        pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
+        obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
+        save_result(gages_model_test.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
 
 def cmd():
@@ -79,8 +78,25 @@ def cmd():
     return args
 
 
-# python gages_conus_analysis.py --cfg basic/config_exp37.ini --ctx 1 --rs 1234 --te 300 --train_mode True
 # python gages_conus_analysis.py --cfg basic/config_exp11.ini --ctx 2 --rs 1234 --te 20 --train_mode False
+# python gages_conus_analysis.py --cfg basic/config_exp37.ini --ctx 1 --rs 1234 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp38.ini --ctx 2 --rs 1234 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp39.ini --ctx 1 --rs 123 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp40.ini --ctx 0 --rs 12345 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp41.ini --ctx 0 --rs 111 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp42.ini --ctx 2 --rs 1111 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp43.ini --ctx 2 --rs 11111 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp44.ini --ctx 2 --rs 123 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp45.ini --ctx 2 --rs 12345 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp46.ini --ctx 1 --rs 111 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp47.ini --ctx 1 --rs 1111 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp48.ini --ctx 1 --rs 11111 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp2.ini --ctx 2 --rs 1234 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp3.ini --ctx 2 --rs 123 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp4.ini --ctx 1 --rs 12345 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp19.ini --ctx 1 --rs 111 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp20.ini --ctx 0 --rs 1111 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp25.ini --ctx 0 --rs 11111 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

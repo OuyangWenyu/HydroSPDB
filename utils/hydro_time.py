@@ -37,6 +37,18 @@ def t_range_days(t_range, *, step=np.timedelta64(1, 'D')):
     return t_array
 
 
+def t_days_lst2range(t_array):
+    if type(t_array[0]) == np.datetime64:
+        t0 = t_array[0].astype(datetime.datetime)
+        t1 = t_array[-1].astype(datetime.datetime)
+    else:
+        t0 = t_array[0]
+        t1 = t_array[-1]
+    sd = t0.strftime('%Y-%m-%d')
+    ed = t1.strftime('%Y-%m-%d')
+    return [sd, ed]
+
+
 def t_range_years(t_range):
     """t_range is a left-closed and right-open interval, if t_range[1] is not Jan.1 then end_year should be included"""
     start_year = int(t_range[0].split("-")[0])

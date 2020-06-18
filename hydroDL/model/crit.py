@@ -96,3 +96,23 @@ class NSELoss(torch.nn.Module):
         # temp = SSRes / SST
         loss = torch.sum(temp) / Ngage
         return loss
+
+
+class WarmupRmseLoss(torch.nn.Module):
+    def __init__(self, warmup_len):
+        super(WarmupRmseLoss, self).__init__()
+        self.warmup_len = warmup_len
+
+    def forward(self, output, target):
+        warmup_len = self.warmup_len
+        ny = target.shape[2]
+        loss = 0
+        for k in range(ny):
+            p0 = output[warmup_len:, :, 0]
+            t0 = target[warmup_len:, :, 0]
+            mask = t0 == t0
+            p = p0[mask]
+            t = t0[mask]
+            temp = torch.sqrt(((p - t) ** 2).mean())
+            loss = loss + temp
+        return loss

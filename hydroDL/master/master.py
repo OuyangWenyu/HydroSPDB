@@ -281,6 +281,43 @@ def master_test_with_pretrained_model(data_model, pretrained_model_file, pretrai
     return pred, obs
 
 
+def master_train_warmup(data_model, warmup_len=120, pre_trained_model_epoch=1, random_seed=1234, drop_out=0.5):
+    set_random_seed(random_seed)
+    model_dict = data_model.data_source.data_config.model_dict
+    opt_model = model_dict['model']
+    opt_loss = model_dict['loss']
+    opt_train = model_dict['train']
+
+    # data
+    x, y, c = data_model.load_data(model_dict)
+    nx = x.shape[-1] + c.shape[-1]
+    ny = y.shape[-1]
+    opt_model['nx'] = nx
+    opt_model['ny'] = ny
+    # loss
+    if opt_loss['name'] == 'RmseLoss':
+        loss_fun = crit.WarmupRmseLoss(warmup_len)
+        opt_model['ny'] = ny
+    else:
+        print("Please specify the loss function!!!")
+
+    # model
+    if opt_train['saveEpoch'] > opt_train['nEpoch']:
+        opt_train['saveEpoch'] = opt_train['nEpoch']
+    out = model_dict['dir']['Out']
+    if not os.path.isdir(out):
+        os.makedirs(out)
+    if opt_model['name'] == 'CudnnLstmModel':
+        model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'],
+                                   dr=drop_out)
+
+    # train model
+    model = model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
+                                  mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
+                                  save_folder=out, pre_trained_model_epoch=pre_trained_model_epoch)
+    return model
+
+
 def master_train_easy_lstm(data_model):
     """training main function for stacked lstm"""
     model_dict = data_model.data_source.data_config.model_dict
