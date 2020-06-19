@@ -25,8 +25,8 @@ exp_lst = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_ex
 gpu_lst = [1, 1, 0, 0, 2, 2]
 doLst = list()
 # doLst.append('train')
-doLst.append('test')
-# doLst.append('post')
+# doLst.append('test')
+doLst.append('post')
 config_dir = definitions.CONFIG_DIR
 test_epoch = 300
 

@@ -3,16 +3,17 @@ import unittest
 import numpy as np
 import pandas as pd
 import definitions
-from data import GagesConfig
-from data.data_input import CamelsModel, GagesModel, load_result
+import geopandas as gpd
+from data.data_input import CamelsModel, load_result, GagesModel
 from data.gages_input_dataset import load_dataconfig_case_exp
 from explore.stat import statError, ecdf
-from utils import unserialize_numpy, unserialize_json
+from utils import unserialize_json, unserialize_numpy
 from utils.dataset_format import subset_of_dict
-from visual import plot_box_inds, plot_ts_obs_pred
+from visual import plot_ts_obs_pred
 from visual.plot import plotCDF
-from visual.plot_model import plot_ind_map, plot_map
+from visual.plot_model import plot_ind_map, plot_map, plot_gages_map_and_ts
 from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs, plot_diff_boxes
+import matplotlib.pyplot as plt
 
 
 def test_stat():
@@ -60,32 +61,31 @@ def test_stat():
 class MyTestCase(unittest.TestCase):
     config_file = definitions.CONFIG_FILE
     project_dir = definitions.ROOT_DIR
-    # dataset = 'gages'
-    # dataset_exp = dataset + '/basic/exp11'
-    dataset = 'camels'
-    dataset_exp = dataset + '/basic/exp5'
+    dataset = 'gages'
+    dataset_exp = dataset + '/basic/exp11'
+    # dataset = 'camels'
+    # dataset_exp = dataset + '/basic/exp5'
     dir_db = os.path.join(project_dir, 'example/data', dataset)
     dir_out = os.path.join(project_dir, 'example/output', dataset_exp)
     dir_temp = os.path.join(project_dir, 'example/temp', dataset_exp)
-    flow_pred_file = os.path.join(dir_temp, 'flow_pred.npy')
-    flow_obs_file = os.path.join(dir_temp, 'flow_obs.npy')
     t_s_dict_file = os.path.join(dir_temp, 'test_dictTimeSpace.json')
     # gages point shp file
     gage_point_file = os.path.join(dir_db, 'gagesII_9322_point_shapefile/gagesII_9322_sept30_2011.shp')
 
     def setUp(self):
-        # pred = unserialize_numpy(self.flow_pred_file)
-        # obs = unserialize_numpy(self.flow_obs_file)
-        # self.pred = pred.reshape(pred.shape[0], pred.shape[1])
-        # self.obs = obs.reshape(pred.shape[0], pred.shape[1])
+        self.test_epoch = 20
+        flow_pred_file = os.path.join(self.dir_temp, "epoch" + str(self.test_epoch) + 'flow_pred.npy')
+        flow_obs_file = os.path.join(self.dir_temp, "epoch" + str(self.test_epoch) + 'flow_obs.npy')
+        pred = unserialize_numpy(flow_pred_file)
+        obs = unserialize_numpy(flow_obs_file)
+        self.pred = pred.reshape(pred.shape[0], pred.shape[1])
+        self.obs = obs.reshape(pred.shape[0], pred.shape[1])
         # # 统计性能指标
-        # self.inds = statError(self.obs, self.pred)
+        self.inds = statError(self.obs, self.pred)
         # t_s_dict = unserialize_json(self.t_s_dict_file)
         # sites = np.array(t_s_dict["sites_id"])
         self.keys = ["NSE"]
-        # self.inds_test = subset_of_dict(self.inds, self.keys)
-
-        self.test_epoch = 300
+        self.inds_test = subset_of_dict(self.inds, self.keys)
 
     def test_plot_ecdf_together(self):
         xs = []
@@ -137,21 +137,38 @@ class MyTestCase(unittest.TestCase):
         plot_ind_map(self.gage_point_file, sites_df)
 
     def test_plot_map(self):
-        data_model = CamelsModel.load_datamodel(self.dir_temp,
-                                                data_source_file_name='test_data_source.txt',
-                                                stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
-                                                forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
-                                                f_dict_file_name='test_dictFactorize.json',
-                                                var_dict_file_name='test_dictAttribute.json',
-                                                t_s_dict_file_name='test_dictTimeSpace.json')
+        data_model = GagesModel.load_datamodel(self.dir_temp,
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
         gauge_dict = data_model.data_source.gage_dict
         t_s_dict = unserialize_json(self.t_s_dict_file)
         sites = np.array(t_s_dict["sites_id"])
         keys = ["NSE"]
         inds_test = subset_of_dict(self.inds, keys)
         sites_df = pd.DataFrame({"sites": sites, keys[0]: inds_test[keys[0]]})
-        plot_map(gauge_dict, sites_df, id_col="id", lon_col="lon", lat_col="lat")
-        # plot_map(gauge_dict, sites_df, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+        # plot_map(gauge_dict, sites_df, id_col="id", lon_col="lon", lat_col="lat")
+        plot_map(gauge_dict, sites_df, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+
+    def test_plot_map_cartopy(self):
+        data_model = GagesModel.load_datamodel(self.dir_temp,
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        show_ind_key = "NSE"
+        inds_df = pd.DataFrame(self.inds)
+        # nse_range = [-10000, 0]
+        nse_range = [0, 1]
+        idx_lst_nse = inds_df[
+            (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
+        plot_gages_map_and_ts(data_model, self.obs, self.pred, inds_df, show_ind_key, idx_lst_nse,
+                              pertile_range=[0, 100], plot_ts=False, fig_size=(8, 4))
 
     def test_plot_kuai_cdf(self):
         t_s_dict = unserialize_json(self.t_s_dict_file)
@@ -217,6 +234,40 @@ class MyTestCase(unittest.TestCase):
         fig.canvas.mpl_connect("key_press_event", update)
 
         update()
+        plt.show()
+
+    def test_ecoregion(self):
+        na_ecoregion_path = "../../example/data/map/ecoregion/NA_CEC_Eco_Level2.shp"
+        na_ecoregion = gpd.read_file(na_ecoregion_path)
+        print(na_ecoregion)
+        country_boundary_us_path = "../../example/data/map/usa/usa-boundary-dissolved.shp"
+        country_boundary_us = gpd.read_file(country_boundary_us_path)
+
+        state_boundary_us_path = "../../example/data/map/usa/usa-states-census-2014.shp"
+        state_boundary_us = gpd.read_file(state_boundary_us_path)
+
+        # Are both layers in the same CRS?
+        if (na_ecoregion.crs == country_boundary_us.crs):
+            print("Both layers are in the same crs!", na_ecoregion.crs, country_boundary_us.crs)
+        else:
+            na_ecoregion = na_ecoregion.to_crs(country_boundary_us.crs)
+            print("new proj", na_ecoregion.crs, country_boundary_us.crs)
+
+        # Clip data
+        na_ecoregion_clip = gpd.clip(na_ecoregion, country_boundary_us)
+
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
+
+        na_ecoregion.plot(ax=ax1)
+        na_ecoregion_clip.plot(ax=ax2)
+
+        ax1.set_title("Unclipped ecoregions")
+        ax2.set_title("Clipped ecoregions")
+
+        ax1.set_axis_off()
+        ax2.set_axis_off()
+
+        plt.axis('equal')
         plt.show()
 
 

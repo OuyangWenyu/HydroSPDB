@@ -298,7 +298,7 @@ def plot_loss_early_stop(train_loss, valid_loss):
     return fig
 
 
-def plot_map_carto(data, lat, lon, ax=None, pertile_range=None):
+def plot_map_carto(data, lat, lon, ax=None, pertile_range=None, fig_size=(8, 8)):
     temp = data
     if pertile_range is None:
         vmin = np.amin(temp)
@@ -313,9 +313,11 @@ def plot_map_carto(data, lat, lon, ax=None, pertile_range=None):
     urcrnrlon = np.max(lon),
     extent = [llcrnrlon[0], urcrnrlon[0], llcrnrlat[0], urcrnrlat[0]]
     # Figure
+    only_map = False
     if ax is None:
-        fig = plt.figure()
-        ax = fig.subplots(projection=ccrs.PlateCarree())
+        fig, ax = plt.subplots(1, 1, figsize=fig_size,
+                               subplot_kw={'projection': ccrs.PlateCarree()})
+        only_map = True
     ax.set_extent(extent)
     states = NaturalEarthFeature(category="cultural", scale="50m",
                                  facecolor="none",
@@ -324,7 +326,20 @@ def plot_map_carto(data, lat, lon, ax=None, pertile_range=None):
     ax.coastlines('50m', linewidth=0.8)
     # auto projection
     scat = plt.scatter(lon, lat, c=temp, s=10, cmap='viridis', vmin=vmin, vmax=vmax)
-    plt.colorbar()
+
+    if only_map:
+        # get size and extent of axes:
+        axpos = ax.get_position()
+        pos_x = axpos.x0 + axpos.width + 0.01  # + 0.25*axpos.width
+        pos_y = axpos.y0
+        cax_width = 0.04
+        cax_height = axpos.height
+        # create new axes where the colorbar should go.
+        # it should be next to the original axes and have the same height!
+        pos_cax = fig.add_axes([pos_x, pos_y, cax_width, cax_height])
+        plt.colorbar(ax=ax, cax=pos_cax)
+    else:
+        plt.colorbar()
     return scat, ax
 
 

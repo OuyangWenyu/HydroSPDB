@@ -11,7 +11,7 @@ import seaborn as sns
 from explore.stat import statError
 from utils import hydro_time
 from utils.dataset_format import subset_of_dict
-from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf, plot_ts_map
+from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf, plot_ts_map, plot_map_carto
 
 
 def plot_scatter_multi_attrs(data_model, inds_df, idx_lst_nse_range, attr_lst, y_var_lst):
@@ -189,7 +189,8 @@ def plot_map(gauge_dict, df_ind_value, save_file=None, proj_epsg=4269, percentil
     plot_point_map(newdata, percentile=percentile, save_file=save_file)
 
 
-def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst, pertile_range):
+def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst, pertile_range, plot_ts=True,
+                          fig_size=(8, 8)):
     data_map = (inds_df.loc[idx_lst])[show_ind_key].values
     all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
     all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
@@ -202,4 +203,8 @@ def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst,
     data_ts_pred_np = pred[idx_lst, :]
     data_ts = [[data_ts_obs_np[i], data_ts_pred_np[i]] for i in range(data_ts_obs_np.shape[0])]
     t = hydro_time.t_range_days(data_model.t_s_dict["t_final_range"]).tolist()
-    plot_ts_map(data_map.tolist(), data_ts, lat, lon, t, sites.tolist(), pertile_range=pertile_range)
+    if plot_ts:
+        plot_ts_map(data_map.tolist(), data_ts, lat, lon, t, sites.tolist(), pertile_range=pertile_range)
+    else:
+        plot_map_carto(data_map, lat=lat, lon=lon, pertile_range=pertile_range, fig_size=fig_size)
+        plt.show()
