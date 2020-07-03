@@ -14,12 +14,12 @@ class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
         """choose basins with small DOR """
         config_dir = definitions.CONFIG_DIR
-        # self.config_file = os.path.join(config_dir, "dam/config_exp6.ini")
-        # self.subdir = r"dam/exp6"
-        # self.random_seed = 12345
-        self.config_file = os.path.join(config_dir, "dam/config_exp16.ini")
-        self.subdir = r"dam/exp16"
-        self.random_seed = 1111
+        self.config_file = os.path.join(config_dir, "dam/config_exp6.ini")
+        self.subdir = r"dam/exp6"
+        self.random_seed = 12345
+        # self.config_file = os.path.join(config_dir, "dam/config_exp16.ini")
+        # self.subdir = r"dam/exp16"
+        # self.random_seed = 1111
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
         # self.test_epoch = 350

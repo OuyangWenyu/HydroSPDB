@@ -7,11 +7,13 @@ from data import GagesSource
 from data.data_input import GagesModel, _basin_norm, save_result
 from data.gages_input_dataset import load_ensemble_result, load_dataconfig_case_exp
 from explore.gages_stat import split_results_to_regions
+from explore.stat import statError
 from hydroDL import master_test
 from utils import unserialize_json
 from utils.dataset_format import subset_of_dict
 from utils.hydro_math import is_any_elem_in_a_lst
 from visual.plot_model import plot_we_need, plot_gages_map_and_ts
+from visual.plot_stat import plot_diff_boxes
 
 sys.path.append("../..")
 import os
@@ -22,7 +24,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 exp_lst = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
+exp_attr_lst = ["basic_exp2", "basic_exp3", "basic_exp4", "basic_exp19", "basic_exp20", "basic_exp25"]
 gpu_lst = [1, 1, 0, 0, 2, 2]
+gpu_attr_lst = [2, 2, 1, 1, 0, 0]
 doLst = list()
 # doLst.append('train')
 # doLst.append('test')
@@ -107,19 +111,50 @@ if 'post' in doLst:
                                               train_stat_dict=gages_model_train.stat_dict,
                                               screen_basin_area_huc4=False)
 
+    config_data_attr = load_dataconfig_case_exp(exp_attr_lst[0])
+    gages_attr_train = GagesModel.update_data_model(config_data_attr, data_model_train, data_attr_update=True,
+                                                    screen_basin_area_huc4=False)
+    data_model_attr = GagesModel.update_data_model(config_data_attr, data_model_test, data_attr_update=True,
+                                                   train_stat_dict=gages_attr_train.stat_dict,
+                                                   screen_basin_area_huc4=False)
+
     inds_df, pred_mean, obs_mean = load_ensemble_result(exp_lst, test_epoch, return_value=True)
+
+    # plot comparation
+    show_ind_key = "NSE"
+    attr = "attributes_combination"
+    cases_exps_legends = ["attr_comb_1", "attr_comb_2"]
+    inds_df_attr, pred_mean_attr, obs_mean_attr = load_ensemble_result(exp_attr_lst, test_epoch, return_value=True)
+    inds_df_lst = []
+    inds_df_lst.append(inds_df)
+    inds_df_lst.append(inds_df_attr)
+    frames = []
+    for i in range(len(cases_exps_legends)):
+        df_i = pd.DataFrame({attr: np.full([inds_df_lst[i].shape[0]], cases_exps_legends[i]),
+                             show_ind_key: inds_df_lst[i][show_ind_key]})
+        frames.append(df_i)
+    result = pd.concat(frames)
+    sns_box = sns.boxplot(x=attr, y=show_ind_key, data=result, showfliers=False)
+    sns.despine(offset=10, trim=True)
+
+
+    # matplotlib.use('TkAgg')
+    # plot box
+    keys = ["Bias", "RMSE", "NSE"]
+    box_fig = plot_diff_boxes(inds_df[keys])
+
     # plot map ts
     show_ind_key = 'NSE'
     idx_lst = np.arange(len(data_model.t_s_dict["sites_id"])).tolist()
-
     # nse_range = [0.5, 1]
     nse_range = [0, 1]
     # nse_range = [-10000, 1]
     # nse_range = [-10000, 0]
-    idx_lst_small_nse = inds_df[
+    idx_lstl_nse = inds_df[
         (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
-    plot_gages_map_and_ts(data_model, obs_mean, pred_mean, inds_df, show_ind_key, idx_lst_small_nse,
-                          pertile_range=[0, 100])
+
+    plot_gages_map_and_ts(data_model, obs_mean, pred_mean, inds_df, show_ind_key, idx_lstl_nse,
+                          pertile_range=[0, 100], plot_ts=False, fig_size=(8, 4), cmap_str="jet")
     # plot three factors
     attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
     usgs_id = data_model.t_s_dict["sites_id"]
@@ -143,7 +178,7 @@ if 'post' in doLst:
     for i in range(len(usgs_id)):
         if is_any_elem_in_a_lst(diversion_strs_lower, data_attr_lower[i], include=True):
             diversions[i] = "yes"
-
+    # TODO: make sure the purpose data is right
     nid_dir = os.path.join("/".join(config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
     gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
     gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())

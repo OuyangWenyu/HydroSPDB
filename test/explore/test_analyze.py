@@ -21,20 +21,8 @@ class TestExploreCase(unittest.TestCase):
     def setUp(self):
         """analyze result of model"""
         config_dir = definitions.CONFIG_DIR
-        # self.ref_config_file = os.path.join(config_dir, "basic/config_exp2.ini")
-        # self.ref_subdir = r"basic/exp2"
-        # self.ref_config_data = GagesConfig.set_subdir(self.ref_config_file, self.ref_subdir)
-        # self.nonref_config_file = os.path.join(config_dir, "basic/config_exp18.ini")
-        # self.nonref_subdir = r"basic/exp18"
-        # self.nonref_config_data = GagesConfig.set_subdir(self.nonref_config_file, self.nonref_subdir)
-        self.nomajordam_config_file = os.path.join(config_dir, "nodam/config_exp2.ini")
-        self.nomajordam_subdir = r"nodam/exp2"
-        self.nomajordam_config_data = GagesConfig.set_subdir(self.nomajordam_config_file, self.nomajordam_subdir)
-        self.majordam_config_file = os.path.join(config_dir, "majordam/config_exp1.ini")
-        self.majordam_subdir = r"majordam/exp1"
-        self.majordam_config_data = GagesConfig.set_subdir(self.majordam_config_file, self.majordam_subdir)
-        self.config_file = os.path.join(config_dir, "basic/config_exp23.ini")
-        self.subdir = r"basic/exp23"
+        self.config_file = os.path.join(config_dir, "basic/config_exp37.ini")
+        self.subdir = r"basic/exp37"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
 
@@ -48,25 +36,6 @@ class TestExploreCase(unittest.TestCase):
                                                     var_dict_file_name='test_dictAttribute.json',
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
 
-        self.nomajordam_data_model = GagesModel.load_datamodel(self.nomajordam_config_data.data_path["Temp"],
-                                                               data_source_file_name='test_data_source.txt',
-                                                               stat_file_name='test_Statistics.json',
-                                                               flow_file_name='test_flow.npy',
-                                                               forcing_file_name='test_forcing.npy',
-                                                               attr_file_name='test_attr.npy',
-                                                               f_dict_file_name='test_dictFactorize.json',
-                                                               var_dict_file_name='test_dictAttribute.json',
-                                                               t_s_dict_file_name='test_dictTimeSpace.json')
-
-        self.majordam_data_model = GagesModel.load_datamodel(self.majordam_config_data.data_path["Temp"],
-                                                             data_source_file_name='test_data_source.txt',
-                                                             stat_file_name='test_Statistics.json',
-                                                             flow_file_name='test_flow.npy',
-                                                             forcing_file_name='test_forcing.npy',
-                                                             attr_file_name='test_attr.npy',
-                                                             f_dict_file_name='test_dictFactorize.json',
-                                                             var_dict_file_name='test_dictAttribute.json',
-                                                             t_s_dict_file_name='test_dictTimeSpace.json')
 
         attrBasin = ['ELEV_MEAN_M_BASIN', 'SLOPE_PCT', 'DRAIN_SQKM']
         attrLandcover = ['FORESTNLCD06', 'BARRENNLCD06', 'DECIDNLCD06', 'EVERGRNLCD06', 'MIXEDFORNLCD06', 'SHRUBNLCD06',
@@ -151,8 +120,8 @@ class TestExploreCase(unittest.TestCase):
         show_ind_key = 'NSE'
         sites = self.data_model.t_s_dict["sites_id"]
         config_dir = definitions.CONFIG_DIR
-        camels_config_file = os.path.join(config_dir, "basic/config_exp1.ini")
-        camels_subdir = r"basic/exp1"
+        camels_config_file = os.path.join(config_dir, "basic/config_exp38.ini")
+        camels_subdir = r"basic/exp38"
         camels_config_data = GagesConfig.set_subdir(camels_config_file, camels_subdir)
         camels_data_model = GagesModel.load_datamodel(camels_config_data.data_path["Temp"],
                                                       data_source_file_name='test_data_source.txt',

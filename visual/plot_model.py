@@ -190,7 +190,7 @@ def plot_map(gauge_dict, df_ind_value, save_file=None, proj_epsg=4269, percentil
 
 
 def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst, pertile_range, plot_ts=True,
-                          fig_size=(8, 8)):
+                          fig_size=(8, 8), cmap_str="viridis"):
     data_map = (inds_df.loc[idx_lst])[show_ind_key].values
     all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
     all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
@@ -206,5 +206,6 @@ def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst,
     if plot_ts:
         plot_ts_map(data_map.tolist(), data_ts, lat, lon, t, sites.tolist(), pertile_range=pertile_range)
     else:
-        plot_map_carto(data_map, lat=lat, lon=lon, pertile_range=pertile_range, fig_size=fig_size)
-        plt.show()
+        f = plot_map_carto(data_map, lat=lat, lon=lon, pertile_range=pertile_range, fig_size=fig_size,
+                               cmap_str=cmap_str)
+        return f

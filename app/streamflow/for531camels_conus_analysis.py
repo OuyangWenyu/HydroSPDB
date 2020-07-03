@@ -17,13 +17,14 @@ from data import GagesConfig
 from data.data_input import GagesModel, _basin_norm, save_result
 from data.gages_input_dataset import GagesModels
 from hydroDL import master_train, master_test
-from visual.plot_model import plot_we_need
+import numpy as np
+import pandas as pd
 
 config_dir = definitions.CONFIG_DIR
 cfg = edict()
 
 
-def conus_lstm(args):
+def camels_lstm(args):
     exp_config_file = cfg.EXP
     random_seed = cfg.RANDOM_SEED
     test_epoch = cfg.TEST_EPOCH
@@ -34,8 +35,15 @@ def conus_lstm(args):
     temp_file_subname = exp_config_file.split("/")
     subexp = temp_file_subname[1].split("_")[1][:-4]
     subdir = temp_file_subname[0] + "/" + subexp
+
     config_data = GagesConfig.set_subdir(config_file, subdir)
-    gages_model = GagesModels(config_data, screen_basin_area_huc4=False)
+
+    camels531_gageid_file = os.path.join(config_data.data_path["DB"], "camels531", "CAMELS531.txt")
+    gauge_df = pd.read_csv(camels531_gageid_file, dtype={"GaugeID": str})
+    gauge_list = gauge_df["GaugeID"].values
+    all_sites_camels_531 = np.sort([str(gauge).zfill(8) for gauge in gauge_list])
+    gages_model = GagesModels(config_data, screen_basin_area_huc4=False,
+                              sites_id=all_sites_camels_531.tolist())
     gages_model_train = gages_model.data_model_train
     gages_model_test = gages_model.data_model_test
     with torch.cuda.device(gpu_num):
@@ -54,8 +62,8 @@ def conus_lstm(args):
 
 def cmd():
     """input args from cmd"""
-    parser = argparse.ArgumentParser(description='Train the CONUS model')
-    parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file', default="basic/config_exp11.ini",
+    parser = argparse.ArgumentParser(description='Train the CAMELS 531 model')
+    parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file', default="basic/config_exp31.ini",
                         type=str)
     parser.add_argument('--ctx', dest='ctx',
                         help='Running Context -- gpu num. E.g `--ctx 0` means run code in the context of gpu 0',
@@ -78,33 +86,14 @@ def cmd():
     return args
 
 
-# python gages_conus_analysis.py --cfg basic/config_exp11.ini --ctx 2 --rs 1234 --te 20 --train_mode False
-# python gages_conus_analysis.py --cfg basic/config_exp37.ini --ctx 1 --rs 1234 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp38.ini --ctx 2 --rs 1234 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp39.ini --ctx 1 --rs 123 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp40.ini --ctx 0 --rs 12345 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp41.ini --ctx 0 --rs 111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp42.ini --ctx 2 --rs 1111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp43.ini --ctx 2 --rs 11111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp44.ini --ctx 2 --rs 123 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp45.ini --ctx 2 --rs 12345 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp46.ini --ctx 1 --rs 111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp47.ini --ctx 1 --rs 1111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp48.ini --ctx 1 --rs 11111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp2.ini --ctx 2 --rs 1234 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp3.ini --ctx 2 --rs 123 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp4.ini --ctx 1 --rs 12345 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp19.ini --ctx 1 --rs 111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp20.ini --ctx 0 --rs 1111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp25.ini --ctx 0 --rs 11111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp1.ini --ctx 2 --rs 1234 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp5.ini --ctx 2 --rs 123 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp6.ini --ctx 1 --rs 12345 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp7.ini --ctx 1 --rs 111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp8.ini --ctx 0 --rs 1111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp9.ini --ctx 0 --rs 11111 --te 300 --train_mode True
+# python for531camels_conus_analysis.py --cfg basic/config_exp31.ini --ctx 1 --rs 1234 --te 300 --train_mode True
+# python for531camels_conus_analysis.py --cfg basic/config_exp32.ini --ctx 1 --rs 123 --te 300 --train_mode True
+# python for531camels_conus_analysis.py --cfg basic/config_exp33.ini --ctx 0 --rs 12345 --te 300 --train_mode True
+# python for531camels_conus_analysis.py --cfg basic/config_exp34.ini --ctx 0 --rs 111 --te 300 --train_mode True
+# python for531camels_conus_analysis.py --cfg basic/config_exp35.ini --ctx 1 --rs 1111 --te 300 --train_mode True
+# python for531camels_conus_analysis.py --cfg basic/config_exp36.ini --ctx 1 --rs 11111 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()
-    conus_lstm(args)
+    camels_lstm(args)
     print("End\n")

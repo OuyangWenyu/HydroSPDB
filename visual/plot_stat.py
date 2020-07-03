@@ -167,7 +167,6 @@ def plot_diff_boxes(data, row_and_col=None, y_col=None, x_col=None):
                 col_idx = i % col_num
                 sns.boxplot(x=data.columns.values[x_col], y=data.columns.values[y_col[i]],
                             data=data, orient='v', ax=axes[row_idx, col_idx], showfliers=False)
-    plt.show()
     return f
 
 
@@ -298,7 +297,7 @@ def plot_loss_early_stop(train_loss, valid_loss):
     return fig
 
 
-def plot_map_carto(data, lat, lon, ax=None, pertile_range=None, fig_size=(8, 8)):
+def plot_map_carto(data, lat, lon, ax=None, pertile_range=None, fig_size=(8, 8), cmap_str="viridis"):
     temp = data
     if pertile_range is None:
         vmin = np.amin(temp)
@@ -325,19 +324,20 @@ def plot_map_carto(data, lat, lon, ax=None, pertile_range=None, fig_size=(8, 8))
     ax.add_feature(states, linewidth=.5, edgecolor="black")
     ax.coastlines('50m', linewidth=0.8)
     # auto projection
-    scat = plt.scatter(lon, lat, c=temp, s=10, cmap='viridis', vmin=vmin, vmax=vmax)
+    scat = plt.scatter(lon, lat, c=temp, s=10, cmap=cmap_str, vmin=vmin, vmax=vmax)
 
     if only_map:
         # get size and extent of axes:
         axpos = ax.get_position()
         pos_x = axpos.x0 + axpos.width + 0.01  # + 0.25*axpos.width
         pos_y = axpos.y0
-        cax_width = 0.04
+        cax_width = 0.02
         cax_height = axpos.height
         # create new axes where the colorbar should go.
         # it should be next to the original axes and have the same height!
         pos_cax = fig.add_axes([pos_x, pos_y, cax_width, cax_height])
         plt.colorbar(ax=ax, cax=pos_cax)
+        return fig
     else:
         plt.colorbar()
     return scat, ax

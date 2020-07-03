@@ -17,17 +17,17 @@ class MyTestCase(unittest.TestCase):
         # self.config_file = os.path.join(config_dir, "dam/config_exp4.ini")
         # self.subdir = r"dam/exp4"
         # self.random_seed = 1234
-        # self.config_file = os.path.join(config_dir, "dam/config_exp5.ini")
-        # self.subdir = r"dam/exp5"
-        # self.random_seed = 123
+        self.config_file = os.path.join(config_dir, "dam/config_exp5.ini")
+        self.subdir = r"dam/exp5"
+        self.random_seed = 123
         # self.config_file = os.path.join(config_dir, "dam/config_exp13.ini")
         # self.subdir = r"dam/exp13"
         # self.random_seed = 111
         # self.config_file = os.path.join(config_dir, "dam/config_exp18.ini")
         # self.subdir = r"dam/exp18"
-        self.config_file = os.path.join(config_dir, "dam/config_exp19.ini")
-        self.subdir = r"dam/exp19"
-        self.random_seed = 11111
+        # self.config_file = os.path.join(config_dir, "dam/config_exp19.ini")
+        # self.subdir = r"dam/exp19"
+        # self.random_seed = 11111
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
         # self.test_epoch = 350
@@ -98,7 +98,7 @@ class MyTestCase(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        with torch.cuda.device(1):
+        with torch.cuda.device(0):
             pred, obs = master_test(data_model, epoch=self.test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)

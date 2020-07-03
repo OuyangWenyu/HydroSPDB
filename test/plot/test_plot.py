@@ -2,6 +2,10 @@ import os
 import unittest
 import numpy as np
 import pandas as pd
+from cartopy.feature import NaturalEarthFeature
+import cartopy.crs as ccrs
+from os import listdir
+from PIL import Image
 import definitions
 import geopandas as gpd
 from data.data_input import CamelsModel, load_result, GagesModel
@@ -14,6 +18,7 @@ from visual.plot import plotCDF
 from visual.plot_model import plot_ind_map, plot_map, plot_gages_map_and_ts
 from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs, plot_diff_boxes
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 
 def test_stat():
@@ -168,7 +173,7 @@ class MyTestCase(unittest.TestCase):
         idx_lst_nse = inds_df[
             (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
         plot_gages_map_and_ts(data_model, self.obs, self.pred, inds_df, show_ind_key, idx_lst_nse,
-                              pertile_range=[0, 100], plot_ts=False, fig_size=(8, 4))
+                              pertile_range=[0, 100], plot_ts=False, fig_size=(8, 4), cmap_str="jet")
 
     def test_plot_kuai_cdf(self):
         t_s_dict = unserialize_json(self.t_s_dict_file)
@@ -269,6 +274,112 @@ class MyTestCase(unittest.TestCase):
 
         plt.axis('equal')
         plt.show()
+
+    def test_plot_a_fig_and_map_together(self):
+        inds_df = pd.DataFrame(self.inds)
+
+        def custom_plot1(ax=None):
+            if ax is None:
+                fig, ax = plt.subplots()
+            x1 = np.linspace(0.0, 5.0)
+            y1 = np.cos(2 * np.pi * x1) * np.exp(-x1)
+            ax.plot(x1, y1, 'ko-')
+            ax.set_xlabel('time (s)')
+            ax.set_ylabel('Damped oscillation')
+
+        def custom_plot2(ax=None):
+            # plot map ts
+            data_model = GagesModel.load_datamodel(self.dir_temp,
+                                                   data_source_file_name='test_data_source.txt',
+                                                   stat_file_name='test_Statistics.json',
+                                                   flow_file_name='test_flow.npy',
+                                                   forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                                   f_dict_file_name='test_dictFactorize.json',
+                                                   var_dict_file_name='test_dictAttribute.json',
+                                                   t_s_dict_file_name='test_dictTimeSpace.json')
+            show_ind_key = 'NSE'
+            # nse_range = [0.5, 1]
+            nse_range = [0, 1]
+            # nse_range = [-10000, 1]
+            # nse_range = [-10000, 0]
+            idx_lst = inds_df[
+                (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
+
+            data_map = (inds_df.loc[idx_lst])[show_ind_key].values
+            all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
+            all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
+            all_sites_id = data_model.data_source.gage_dict["STAID"]
+            sites = np.array(data_model.t_s_dict['sites_id'])[idx_lst]
+            sites_index = np.array([np.where(all_sites_id == i) for i in sites]).flatten()
+            lat = all_lat[sites_index]
+            lon = all_lon[sites_index]
+            pertile_range = [0, 100]
+            cmap_str = "jet"
+            temp = data_map
+
+            assert 0 <= pertile_range[0] < pertile_range[1] <= 100
+            vmin = np.percentile(temp, pertile_range[0])
+            vmax = np.percentile(temp, pertile_range[1])
+            llcrnrlat = np.min(lat),
+            urcrnrlat = np.max(lat),
+            llcrnrlon = np.min(lon),
+            urcrnrlon = np.max(lon),
+            extent = [llcrnrlon[0], urcrnrlon[0], llcrnrlat[0], urcrnrlat[0]]
+
+            ax.set_extent(extent)
+            states = NaturalEarthFeature(category="cultural", scale="50m",
+                                         facecolor="none",
+                                         name="admin_1_states_provinces_shp")
+            ax.add_feature(states, linewidth=.5, edgecolor="black")
+            ax.coastlines('50m', linewidth=0.8)
+            # auto projection
+            scat = plt.scatter(lon, lat, c=temp, s=10, cmap=cmap_str, vmin=vmin, vmax=vmax)
+
+            # get size and extent of axes:
+            axpos = ax.get_position()
+            pos_x = axpos.x0 + axpos.width + 0.01  # + 0.25*axpos.width
+            pos_y = axpos.y0
+            cax_width = 0.02
+            cax_height = axpos.height
+            # create new axes where the colorbar should go.
+            # it should be next to the original axes and have the same height!
+            pos_cax = fig.add_axes([pos_x, pos_y, cax_width, cax_height])
+            plt.colorbar(ax=ax, cax=pos_cax)
+
+        # 1. Plot in same line, this would work
+        fig = plt.figure(figsize=(8, 4))
+        ax1 = fig.add_subplot(1, 2, 1)
+        custom_plot1(ax1)
+        ax2 = fig.add_subplot(1, 2, 2, projection=ccrs.PlateCarree())
+        custom_plot2(ax2)
+
+        # 2. Plot in different line, default option
+        # custom_plot1()
+        # custom_plot2()
+        plt.show()
+
+    def test_concat_two_figs(self):
+        # 获取当前文件夹中所有JPG图像
+        im_list = [Image.open(fn) for fn in listdir() if fn.endswith('.png')]
+
+        # 图片转化为相同的尺寸
+        ims = []
+        for i in im_list:
+            new_img = i.resize((1280, 1280), Image.BILINEAR)
+            ims.append(new_img)
+
+            # 单幅图像尺寸
+            width, height = ims[0].size
+
+            # 创建空白长图
+            result = Image.new(ims[0].mode, (width * len(ims), height))
+
+            # 拼接图片
+            for i, im in enumerate(ims):
+                result.paste(im, box=(i * width, 0))
+
+            # 保存图片
+            result.save('res1.png')
 
 
 if __name__ == '__main__':

@@ -23,19 +23,21 @@ config_dir = definitions.CONFIG_DIR
 cfg = edict()
 
 
-def conus_lstm(args):
+def dor_lstm(args):
     exp_config_file = cfg.EXP
     random_seed = cfg.RANDOM_SEED
     test_epoch = cfg.TEST_EPOCH
     gpu_num = cfg.CTX
     train_mode = cfg.TRAIN_MODE
+    dor = cfg.DOR
     print("train and test in CONUS: \n")
     config_file = os.path.join(config_dir, exp_config_file)
     temp_file_subname = exp_config_file.split("/")
     subexp = temp_file_subname[1].split("_")[1][:-4]
     subdir = temp_file_subname[0] + "/" + subexp
     config_data = GagesConfig.set_subdir(config_file, subdir)
-    gages_model = GagesModels(config_data, screen_basin_area_huc4=False)
+
+    gages_model = GagesModels(config_data, screen_basin_area_huc4=False, DOR=dor)
     gages_model_train = gages_model.data_model_train
     gages_model_test = gages_model.data_model_test
     with torch.cuda.device(gpu_num):
@@ -54,8 +56,8 @@ def conus_lstm(args):
 
 def cmd():
     """input args from cmd"""
-    parser = argparse.ArgumentParser(description='Train the CONUS model')
-    parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file', default="basic/config_exp11.ini",
+    parser = argparse.ArgumentParser(description='Train the basins with dor range in CONUS')
+    parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file', default="dam/config_exp1.ini",
                         type=str)
     parser.add_argument('--ctx', dest='ctx',
                         help='Running Context -- gpu num. E.g `--ctx 0` means run code in the context of gpu 0',
@@ -63,7 +65,8 @@ def cmd():
     parser.add_argument('--rs', dest='rs', help='random seed', default=1234, type=int)
     parser.add_argument('--te', dest='te', help='test epoch', default=20, type=int)
     parser.add_argument('--train_mode', dest='train_mode', help='train or test',
-                        default=False, type=bool)
+                        default=True, type=bool)
+    parser.add_argument('--dor', dest='dor', help='degree of regulation', default=-0.02, type=float)
     args = parser.parse_args()
     if args.cfg_file is not None:
         cfg.EXP = args.cfg_file
@@ -75,36 +78,25 @@ def cmd():
         cfg.TEST_EPOCH = args.te
     if args.train_mode is not None:
         cfg.TRAIN_MODE = args.train_mode
+    if args.dor is not None:
+        cfg.DOR = args.dor
     return args
 
 
-# python gages_conus_analysis.py --cfg basic/config_exp11.ini --ctx 2 --rs 1234 --te 20 --train_mode False
-# python gages_conus_analysis.py --cfg basic/config_exp37.ini --ctx 1 --rs 1234 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp38.ini --ctx 2 --rs 1234 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp39.ini --ctx 1 --rs 123 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp40.ini --ctx 0 --rs 12345 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp41.ini --ctx 0 --rs 111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp42.ini --ctx 2 --rs 1111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp43.ini --ctx 2 --rs 11111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp44.ini --ctx 2 --rs 123 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp45.ini --ctx 2 --rs 12345 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp46.ini --ctx 1 --rs 111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp47.ini --ctx 1 --rs 1111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp48.ini --ctx 1 --rs 11111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp2.ini --ctx 2 --rs 1234 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp3.ini --ctx 2 --rs 123 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp4.ini --ctx 1 --rs 12345 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp19.ini --ctx 1 --rs 111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp20.ini --ctx 0 --rs 1111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp25.ini --ctx 0 --rs 11111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp1.ini --ctx 2 --rs 1234 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp5.ini --ctx 2 --rs 123 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp6.ini --ctx 1 --rs 12345 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp7.ini --ctx 1 --rs 111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp8.ini --ctx 0 --rs 1111 --te 300 --train_mode True
-# python gages_conus_analysis.py --cfg basic/config_exp9.ini --ctx 0 --rs 11111 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp1.ini --ctx 1 --dor -0.02 --rs 1234 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp2.ini --ctx 1 --dor -0.02 --rs 123 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp3.ini --ctx 0 --dor -0.02 --rs 12345 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp4.ini --ctx 0 --dor 0.02 --rs 1234 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp5.ini --ctx 0 --dor 0.02 --rs 123 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp6.ini --ctx 2 --dor 0.02 --rs 12345 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp7.ini --ctx 0 --dor -0.02 --rs 111 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp8.ini --ctx 2 --dor -0.02 --rs 1111 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp9.ini --ctx 2 --dor -0.02 --rs 11111 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp13.ini --ctx 2 --dor 0.02 --rs 111 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp16.ini --ctx 1 --dor 0.02 --rs 1111 --te 300 --train_mode True
+# python dor_conus_analysis.py --cfg dam/config_exp19.ini --ctx 1 --dor 0.02 --rs 11111 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()
-    conus_lstm(args)
+    dor_lstm(args)
     print("End\n")

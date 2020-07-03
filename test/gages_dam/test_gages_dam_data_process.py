@@ -33,7 +33,8 @@ class MyTestCase(unittest.TestCase):
 
     def test_gages_dam_attr(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
+        # data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
+        data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         df = GagesModel.load_datamodel(data_dir,
                                        data_source_file_name='data_source.txt',
                                        stat_file_name='Statistics.json', flow_file_name='flow.npy',

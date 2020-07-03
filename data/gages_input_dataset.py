@@ -945,7 +945,9 @@ class GagesDamDataModel(object):
                 for index_i in range(gages_id_dam.shape[0]):
                     if gages_id_dam[index_i] == u1_i:
                         purposes.append(spatial_dam["PURPOSES"].iloc[index_i])
-                        storages.append(spatial_dam["NID_STORAGE"].iloc[index_i])
+                        # storages.append(spatial_dam["NID_STORAGE"].iloc[index_i])
+                        # NOR STORAGE
+                        storages.append(spatial_dam["NORMAL_STORAGE"].iloc[index_i])
                 main_purpose = which_is_main_purpose(purposes, storages, care_1purpose=care_1purpose)
                 main_purposes.append(main_purpose)
             d = dict(zip(u1.tolist(), main_purposes))
