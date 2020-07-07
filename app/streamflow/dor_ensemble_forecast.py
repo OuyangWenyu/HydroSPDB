@@ -5,6 +5,7 @@ from data.data_input import GagesModel
 from data.gages_input_dataset import load_ensemble_result, load_dataconfig_case_exp
 from explore.stat import ecdf
 from visual.plot_stat import plot_ecdfs
+import numpy as np
 
 sys.path.append("../..")
 import os
@@ -42,11 +43,26 @@ source_data_dor1 = GagesSource.choose_some_basins(all_config_Data,
                                                   all_config_Data.model_dict["data"]["tRangeTrain"],
                                                   screen_basin_area_huc4=False,
                                                   DOR=dor_1)
+# basins with dams
+source_data_withdams = GagesSource.choose_some_basins(all_config_Data,
+                                                      all_config_Data.model_dict["data"]["tRangeTrain"],
+                                                      screen_basin_area_huc4=False,
+                                                      dam_num=[1, 10000])
+# basins without dams
+source_data_withoutdams = GagesSource.choose_some_basins(all_config_Data,
+                                                         all_config_Data.model_dict["data"]["tRangeTrain"],
+                                                         screen_basin_area_huc4=False,
+                                                         dam_num=0)
 source_data_dor2 = GagesSource.choose_some_basins(all_config_Data,
                                                   all_config_Data.model_dict["data"]["tRangeTrain"],
                                                   screen_basin_area_huc4=False,
                                                   DOR=dor_2)
 sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+sites_id_withdams = source_data_withdams.all_configs['flow_screen_gage_id']
+sites_id_withoutdams = source_data_withoutdams.all_configs['flow_screen_gage_id']
+# sites_id_dor1_np = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams))
+sites_id_dor1_np = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withoutdams))
+sites_id_dor1 = sites_id_dor1_np.tolist()
 sites_id_dor2 = source_data_dor2.all_configs['flow_screen_gage_id']
 idx_lst_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_dor1]
 idx_lst_largedor = [i for i in range(len(all_sites)) if all_sites[i] in sites_id_dor2]
