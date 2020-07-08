@@ -380,6 +380,10 @@ def cmd():
 
 # python gages_pub_analysis.py --cache 0 --cfg ecoregion/config_exp1.ini --ctx 1 --pub_plan 1 --plus 0 --rs 1234 --te 300 --train_mode True
 # python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp3.ini --ctx 0 --pub_plan 3 --plus 0 --rs 1234 --te 300 --train_mode True
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp6.ini --ctx 1 --pub_plan 1 --plus 1 --rs 1234 --te 300 --train_mode True
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp7.ini --ctx 0 --pub_plan 3 --plus 1 --rs 1234 --te 300 --train_mode True
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp2.ini --ctx 2 --pub_plan 2 --plus 0 --rs 1234 --te 300 --train_mode True
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp5.ini --ctx 0 --pub_plan 2 --plus 1 --rs 1234 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

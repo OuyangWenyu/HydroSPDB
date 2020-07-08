@@ -5,34 +5,41 @@ import torch
 import definitions
 from data import GagesConfig, GagesSource
 from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result
-from data.gages_input_dataset import GagesModels
+import numpy as np
 from hydroDL import master_train, master_test
 from visual.plot_model import plot_we_need
 
 
 class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        """choose basins with small DOR """
+        """choose basins with 0 DOR and large dor"""
         config_dir = definitions.CONFIG_DIR
-        self.config_file = os.path.join(config_dir, "dam/config_exp6.ini")
-        self.subdir = r"dam/exp6"
-        self.random_seed = 12345
-        # self.config_file = os.path.join(config_dir, "dam/config_exp16.ini")
-        # self.subdir = r"dam/exp16"
-        # self.random_seed = 1111
+        self.config_file = os.path.join(config_dir, "nodam/config_exp7.ini")
+        self.subdir = r"nodam/exp7"
+        self.random_seed = 1234
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
         self.test_epoch = 300
         # self.test_epoch = 350
 
     def test_some_reservoirs(self):
-        """choose some small reservoirs to train and test"""
-        # 读取模型配置文件
         config_data = self.config_data
-        # according to paper "High-resolution mapping of the world's reservoirs and dams for sustainable river-flow management"
+
+        dam_num = 0
         dor = 0.02
-        source_data = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTrain"],
-                                                     screen_basin_area_huc4=False, DOR=dor)
-        sites_id = source_data.all_configs['flow_screen_gage_id']
+        source_data_dor1 = GagesSource.choose_some_basins(config_data,
+                                                          config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor)
+        # basins with dams
+        source_data_withoutdams = GagesSource.choose_some_basins(config_data,
+                                                                 config_data.model_dict["data"]["tRangeTrain"],
+                                                                 screen_basin_area_huc4=False,
+                                                                 dam_num=dam_num)
+
+        sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+        sites_id_withoutdams = source_data_withoutdams.all_configs['flow_screen_gage_id']
+        sites_id = np.sort(np.union1d(np.array(sites_id_dor1), np.array(sites_id_withoutdams))).tolist()
+
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
         data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         data_model_train = GagesModel.load_datamodel(data_dir,

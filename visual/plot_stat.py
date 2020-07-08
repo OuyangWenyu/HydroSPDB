@@ -200,7 +200,8 @@ def plot_point_map(gpd_gdf, percentile=0, save_file=None):
         # plt.savefig("NSE-usa.png", bbox_inches='tight', pad_inches=0.1)
 
 
-def plot_ecdfs(xs, ys, legends=None, style=None, case_str="case", event_str="event", x_str="x", y_str="y"):
+def plot_ecdfs(xs, ys, legends=None, style=None, case_str="case", event_str="event", x_str="x", y_str="y",
+               ax_as_subplot=None, interval=0.1):
     """Empirical cumulative distribution function"""
     assert type(xs) == type(ys) == list
     assert len(xs) == len(ys)
@@ -230,18 +231,22 @@ def plot_ecdfs(xs, ys, legends=None, style=None, case_str="case", event_str="eve
     df = pd.concat(frames)
     sns.set_style("ticks", {'axes.grid': True})
     if style is None:
-        sns.lineplot(x=x_str, y=y_str, hue=case_str, data=df, estimator=None).set(xlim=(0, 1),
-                                                                                  xticks=np.arange(0, 1, 0.05),
-                                                                                  yticks=np.arange(0, 1, 0.05))
+        if ax_as_subplot is None:
+            ecdfplt = sns.lineplot(x=x_str, y=y_str, hue=case_str, data=df, estimator=None).set(
+                xlim=(0, 1), xticks=np.arange(0, 1, interval), yticks=np.arange(0, 1, interval))
+        else:
+            ecdfplt = sns.lineplot(ax=ax_as_subplot, x=x_str, y=y_str, hue=case_str, data=df, estimator=None).set(
+                xlim=(0, 1), xticks=np.arange(0, 1, interval), yticks=np.arange(0, 1, interval))
+
     else:
-        sns.lineplot(x=x_str, y=y_str, hue=case_str, style=event_str, data=df, estimator=None).set(xlim=(0, 1),
-                                                                                                   xticks=np.arange(0,
-                                                                                                                    1,
-                                                                                                                    0.05),
-                                                                                                   yticks=np.arange(0,
-                                                                                                                    1,
-                                                                                                                    0.05))
-    plt.show()
+        if ax_as_subplot is None:
+            ecdfplt = sns.lineplot(x=x_str, y=y_str, hue=case_str, style=event_str, data=df, estimator=None).set(
+                xlim=(0, 1), xticks=np.arange(0, 1, interval), yticks=np.arange(0, 1, interval))
+        else:
+            ecdfplt = sns.lineplot(ax=ax_as_subplot, x=x_str, y=y_str, hue=case_str, style=event_str, data=df,
+                                   estimator=None).set(xlim=(0, 1), xticks=np.arange(0, 1, interval),
+                                                       yticks=np.arange(0, 1, interval))
+    return ecdfplt
 
 
 def plot_ecdf(mydataframe, mycolumn, save_file=None):

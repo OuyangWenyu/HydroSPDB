@@ -84,6 +84,10 @@ def cmd():
 
 
 # python gages_nodam_analysis.py --cfg nodam/config_exp1.ini --ctx 1 --dam_num 0 --rs 1234 --te 300 --train_mode True
+# python gages_nodam_analysis.py --cfg nodam/config_exp2.ini --ctx 1 --dam_num 0 --rs 123 --te 300 --train_mode True
+# python gages_nodam_analysis.py --cfg nodam/config_exp3.ini --ctx 2 --dam_num 0 --rs 12345 --te 300 --train_mode True
+# python gages_nodam_analysis.py --cfg nodam/config_exp4.ini --ctx 2 --dam_num 0 --rs 111 --te 300 --train_mode True
+# python gages_nodam_analysis.py --cfg nodam/config_exp5.ini --ctx 1 --dam_num 0 --rs 1111 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()
