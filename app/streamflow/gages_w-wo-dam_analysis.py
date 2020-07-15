@@ -117,6 +117,12 @@ def cmd():
 # python gages_w-wo-dam_analysis.py --cfg dam/config_exp27.ini --ctx 0 --dam_plan 3 --rs 123 --te 300 --train_mode True
 # python gages_w-wo-dam_analysis.py --cfg nodam/config_exp9.ini --ctx 1 --dam_plan 2 --rs 12345 --te 300 --train_mode True
 # python gages_w-wo-dam_analysis.py --cfg dam/config_exp28.ini --ctx 0 --dam_plan 3 --rs 12345 --te 300 --train_mode True
+# python gages_w-wo-dam_analysis.py --cfg nodam/config_exp10.ini --ctx 2 --dam_plan 2 --rs 111 --te 300 --train_mode True
+# python gages_w-wo-dam_analysis.py --cfg nodam/config_exp11.ini --ctx 1 --dam_plan 2 --rs 1111 --te 300 --train_mode True
+# python gages_w-wo-dam_analysis.py --cfg dam/config_exp29.ini --ctx 2 --dam_plan 3 --rs 111 --te 300 --train_mode True
+# python gages_w-wo-dam_analysis.py --cfg dam/config_exp30.ini --ctx 1 --dam_plan 3 --rs 1111 --te 300 --train_mode True
+# python gages_w-wo-dam_analysis.py --cfg nodam/config_exp12.ini --ctx 2 --dam_plan 2 --rs 11111 --te 300 --train_mode True
+# python gages_w-wo-dam_analysis.py --cfg dam/config_exp31.ini --ctx 0 --dam_plan 3 --rs 11111 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

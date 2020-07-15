@@ -94,6 +94,7 @@ def cmd():
 # python gages_conus_analysis.py --cfg basic/config_exp2.ini --ctx 2 --rs 1234 --te 300 --train_mode True
 # python gages_conus_analysis.py --cfg basic/config_exp3.ini --ctx 2 --rs 123 --te 300 --train_mode True
 # python gages_conus_analysis.py --cfg basic/config_exp4.ini --ctx 1 --rs 12345 --te 300 --train_mode True
+# retrain: # python gages_conus_analysis.py --cfg basic/config_exp13.ini --ctx 1 --rs 12345 --te 300 --train_mode True
 # python gages_conus_analysis.py --cfg basic/config_exp19.ini --ctx 1 --rs 111 --te 300 --train_mode True
 # python gages_conus_analysis.py --cfg basic/config_exp20.ini --ctx 0 --rs 1111 --te 300 --train_mode True
 # python gages_conus_analysis.py --cfg basic/config_exp25.ini --ctx 0 --rs 11111 --te 300 --train_mode True

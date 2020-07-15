@@ -15,10 +15,10 @@ from utils import unserialize_json, unserialize_numpy
 from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred
 from visual.plot import plotCDF
-from visual.plot_model import plot_ind_map, plot_map, plot_gages_map_and_ts
+from visual.plot_model import plot_ind_map, plot_map, plot_gages_map_and_ts, plot_gages_map_and_box
 from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs, plot_diff_boxes
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+import seaborn as sns
 
 
 def test_stat():
@@ -174,6 +174,51 @@ class MyTestCase(unittest.TestCase):
             (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
         plot_gages_map_and_ts(data_model, self.obs, self.pred, inds_df, show_ind_key, idx_lst_nse,
                               pertile_range=[0, 100], plot_ts=False, fig_size=(8, 4), cmap_str="jet")
+
+    def test_plot_map_and_box(self):
+        data_model = GagesModel.load_datamodel(self.dir_temp,
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        show_ind_key = "NSE"
+        inds_df = pd.DataFrame(self.inds)
+        # nse_range = [-10000, 0]
+        nse_range = [0, 1]
+        idx_lst_nse = inds_df[
+            (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
+        fig = plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lst_nse, titles=["NSE map", "NSE boxplot"],
+                                     wh_ratio=[1, 5], adjust_xy=(0, 0.04))
+        plt.show()
+
+    def test_plot_delta_map_and_box(self):
+        data_model = GagesModel.load_datamodel(self.dir_temp,
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        show_ind_key = "NSE"
+        inds_df = pd.DataFrame(self.inds)
+        inds_df1 = pd.DataFrame(self.inds)
+        inds_delta = inds_df - inds_df1
+        print(inds_delta)
+        inds_df = pd.DataFrame(self.inds)[show_ind_key]
+        inds_df_fake = inds_df.copy()
+        temp = np.random.uniform(-1, 1, inds_df_fake.size)
+        comp_df = inds_df_fake + temp
+        delta_nse = (comp_df - inds_df).to_frame()
+        delta_range = [-0.9, 0.9]
+        idx_lst_delta = delta_nse[
+            (delta_nse[show_ind_key] >= delta_range[0]) & (delta_nse[show_ind_key] < delta_range[1])].index.tolist()
+        fig = plot_gages_map_and_box(data_model, delta_nse, show_ind_key, idx_lst=idx_lst_delta,
+                                     titles=["NSE map", "NSE boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
+        # save figure without padding
+        # plt.savefig('testmapbox.png', dpi=500, bbox_inches="tight")
+        plt.show()
 
     def test_plot_kuai_cdf(self):
         t_s_dict = unserialize_json(self.t_s_dict_file)

@@ -7,13 +7,13 @@ from data import GagesSource
 from data.data_input import GagesModel, _basin_norm, save_result
 from data.gages_input_dataset import load_ensemble_result, load_dataconfig_case_exp
 from explore.gages_stat import split_results_to_regions
-from explore.stat import statError
+from explore.stat import statError, ecdf
 from hydroDL import master_test
 from utils import unserialize_json
 from utils.dataset_format import subset_of_dict
 from utils.hydro_math import is_any_elem_in_a_lst
-from visual.plot_model import plot_we_need, plot_gages_map_and_ts
-from visual.plot_stat import plot_diff_boxes
+from visual.plot_model import plot_we_need, plot_gages_map_and_ts, plot_gages_map_and_box
+from visual.plot_stat import plot_diff_boxes, plot_ecdfs
 
 sys.path.append("../..")
 import os
@@ -111,37 +111,83 @@ if 'post' in doLst:
                                               train_stat_dict=gages_model_train.stat_dict,
                                               screen_basin_area_huc4=False)
 
-    config_data_attr = load_dataconfig_case_exp(exp_attr_lst[0])
-    gages_attr_train = GagesModel.update_data_model(config_data_attr, data_model_train, data_attr_update=True,
-                                                    screen_basin_area_huc4=False)
-    data_model_attr = GagesModel.update_data_model(config_data_attr, data_model_test, data_attr_update=True,
-                                                   train_stat_dict=gages_attr_train.stat_dict,
-                                                   screen_basin_area_huc4=False)
-
     inds_df, pred_mean, obs_mean = load_ensemble_result(exp_lst, test_epoch, return_value=True)
 
-    # plot comparation
-    show_ind_key = "NSE"
-    attr = "attributes_combination"
-    cases_exps_legends = ["attr_comb_1", "attr_comb_2"]
-    inds_df_attr, pred_mean_attr, obs_mean_attr = load_ensemble_result(exp_attr_lst, test_epoch, return_value=True)
-    inds_df_lst = []
-    inds_df_lst.append(inds_df)
-    inds_df_lst.append(inds_df_attr)
-    frames = []
-    for i in range(len(cases_exps_legends)):
-        df_i = pd.DataFrame({attr: np.full([inds_df_lst[i].shape[0]], cases_exps_legends[i]),
-                             show_ind_key: inds_df_lst[i][show_ind_key]})
-        frames.append(df_i)
-    result = pd.concat(frames)
-    sns_box = sns.boxplot(x=attr, y=show_ind_key, data=result, showfliers=False)
-    sns.despine(offset=10, trim=True)
+    # plot diversion dor ecdf
+    diversion_yes = True
+    diversion_no = False
+    source_data_diversion = GagesSource.choose_some_basins(config_data,
+                                                           config_data.model_dict["data"]["tRangeTrain"],
+                                                           screen_basin_area_huc4=False,
+                                                           diversion=diversion_yes)
+    source_data_nodivert = GagesSource.choose_some_basins(config_data,
+                                                          config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          diversion=diversion_no)
+    sites_id_nodivert = source_data_nodivert.all_configs['flow_screen_gage_id']
+    sites_id_diversion = source_data_diversion.all_configs['flow_screen_gage_id']
 
+    dor_1 = - 0.02
+    dor_2 = 0.02
+    source_data_dor1 = GagesSource.choose_some_basins(config_data,
+                                                      config_data.model_dict["data"]["tRangeTrain"],
+                                                      screen_basin_area_huc4=False,
+                                                      DOR=dor_1)
+    source_data_dor2 = GagesSource.choose_some_basins(config_data,
+                                                      config_data.model_dict["data"]["tRangeTrain"],
+                                                      screen_basin_area_huc4=False,
+                                                      DOR=dor_2)
+    sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+    sites_id_dor2 = source_data_dor2.all_configs['flow_screen_gage_id']
 
-    # matplotlib.use('TkAgg')
+    # basins with dams
+    source_data_withdams = GagesSource.choose_some_basins(config_data,
+                                                          config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          dam_num=[1, 100000])
+    sites_id_withdams = source_data_withdams.all_configs['flow_screen_gage_id']
+    sites_id_dor1 = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
+
+    no_divert_small_dor = np.intersect1d(sites_id_nodivert, sites_id_dor1)
+    no_divert_large_dor = np.intersect1d(sites_id_nodivert, sites_id_dor2)
+    diversion_small_dor = np.intersect1d(sites_id_diversion, sites_id_dor1)
+    diversion_large_dor = np.intersect1d(sites_id_diversion, sites_id_dor2)
+
+    all_sites = data_model.t_s_dict["sites_id"]
+    idx_lst_nodivert_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in no_divert_small_dor]
+    idx_lst_nodivert_largedor = [i for i in range(len(all_sites)) if all_sites[i] in no_divert_large_dor]
+    idx_lst_diversion_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in diversion_small_dor]
+    idx_lst_diversion_largedor = [i for i in range(len(all_sites)) if all_sites[i] in diversion_large_dor]
+
+    keys_nse = "NSE"
+    xs = []
+    ys = []
+    cases_exps_legends_together = ["not_diverted_small_dor", "not_diverted_large_dor", "diversion_small_dor",
+                                   "diversion_large_dor"]
+
+    x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_smalldor])
+    xs.append(x1)
+    ys.append(y1)
+
+    x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_largedor])
+    xs.append(x2)
+    ys.append(y2)
+
+    x3, y3 = ecdf(inds_df[keys_nse].iloc[idx_lst_diversion_smalldor])
+    xs.append(x3)
+    ys.append(y3)
+
+    x4, y4 = ecdf(inds_df[keys_nse].iloc[idx_lst_diversion_largedor])
+    xs.append(x4)
+    ys.append(y4)
+
+    plot_ecdfs(xs, ys, cases_exps_legends_together)
+    sns.despine()
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'dor_divert_comp.png'), dpi=500, bbox_inches="tight")
+    plt.figure()
     # plot box
-    keys = ["Bias", "RMSE", "NSE"]
-    box_fig = plot_diff_boxes(inds_df[keys])
+    # keys = ["Bias", "RMSE", "NSE"]
+    # box_fig = plot_diff_boxes(inds_df[keys])
 
     # plot map ts
     show_ind_key = 'NSE'
@@ -151,10 +197,51 @@ if 'post' in doLst:
     # nse_range = [-10000, 1]
     # nse_range = [-10000, 0]
     idx_lstl_nse = inds_df[
-        (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
+        (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] <= nse_range[1])].index.tolist()
+    plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lstl_nse, titles=["NSE map", "NSE boxplot"],
+                           wh_ratio=[1, 5], adjust_xy=(0, 0.04))
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box.png'), dpi=500, bbox_inches="tight")
+    plt.figure()
+    # plot_gages_map_and_ts(data_model, obs_mean, pred_mean, inds_df, show_ind_key, idx_lstl_nse,
+    #                       pertile_range=[0, 100], plot_ts=False, fig_size=(8, 4), cmap_str="jet")
 
-    plot_gages_map_and_ts(data_model, obs_mean, pred_mean, inds_df, show_ind_key, idx_lstl_nse,
-                          pertile_range=[0, 100], plot_ts=False, fig_size=(8, 4), cmap_str="jet")
+    # plot comparation
+    # config_data_attr = load_dataconfig_case_exp(exp_attr_lst[0])
+    # gages_attr_train = GagesModel.update_data_model(config_data_attr, data_model_train, data_attr_update=True,
+    #                                                 screen_basin_area_huc4=False)
+    # data_model_attr = GagesModel.update_data_model(config_data_attr, data_model_test, data_attr_update=True,
+    #                                                train_stat_dict=gages_attr_train.stat_dict,
+    #                                                screen_basin_area_huc4=False)
+    comp_version = 1
+    inds_df_attr, pred_mean_attr, obs_mean_attr = load_ensemble_result(exp_attr_lst, test_epoch, return_value=True)
+    if comp_version == 0:
+        show_ind_key = "NSE"
+        attr = "attributes_combination"
+        cases_exps_legends = ["attr_comb_1", "attr_comb_2"]
+        inds_df_lst = []
+        inds_df_lst.append(inds_df)
+        inds_df_lst.append(inds_df_attr)
+        frames = []
+        for i in range(len(cases_exps_legends)):
+            df_i = pd.DataFrame({attr: np.full([inds_df_lst[i].shape[0]], cases_exps_legends[i]),
+                                 show_ind_key: inds_df_lst[i][show_ind_key]})
+            frames.append(df_i)
+        result = pd.concat(frames)
+
+        sns.boxplot(x=attr, y=show_ind_key, data=result, showfliers=False)
+        # sns.despine(offset=10, trim=True)
+    else:
+        delta_nse = inds_df - inds_df_attr
+        delta_range = [-0.1, 0.1]
+        idx_lst_delta = delta_nse[
+            (delta_nse[show_ind_key] >= delta_range[0]) & (delta_nse[show_ind_key] < delta_range[1])].index.tolist()
+        fig = plot_gages_map_and_box(data_model, delta_nse, show_ind_key, idx_lst=idx_lst_delta,
+                                     titles=["NSE delta map", "NSE delta boxplot"], wh_ratio=[1, 5],
+                                     adjust_xy=(0, 0.04))
+        plt.savefig(os.path.join(config_data.data_path["Out"], 'w-wo-attr_delta_map_box.png'), dpi=500,
+                    bbox_inches="tight")
+    plt.figure()
+
     # plot three factors
     attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
     usgs_id = data_model.t_s_dict["sites_id"]
@@ -237,5 +324,5 @@ if 'post' in doLst:
                     data=result, palette="Set1",
                     kind="box", dodge=True, showfliers=False)
     # g.set(ylim=(-1, 1))
-
+    plt.savefig(os.path.join(config_data.data_path["Out"], '3factors_distribution.png'), dpi=500, bbox_inches="tight")
     plt.show()

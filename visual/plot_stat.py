@@ -302,7 +302,7 @@ def plot_loss_early_stop(train_loss, valid_loss):
     return fig
 
 
-def plot_map_carto(data, lat, lon, ax=None, pertile_range=None, fig_size=(8, 8), cmap_str="viridis"):
+def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_size=(8, 8), cmap_str="viridis"):
     temp = data
     if pertile_range is None:
         vmin = np.amin(temp)
@@ -317,35 +317,17 @@ def plot_map_carto(data, lat, lon, ax=None, pertile_range=None, fig_size=(8, 8),
     urcrnrlon = np.max(lon),
     extent = [llcrnrlon[0], urcrnrlon[0], llcrnrlat[0], urcrnrlat[0]]
     # Figure
-    only_map = False
-    if ax is None:
-        fig, ax = plt.subplots(1, 1, figsize=fig_size,
-                               subplot_kw={'projection': ccrs.PlateCarree()})
-        only_map = True
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=fig_size, subplot_kw={'projection': ccrs.PlateCarree()})
     ax.set_extent(extent)
-    states = NaturalEarthFeature(category="cultural", scale="50m",
-                                 facecolor="none",
+    states = NaturalEarthFeature(category="cultural", scale="50m", facecolor="none",
                                  name="admin_1_states_provinces_shp")
     ax.add_feature(states, linewidth=.5, edgecolor="black")
     ax.coastlines('50m', linewidth=0.8)
     # auto projection
     scat = plt.scatter(lon, lat, c=temp, s=10, cmap=cmap_str, vmin=vmin, vmax=vmax)
-
-    if only_map:
-        # get size and extent of axes:
-        axpos = ax.get_position()
-        pos_x = axpos.x0 + axpos.width + 0.01  # + 0.25*axpos.width
-        pos_y = axpos.y0
-        cax_width = 0.02
-        cax_height = axpos.height
-        # create new axes where the colorbar should go.
-        # it should be next to the original axes and have the same height!
-        pos_cax = fig.add_axes([pos_x, pos_y, cax_width, cax_height])
-        plt.colorbar(ax=ax, cax=pos_cax)
-        return fig
-    else:
-        plt.colorbar()
-    return scat, ax
+    fig.colorbar(scat, ax=ax, pad=0.01)
+    return ax
 
 
 def plot_ts_matplot(t, y, color='r', ax=None, title=None):
@@ -376,7 +358,7 @@ def plot_ts_map(dataMap, dataTs, lat, lon, t, sites_id, pertile_range=None):
     # plt.subplots_adjust(left=0.13, right=0.89, bottom=0.05)
     # plot maps
     ax1 = plt.subplot(gs[0], projection=ccrs.PlateCarree())
-    scat, ax1 = plot_map_carto(dataMap, lat=lat, lon=lon, ax=ax1, pertile_range=pertile_range)
+    ax1 = plot_map_carto(dataMap, lat=lat, lon=lon, fig=fig, ax=ax1, pertile_range=pertile_range)
     # line plot
     ax2 = plt.subplot(gs[1])
 

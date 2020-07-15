@@ -1,6 +1,6 @@
 """本项目调用可视化函数进行可视化的一些函数"""
 import os
-
+import cartopy.crs as ccrs
 import pandas as pd
 import numpy as np
 import geopandas as gpd
@@ -207,5 +207,42 @@ def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst,
         plot_ts_map(data_map.tolist(), data_ts, lat, lon, t, sites.tolist(), pertile_range=pertile_range)
     else:
         f = plot_map_carto(data_map, lat=lat, lon=lon, pertile_range=pertile_range, fig_size=fig_size,
-                               cmap_str=cmap_str)
+                           cmap_str=cmap_str)
         return f
+
+
+def plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lst=None, pertile_range=[0, 100], fig_size=(12, 7),
+                           cmap_str="jet", titles=["title1", "title2"], wh_ratio=[1, 4], adjust_xy=(0, 0.05)):
+    if idx_lst is None:
+        data_map = inds_df[show_ind_key].values
+        lat = data_model.data_source.gage_dict["LAT_GAGE"]
+        lon = data_model.data_source.gage_dict["LNG_GAGE"]
+    else:
+        data_map = (inds_df.loc[idx_lst])[show_ind_key].values
+        all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
+        all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
+        all_sites_id = data_model.data_source.gage_dict["STAID"]
+        sites = np.array(data_model.t_s_dict['sites_id'])[idx_lst]
+        sites_index = np.array([np.where(all_sites_id == i) for i in sites]).flatten()
+        lat = all_lat[sites_index]
+        lon = all_lon[sites_index]
+
+    # Figure
+    fig = plt.figure(figsize=fig_size)
+    # 第一个坐标轴，绘制地图
+    ax1 = plt.subplot(2, 1, 1, projection=ccrs.PlateCarree())
+    ax1.set(title=titles[0])
+    plot_map_carto(data_map, lat=lat, lon=lon, fig=fig, ax=ax1, fig_size=(fig_size[0], fig_size[1] - 2),
+                   pertile_range=pertile_range, cmap_str=cmap_str)
+
+    ax2 = plt.subplot(2, 1, 2)
+    ax2.set(title=titles[1])
+    sns.boxplot(data=data_map, orient='h', linewidth=3, ax=ax2, showfliers=False)
+
+    # 调整位置
+    pos1 = ax1.get_position()  # get the original position
+    pos2 = ax2.get_position()  # get the original position
+    pos2_ = [pos1.x0 + adjust_xy[0], pos1.y0 - pos2.height / wh_ratio[1] - adjust_xy[1], pos1.width / wh_ratio[0],
+             pos2.height / wh_ratio[1]]
+    ax2.set_position(pos2_)  # set a new position
+    return fig

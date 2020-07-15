@@ -15,13 +15,13 @@ sys.path.append("../..")
 import os
 import definitions
 
-conus_exps = ["basic_exp37", "basic_exp39", "basic_exp40"]  # "basic_exp41", "basic_exp42", "basic_exp43"
-pair1_exps = ["dam_exp1", "dam_exp2", "dam_exp3"]
-pair2_exps = ["nodam_exp7", "nodam_exp8"]  # "nodam_exp9"
-pair3_exps = ["dam_exp27", "dam_exp26"]  # "dam_exp28"
-nodam_exp_lst = ["nodam_exp1", "nodam_exp2", "nodam_exp3"]
-smalldam_exp_lst = ["dam_exp20", "dam_exp21", "dam_exp22"]
-largedam_exp_lst = ["dam_exp4", "dam_exp5", "dam_exp6"]
+conus_exps = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
+pair1_exps = ["dam_exp1", "dam_exp2", "dam_exp3", "dam_exp7", "dam_exp8", "dam_exp9"]
+pair2_exps = ["nodam_exp7", "nodam_exp8", "nodam_exp9", "nodam_exp10", "nodam_exp11", "nodam_exp12"]
+pair3_exps = ["dam_exp27", "dam_exp26", "dam_exp28", "dam_exp29", "dam_exp30", "dam_exp31"]
+nodam_exp_lst = ["nodam_exp1", "nodam_exp2", "nodam_exp3", "nodam_exp4", "nodam_exp5", "nodam_exp6"]
+smalldam_exp_lst = ["dam_exp20", "dam_exp21", "dam_exp22", "dam_exp23", "dam_exp24", "dam_exp25"]
+largedam_exp_lst = ["dam_exp4", "dam_exp5", "dam_exp6", "dam_exp13", "dam_exp16", "dam_exp19"]
 config_dir = definitions.CONFIG_DIR
 test_epoch = 300
 
@@ -160,13 +160,13 @@ elif compare_item == 2:
     inds_df_pair3 = load_ensemble_result(pair3_exps, test_epoch)
     inds_df_conus = load_ensemble_result(conus_exps, test_epoch)
 
-    fig = plt.figure(figsize=(9, 3))
+    fig = plt.figure(figsize=(15, 5))
     gs = gridspec.GridSpec(1, 3)
     keys_nse = "NSE"
-    color_chosen = "skyblue"
+    color_chosen = ["Greens", "Blues", "Reds"]
 
     attr_nodam = "zero_dor"
-    cases_exps_legends_nodam = ["LSTM-z", "LSTM-zs", "LSTM-zl", "LSTM-zsl"]
+    cases_exps_legends_nodam = ["LSTM-Z", "LSTM-ZS", "LSTM-ZL", "LSTM-CONUS"]
     frames_nodam = []
     inds_df_nodam = load_ensemble_result(nodam_exp_lst, test_epoch)
     df_nodam_alone = pd.DataFrame({attr_nodam: np.full([inds_df_nodam.shape[0]], cases_exps_legends_nodam[0]),
@@ -194,16 +194,16 @@ elif compare_item == 2:
     ax1 = plt.subplot(gs[0])
     ax1.set_xticklabels(ax1.get_xticklabels(), rotation=30)
     ax1.set_ylim([0, 1])
-    sns.boxplot(ax=ax1, x=attr_nodam, y=keys_nse, data=result_nodam, showfliers=False, color=color_chosen)
+    sns.boxplot(ax=ax1, x=attr_nodam, y=keys_nse, data=result_nodam, showfliers=False, palette=color_chosen[0])
     medians_nodam = result_nodam.groupby([attr_nodam], sort=False)[keys_nse].median().values
     median_labels_nodam = [str(np.round(s, 3)) for s in medians_nodam]
     pos1 = range(len(medians_nodam))
     for tick, label in zip(pos1, ax1.get_xticklabels()):
         ax1.text(pos1[tick], medians_nodam[tick] + 0.02, median_labels_nodam[tick],
-                 horizontalalignment='center', size='x-small', color='w', weight='semibold')
+                 horizontalalignment='center', size='x-small', weight='semibold')
 
     attr_smalldam = "small_dor"
-    cases_exps_legends_smalldam = ["LSTM-s", "LSTM-zs", "LSTM-sl", "LSTM-zsl"]
+    cases_exps_legends_smalldam = ["LSTM-S", "LSTM-ZS", "LSTM-SL", "LSTM-CONUS"]
     frames_smalldam = []
     inds_df_smalldam = load_ensemble_result(smalldam_exp_lst, test_epoch)
     df_smalldam_alone = pd.DataFrame(
@@ -233,16 +233,16 @@ elif compare_item == 2:
     ax2.set_xticklabels(ax2.get_xticklabels(), rotation=30)
     ax2.set_ylim([0, 1])
     ax2.set(ylabel=None)
-    sns.boxplot(ax=ax2, x=attr_smalldam, y=keys_nse, data=result_smalldam, showfliers=False, color=color_chosen)
+    sns.boxplot(ax=ax2, x=attr_smalldam, y=keys_nse, data=result_smalldam, showfliers=False, palette=color_chosen[1])
     medians_smalldam = result_smalldam.groupby([attr_smalldam], sort=False)[keys_nse].median().values
     median_labels_smalldam = [str(np.round(s, 3)) for s in medians_smalldam]
     pos2 = range(len(medians_smalldam))
     for tick, label in zip(pos2, ax2.get_xticklabels()):
         ax2.text(pos2[tick], medians_smalldam[tick] + 0.02, median_labels_smalldam[tick],
-                 horizontalalignment='center', size='x-small', color='w', weight='semibold')
+                 horizontalalignment='center', size='x-small', weight='semibold')
 
     attr_largedam = "large_dor"
-    cases_exps_legends_largedam = ["LSTM-l", "LSTM-zl", "LSTM-sl", "LSTM-zsl"]
+    cases_exps_legends_largedam = ["LSTM-L", "LSTM-ZL", "LSTM-SL", "LSTM-CONUS"]
     frames_largedam = []
     inds_df_largedam = load_ensemble_result(largedam_exp_lst, test_epoch)
     df_largedam_alone = pd.DataFrame(
@@ -272,15 +272,17 @@ elif compare_item == 2:
     ax3.set_xticklabels(ax3.get_xticklabels(), rotation=30)
     ax3.set_ylim([0, 1])
     ax3.set(ylabel=None)
-    sns.boxplot(ax=ax3, x=attr_largedam, y=keys_nse, data=result_largedam, showfliers=False, color=color_chosen)
+    sns.boxplot(ax=ax3, x=attr_largedam, y=keys_nse, data=result_largedam, showfliers=False, palette=color_chosen[2])
     medians_largedam = result_largedam.groupby([attr_largedam], sort=False)[keys_nse].median().values
     median_labels_largedam = [str(np.round(s, 3)) for s in medians_largedam]
     pos3 = range(len(medians_largedam))
     for tick, label in zip(pos3, ax3.get_xticklabels()):
         ax3.text(pos3[tick], medians_largedam[tick] + 0.02, median_labels_largedam[tick],
-                 horizontalalignment='center', size='x-small', color='w', weight='semibold')
+                 horizontalalignment='center', size='x-small', weight='semibold')
     sns.despine()
     plt.tight_layout()
+    plt.savefig(os.path.join(conus_config_data.data_path["Out"], '3exps_data_synergy.png'), dpi=500,
+                bbox_inches="tight")
 
 elif compare_item == 1:  # ecdf
     print("multi plots")

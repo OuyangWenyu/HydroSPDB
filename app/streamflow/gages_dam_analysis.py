@@ -102,6 +102,7 @@ def cmd():
 # python gages_dam_analysis.py --cfg dam/config_exp22.ini --ctx 1 --dor -0.02 --rs 12345 --te 300 --train_mode True
 # python gages_dam_analysis.py --cfg dam/config_exp23.ini --ctx 1 --dor -0.02 --rs 111 --te 300 --train_mode True
 # python gages_dam_analysis.py --cfg dam/config_exp24.ini --ctx 2 --dor -0.02 --rs 1111 --te 300 --train_mode True
+# python gages_dam_analysis.py --cfg dam/config_exp25.ini --ctx 0 --dor -0.02 --rs 11111 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()
