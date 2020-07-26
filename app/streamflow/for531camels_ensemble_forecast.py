@@ -24,7 +24,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 conus_exps = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
-exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp35", "basic_exp36"]
+exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp49", "basic_exp36"]
 gpu_lst = [1, 1, 0, 0, 1, 1]
 doLst = list()
 # doLst.append('cache')
@@ -108,14 +108,15 @@ inds_df = load_ensemble_result(conus_exps, test_epoch)
 keys_nse = "NSE"
 xs = []
 ys = []
-cases_exps_legends = ["523sites_in_CAMELS_trained_in_CONUS", "trained_only_in_523sites_in_CAMELS"]
+cases_exps_legends = ["523sites_from_LSTM-CONUS", "523sites_trained_in_LSTM-CAMELS"]
 x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_camels])
 xs.append(x1)
 ys.append(y1)
-
 
 x2, y2 = ecdf(inds_df_camels[keys_nse])
 xs.append(x2)
 ys.append(y2)
 
 plot_ecdfs(xs, ys, cases_exps_legends, x_str="NSE", y_str="CDF")
+sns.despine()
+plt.savefig(os.path.join(config_data.data_path["Out"], 'camels_synergy.png'), dpi=500, bbox_inches="tight")

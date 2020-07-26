@@ -13,7 +13,7 @@ from utils import unserialize_json
 from utils.dataset_format import subset_of_dict
 from utils.hydro_math import is_any_elem_in_a_lst
 from visual.plot_model import plot_we_need, plot_gages_map_and_ts, plot_gages_map_and_box
-from visual.plot_stat import plot_diff_boxes, plot_ecdfs
+from visual.plot_stat import plot_diff_boxes, plot_ecdfs, plot_ecdfs_matplot, plot_boxs
 
 sys.path.append("../..")
 import os
@@ -24,7 +24,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 exp_lst = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
-exp_attr_lst = ["basic_exp2", "basic_exp3", "basic_exp4", "basic_exp19", "basic_exp20", "basic_exp25"]
+exp_attr_lst = ["basic_exp2", "basic_exp3", "basic_exp13", "basic_exp19", "basic_exp20", "basic_exp25"]
 gpu_lst = [1, 1, 0, 0, 2, 2]
 gpu_attr_lst = [2, 2, 1, 1, 0, 0]
 doLst = list()
@@ -163,7 +163,7 @@ if 'post' in doLst:
     xs = []
     ys = []
     cases_exps_legends_together = ["not_diverted_small_dor", "not_diverted_large_dor", "diversion_small_dor",
-                                   "diversion_large_dor"]
+                                   "diversion_large_dor", "CONUS"]
 
     x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_smalldor])
     xs.append(x1)
@@ -181,7 +181,15 @@ if 'post' in doLst:
     xs.append(x4)
     ys.append(y4)
 
-    plot_ecdfs(xs, ys, cases_exps_legends_together)
+    x_conus, y_conus = ecdf(inds_df[keys_nse])
+    xs.append(x_conus)
+    ys.append(y_conus)
+    plot_ecdfs_matplot(xs, ys, cases_exps_legends_together, colors=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "grey"],
+                       dash_lines=[False, False, False, False, True], x_str="NSE", y_str="CDF")
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'dor_divert_comp_matplotlib.png'), dpi=500,
+                bbox_inches="tight")
+    plt.figure()
+    plot_ecdfs(xs, ys, cases_exps_legends_together, x_str="NSE", y_str="CDF")
     sns.despine()
     plt.savefig(os.path.join(config_data.data_path["Out"], 'dor_divert_comp.png'), dpi=500, bbox_inches="tight")
     plt.figure()
@@ -265,16 +273,18 @@ if 'post' in doLst:
     for i in range(len(usgs_id)):
         if is_any_elem_in_a_lst(diversion_strs_lower, data_attr_lower[i], include=True):
             diversions[i] = "yes"
-    # TODO: make sure the purpose data is right
-    nid_dir = os.path.join("/".join(config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
+
+    nid_dir = os.path.join("/".join(config_data.data_path["DB"].split("/")[:-1]), "nid", "test")
     gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
     gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())
-    gage_main_dam_purpose_unique = np.unique(gage_main_dam_purpose_lst)
+    gage_main_dam_purpose_lst_merge = "".join(gage_main_dam_purpose_lst)
+    gage_main_dam_purpose_unique = np.unique(list(gage_main_dam_purpose_lst_merge))
+    # gage_main_dam_purpose_unique = np.unique(gage_main_dam_purpose_lst)
     purpose_regions = {}
     for i in range(gage_main_dam_purpose_unique.size):
         sites_id = []
         for key, value in gage_main_dam_purpose.items():
-            if value == gage_main_dam_purpose_unique[i]:
+            if gage_main_dam_purpose_unique[i] in value:
                 sites_id.append(key)
         assert (all(x < y for x, y in zip(sites_id, sites_id[1:])))
         purpose_regions[gage_main_dam_purpose_unique[i]] = sites_id
@@ -315,11 +325,15 @@ if 'post' in doLst:
         df_i = pd.DataFrame(df_dict_i)
         frames.append(df_i)
     result = pd.concat(frames)
+    plot_boxs(result, x_name, y_name, ylim=[0, 1.0])
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'purpose_distribution.png'), dpi=500, bbox_inches="tight")
     # g = sns.catplot(x=x_name, y=y_name, hue=hue_name, col=col_name,
     #                 data=result, kind="swarm",
     #                 height=4, aspect=.7)
-
-    g = sns.catplot(x=x_name, y=y_name,
+    sns.set(font_scale=1.5)
+    fig, ax = plt.subplots()
+    fig.set_size_inches(11.7, 8.27)
+    g = sns.catplot(ax=ax, x=x_name, y=y_name,
                     hue=hue_name, col=col_name,
                     data=result, palette="Set1",
                     kind="box", dodge=True, showfliers=False)

@@ -24,6 +24,31 @@ from utils.dataset_format import subset_of_dict
 from utils.hydro_math import concat_two_3darray, copy_attr_array_in2d
 
 
+def load_pub_ensemble_result(pub_exp, trained_exp_lst, test_epoch, return_value=False):
+    preds = []
+    obss = []
+    dor_config_data = load_dataconfig_case_exp(pub_exp)
+    for i in range(len(trained_exp_lst)):
+        pretrained_model_name = trained_exp_lst[i] + "_pretrained_model"
+        save_dir_i = os.path.join(dor_config_data.data_path['Out'], pretrained_model_name)
+        pred_i, obs_i = load_result(save_dir_i, test_epoch)
+        pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+        obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+        print(obs_i)
+        preds.append(pred_i)
+        obss.append(obs_i)
+
+    preds_np = np.array(preds)
+    obss_np = np.array(obss)
+    pred_mean = np.mean(preds_np, axis=0)
+    obs_mean = np.mean(obss_np, axis=0)
+    inds = statError(obs_mean, pred_mean)
+    inds_df = pd.DataFrame(inds)
+    if return_value:
+        return inds_df, pred_mean, obs_mean
+    return inds_df
+
+
 def load_ensemble_result(cases_exps, test_epoch, return_value=False):
     preds = []
     obss = []
@@ -889,6 +914,65 @@ def which_is_main_purpose(dams_purposes_of_a_basin, storages_of_a_basin, care_1p
     return main_purpose
 
 
+def only_one_main_purpose(dams_purposes_of_a_basin, storages_of_a_basin):
+    assert type(dams_purposes_of_a_basin) == list
+    assert type(storages_of_a_basin) == list
+    assert len(dams_purposes_of_a_basin) == len(storages_of_a_basin)
+
+    all_purposes = []
+    for j in range(len(dams_purposes_of_a_basin)):
+        purposes_str_i = [dams_purposes_of_a_basin[j][i:i + 1] for i in
+                          range(0, len(dams_purposes_of_a_basin[j]), 1)]
+        all_purposes = all_purposes + purposes_str_i
+    all_purposes_unique = np.unique(all_purposes)
+    purpose_storages = []
+    for purpose in all_purposes_unique:
+        purpose_storage = 0
+        for i in range(len(dams_purposes_of_a_basin)):
+            if purpose in dams_purposes_of_a_basin[i]:
+                purpose_storage = purpose_storage + storages_of_a_basin[i]
+        purpose_storages.append(purpose_storage)
+    # define a new max function, which return multiple indices when some values are same
+    max_indices = multi_max_indices(purpose_storages)
+    if len(max_indices) > 1:
+        print("choose only one")
+        every_level_purposes = []
+        max_multi_purpose_types_num = max([len(purpose_temp) for purpose_temp in dams_purposes_of_a_basin])
+        for k in range(len(max_indices)):
+            key_temp = all_purposes_unique[max_indices[k]]
+            # calculate storage for every purpose with different importance
+            key_temp_array = np.full(max_multi_purpose_types_num, -1e-6).tolist()
+            for j in range(len(dams_purposes_of_a_basin)):
+                if key_temp not in dams_purposes_of_a_basin[j]:
+                    continue
+                index_temp = \
+                    [i for i in range(len(dams_purposes_of_a_basin[j])) if dams_purposes_of_a_basin[j][i] == key_temp][
+                        0]
+                if key_temp_array[index_temp] < 0:
+                    # here we use this 'if' to diff 0 and nothing (we use -1e-6 to represent nothing as initial value)
+                    key_temp_array[index_temp] = 0
+                key_temp_array[index_temp] = key_temp_array[index_temp] + storages_of_a_basin[j]
+            every_level_purposes.append(key_temp_array)
+        main_purpose_lst = multi_max_indices(every_level_purposes)
+        if len(main_purpose_lst) > 1:
+            print("multiple main purposes")
+            main_purposes_temp = [all_purposes_unique[max_indices[i]] for i in main_purpose_lst]
+            main_purpose = ''.join(main_purposes_temp)
+        else:
+            main_purpose = all_purposes_unique[max_indices[main_purpose_lst[0]]]
+    else:
+        main_purpose = all_purposes_unique[purpose_storages.index(max(purpose_storages))]
+    return main_purpose
+
+
+def multi_max_indices(nums):
+    """nums could be a 2d array, where length of every 1d array is same"""
+    max_of_nums = max(nums)
+    tup = [(i, nums[i]) for i in range(len(nums))]
+    indices = [i for i, n in tup if n == max_of_nums]
+    return indices
+
+
 def choose_which_purpose(gages_dam_datamodel, purpose=None):
     assert type(gages_dam_datamodel) == GagesDamDataModel
     if purpose is None:
@@ -919,6 +1003,7 @@ class GagesDamDataModel(object):
         # self.update_attr()
 
     def spatial_join_dam(self, care_1purpose):
+        # ALL_PURPOSES = ['C', 'D', 'F', 'G', 'H', 'I', 'N', 'O', 'P', 'R', 'S', 'T', 'X']
         gage_region_dir = self.gages_input.data_source.all_configs.get("gage_region_dir")
         region_shapefiles = self.gages_input.data_source.all_configs.get("regions")
         # read sites from shapefile of region, get id from it.
@@ -938,17 +1023,22 @@ class GagesDamDataModel(object):
             spatial_dam = gpd.sjoin(points, polys, how="inner", op="within")
             gages_id_dam = spatial_dam['GAGE_ID'].values
             u1 = np.unique(gages_id_dam)
+            u1 = self.no_clear_diff_between_nid_gages(u1, spatial_dam)
             main_purposes = []
             for u1_i in u1:
                 purposes = []
                 storages = []
                 for index_i in range(gages_id_dam.shape[0]):
                     if gages_id_dam[index_i] == u1_i:
-                        purposes.append(spatial_dam["PURPOSES"].iloc[index_i])
+                        now_purpose = spatial_dam["PURPOSES"].iloc[index_i]
+                        if type(now_purpose) == float:  # if purpose is nan, then set it to X
+                            now_purpose = 'X'
+                        purposes.append(now_purpose)
                         # storages.append(spatial_dam["NID_STORAGE"].iloc[index_i])
                         # NOR STORAGE
                         storages.append(spatial_dam["NORMAL_STORAGE"].iloc[index_i])
-                main_purpose = which_is_main_purpose(purposes, storages, care_1purpose=care_1purpose)
+                # main_purpose = which_is_main_purpose(purposes, storages, care_1purpose=care_1purpose)
+                main_purpose = only_one_main_purpose(purposes, storages)
                 main_purposes.append(main_purpose)
             d = dict(zip(u1.tolist(), main_purposes))
             dam_dict = {**dam_dict, **d}
@@ -983,3 +1073,34 @@ class GagesDamDataModel(object):
         print("update f_dict and var_dict")
         var_dict['dam_purpose'] = var_dam
         f_dict[var_dam] = uniques.tolist()
+
+    def no_clear_diff_between_nid_gages(self, u1, spatial_dam):
+        """if there is clear diff for some basins in dam number and (dor value not considered now) between NID dataset and GAGES-II dataset,
+        these basins will be excluded in the analysis"""
+        print("excluede some basins")
+        # there are some basins from shapefile which are not in CONUS, that will cause some bug, so do an intersection before search the attibutes. Also decrease the number needed to be calculated
+        usgs_id = np.intersect1d(u1, self.gages_input.t_s_dict["sites_id"])
+        attr_lst_dam_num = ["NDAMS_2009"]
+        data_gages_dam_num, var_dict, f_dict = self.gages_input.data_source.read_attr(usgs_id, attr_lst_dam_num)
+        u2 = [usgs_id[i] for i in range(len(usgs_id)) if data_gages_dam_num[i] > 0]
+        return np.array(u2)
+
+        # gages_id_dam = spatial_dam['GAGE_ID'].values
+        # storage_nid = []
+        # for u2_i in u2:
+        #     storages = []
+        #     for index_i in range(gages_id_dam.shape[0]):
+        #         if gages_id_dam[index_i] == u2_i:
+        #             # NOR STORAGE
+        #             storages.append(spatial_dam["NORMAL_STORAGE"].iloc[index_i])
+        #     storage_nid.append(np.sum(storages))
+        #
+        # #  unit of Normal storage in NID is acre-feet, 1 acre-feet = 1233.48 m^3
+        #
+        # # mm/year 1-km grid,  megaliters total storage per sq km  (1 megaliters = 1,000,000 liters = 1,000 cubic meters)
+        # # attr_lst = ["RUNAVE7100", "STOR_NID_2009"]
+        # attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
+        # data_attr, var_dict, f_dict = self.read_attr(usgs_id, attr_lst)
+        # run_avg = data_attr[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
+        # nor_storage = data_attr[:, 1] * 1000  # m^3
+        # dors = nor_storage / run_avg

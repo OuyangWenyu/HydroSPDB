@@ -8,6 +8,8 @@ from os import listdir
 from PIL import Image
 import definitions
 import geopandas as gpd
+
+from data import GagesSource
 from data.data_input import CamelsModel, load_result, GagesModel
 from data.gages_input_dataset import load_dataconfig_case_exp
 from explore.stat import statError, ecdf
@@ -16,7 +18,7 @@ from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred
 from visual.plot import plotCDF
 from visual.plot_model import plot_ind_map, plot_map, plot_gages_map_and_ts, plot_gages_map_and_box
-from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs, plot_diff_boxes
+from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs, plot_diff_boxes, plot_ecdfs_matplot
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -98,22 +100,59 @@ class MyTestCase(unittest.TestCase):
         # cases_exps = ["basic_exp18", "simulate_exp10", "inv_exp1", "siminv_exp1"]
         # cases_exps = ["basic_exp18", "simulate_exp1"]
         # cases_exps = ["basic_exp18", "gagests_exp18"]
-        # cases_exps = ["basic_exp18", "basic_exp19"]
-        cases_exps = ["nodam_exp3", "majordam_exp2"]
-        cases_exps_legends = ["no_major_dam", "with_major_dam"]
+        cases_exps = ["basic_exp37", "basic_exp38"]
+        # cases_exps = ["nodam_exp3", "majordam_exp2"]
+        # cases_exps_legends = ["no_major_dam", "with_major_dam"]
+        cases_exps_legends = ["random_1234", "random_12345"]
         # cases_exps = ["dam_exp4", "dam_exp5", "dam_exp6"]
         # cases_exps = ["dam_exp1", "dam_exp2", "dam_exp3"]
         # cases_exps_legends = ["dam-lstm", "dam-with-natural-flow", "dam-with-kernel"]
+        test_epoch = 300
         for case_exp in cases_exps:
             config_data_i = load_dataconfig_case_exp(case_exp)
-            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], self.test_epoch)
+            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], test_epoch)
             pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
             obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
             inds_i = statError(obs_i, pred_i)
             x, y = ecdf(inds_i[self.keys[0]])
             xs.append(x)
             ys.append(y)
-        plot_ecdfs(xs, ys, cases_exps_legends)
+        plot_ecdfs(xs, ys, cases_exps_legends, x_str="NSE", y_str="CDF")
+        cases_exps_addition = ["basic_exp39"]
+        xs_addition = []
+        ys_addition = []
+        for case_exp in cases_exps_addition:
+            config_data_i = load_dataconfig_case_exp(case_exp)
+            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            inds_i = statError(obs_i, pred_i)
+            x, y = ecdf(inds_i[self.keys[0]])
+            xs_addition.append(x)
+            ys_addition.append(y)
+        plot_ecdfs(xs_addition, ys_addition, ["new"], x_str="NSE", y_str="CDF")
+        # plt.plot([0, 1], [0, 2], sns.xkcd_rgb["medium green"], lw=3)
+        plt.show()
+
+    def test_plot_ecdf_matplotlib(self):
+        xs = []
+        ys = []
+        cases_exps = ["basic_exp37", "basic_exp38", "basic_exp39", "basic_exp40", "basic_exp41"]
+        cases_exps_legends = ["random_1234", "random_123", "random_12345", "random_111", "random_1111"]
+        test_epoch = 300
+        for case_exp in cases_exps:
+            config_data_i = load_dataconfig_case_exp(case_exp)
+            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            inds_i = statError(obs_i, pred_i)
+            x, y = ecdf(inds_i[self.keys[0]])
+            xs.append(x)
+            ys.append(y)
+        dash_lines = [False, False, False, False, True]
+        plot_ecdfs_matplot(xs, ys, cases_exps_legends, colors=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "grey"],
+                           dash_lines=dash_lines, x_str="NSE", y_str="CDF")
+        plt.show()
 
     def test_plot_box(self):
         """测试可视化代码"""
@@ -174,6 +213,30 @@ class MyTestCase(unittest.TestCase):
             (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
         plot_gages_map_and_ts(data_model, self.obs, self.pred, inds_df, show_ind_key, idx_lst_nse,
                               pertile_range=[0, 100], plot_ts=False, fig_size=(8, 4), cmap_str="jet")
+
+    def test_plot_map_dam(self):
+        data_model = GagesModel.load_datamodel(self.dir_temp,
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        usgs_id = data_model.t_s_dict["sites_id"]
+        assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
+        # attr_dam_lst = ["NDAMS_2009"]
+        attr_dam_lst = ["STOR_NOR_2009"]
+        data_attr, var_dict, f_dict = data_model.data_source.read_attr(usgs_id, attr_dam_lst)
+        show_ind_key_dam = attr_dam_lst[0]
+        inds_df_dam_num = pd.DataFrame({show_ind_key_dam: data_attr[:, 0]})
+        dam_num_range = [1, 500]
+        idx_lst_dam_num = inds_df_dam_num[
+            (inds_df_dam_num[show_ind_key_dam] >= dam_num_range[0]) & (
+                    inds_df_dam_num[show_ind_key_dam] < dam_num_range[1])].index.tolist()
+        fig = plot_gages_map_and_box(data_model, inds_df_dam_num, show_ind_key_dam, idx_lst_dam_num,
+                                     titles=["dam map", "dam boxplot"],
+                                     wh_ratio=[1, 5], adjust_xy=(0, 0.04))
+        plt.show()
 
     def test_plot_map_and_box(self):
         data_model = GagesModel.load_datamodel(self.dir_temp,

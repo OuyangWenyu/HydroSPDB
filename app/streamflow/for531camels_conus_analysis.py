@@ -63,15 +63,15 @@ def camels_lstm(args):
 def cmd():
     """input args from cmd"""
     parser = argparse.ArgumentParser(description='Train the CAMELS 531 model')
-    parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file', default="basic/config_exp31.ini",
+    parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file', default="basic/config_exp49.ini",
                         type=str)
     parser.add_argument('--ctx', dest='ctx',
                         help='Running Context -- gpu num. E.g `--ctx 0` means run code in the context of gpu 0',
                         type=int, default=1)
-    parser.add_argument('--rs', dest='rs', help='random seed', default=1234, type=int)
-    parser.add_argument('--te', dest='te', help='test epoch', default=20, type=int)
+    parser.add_argument('--rs', dest='rs', help='random seed', default=1111, type=int)
+    parser.add_argument('--te', dest='te', help='test epoch', default=300, type=int)
     parser.add_argument('--train_mode', dest='train_mode', help='train or test',
-                        default=False, type=bool)
+                        default=True, type=bool)
     args = parser.parse_args()
     if args.cfg_file is not None:
         cfg.EXP = args.cfg_file
@@ -91,6 +91,7 @@ def cmd():
 # python for531camels_conus_analysis.py --cfg basic/config_exp33.ini --ctx 0 --rs 12345 --te 300 --train_mode True
 # python for531camels_conus_analysis.py --cfg basic/config_exp34.ini --ctx 0 --rs 111 --te 300 --train_mode True
 # python for531camels_conus_analysis.py --cfg basic/config_exp35.ini --ctx 1 --rs 1111 --te 300 --train_mode True
+# retrain: python for531camels_conus_analysis.py --cfg basic/config_exp49.ini --ctx 1 --rs 1111 --te 300 --train_mode True
 # python for531camels_conus_analysis.py --cfg basic/config_exp36.ini --ctx 1 --rs 11111 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")

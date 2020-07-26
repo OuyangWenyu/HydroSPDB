@@ -160,10 +160,13 @@ elif compare_item == 2:
     inds_df_pair3 = load_ensemble_result(pair3_exps, test_epoch)
     inds_df_conus = load_ensemble_result(conus_exps, test_epoch)
 
-    fig = plt.figure(figsize=(15, 5))
+    fig = plt.figure(figsize=(15, 8))
     gs = gridspec.GridSpec(1, 3)
     keys_nse = "NSE"
     color_chosen = ["Greens", "Blues", "Reds"]
+    median_loc = 0.015
+    sns.despine()
+    sns.set(font_scale=1.5)
 
     attr_nodam = "zero_dor"
     cases_exps_legends_nodam = ["LSTM-Z", "LSTM-ZS", "LSTM-ZL", "LSTM-CONUS"]
@@ -199,7 +202,7 @@ elif compare_item == 2:
     median_labels_nodam = [str(np.round(s, 3)) for s in medians_nodam]
     pos1 = range(len(medians_nodam))
     for tick, label in zip(pos1, ax1.get_xticklabels()):
-        ax1.text(pos1[tick], medians_nodam[tick] + 0.02, median_labels_nodam[tick],
+        ax1.text(pos1[tick], medians_nodam[tick] + median_loc, median_labels_nodam[tick],
                  horizontalalignment='center', size='x-small', weight='semibold')
 
     attr_smalldam = "small_dor"
@@ -238,7 +241,7 @@ elif compare_item == 2:
     median_labels_smalldam = [str(np.round(s, 3)) for s in medians_smalldam]
     pos2 = range(len(medians_smalldam))
     for tick, label in zip(pos2, ax2.get_xticklabels()):
-        ax2.text(pos2[tick], medians_smalldam[tick] + 0.02, median_labels_smalldam[tick],
+        ax2.text(pos2[tick], medians_smalldam[tick] + median_loc, median_labels_smalldam[tick],
                  horizontalalignment='center', size='x-small', weight='semibold')
 
     attr_largedam = "large_dor"
@@ -277,11 +280,11 @@ elif compare_item == 2:
     median_labels_largedam = [str(np.round(s, 3)) for s in medians_largedam]
     pos3 = range(len(medians_largedam))
     for tick, label in zip(pos3, ax3.get_xticklabels()):
-        ax3.text(pos3[tick], medians_largedam[tick] + 0.02, median_labels_largedam[tick],
+        ax3.text(pos3[tick], medians_largedam[tick] + median_loc, median_labels_largedam[tick],
                  horizontalalignment='center', size='x-small', weight='semibold')
-    sns.despine()
+    # sns.despine()
     plt.tight_layout()
-    plt.savefig(os.path.join(conus_config_data.data_path["Out"], '3exps_data_synergy.png'), dpi=500,
+    plt.savefig(os.path.join(conus_config_data.data_path["Out"], '3exps_data_synergy.png'), dpi=300,
                 bbox_inches="tight")
 
 elif compare_item == 1:  # ecdf
@@ -291,7 +294,7 @@ elif compare_item == 1:  # ecdf
     inds_df_pair3 = load_ensemble_result(pair3_exps, test_epoch)
     inds_df_conus = load_ensemble_result(conus_exps, test_epoch)
 
-    fig = plt.figure(figsize=(12, 3))
+    fig = plt.figure(figsize=(12, 4))
     gs = gridspec.GridSpec(1, 3)
     keys_nse = "NSE"
 

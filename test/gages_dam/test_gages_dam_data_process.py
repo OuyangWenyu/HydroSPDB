@@ -22,8 +22,8 @@ class MyTestCase(unittest.TestCase):
         config_dir = definitions.CONFIG_DIR
         self.config_file = os.path.join(config_dir, "dam/config_exp10.ini")
         self.subdir = r"dam/exp10"
-        # self.config_file = os.path.join(config_dir, "basic/config_exp18.ini")
-        # self.subdir = r"basic/exp18"
+        # self.config_file = os.path.join(config_dir, "dam/config_exp15.ini")
+        # self.subdir = r"dam/exp15"
         self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
 
         # self.nid_file = 'PA_U.xlsx'
@@ -44,14 +44,16 @@ class MyTestCase(unittest.TestCase):
                                        t_s_dict_file_name='dictTimeSpace.json')
         # nid_input = NidModel()
         nid_input = NidModel(self.nid_file)
-        nid_dir = os.path.join("/".join(self.config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
+        # nid_dir = os.path.join("/".join(self.config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
+        nid_dir = os.path.join("/".join(self.config_data.data_path["DB"].split("/")[:-1]), "nid", "test")
         save_nidinput(nid_input, nid_dir, nid_source_file_name='nid_source.txt', nid_data_file_name='nid_data.shp')
         data_input = GagesDamDataModel(df, nid_input, care_1purpose=True)
         serialize_json(data_input.gage_main_dam_purpose, os.path.join(nid_dir, "dam_main_purpose_dict.json"))
 
     def test_gages_dam_all_save(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
+        # data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
+        data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         data_model_train = GagesModel.load_datamodel(data_dir,
                                                      data_source_file_name='data_source.txt',
                                                      stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -89,7 +91,7 @@ class MyTestCase(unittest.TestCase):
         """just test for one purpose as a case"""
         with torch.cuda.device(2):
             quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-            data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
+            data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
             df = GagesModel.load_datamodel(data_dir,
                                            data_source_file_name='data_source.txt',
                                            stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -108,7 +110,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_dam_test(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        data_dir = os.path.join(quick_data_dir, "allnonref_85-05_nan-0.1_00-1.0")
+        data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         data_model_train = GagesModel.load_datamodel(data_dir,
                                                      data_source_file_name='data_source.txt',
                                                      stat_file_name='Statistics.json', flow_file_name='flow.npy',

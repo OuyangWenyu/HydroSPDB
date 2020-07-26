@@ -15,7 +15,7 @@ sys.path.append("../..")
 import definitions
 from data import GagesConfig, GagesSource
 from data.data_input import GagesModel, _basin_norm, save_result, save_datamodel
-from data.gages_input_dataset import GagesModels
+import pandas as pd
 from hydroDL import master_train, master_test
 import numpy as np
 from sklearn.model_selection import KFold
@@ -68,8 +68,17 @@ def pub_lstm(args):
                                                     var_dict_file_name='test_dictAttribute.json',
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
         conus_sites_id = data_model_train.t_s_dict["sites_id"]
+        if pub_plan == 0:
+            camels531_gageid_file = os.path.join(config_data.data_path["DB"], "camels531", "CAMELS531.txt")
+            gauge_df = pd.read_csv(camels531_gageid_file, dtype={"GaugeID": str})
+            gauge_list = gauge_df["GaugeID"].values
+            all_sites_camels_531 = np.sort([str(gauge).zfill(8) for gauge in gauge_list])
 
-        if pub_plan == 1:
+            sites_id_train = np.intersect1d(conus_sites_id, all_sites_camels_531)
+            # basins without dams
+            sites_id_test = [a_temp_site for a_temp_site in conus_sites_id if a_temp_site not in all_sites_camels_531]
+            assert (all(x < y for x, y in zip(sites_id_test, sites_id_test[1:])))
+        elif pub_plan == 1:
             source_data_dor1 = GagesSource.choose_some_basins(config_data,
                                                               config_data.model_dict["data"]["tRangeTrain"],
                                                               screen_basin_area_huc4=False,
@@ -135,7 +144,8 @@ def pub_lstm(args):
 
         if plus == 0:
             all_index_lst_train_1 = []
-            sites_lst_train_1 = []
+            # all sites come from train1 dataset
+            sites_lst_train = []
             all_index_lst_test_1 = []
             sites_lst_test_1 = []
             all_index_lst_test_2 = []
@@ -154,7 +164,7 @@ def pub_lstm(args):
                     continue
                 for train, test in kf.split(train_sites_id_inter):
                     all_index_lst_train_1.append(train)
-                    sites_lst_train_1.append(train_sites_id_inter[train])
+                    sites_lst_train.append(train_sites_id_inter[train])
                     all_index_lst_test_1.append(test)
                     sites_lst_test_1.append(train_sites_id_inter[test])
                     if test_sites_id_inter.size < test.size:
@@ -165,47 +175,7 @@ def pub_lstm(args):
                         all_index_lst_test_2.append(test2_chosen_idx)
                         sites_lst_test_2.append(test_sites_id_inter[test2_chosen_idx])
                 eco_name_chosen.append(eco_name)
-            for i in range(split_num):
-                sites_ids_train_ilst = [sites_lst_train_1[j] for j in range(len(sites_lst_train_1)) if
-                                        j % split_num == i]
-                sites_ids_train_i = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_train_ilst))
-                sites_ids_test_ilst_1 = [sites_lst_test_1[j] for j in range(len(sites_lst_test_1)) if
-                                         j % split_num == i]
-                sites_ids_test_i_1 = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_test_ilst_1))
-                sites_ids_test_ilst_2 = [sites_lst_test_2[j] for j in range(len(sites_lst_test_2)) if
-                                         j % split_num == i]
-                sites_ids_test_i_2 = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_test_ilst_2))
-                subdir_i = os.path.join(subdir, str(i))
-                config_data_i = GagesConfig.set_subdir(config_file, subdir_i)
-                gages_model_train_i = GagesModel.update_data_model(config_data_i, data_model_train,
-                                                                   sites_id_update=sites_ids_train_i,
-                                                                   data_attr_update=True, screen_basin_area_huc4=False)
-                gages_model_test_i_1 = GagesModel.update_data_model(config_data_i, data_model_test,
-                                                                    sites_id_update=sites_ids_test_i_1,
-                                                                    data_attr_update=True,
-                                                                    train_stat_dict=gages_model_train_i.stat_dict,
-                                                                    screen_basin_area_huc4=False)
-                gages_model_test_i_2 = GagesModel.update_data_model(config_data_i, data_model_test,
-                                                                    sites_id_update=sites_ids_test_i_2,
-                                                                    data_attr_update=True,
-                                                                    train_stat_dict=gages_model_train_i.stat_dict,
-                                                                    screen_basin_area_huc4=False)
-                save_datamodel(gages_model_train_i, data_source_file_name='data_source.txt',
-                               stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
-                               attr_file_name='attr', f_dict_file_name='dictFactorize.json',
-                               var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
-                save_datamodel(gages_model_test_i_1, data_source_file_name='test_data_source.txt',
-                               stat_file_name='test_Statistics.json', flow_file_name='test_flow',
-                               forcing_file_name='test_forcing', attr_file_name='test_attr',
-                               f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
-                               t_s_dict_file_name='test_dictTimeSpace.json')
-                save_datamodel(gages_model_test_i_2, data_source_file_name='test_data_source_2.txt',
-                               stat_file_name='test_Statistics_2.json', flow_file_name='test_flow_2',
-                               forcing_file_name='test_forcing_2', attr_file_name='test_attr_2',
-                               f_dict_file_name='test_dictFactorize_2.json',
-                               var_dict_file_name='test_dictAttribute_2.json',
-                               t_s_dict_file_name='test_dictTimeSpace_2.json')
-                print("save ecoregion " + str(i) + " data model")
+
         else:
             sites_lst_train = []
             sites_lst_test_1 = []
@@ -249,46 +219,59 @@ def pub_lstm(args):
                         sites_lst_train.append(np.sort(np.append(sites_lst_train_1, sites_lst_train_2)))
 
                 eco_name_chosen.append(eco_name)
-            for i in range(split_num):
-                sites_ids_train_ilst = [sites_lst_train[j] for j in range(len(sites_lst_train)) if j % split_num == i]
-                sites_ids_train_i = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_train_ilst))
-                sites_ids_test_ilst_1 = [sites_lst_test_1[j] for j in range(len(sites_lst_test_1)) if
-                                         j % split_num == i]
-                sites_ids_test_i_1 = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_test_ilst_1))
-                sites_ids_test_ilst_2 = [sites_lst_test_2[j] for j in range(len(sites_lst_test_2))
-                                         if j % split_num == i]
-                sites_ids_test_i_2 = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_test_ilst_2))
-                subdir_i = os.path.join(subdir, str(i))
-                config_data_i = GagesConfig.set_subdir(config_file, subdir_i)
-                gages_model_train_i = GagesModel.update_data_model(config_data_i, data_model_train,
-                                                                   sites_id_update=sites_ids_train_i,
-                                                                   data_attr_update=True, screen_basin_area_huc4=False)
-                gages_model_test_i_1 = GagesModel.update_data_model(config_data_i, data_model_test,
-                                                                    sites_id_update=sites_ids_test_i_1,
-                                                                    data_attr_update=True,
-                                                                    train_stat_dict=gages_model_train_i.stat_dict,
-                                                                    screen_basin_area_huc4=False)
-                gages_model_test_i_2 = GagesModel.update_data_model(config_data_i, data_model_test,
-                                                                    sites_id_update=sites_ids_test_i_2,
-                                                                    data_attr_update=True,
-                                                                    train_stat_dict=gages_model_train_i.stat_dict,
-                                                                    screen_basin_area_huc4=False)
-                save_datamodel(gages_model_train_i, data_source_file_name='data_source.txt',
-                               stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
-                               attr_file_name='attr', f_dict_file_name='dictFactorize.json',
-                               var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
-                save_datamodel(gages_model_test_i_1, data_source_file_name='test_data_source.txt',
-                               stat_file_name='test_Statistics.json', flow_file_name='test_flow',
-                               forcing_file_name='test_forcing', attr_file_name='test_attr',
-                               f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
-                               t_s_dict_file_name='test_dictTimeSpace.json')
-                save_datamodel(gages_model_test_i_2, data_source_file_name='test_data_source_2.txt',
-                               stat_file_name='test_Statistics_2.json', flow_file_name='test_flow_2',
-                               forcing_file_name='test_forcing_2', attr_file_name='test_attr_2',
-                               f_dict_file_name='test_dictFactorize_2.json',
-                               var_dict_file_name='test_dictAttribute_2.json',
-                               t_s_dict_file_name='test_dictTimeSpace_2.json')
-                print("save ecoregion " + str(i) + " data model")
+        for i in range(split_num):
+            sites_ids_train_ilst = [sites_lst_train[j] for j in range(len(sites_lst_train)) if
+                                    j % split_num == i]
+            sites_ids_train_i = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_train_ilst))
+            sites_ids_test_ilst_1 = [sites_lst_test_1[j] for j in range(len(sites_lst_test_1)) if
+                                     j % split_num == i]
+            sites_ids_test_i_1 = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_test_ilst_1))
+            sites_ids_test_ilst_2 = [sites_lst_test_2[j] for j in range(len(sites_lst_test_2)) if
+                                     j % split_num == i]
+            sites_ids_test_i_2 = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_test_ilst_2))
+
+            subdir_i = os.path.join(subdir, str(i))
+            config_data_i = GagesConfig.set_subdir(config_file, subdir_i)
+            gages_model_train_i = GagesModel.update_data_model(config_data_i, data_model_train,
+                                                               sites_id_update=sites_ids_train_i,
+                                                               data_attr_update=True, screen_basin_area_huc4=False)
+            gages_model_test_baseline_i = GagesModel.update_data_model(config_data_i, data_model_test,
+                                                                       sites_id_update=sites_ids_train_i,
+                                                                       data_attr_update=True,
+                                                                       train_stat_dict=gages_model_train_i.stat_dict,
+                                                                       screen_basin_area_huc4=False)
+            gages_model_test_i_1 = GagesModel.update_data_model(config_data_i, data_model_test,
+                                                                sites_id_update=sites_ids_test_i_1,
+                                                                data_attr_update=True,
+                                                                train_stat_dict=gages_model_train_i.stat_dict,
+                                                                screen_basin_area_huc4=False)
+            gages_model_test_i_2 = GagesModel.update_data_model(config_data_i, data_model_test,
+                                                                sites_id_update=sites_ids_test_i_2,
+                                                                data_attr_update=True,
+                                                                train_stat_dict=gages_model_train_i.stat_dict,
+                                                                screen_basin_area_huc4=False)
+            save_datamodel(gages_model_train_i, data_source_file_name='data_source.txt',
+                           stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
+                           attr_file_name='attr', f_dict_file_name='dictFactorize.json',
+                           var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
+            save_datamodel(gages_model_test_baseline_i, data_source_file_name='test_data_source_base.txt',
+                           stat_file_name='test_Statistics_base.json', flow_file_name='test_flow_base',
+                           forcing_file_name='test_forcing_base', attr_file_name='test_attr_base',
+                           f_dict_file_name='test_dictFactorize_base.json',
+                           var_dict_file_name='test_dictAttribute_base.json',
+                           t_s_dict_file_name='test_dictTimeSpace_base.json')
+            save_datamodel(gages_model_test_i_1, data_source_file_name='test_data_source.txt',
+                           stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+                           forcing_file_name='test_forcing', attr_file_name='test_attr',
+                           f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+                           t_s_dict_file_name='test_dictTimeSpace.json')
+            save_datamodel(gages_model_test_i_2, data_source_file_name='test_data_source_2.txt',
+                           stat_file_name='test_Statistics_2.json', flow_file_name='test_flow_2',
+                           forcing_file_name='test_forcing_2', attr_file_name='test_attr_2',
+                           f_dict_file_name='test_dictFactorize_2.json',
+                           var_dict_file_name='test_dictAttribute_2.json',
+                           t_s_dict_file_name='test_dictTimeSpace_2.json')
+            print("save ecoregion " + str(i) + " data model")
     with torch.cuda.device(gpu_num):
         if train_mode:
             for i in range(split_num):
@@ -301,6 +284,15 @@ def pub_lstm(args):
                                                        t_s_dict_file_name='dictTimeSpace.json')
                 master_train(data_model, random_seed=random_seed)
         for i in range(split_num):
+            data_model_baseline = GagesModel.load_datamodel(config_data.data_path["Temp"], str(i),
+                                                            data_source_file_name='test_data_source_base.txt',
+                                                            stat_file_name='test_Statistics_base.json',
+                                                            flow_file_name='test_flow_base.npy',
+                                                            forcing_file_name='test_forcing_base.npy',
+                                                            attr_file_name='test_attr_base.npy',
+                                                            f_dict_file_name='test_dictFactorize_base.json',
+                                                            var_dict_file_name='test_dictAttribute_base.json',
+                                                            t_s_dict_file_name='test_dictTimeSpace_base.json')
             data_model = GagesModel.load_datamodel(config_data.data_path["Temp"], str(i),
                                                    data_source_file_name='test_data_source.txt',
                                                    stat_file_name='test_Statistics.json',
@@ -318,6 +310,17 @@ def pub_lstm(args):
                                                      f_dict_file_name='test_dictFactorize_2.json',
                                                      var_dict_file_name='test_dictAttribute_2.json',
                                                      t_s_dict_file_name='test_dictTimeSpace_2.json')
+            pred_baseline, obs_baseline = master_test(data_model_baseline, epoch=test_epoch, save_file_suffix="base")
+            basin_area_baseline = data_model_baseline.data_source.read_attr(data_model_baseline.t_s_dict["sites_id"],
+                                                                            ['DRAIN_SQKM'], is_return_dict=False)
+            mean_prep_baseline = data_model_baseline.data_source.read_attr(data_model_baseline.t_s_dict["sites_id"],
+                                                                           ['PPTAVG_BASIN'], is_return_dict=False)
+            mean_prep_baseline = mean_prep_baseline / 365 * 10
+            pred_baseline = _basin_norm(pred_baseline, basin_area_baseline, mean_prep_baseline, to_norm=False)
+            obs_baseline = _basin_norm(obs_baseline, basin_area_baseline, mean_prep_baseline, to_norm=False)
+            save_result(data_model_baseline.data_source.data_config.data_path['Temp'], test_epoch, pred_baseline,
+                        obs_baseline, pred_name='flow_pred_base', obs_name='flow_obs_base')
+
             pred, obs = master_test(data_model, epoch=test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)
@@ -344,10 +347,10 @@ def cmd():
     """input args from cmd"""
     parser = argparse.ArgumentParser(description='Train the CONUS model')
     parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file',
-                        default="ecoregion/config_exp1.ini", type=str)
+                        default="ecoregion/config_exp4.ini", type=str)
     parser.add_argument('--ctx', dest='ctx',
                         help='Running Context -- gpu num. E.g `--ctx 0` means run code in the context of gpu 0',
-                        type=int, default=1)
+                        type=int, default=0)
     parser.add_argument('--rs', dest='rs', help='random seed', default=1234, type=int)
     parser.add_argument('--te', dest='te', help='test epoch', default=300, type=int)
     parser.add_argument('--train_mode', dest='train_mode', help='train or test',
@@ -356,8 +359,8 @@ def cmd():
     parser.add_argument('--plus', dest='plus', help='Do training dataset contain data from both A and B?',
                         default=0, type=int)
     parser.add_argument('--pub_plan', dest='pub_plan',
-                        help='3 plans: 0-no dam->small dor;1:no dam->large dor;2:small_dor->large_dor', default=1,
-                        type=int)
+                        help='4 plans:0-camels->non-camels 1-no dam->small dor;2:no dam->large dor;3:small_dor->large_dor',
+                        default=0, type=int)
     args = parser.parse_args()
     if args.cfg_file is not None:
         cfg.EXP = args.cfg_file
@@ -384,6 +387,8 @@ def cmd():
 # python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp7.ini --ctx 0 --pub_plan 3 --plus 1 --rs 1234 --te 300 --train_mode True
 # python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp2.ini --ctx 2 --pub_plan 2 --plus 0 --rs 1234 --te 300 --train_mode True
 # python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp5.ini --ctx 0 --pub_plan 2 --plus 1 --rs 1234 --te 300 --train_mode True
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp4.ini --ctx 1 --pub_plan 0 --plus 0 --rs 1234 --te 300 --train_mode True
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp8.ini --ctx 1 --pub_plan 0 --plus 1 --rs 1234 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

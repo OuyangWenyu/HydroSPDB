@@ -9,7 +9,7 @@ from explore.gages_stat import split_results_to_regions
 from explore.stat import statError
 from utils import unserialize_json
 from utils.dataset_format import subset_of_dict
-from utils.hydro_math import pair_comb
+from utils.hydro_math import pair_comb, is_any_elem_in_a_lst
 from visual.plot_model import plot_gages_map_and_ts, plot_gages_attrs_boxes, plot_scatter_multi_attrs
 from visual.plot_stat import plot_diff_boxes, plot_scatter_xyc, plot_boxs, swarmplot_with_cbar
 from matplotlib import pyplot
@@ -35,7 +35,6 @@ class TestExploreCase(unittest.TestCase):
                                                     f_dict_file_name='test_dictFactorize.json',
                                                     var_dict_file_name='test_dictAttribute.json',
                                                     t_s_dict_file_name='test_dictTimeSpace.json')
-
 
         attrBasin = ['ELEV_MEAN_M_BASIN', 'SLOPE_PCT', 'DRAIN_SQKM']
         attrLandcover = ['FORESTNLCD06', 'BARRENNLCD06', 'DECIDNLCD06', 'EVERGRNLCD06', 'MIXEDFORNLCD06', 'SHRUBNLCD06',
@@ -380,6 +379,103 @@ class TestExploreCase(unittest.TestCase):
         swarmplot_with_cbar(cmap_str, cbar_label, [-1, 1.0], x=x_name, y=y_name, hue=hue_name, palette=cmap_str,
                             data=result)
         # swarmplot_with_cbar(cmap_str, cbar_label, None, x=x_name, y=y_name, hue=hue_name, palette=cmap_str, data=result)
+
+    def test_3factors(self):
+        data_model = self.data_model
+        config_data = self.config_data
+        test_epoch = self.test_epoch
+        # plot three factors
+        attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
+        usgs_id = data_model.t_s_dict["sites_id"]
+        attrs_runavg_stor = data_model.data_source.read_attr(usgs_id, attr_lst, is_return_dict=False)
+        run_avg = attrs_runavg_stor[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
+        nor_storage = attrs_runavg_stor[:, 1] * 1000  # m^3
+        dors_value = nor_storage / run_avg
+        dors = np.full(len(usgs_id), "dor<0.02")
+        for i in range(len(usgs_id)):
+            if dors_value[i] >= 0.02:
+                dors[i] = "dor≥0.02"
+
+        diversions = np.full(len(usgs_id), "no ")
+        diversion_strs = ["diversion", "divert"]
+        attr_lst = ["WR_REPORT_REMARKS", "SCREENING_COMMENTS"]
+        data_attr = data_model.data_source.read_attr_origin(usgs_id, attr_lst)
+        diversion_strs_lower = [elem.lower() for elem in diversion_strs]
+        data_attr0_lower = np.array([elem.lower() if type(elem) == str else elem for elem in data_attr[0]])
+        data_attr1_lower = np.array([elem.lower() if type(elem) == str else elem for elem in data_attr[1]])
+        data_attr_lower = np.vstack((data_attr0_lower, data_attr1_lower)).T
+        for i in range(len(usgs_id)):
+            if is_any_elem_in_a_lst(diversion_strs_lower, data_attr_lower[i], include=True):
+                diversions[i] = "yes"
+
+        nid_dir = os.path.join("/".join(config_data.data_path["DB"].split("/")[:-1]), "nid", "test")
+        gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
+        gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())
+        gage_main_dam_purpose_lst_merge = "".join(gage_main_dam_purpose_lst)
+        gage_main_dam_purpose_unique = np.unique(list(gage_main_dam_purpose_lst_merge))
+        # gage_main_dam_purpose_unique = np.unique(gage_main_dam_purpose_lst)
+        purpose_regions = {}
+        for i in range(gage_main_dam_purpose_unique.size):
+            sites_id = []
+            for key, value in gage_main_dam_purpose.items():
+                if gage_main_dam_purpose_unique[i] in value:
+                    sites_id.append(key)
+            assert (all(x < y for x, y in zip(sites_id, sites_id[1:])))
+            purpose_regions[gage_main_dam_purpose_unique[i]] = sites_id
+        id_regions_idx = []
+        id_regions_sites_ids = []
+        regions_name = []
+        show_min_num = 10
+        df_id_region = np.array(data_model.t_s_dict["sites_id"])
+        for key, value in purpose_regions.items():
+            gages_id = value
+            c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+            if c.size < show_min_num:
+                continue
+            assert (all(x < y for x, y in zip(ind1, ind1[1:])))
+            assert (all(x < y for x, y in zip(c, c[1:])))
+            id_regions_idx.append(ind1)
+            id_regions_sites_ids.append(c)
+            regions_name.append(key)
+        preds, obss, inds_dfs = split_results_to_regions(data_model, test_epoch, id_regions_idx,
+                                                         id_regions_sites_ids)
+        frames = []
+        x_name = "purposes"
+        y_name = "NSE"
+        hue_name = "DOR"
+        col_name = "diversion"
+        for i in range(len(id_regions_idx)):
+            # plot box，使用seaborn库
+            keys = ["NSE"]
+            inds_test = subset_of_dict(inds_dfs[i], keys)
+            inds_test = inds_test[keys[0]].values
+            df_dict_i = {}
+            str_i = regions_name[i]
+            df_dict_i[x_name] = np.full([inds_test.size], str_i)
+            df_dict_i[y_name] = inds_test
+            df_dict_i[hue_name] = dors[id_regions_idx[i]]
+            df_dict_i[col_name] = diversions[id_regions_idx[i]]
+            # df_dict_i[hue_name] = nor_storage[id_regions_idx[i]]
+            df_i = pd.DataFrame(df_dict_i)
+            frames.append(df_i)
+        result = pd.concat(frames)
+        plot_boxs(result, x_name, y_name, ylim=[0, 1.0])
+        plt.savefig(os.path.join(config_data.data_path["Out"], 'purpose_distribution.png'), dpi=500,
+                    bbox_inches="tight")
+        # g = sns.catplot(x=x_name, y=y_name, hue=hue_name, col=col_name,
+        #                 data=result, kind="swarm",
+        #                 height=4, aspect=.7)
+        sns.set(font_scale=1.5)
+        fig, ax = plt.subplots()
+        fig.set_size_inches(11.7, 8.27)
+        g = sns.catplot(ax=ax, x=x_name, y=y_name,
+                        hue=hue_name, col=col_name,
+                        data=result, palette="Set1",
+                        kind="box", dodge=True, showfliers=False)
+        # g.set(ylim=(-1, 1))
+        plt.savefig(os.path.join(config_data.data_path["Out"], '3factors_distribution.png'), dpi=500,
+                    bbox_inches="tight")
+        plt.show()
 
     def test_map_ts_some_criteria(self):
         # plot map ts

@@ -261,6 +261,55 @@ def plot_ecdf(mydataframe, mycolumn, save_file=None):
         plt.savefig(save_file)
 
 
+def plot_ecdfs_matplot(xs, ys, legends=None, colors=None, dash_lines=None, case_str="case", x_str="x", y_str="y",
+                       interval=0.1):
+    """Empirical cumulative distribution function with matplotlib"""
+    assert type(xs) == type(ys) == list
+    assert len(xs) == len(ys)
+    if legends is not None:
+        assert type(legends) == list
+        assert len(ys) == len(legends)
+    if colors is not None:
+        assert type(colors) == list
+        assert len(ys) == len(colors)
+    if dash_lines is not None:
+        assert type(dash_lines) == list
+        assert len(ys) == len(dash_lines)
+    else:
+        dash_lines = np.full(len(xs), False).tolist()
+    for y in ys:
+        assert (all(xi < yi for xi, yi in zip(y, y[1:])))
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+    if colors is None:
+        for i in range(len(xs)):
+            assert (all(xi < yi for xi, yi in zip(xs[i], xs[i][1:])))
+            line_i, = ax.plot(xs[i], ys[i], label=legends[i])
+            if dash_lines[i]:
+                line_i.set_dashes([2, 2, 10, 2])
+    else:
+        for i, color in enumerate(colors):
+            assert (all(xi < yi for xi, yi in zip(xs[i], xs[i][1:])))
+            line_i, = ax.plot(xs[i], ys[i], color=color, label=legends[i])
+            if dash_lines[i]:
+                line_i.set_dashes([2, 2, 10, 2])
+
+    plt.xlabel(x_str, fontsize=18)
+    plt.ylabel(y_str, fontsize=18)
+    ax.legend()
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    # set x y number font size
+    plt.xticks(np.arange(0, 1.01, interval), fontsize=16)
+    plt.yticks(np.arange(0, 1.01, interval), fontsize=16)
+    plt.legend(prop={'size': 16})
+    plt.grid()
+    # Hide the right and top spines
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    return ax
+
+
 def plot_pdf_cdf(mydataframe, mycolumn):
     # settings
     f, axes = plt.subplots(1, 2, figsize=(18, 6), dpi=320)
