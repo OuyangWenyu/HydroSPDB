@@ -68,12 +68,11 @@ attrPopInfrastr = ['PDEN_2000_BLOCK', 'ROADS_KM_SQ_KM', 'IMPNLCD06']
 attrProtAreas = ['PADCAT1_PCT_BASIN', 'PADCAT2_PCT_BASIN']
 __C.GAGES.varC = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams
 
-# gages data path
-gages_data_paths = [os.path.join(__C.DATA_PATH, )]
 # region文件夹
 gage_region_dir = os.path.join(__C.DATA_PATH, 'boundaries_shapefiles_by_aggeco', 'boundaries-shapefiles-by-aggeco')
 # 站点的point文件文件夹
-gagesii_points_file = os.path.join(__C.DATA_PATH, "gagesII_9322_point_shapefile", "gagesII_9322_sept30_2011.shp")
+gagesii_points_dir = os.path.join(__C.DATA_PATH, "gagesII_9322_point_shapefile")
+gagesii_points_file = os.path.join(gagesii_points_dir, "gagesII_9322_sept30_2011.shp")
 # 调用download_kaggle_file从kaggle上下载,
 huc4_shp_dir = os.path.join(__C.DATA_PATH, "huc4")
 huc4_shp_file = os.path.join(huc4_shp_dir, "HUC4.shp")
@@ -91,15 +90,18 @@ population_file = os.path.join(gagests_dir, "Dataset8_Population-Housing", "Data
                                "PopulationHousing.txt")
 wateruse_file = os.path.join(gagests_dir, "Dataset10_WaterUse", "Dataset10_WaterUse", "WaterUse_1985-2010.txt")
 
+# gages data download path
+gages_download_paths = [gagests_dir, __C.GAGES.attrDir, gage_region_dir, gagesii_points_dir, huc4_shp_dir,
+                        __C.GAGES.streamflowDir, __C.GAGES.forcingDir]
 # Search for the initial data
 find_gages_data_path = False
-for ele in gages_data_paths:
+for ele in gages_download_paths:
     if os.path.exists(ele):
         find_gages_data_path = True
-        __C.HKO_PNG_PATH = ele
         break
 if not find_gages_data_path:
-    raise RuntimeError("Initial database is not found! You can download the data using `bash download_gages.bash`")
+    raise RuntimeError(
+        "Initial database is not found! To download the data, please connect with hust2014owen@gmail.com")
 
 __C.MODEL.tRangeTrain = ['1995-01-01', '1997-01-01']
 __C.MODEL.tRangeTest = ['1997-01-01', '1999-01-01']
