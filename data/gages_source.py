@@ -283,116 +283,6 @@ class GagesSource(DataSource):
                 out[s] = data_all[s].values
         return out, gage_fld_lst
 
-    def prepare_forcing_data(self):
-        """如果没有给url或者查到没有数据，就只能报错了，提示需要手动下载. 可以使用google drive下载数据"""
-        url_forcing = self.all_configs.get("forcing_url")
-        if url_forcing is None:
-            # 个人定义的：google drive上的forcing数据文件夹名和forcing类型一样的
-            dir_name = self.all_configs.get("forcing_type")
-            download_dir_name = os.path.join(self.all_configs.get("root_dir"), "gagesII_forcing",
-                                             self.all_configs.get("forcing_type"))
-            formatter_dir_name = self.all_configs.get("forcing_dir")
-            is_format = False
-            if download_dir_name != formatter_dir_name:
-                if not os.path.isdir(formatter_dir_name):
-                    os.mkdir(formatter_dir_name)
-                # if formatter data has existed, that is ok
-                gage_id_file = self.all_configs.get("gage_id_file")
-                data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
-                gage_ids = data_all["STAID"].values
-                files_lst = []
-                for root, dirs, files in os.walk(formatter_dir_name):
-                    files_lst = files_lst + files
-                file_sites_id_lst = []
-                for file_tmp in files_lst:
-                    file_sites_id_lst.append(str(file_tmp.split("_")[0]))
-                file_sites_id = np.sort(np.array(file_sites_id_lst))
-                if (gage_ids == file_sites_id).all():
-                    print("forcing data Ready!")
-                    is_format = True
-            if not is_format:
-                if not os.path.isdir(download_dir_name):
-                    os.mkdir(download_dir_name)
-                # 如果已经有了数据，那么就不必再下载了
-                regions = self.all_configs["regions"]
-                regions_shps = [r.split('_')[-1] for r in regions]
-                # forcing data file generated is named as "allref", so rename the "all"
-                regions_shps = ["allref" if r == "all" else r for r in regions_shps]
-                year_range_list = hydro_time.t_range_years(self.t_range)
-                # 如果有某个文件没有，那么就下载数据
-                shp_files_now = []
-                for f_name in os.listdir(download_dir_name):
-                    if f_name.endswith('.csv'):
-                        shp_files_now.append(f_name)
-                is_download = False
-                for r_shp in regions_shps:
-                    r_files = [dir_name + "_" + r_shp + "_mean_" + str(t_range_temp) + ".csv" for t_range_temp in
-                               year_range_list]
-                    r_file_is_download = []
-                    for r_file_temp in r_files:
-                        if r_file_temp not in shp_files_now:
-                            is_download_temp = True
-                            r_file_is_download.append(is_download_temp)
-                    if True in r_file_is_download:
-                        is_download = True
-                        break
-
-                if is_download:
-                    # 然后下载数据到这个文件夹下，这里从google drive下载数据
-                    print("Downloading dataset from google drive ...")
-                    # Firstly, move the creds file to the following directory manually
-                    client_secrets_file = os.path.join(self.all_configs["root_dir"], "mycreds.txt")
-                    download_google_drive(client_secrets_file, dir_name, download_dir_name)
-                else:
-                    print("forcing downloading finished")
-
-                if download_dir_name != formatter_dir_name:
-                    # data need to be formatted TODO: manual func temporally
-                    print(
-                        "Please run the function 'test_data_source' and 'test_trans_all_forcing_file_to_camels' in "
-                        "'test_util'")
-                else:
-                    print("forcing data Ready!")
-
-    def prepare_flow_data(self, gage_dict, gage_fld_lst):
-        """检查数据是否齐全，不够的话进行下载，下载数据的时间范围要设置的大一些，这里暂时例子都是以1980-01-01到2015-12-31
-        parameters:
-            gage_dict: read_gage_info返回值--out
-            gage_dict: read_gage_info返回值--gage_fld_lst
-        """
-        dir_gage_flow = self.all_configs.get("flow_dir")
-        streamflow_url = self.all_configs.get("flow_url")
-        t_download_range = self.all_configs.get("t_range_all")
-        if not os.path.isdir(dir_gage_flow):
-            os.mkdir(dir_gage_flow)
-        dir_list = os.listdir(dir_gage_flow)
-        # 区域一共有18个，为了便于后续处理，把属于不同region的站点的文件放到不同的文件夹下面
-        # 判断usgs_id_lst中没有对应径流文件的要从网上下载
-        usgs_id_lst = gage_dict[gage_fld_lst[0]]
-        for ind in range(len(usgs_id_lst)):
-            # different hucs different directories
-            huc_02 = gage_dict[gage_fld_lst[3]][ind]
-            dir_huc_02 = str(huc_02)
-            if dir_huc_02 not in dir_list:
-                dir_huc_02 = os.path.join(dir_gage_flow, str(huc_02))
-                os.mkdir(dir_huc_02)
-                dir_list = os.listdir(dir_gage_flow)
-            dir_huc_02 = os.path.join(dir_gage_flow, str(huc_02))
-            file_list = os.listdir(dir_huc_02)
-            file_usgs_id = str(usgs_id_lst[ind]) + ".txt"
-            if file_usgs_id not in file_list:
-                # 通过直接读取网页的方式获取数据，然后存入txt文件
-                start_time_str = datetime.strptime(t_download_range[0], '%Y-%m-%d')
-                end_time_str = datetime.strptime(t_download_range[1], '%Y-%m-%d') - timedelta(days=1)
-                url = streamflow_url.format(usgs_id_lst[ind], start_time_str.year, start_time_str.month,
-                                            start_time_str.day, end_time_str.year, end_time_str.month, end_time_str.day)
-
-                # 存放的位置是对应HUC02区域的文件夹下
-                temp_file = os.path.join(dir_huc_02, str(usgs_id_lst[ind]) + '.txt')
-                download_small_file(url, temp_file)
-                print("成功写入 " + temp_file + " 径流数据！")
-        print("streamflow data Ready! ...")
-
     def read_usge_gage(self, huc, usgs_id, t_lst):
         """读取各个径流站的径流数据"""
         dir_gage_flow = self.all_configs.get("flow_dir")
@@ -417,10 +307,10 @@ class GagesSource(DataSource):
         columns_flow = []
         columns_flow_cd = []
         for column_name in columns_names:
-            # 00060表示径流值，00003表示均值
-            # 还有一种情况：#        126801       00060     00003     Discharge, cubic feet per second (Mean)和
-            # 126805       00060     00003     Discharge, cubic feet per second (Mean), PUBLISHED 都是均值，但有两套数据，这里暂时取第一套
-            # TODO: first or second, it depends
+            # 00060 means "discharge"，00003 represents "mean value"
+            # one special case： 126801       00060     00003     Discharge, cubic feet per second (Mean) and
+            # 126805       00060     00003     Discharge, cubic feet per second (Mean), PUBLISHED
+            # Both are mean values, here I will choose the column with more records
             if '_00060_00003' in column_name and '_00060_00003_cd' not in column_name:
                 columns_flow.append(column_name)
         for column_name in columns_names:

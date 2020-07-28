@@ -3,7 +3,6 @@ import os
 
 from data.data_config import DataConfig, wrap_master
 from configparser import ConfigParser
-from data.download_data import download_kaggle_file
 
 
 class CamelsConfig(DataConfig):

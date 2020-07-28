@@ -1,10 +1,7 @@
 import os
-import shutil
 import urllib
-import zipfile
 from urllib import parse
 
-import kaggle
 import requests
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -68,44 +65,30 @@ def download_excel(data_url, temp_file):
         urllib.request.urlretrieve(data_url, temp_file)
 
 
-def download_kaggle_file(kaggle_json, name_of_dataset, path_download, file_download):
-    """下载kaggle上的数据，首先要下载好kaggle_json文件。 从kaggle上下载好数据之后，将其解压
-    :parameter
-        kaggle_json：认证文件
-        name_of_dataset：kaggle上的数据文件名称
-        path_download：下载数据到本地的文件夹
-    """
-    # 如果已经有了shp文件，就不需要再下载了
-    if os.path.isfile(file_download):
-        print("Kaggle File is ready!")
-        return
-    home_dir = os.environ['HOME']
-    kaggle_dir = os.path.join(home_dir, '.kaggle')
-    if not os.path.isdir(kaggle_dir):
-        os.mkdir(os.path.join(home_dir, '.kaggle'))
-
-    dst = os.path.join(kaggle_dir, 'kaggle.json')
-    if not os.path.isfile(dst):
-        print("copying file...")
-        if not os.path.isfile(kaggle_json):
-            print("Please downloading your kaggle.json to this directory: ", kaggle_dir)
-        shutil.copy(kaggle_json, dst)
-
-    kaggle.api.authenticate()
-    kaggle.api.dataset_download_files(name_of_dataset, path=path_download)
-
-    # 下载数据之后，解压在指定文件夹，起名为指定名称
-    dataset_zip = name_of_dataset.split("/")[-1] + ".zip"
-    dataset_zip = os.path.join(path_download, dataset_zip)
-    with zipfile.ZipFile(dataset_zip, 'r') as zip_temp:
-        zip_temp.extractall(path_download)
+def download_a_file_from_google_drive(drive, dir_id, download_dir):
+    file_list = drive.ListFile({'q': "'" + dir_id + "' in parents and trashed=false"}).GetList()
+    for file in file_list:
+        print('title: %s, id: %s' % (file['title'], file['id']))
+        file_dl = drive.CreateFile({'id': file['id']})
+        print('mimetype is %s' % file_dl['mimeType'])
+        if file_dl['mimeType'] == 'application/vnd.google-apps.folder':
+            download_dir_sub = os.path.join(download_dir, file_dl['title'])
+            if not os.path.isdir(download_dir_sub):
+                os.makedirs(download_dir_sub)
+            download_a_file_from_google_drive(drive, file_dl['id'], download_dir_sub)
+        else:
+            # download
+            temp_file = os.path.join(download_dir, file_dl['title'])
+            if os.path.isfile(temp_file):
+                print('file has been downloaded')
+                continue
+            file_dl.GetContentFile(os.path.join(download_dir, file_dl['title']))
+            print('Downloading file finished')
 
 
 def download_google_drive(client_secrets_file, google_drive_dir_name, download_dir):
-    """从google drive下载文件，首先要下载好client_secrets.json文件，然后在jupyter里运行下
-    https://github.com/OuyangWenyu/aqualord/blob/master/CloudStor/googledrive.ipynb
-    里的代码，把文件夹下得到的mycreds.txt保存到client_secrets_file，这样就有一个本地的凭证了"""
-    # 根据client_secrets.json授权
+    """mycreds.txt was got by the method in
+    https://github.com/OuyangWenyu/aqualord/blob/master/CloudStor/googledrive.ipynb """
     gauth = GoogleAuth()
     gauth.LoadCredentialsFile(client_secrets_file)
     if gauth.credentials is None:
@@ -120,26 +103,15 @@ def download_google_drive(client_secrets_file, google_drive_dir_name, download_d
     # Save the current credentials to a file
     gauth.SaveCredentialsFile(client_secrets_file)
     drive = GoogleDrive(gauth)
-    # 先从google drive根目录判断是否有dir_name这一文件夹，没有的话就直接报错即可。
+
     dir_id = None
     file_list_root = drive.ListFile({'q': "'root' in parents and trashed=false"}).GetList()
     for file_temp in file_list_root:
         print('title: %s, id: %s' % (file_temp['title'], file_temp['id']))
         if file_temp['title'] == google_drive_dir_name:
             dir_id = str(file_temp['id'])
-            #  列出该文件夹下的文件
-            print('该文件夹的id是：', dir_id)
+            print('the id of the dir is：', dir_id)
     if dir_id is None:
         print("No data....")
     else:
-        # Auto-iterate through all files that matches this query
-        file_list = drive.ListFile({'q': "'" + dir_id + "' in parents and trashed=false"}).GetList()
-        downloaded_files = os.listdir(download_dir)
-        for file in file_list:
-            print('title: %s, id: %s' % (file['title'], file['id']))
-            if file['title'] in downloaded_files:
-                continue
-            file_dl = drive.CreateFile({'id': file['id']})
-            print('Downloading file %s from Google Drive' % file_dl['title'])
-            file_dl.GetContentFile(os.path.join(download_dir, file_dl['title']))
-        print('Downloading files finished')
+        download_a_file_from_google_drive(drive, dir_id, download_dir)

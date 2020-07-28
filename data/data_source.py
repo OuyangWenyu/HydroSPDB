@@ -20,35 +20,14 @@ class DataSource(object):
         self.all_configs = config_data.read_data_config()
         # t_range: 训练数据还是测试数据，需要外部指定
         self.t_range = t_range
-        self.prepare_attr_data()
-        self.prepare_forcing_data()
         gage_dict, gage_fld_lst = self.read_site_info(screen_basin_area_huc4=screen_basin_area_huc4)
-        self.prepare_flow_data(gage_dict, gage_fld_lst)
         # 一些后面常用的变量也在这里赋值到SourceData对象中
         self.gage_dict = gage_dict
         self.gage_fld_lst = gage_fld_lst
 
-    def prepare_attr_data(self):
-        """根据时间读取数据，没有的数据下载"""
-        configs = self.all_configs
-        data_dir = configs.get('root_dir')
-        if not os.path.isdir(data_dir):
-            os.mkdir(data_dir)
-        attr_urls = configs.get('attr_url')
-        [download_one_zip(attr_url, data_dir) for attr_url in attr_urls]
-        print("attribute data Ready! ...")
-
     def read_site_info(self, screen_basin_area_huc4=True):
         """read basic information of sites"""
         print("get infomation of sites...")
-
-    def prepare_forcing_data(self):
-        """DOWNLOAD forcing data from website"""
-        print("forcing data Ready! ...")
-
-    def prepare_flow_data(self, gage_dict, gage_fld_lst):
-        """download streamflow data"""
-        print("streamflow data Ready! ...")
 
     def read_usgs(self):
         """read streamflow data"""

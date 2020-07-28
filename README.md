@@ -25,7 +25,6 @@ and then use conda to install package, for example:
 
 ```Shell
 conda install pytorch==1.2.0 torchvision==0.4.0 cudatoolkit=10.0 -c pytorch
-conda install -c conda-forge kaggle
 conda install -c conda-forge pydrive
 conda install -c conda-forge geopandas
 conda install -c conda-forge netcdf4
@@ -49,7 +48,7 @@ Finally, generate environment.yml file by conda:
 conda env export > environment.yml
 ```
 
-## workflow
+## Workflow
 
 References:
 
@@ -72,3 +71,7 @@ Directories:
 - "refine" was not used yet. It would be used for optimization of hyper-param
 - All test scripts were written with Unittest framework, and in "test" dir
 - Visualization in "visual" dir
+
+## Usage
+
+At first, please make sure that you have all input data. If you don't have, please connect with me: hust2014owen@gmail.com
