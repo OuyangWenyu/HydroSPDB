@@ -1,6 +1,7 @@
 """一个处理数据的模板方法"""
 import copy
 import os
+import shutil
 from collections import OrderedDict
 
 import numpy as np
@@ -58,6 +59,38 @@ def save_datamodel(data_model, num_str=None, **kwargs):
     serialize_json(data_model.f_dict, f_dict_file)
     serialize_json(data_model.var_dict, var_dict_file)
     serialize_json(data_model.t_s_dict, t_s_dict_file)
+
+
+def save_quick_data(data_model, destination, **kwargs):
+    save_datamodel(data_model, **kwargs)
+    dir_temp = data_model.data_source.data_config.data_path["Temp"]
+    data_source_file = os.path.join(dir_temp, kwargs['data_source_file_name'])
+    stat_file = os.path.join(dir_temp, kwargs['stat_file_name'])
+    flow_file = os.path.join(dir_temp, kwargs['flow_file_name'] + ".npy")
+    forcing_file = os.path.join(dir_temp, kwargs['forcing_file_name'] + ".npy")
+    attr_file = os.path.join(dir_temp, kwargs['attr_file_name'] + ".npy")
+    f_dict_file = os.path.join(dir_temp, kwargs['f_dict_file_name'])
+    var_dict_file = os.path.join(dir_temp, kwargs['var_dict_file_name'])
+    t_s_dict_file = os.path.join(dir_temp, kwargs['t_s_dict_file_name'])
+
+    destination_data_source_file = os.path.join(destination, kwargs['data_source_file_name'])
+    destination_stat_file = os.path.join(destination, kwargs['stat_file_name'])
+    destination_flow_file = os.path.join(destination, kwargs['flow_file_name'] + ".npy")
+    destination_forcing_file = os.path.join(destination, kwargs['forcing_file_name'] + ".npy")
+    destination_attr_file = os.path.join(destination, kwargs['attr_file_name'] + ".npy")
+    destination_f_dict_file = os.path.join(destination, kwargs['f_dict_file_name'])
+    destination_var_dict_file = os.path.join(destination, kwargs['var_dict_file_name'])
+    destination_t_s_dict_file = os.path.join(destination, kwargs['t_s_dict_file_name'])
+
+    dest1 = shutil.move(data_source_file, destination_data_source_file)
+    dest2 = shutil.move(stat_file, destination_stat_file)
+    dest3 = shutil.move(flow_file, destination_flow_file)
+    dest4 = shutil.move(forcing_file, destination_forcing_file)
+    dest5 = shutil.move(attr_file, destination_attr_file)
+    dest6 = shutil.move(f_dict_file, destination_f_dict_file)
+    dest7 = shutil.move(var_dict_file, destination_var_dict_file)
+    dest8 = shutil.move(t_s_dict_file, destination_t_s_dict_file)
+    print("save quick data")
 
 
 class DataModel(object):

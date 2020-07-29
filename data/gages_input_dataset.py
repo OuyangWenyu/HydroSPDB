@@ -167,6 +167,43 @@ def load_datamodel_case_exp(case_exp):
     return data_model_i
 
 
+def generate_gages_models(config_data, data_dir, screen_basin_area_huc4=False, **kwargs):
+    source_data = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTrain"],
+                                                 screen_basin_area_huc4=screen_basin_area_huc4, **kwargs)
+    sites_id = source_data.all_configs['flow_screen_gage_id']
+    data_model_train = GagesModel.load_datamodel(data_dir,
+                                                 data_source_file_name='data_source.txt',
+                                                 stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                                 forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                                 f_dict_file_name='dictFactorize.json',
+                                                 var_dict_file_name='dictAttribute.json',
+                                                 t_s_dict_file_name='dictTimeSpace.json')
+    data_model_test = GagesModel.load_datamodel(data_dir,
+                                                data_source_file_name='test_data_source.txt',
+                                                stat_file_name='test_Statistics.json',
+                                                flow_file_name='test_flow.npy',
+                                                forcing_file_name='test_forcing.npy',
+                                                attr_file_name='test_attr.npy',
+                                                f_dict_file_name='test_dictFactorize.json',
+                                                var_dict_file_name='test_dictAttribute.json',
+                                                t_s_dict_file_name='test_dictTimeSpace.json')
+    if sites_id is None:
+        gages_model_train = GagesModel.update_data_model(config_data, data_model_train,
+                                                         screen_basin_area_huc4=False)
+        gages_model_test = GagesModel.update_data_model(config_data, data_model_test,
+                                                        train_stat_dict=gages_model_train.stat_dict,
+                                                        screen_basin_area_huc4=False)
+    else:
+        gages_model_train = GagesModel.update_data_model(config_data, data_model_train,
+                                                         sites_id_update=sites_id,
+                                                         screen_basin_area_huc4=False)
+        gages_model_test = GagesModel.update_data_model(config_data, data_model_test, sites_id_update=sites_id,
+                                                        train_stat_dict=gages_model_train.stat_dict,
+                                                        screen_basin_area_huc4=False)
+
+    return gages_model_train, gages_model_test
+
+
 class GagesModels(object):
     """the data model for GAGES-II dataset"""
 

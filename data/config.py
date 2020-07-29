@@ -10,27 +10,15 @@ from utils import unzip_nested_zip
 __C = edict()
 cfg = __C  # type: edict()
 
-# Random seed
-__C.SEED = 1234
-
-# Dataset name
-# Used by symbols factories who need to adjust for different
-# inputs based on dataset used. Should be set by the script.
+# ----------------------- First part: mainly for data source  ------------------------
+# This part should NOT be modified, unless you are clear about what you are doing
 __C.DATASET = "gages"
-__C.SUBSET = "basic"
-__C.SUB_EXP = "exp11"
 # Project directory
 __C.ROOT_DIR = os.path.join(definitions.ROOT_DIR, "example")
 
 __C.DATA_PATH = os.path.join(__C.ROOT_DIR, 'data', __C.DATASET)
 if not os.path.exists(__C.DATA_PATH):
     os.makedirs(__C.DATA_PATH)
-__C.TEMP_PATH = os.path.join(__C.ROOT_DIR, 'temp', __C.DATASET, __C.SUBSET, __C.SUB_EXP)
-if not os.path.exists(__C.TEMP_PATH):
-    os.makedirs(__C.TEMP_PATH)
-__C.OUT_PATH = os.path.join(__C.ROOT_DIR, 'output', __C.DATASET, __C.SUBSET, __C.SUB_EXP)
-if not os.path.exists(__C.OUT_PATH):
-    os.makedirs(__C.OUT_PATH)
 
 # data config
 __C.GAGES = edict()
@@ -41,29 +29,15 @@ __C.GAGES.ARE_YOU_OWEN = True
 __C.GAGES.DOWNLOAD_FROM_WEB = False
 
 __C.GAGES.tRangeAll = ['1980-01-01', '2020-01-01']
-__C.GAGES.regions = ['bas_nonref_MxWdShld']
 
 __C.GAGES.forcingDir = os.path.join(__C.DATA_PATH, "basin_mean_forcing", "basin_mean_forcing")
 __C.GAGES.forcingType = "daymet"
 __C.GAGES.forcingDir = os.path.join(__C.GAGES.forcingDir, __C.GAGES.forcingType)
-__C.GAGES.varT = ['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp']
 
 __C.GAGES.streamflowDir = os.path.join(__C.DATA_PATH, "gages_streamflow", "gages_streamflow")
-__C.GAGES.gageIdScreen = None
-__C.GAGES.streamflowScreenParams = {'missing_data_ratio': 0, 'zero_value_ratio': 1}
 __C.GAGES.streamflowUrl = "https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{}"
 
 __C.GAGES.attrDir = os.path.join(__C.DATA_PATH, "basinchar_and_report_sept_2011")
-attrBasin = ['DRAIN_SQKM', 'ELEV_MEAN_M_BASIN', 'SLOPE_PCT']
-attrLandcover = ['DEVNLCD06', 'FORESTNLCD06', 'PLANTNLCD06', 'WATERNLCD06', 'SNOWICENLCD06', 'BARRENNLCD06',
-                 'SHRUBNLCD06', 'GRASSNLCD06', 'WOODYWETNLCD06', 'EMERGWETNLCD06']
-attrSoil = ['AWCAVE', 'PERMAVE', 'RFACT', 'ROCKDEPAVE']
-attrGeol = ['GEOL_REEDBUSH_DOM', 'GEOL_REEDBUSH_DOM_PCT']
-attrHydro = ['STREAMS_KM_SQ_KM']
-attrHydroModDams = ['NDAMS_2009', 'STOR_NOR_2009', 'RAW_DIS_NEAREST_MAJ_DAM']
-attrHydroModOther = ['CANALS_PCT', 'RAW_DIS_NEAREST_CANAL', 'FRESHW_WITHDRAWAL', 'POWER_SUM_MW']
-attrPopInfrastr = ['PDEN_2000_BLOCK', 'ROADS_KM_SQ_KM', 'IMPNLCD06']
-__C.GAGES.varC = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams + attrHydroModOther + attrPopInfrastr
 __C.GAGES.attrUrl = ["https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_2011.zip",
                      "https://water.usgs.gov/GIS/dsdl/gagesII_9322_point_shapefile.zip",
                      "https://water.usgs.gov/GIS/dsdl/boundaries_shapefiles_by_aggeco.zip",
@@ -172,6 +146,43 @@ if not find_gages_data_path:
     else:
         raise RuntimeError("Initial database is not found! Please download the data")
 
+# ----------------------- Second part: some changeable configs------------------------
+# data config
+__C.GAGES.regions = ['bas_nonref_MxWdShld']
+
+__C.GAGES.gageIdScreen = None
+__C.GAGES.streamflowScreenParams = {'missing_data_ratio': 0, 'zero_value_ratio': 1}
+
+attrBasin = ['DRAIN_SQKM', 'ELEV_MEAN_M_BASIN', 'SLOPE_PCT']
+attrLandcover = ['DEVNLCD06', 'FORESTNLCD06', 'PLANTNLCD06', 'WATERNLCD06', 'SNOWICENLCD06', 'BARRENNLCD06',
+                 'SHRUBNLCD06', 'GRASSNLCD06', 'WOODYWETNLCD06', 'EMERGWETNLCD06']
+attrSoil = ['AWCAVE', 'PERMAVE', 'RFACT', 'ROCKDEPAVE']
+attrGeol = ['GEOL_REEDBUSH_DOM', 'GEOL_REEDBUSH_DOM_PCT']
+attrHydro = ['STREAMS_KM_SQ_KM']
+attrHydroModDams = ['NDAMS_2009', 'STOR_NOR_2009', 'RAW_DIS_NEAREST_MAJ_DAM']
+attrHydroModOther = ['CANALS_PCT', 'RAW_DIS_NEAREST_CANAL', 'FRESHW_WITHDRAWAL', 'POWER_SUM_MW']
+attrPopInfrastr = ['PDEN_2000_BLOCK', 'ROADS_KM_SQ_KM', 'IMPNLCD06']
+__C.GAGES.varC = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams + attrHydroModOther + attrPopInfrastr
+
+__C.GAGES.varT = ['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp']
+
+# sub experiment
+__C.SUBSET = "basic"
+__C.SUB_EXP = "exp11"
+__C.TEMP_PATH = os.path.join(__C.ROOT_DIR, 'temp', __C.DATASET, __C.SUBSET, __C.SUB_EXP)
+if not os.path.exists(__C.TEMP_PATH):
+    os.makedirs(__C.TEMP_PATH)
+__C.OUT_PATH = os.path.join(__C.ROOT_DIR, 'output', __C.DATASET, __C.SUBSET, __C.SUB_EXP)
+if not os.path.exists(__C.OUT_PATH):
+    os.makedirs(__C.OUT_PATH)
+
+# computer config
+__C.RANDOM_SEED = 1234
+__C.CTX = 0
+__C.TEST_EPOCH = 300
+__C.TRAIN_MODE = True
+
+# model config
 __C.MODEL = edict()
 __C.MODEL.tRangeTrain = ['1990-01-01', '2000-01-01']
 __C.MODEL.tRangeTest = ['2000-01-01', '2010-01-01']
@@ -179,19 +190,78 @@ __C.MODEL.doNorm = [True, True]
 __C.MODEL.rmNan = [True, False]
 __C.MODEL.daObs = 0
 __C.MODEL.miniBatch = [100, 365]
-__C.MODEL.nEpoch = 20
-__C.MODEL.saveEpoch = 10
+__C.MODEL.nEpoch = 340
+__C.MODEL.saveEpoch = 20
 __C.MODEL.name = "CudnnLstmModel"
 __C.MODEL.hiddenSize = 256
 __C.MODEL.doReLU = True
 __C.MODEL.loss = "RmseLoss"
 __C.MODEL.prior = "gauss"
-__C.MODEL.TEST_EPOCH = 20
 
 # cache data
 __C.CACHE = edict()
+# generate quick data?
+__C.CACHE.GEN_QUICK_DATA = False
 # QUICKDATA means already cache a binary version for the data source
-__C.CACHE.QUICKDATA = False
-__C.CACHE.DATA_DIR = os.path.join(__C.DATA_PATH, "quickdata")
+__C.CACHE.QUICK_DATA = False
+__C.CACHE.QUICK_DATA_DIR = os.path.join(__C.DATA_PATH, "quickdata")
+__C.CACHE.DATA_DIR = os.path.join(__C.CACHE.QUICK_DATA_DIR, "conus-all_90-10_nan-0.0_00-1.0")
 # 1 means, the data model of sub exp will be cached
-__C.CACHE.STATE = 1
+__C.CACHE.STATE = True
+__C.CACHE.HAS = False
+
+
+def update_cfg(cfg_file, new_args):
+    print("update config file")
+    if new_args.sub is not None:
+        subset, subexp = new_args.sub.split("/")
+        cfg_file.SUBSET = subset
+        cfg_file.SUB_EXP = subexp
+        cfg_file.TEMP_PATH = os.path.join(cfg_file.ROOT_DIR, 'temp', cfg_file.DATASET, cfg_file.SUBSET,
+                                          cfg_file.SUB_EXP)
+        if not os.path.exists(cfg_file.TEMP_PATH):
+            os.makedirs(cfg_file.TEMP_PATH)
+        cfg_file.OUT_PATH = os.path.join(cfg_file.ROOT_DIR, 'output', cfg_file.DATASET, cfg_file.SUBSET,
+                                         cfg_file.SUB_EXP)
+        if not os.path.exists(cfg_file.OUT_PATH):
+            os.makedirs(cfg_file.OUT_PATH)
+    if new_args.ctx is not None:
+        cfg_file.CTX = new_args.ctx
+    if new_args.rs is not None:
+        cfg_file.RANDOM_SEED = new_args.rs
+    if new_args.te is not None:
+        cfg_file.TEST_EPOCH = new_args.te
+    if new_args.train_mode is not None:
+        if new_args.train_mode > 0:
+            cfg_file.TRAIN_MODE = True
+        else:
+            cfg_file.TRAIN_MODE = False
+    if new_args.regions is not None:
+        cfg_file.GAGES.regions = new_args.regions
+    if new_args.gage_id is not None:
+        cfg_file.GAGES.gageIdScreen = new_args.gage_id
+    if new_args.flow_screen is not None:
+        cfg_file.GAGES.streamflowScreenParams = new_args.flow_screen
+    if new_args.var_c is not None:
+        cfg_file.GAGES.varC = new_args.var_c
+    if new_args.var_t is not None:
+        cfg_file.GAGES.varT = new_args.var_t
+    if new_args.train_epoch is not None:
+        cfg_file.MODEL.nEpoch = new_args.train_epoch
+    if new_args.save_epoch is not None:
+        cfg_file.MODEL.saveEpoch = new_args.save_epoch
+    if new_args.gen_quick_data is not None:
+        if new_args.gen_quick_data > 0:
+            cfg_file.CACHE.GEN_QUICK_DATA = True
+        else:
+            cfg_file.CACHE.GEN_QUICK_DATA = False
+    if new_args.quick_data is not None:
+        if new_args.quick_data > 0:
+            cfg_file.CACHE.QUICK_DATA = True
+        else:
+            cfg_file.CACHE.QUICK_DATA = False
+    if new_args.cache_state is not None:
+        if new_args.cache_state > 0:
+            cfg_file.CACHE.STATE = True
+        else:
+            cfg_file.CACHE.STATE = False
