@@ -41,8 +41,8 @@ def pub_lstm(args):
     subexp = temp_file_subname[1].split("_")[1][:-4]
     subdir = temp_file_subname[0] + "/" + subexp
     config_data = GagesConfig.set_subdir(config_file, subdir)
-    split_num = 3
-
+    split_num = cfg.SPLIT_NUM
+    print("kfold k=", str(split_num))
     if cache > 0:
         eco_names = [("ECO2_CODE", 5.2), ("ECO2_CODE", 5.3), ("ECO2_CODE", 6.2), ("ECO2_CODE", 7.1),
                      ("ECO2_CODE", 8.1), ("ECO2_CODE", 8.2), ("ECO2_CODE", 8.3), ("ECO2_CODE", 8.4),
@@ -356,6 +356,7 @@ def cmd():
     parser.add_argument('--train_mode', dest='train_mode', help='train or test',
                         default=True, type=bool)
     parser.add_argument('--cache', dest='cache', help='do save the data model?', default=1, type=int)
+    parser.add_argument('--k_fold_num', dest='k_fold_num', help='number of k', default=3, type=int)
     parser.add_argument('--plus', dest='plus', help='Do training dataset contain data from both A and B?',
                         default=0, type=int)
     parser.add_argument('--pub_plan', dest='pub_plan',
@@ -374,6 +375,8 @@ def cmd():
         cfg.TRAIN_MODE = args.train_mode
     if args.cache is not None:
         cfg.CACHE = args.cache
+    if args.k_fold_num is not None:
+        cfg.SPLIT_NUM = args.k_fold_num
     if args.plus is not None:
         cfg.PLUS = args.plus
     if args.pub_plan is not None:
@@ -381,14 +384,20 @@ def cmd():
     return args
 
 
-# python gages_pub_analysis.py --cache 0 --cfg ecoregion/config_exp1.ini --ctx 1 --pub_plan 1 --plus 0 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp3.ini --ctx 0 --pub_plan 3 --plus 0 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp6.ini --ctx 1 --pub_plan 1 --plus 1 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp7.ini --ctx 0 --pub_plan 3 --plus 1 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp2.ini --ctx 2 --pub_plan 2 --plus 0 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp5.ini --ctx 0 --pub_plan 2 --plus 1 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp4.ini --ctx 1 --pub_plan 0 --plus 0 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp8.ini --ctx 1 --pub_plan 0 --plus 1 --rs 1234 --te 300 --train_mode True
+# python gages_pub_analysis.py --cache 0 --cfg ecoregion/config_exp1.ini --ctx 1 --pub_plan 1 --plus 0
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp3.ini --ctx 0 --pub_plan 3 --plus 0
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp6.ini --ctx 1 --pub_plan 1 --plus 1
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp7.ini --ctx 0 --pub_plan 3 --plus 1
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp2.ini --ctx 2 --pub_plan 2 --plus 0
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp5.ini --ctx 0 --pub_plan 2 --plus 1
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp4.ini --ctx 1 --pub_plan 0 --plus 0
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp8.ini --ctx 1 --pub_plan 0 --plus 1
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp9.ini --ctx 1 --k_fold_num 2 --pub_plan 1 --plus 0
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp10.ini --ctx 1 --k_fold_num 2 --pub_plan 2 --plus 0
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp11.ini --ctx 0 --k_fold_num 2 --pub_plan 3 --plus 0
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp12.ini --ctx 1 --k_fold_num 2 --pub_plan 1 --plus 1
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp13.ini --ctx 0 --k_fold_num 2 --pub_plan 2 --plus 1
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp14.ini --ctx 0 --k_fold_num 2 --pub_plan 3 --plus 1
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()
