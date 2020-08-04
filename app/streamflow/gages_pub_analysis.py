@@ -396,7 +396,7 @@ def cmd():
 # python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp10.ini --ctx 1 --k_fold_num 2 --pub_plan 2 --plus 0
 # python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp11.ini --ctx 0 --k_fold_num 2 --pub_plan 3 --plus 0
 # python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp12.ini --ctx 1 --k_fold_num 2 --pub_plan 1 --plus 1
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp13.ini --ctx 0 --k_fold_num 2 --pub_plan 2 --plus 1
+# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp13.ini --ctx 1 --k_fold_num 2 --pub_plan 2 --plus 1
 # python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp14.ini --ctx 0 --k_fold_num 2 --pub_plan 3 --plus 1
 if __name__ == '__main__':
     print("Begin\n")

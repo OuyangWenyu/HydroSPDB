@@ -23,8 +23,10 @@ import matplotlib.pyplot as plt
 camels_exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp49", "basic_exp36"]
 camels_pub_on_diff_dor_exp_lst = ["basic_exp12", "basic_exp14", "basic_exp15"]
 
-exp_lst = [["ecoregion_exp1", "ecoregion_exp6"], ["ecoregion_exp2", "ecoregion_exp5"],
-           ["ecoregion_exp3", "ecoregion_exp7"], camels_pub_on_diff_dor_exp_lst]
+# exp_lst = [["ecoregion_exp1", "ecoregion_exp6"], ["ecoregion_exp2", "ecoregion_exp5"],
+#            ["ecoregion_exp3", "ecoregion_exp7"], camels_pub_on_diff_dor_exp_lst]
+exp_lst = [["ecoregion_exp9", "ecoregion_exp12"], ["ecoregion_exp10", "ecoregion_exp13"],
+           ["ecoregion_exp11", "ecoregion_exp14"], camels_pub_on_diff_dor_exp_lst]
 # ["ecoregion_exp4", "ecoregion_exp8"],
 # train_data_name_lst = [["LSTM-z", "LSTM-zs"], ["LSTM-z", "LSTM-zl"], ["LSTM-s", "LSTM-sl"]]
 train_data_name_lst = [["Train-z", "Train-zs"], ["Train-z", "Train-zl"], ["Train-s", "Train-sl"],
@@ -33,7 +35,7 @@ test_data_name_lst = [["Train-z", "PUB-z", "PUB-s"], ["Train-z", "PUB-z", "PUB-l
                       ["Train-c", "PUB-z", "PUB-s", "PUB-l"]]  # ["Train-c", "PUB-c", "PUB-n"]
 config_dir = definitions.CONFIG_DIR
 test_epoch = 300
-split_num = 3
+split_num = 2
 
 # test
 doLst = list()
@@ -152,16 +154,21 @@ train_set = "training"
 test_set = "testing"
 show_ind_key = "NSE"
 
-fig = plt.figure(figsize=(12, 4))
-# gs = gridspec.GridSpec(2, 2)
-gs = gridspec.GridSpec(1, 11)
+# fig = plt.figure(figsize=(12, 4))
+# gs = gridspec.GridSpec(1, 11)
+fig = plt.figure(figsize=(8, 9))
+gs = gridspec.GridSpec(2, 2)
+titles = ["(a)", "(b)", "(c)", "(d)"]
+
 colors = ["Greens", "Blues", "Reds", "Greys"]
 sns.set(font_scale=1.2)
 
 for k in range(len(exp_lst)):
     if k == len(exp_lst) - 1:
         print("camels pub")
-        ax_k = plt.subplot(gs[k * 3: k * 3 + 2])
+        # ax_k = plt.subplot(gs[k * 3: k * 3 + 2])
+        ax_k = plt.subplot(gs[1, 1])
+        ax_k.set_title(titles[k])
         frames_camels_pub = []
         inds_df_camels, pred_mean, obs_mean = load_ensemble_result(camels_exp_lst, test_epoch, return_value=True)
         df_camels_pub = pd.DataFrame({train_set: np.full([inds_df_camels.shape[0]], train_data_name_lst[k][0]),
@@ -184,7 +191,9 @@ for k in range(len(exp_lst)):
         # plt.subplots_adjust(hspace=0.8)
         # sns.boxplot(ax=ax_k, x=test_set, y=show_ind_key, data=result_camels_pub, showfliers=False, palette=colors[k])
         continue
-    ax_k = plt.subplot(gs[k * 3:(k + 1) * 3])
+    # ax_k = plt.subplot(gs[k * 3:(k + 1) * 3])
+    ax_k = plt.subplot(gs[int(k / 2), k % 2])
+    ax_k.set_title(titles[k])
     frames = []
     for j in range(len(exp_lst[k])):
         config_data = load_dataconfig_case_exp(exp_lst[k][j])
@@ -310,4 +319,4 @@ for k in range(len(exp_lst)):
 sns.despine()
 plt.tight_layout()
 show_config_data = load_dataconfig_case_exp(exp_lst[0][0])
-plt.savefig(os.path.join(show_config_data.data_path["Out"], '4exps_pub.png'), dpi=300, bbox_inches="tight")
+plt.savefig(os.path.join(show_config_data.data_path["Out"], '4exps_pub.png'), dpi=360, bbox_inches="tight")

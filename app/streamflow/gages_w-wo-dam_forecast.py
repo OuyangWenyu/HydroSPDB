@@ -6,6 +6,7 @@ from data import GagesSource
 from data.data_input import GagesModel
 from data.gages_input_dataset import load_ensemble_result, load_dataconfig_case_exp
 from explore.stat import ecdf
+from visual.plot_model import plot_gages_map_and_box, plot_gages_map_and_ts, plot_gages_map_and_scatter
 from visual.plot_stat import plot_ecdfs
 import numpy as np
 import seaborn as sns
@@ -123,36 +124,64 @@ idx_lst_largedam_in_pair2 = [i for i in range(len(pair2_sites)) if pair2_sites[i
 idx_lst_largedam_in_pair3 = [i for i in range(len(pair3_sites)) if pair3_sites[i] in sites_id_largedam]
 idx_lst_largedam_in_conus = [i for i in range(len(conus_sites)) if conus_sites[i] in sites_id_largedam]
 
-compare_item = 2
+compare_item = 3
 if compare_item == 0:
-    inds_df = load_ensemble_result(pair1_exps, test_epoch)
-    keys_nse = "NSE"
-    xs = []
-    ys = []
-    cases_exps_legends_together = ["no_dam", "small_dam"]
+    inds_df, pred, obs = load_ensemble_result(conus_exps, test_epoch, return_value=True)
 
-    x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodam_in_pair1])
-    xs.append(x1)
-    ys.append(y1)
+    all_lat = conus_data_model.data_source.gage_dict["LAT_GAGE"]
+    all_lon = conus_data_model.data_source.gage_dict["LNG_GAGE"]
+    show_ind_key = "NSE"
+    attr_lst = ["SLOPE_PCT", "ELEV_MEAN_M_BASIN"]
+    attrs = conus_data_model.data_source.read_attr(conus_sites, attr_lst, is_return_dict=False)
 
-    x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_smalldam_in_pair1])
-    xs.append(x2)
-    ys.append(y2)
-    inds_df_nodam = load_ensemble_result(nodam_exp_lst, test_epoch)
-    x3, y3 = ecdf(inds_df_nodam[keys_nse])
-    xs.append(x3)
-    ys.append(y3)
-    inds_df_smalldam = load_ensemble_result(smalldam_exp_lst, test_epoch)
-    x4, y4 = ecdf(inds_df_smalldam[keys_nse])
-    xs.append(x4)
-    ys.append(y4)
-    cases_exps_legends_separate = cases_exps_legends_together
-    fig = plt.figure()
-    gs = gridspec.GridSpec(1, 2)
-    ax1 = plt.subplot(gs[0])
-    plot_ecdfs(xs, ys, cases_exps_legends_together + cases_exps_legends_separate,
-               style=["together", "together", "separate", "separate"], case_str="dor_value",
-               event_str="is_pooling_together", x_str="NSE", y_str="CDF", ax_as_subplot=ax1)
+    western_lon_idx = [i for i in range(all_lon.size) if all_lon[i] < -100]
+
+    nse_range = [0, 1]
+    idx_lst_nse = inds_df[
+        (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
+    idx_lst_nse = np.intersect1d(western_lon_idx, idx_lst_nse)
+
+    type_1_index_lst = np.intersect1d(idx_lst_nodam_in_conus, idx_lst_nse).tolist()
+    type_2_index_lst = np.intersect1d(idx_lst_smalldam_in_conus, idx_lst_nse).tolist()
+    frame = []
+    df_type1 = pd.DataFrame({"type": np.full(len(type_1_index_lst), "zero-dor"),
+                             show_ind_key: inds_df[show_ind_key].values[type_1_index_lst],
+                             "lat": all_lat[type_1_index_lst],
+                             "lon": all_lon[type_1_index_lst],
+                             "slope": attrs[type_1_index_lst, 0],
+                             "elevation": attrs[type_1_index_lst, 1]})
+    frame.append(df_type1)
+    df_type2 = pd.DataFrame({"type": np.full(len(type_2_index_lst), "small-dor"),
+                             show_ind_key: inds_df[show_ind_key].values[type_2_index_lst],
+                             "lat": all_lat[type_2_index_lst],
+                             "lon": all_lon[type_2_index_lst],
+                             "slope": attrs[type_2_index_lst, 0],
+                             "elevation": attrs[type_2_index_lst, 1]})
+    frame.append(df_type2)
+    data_df = pd.concat(frame)
+    idx_lst = [np.arange(len(type_1_index_lst)),
+               np.arange(len(type_1_index_lst), len(type_1_index_lst) + len(type_2_index_lst))]
+    plot_gages_map_and_scatter(data_df, [show_ind_key, "lat", "lon", "slope"], idx_lst, cmap_strs=["Reds", "Blues"],
+                               labels=["zero-dor", "small-dor"], scatter_label=[attr_lst[0], show_ind_key], wspace=2,
+                               hspace=1.5, legend_y=.8, sub_fig_ratio=[6, 4, 1])
+    plt.tight_layout()
+    # plt.savefig(os.path.join(conus_config_data.data_path["Out"], 'zero-small-dor_map_comp.png'), dpi=100,
+    #             bbox_inches="tight")
+    plt.savefig(os.path.join(conus_config_data.data_path["Out"], 'zero-small-dor_western_map_comp.png'), dpi=140,
+                bbox_inches="tight")
+elif compare_item == 3:
+    all_lst = [nodam_exp_lst, smalldam_exp_lst, largedam_exp_lst, pair1_exps, pair2_exps, pair3_exps]
+    for an_exp_lst in all_lst:
+        an_exp_median_nse_lst = []
+        for i in range(len(an_exp_lst)):
+            inds_df_an_exp_i = load_ensemble_result([an_exp_lst[i]], test_epoch)
+            an_exp_i_median = inds_df_an_exp_i.median()
+            an_exp_median_nse_lst.append(an_exp_i_median["NSE"])
+        print(an_exp_median_nse_lst)
+        inds_df_an_exp = load_ensemble_result(an_exp_lst, test_epoch)
+        inds_df_an_exp_median = inds_df_an_exp.median()
+        print(inds_df_an_exp_median["NSE"])
+
 elif compare_item == 2:
     print("multi box")
     inds_df_pair1 = load_ensemble_result(pair1_exps, test_epoch)
@@ -354,3 +383,5 @@ elif compare_item == 1:  # ecdf
     ys_largedam.append(y_largedam_conus)
     ax3 = plt.subplot(gs[2])
     plot_ecdfs(xs_largedam, ys_largedam, cases_exps_legends_largedam, x_str="NSE", y_str="CDF", ax_as_subplot=ax3)
+else:
+    print("End")

@@ -162,7 +162,7 @@ if 'post' in doLst:
     keys_nse = "NSE"
     xs = []
     ys = []
-    cases_exps_legends_together = ["not_diverted_small_dor", "not_diverted_large_dor", "diversion_small_dor",
+    cases_exps_legends_together = ["no_diversion_small_dor", "no_diversion_large_dor", "diversion_small_dor",
                                    "diversion_large_dor", "CONUS"]
 
     x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_smalldor])

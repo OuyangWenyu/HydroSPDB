@@ -10,17 +10,17 @@ import definitions
 import geopandas as gpd
 
 from data import GagesSource
-from data.data_input import CamelsModel, load_result, GagesModel
-from data.gages_input_dataset import load_dataconfig_case_exp
+from data.data_input import load_result, GagesModel
+from data.gages_input_dataset import load_dataconfig_case_exp, load_ensemble_result
 from explore.stat import statError, ecdf
 from utils import unserialize_json, unserialize_numpy
 from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred
 from visual.plot import plotCDF
-from visual.plot_model import plot_ind_map, plot_map, plot_gages_map_and_ts, plot_gages_map_and_box
+from visual.plot_model import plot_ind_map, plot_map, plot_gages_map_and_ts, plot_gages_map_and_box, \
+    plot_gages_map_and_scatter
 from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs, plot_diff_boxes, plot_ecdfs_matplot
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 def test_stat():
@@ -213,6 +213,92 @@ class MyTestCase(unittest.TestCase):
             (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
         plot_gages_map_and_ts(data_model, self.obs, self.pred, inds_df, show_ind_key, idx_lst_nse,
                               pertile_range=[0, 100], plot_ts=False, fig_size=(8, 4), cmap_str="jet")
+        plt.show()
+
+    def test_plot_loss_from_log(self):
+        conus_exps = ["basic_exp50"]
+        config_data = load_dataconfig_case_exp(conus_exps[0])
+        log_file = os.path.join(config_data.data_path["Out"], "340epoch_run.csv")
+        df_log = pd.read_csv(log_file, header=None)
+        log_time_lst = np.array([float(log_i.split(" ")[-1]) for log_i in df_log.iloc[:, 0].values])
+        print("time: ", str(np.sum(log_time_lst[340:]) / 60), " mins")
+
+    def test_plot_map_cartopy_multi_vars(self):
+        conus_exps = ["basic_exp37"]
+        config_data = load_dataconfig_case_exp(conus_exps[0])
+
+        dor_1 = - 0.02
+        source_data_dor1 = GagesSource.choose_some_basins(config_data,
+                                                          config_data.model_dict["data"]["tRangeTrain"],
+                                                          screen_basin_area_huc4=False,
+                                                          DOR=dor_1)
+        # basins with dams
+        source_data_withdams = GagesSource.choose_some_basins(config_data,
+                                                              config_data.model_dict["data"]["tRangeTrain"],
+                                                              screen_basin_area_huc4=False,
+                                                              dam_num=[1, 10000])
+        # basins without dams
+        source_data_withoutdams = GagesSource.choose_some_basins(config_data,
+                                                                 config_data.model_dict["data"]["tRangeTrain"],
+                                                                 screen_basin_area_huc4=False,
+                                                                 dam_num=0)
+
+        sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
+        sites_id_withdams = source_data_withdams.all_configs['flow_screen_gage_id']
+
+        sites_id_nodam = source_data_withoutdams.all_configs['flow_screen_gage_id']
+        sites_id_smalldam = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
+
+        data_model = GagesModel.load_datamodel(config_data.data_path["Temp"],
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
+        all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
+
+        conus_sites = data_model.t_s_dict["sites_id"]
+        idx_lst_nodam_in_conus = [i for i in range(len(conus_sites)) if conus_sites[i] in sites_id_nodam]
+        idx_lst_smalldam_in_conus = [i for i in range(len(conus_sites)) if conus_sites[i] in sites_id_smalldam]
+
+        attr_lst = ["SLOPE_PCT", "ELEV_MEAN_M_BASIN"]
+        attrs = data_model.data_source.read_attr(conus_sites, attr_lst, is_return_dict=False)
+
+        test_epoch = 300
+        inds_df, pred, obs = load_ensemble_result(conus_exps, test_epoch, return_value=True)
+        show_ind_key = "NSE"
+        nse_range = [0, 1]
+        idx_lst_nse = inds_df[
+            (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
+
+        type_1_index_lst = np.intersect1d(idx_lst_nodam_in_conus, idx_lst_nse).tolist()
+        type_2_index_lst = np.intersect1d(idx_lst_smalldam_in_conus, idx_lst_nse).tolist()
+        frame = []
+        df_type1 = pd.DataFrame({"type": np.full(len(type_1_index_lst), "zero-dor"),
+                                 show_ind_key: inds_df[show_ind_key].values[type_1_index_lst],
+                                 "lat": all_lat[type_1_index_lst],
+                                 "lon": all_lon[type_1_index_lst],
+                                 "slope": attrs[type_1_index_lst, 0],
+                                 "elevation": attrs[type_1_index_lst, 1]})
+        frame.append(df_type1)
+        df_type2 = pd.DataFrame({"type": np.full(len(type_2_index_lst), "small-dor"),
+                                 show_ind_key: inds_df[show_ind_key].values[type_2_index_lst],
+                                 "lat": all_lat[type_2_index_lst],
+                                 "lon": all_lon[type_2_index_lst],
+                                 "slope": attrs[type_2_index_lst, 0],
+                                 "elevation": attrs[type_2_index_lst, 1]})
+        frame.append(df_type2)
+        data_df = pd.concat(frame)
+        idx_lst = [np.arange(len(type_1_index_lst)),
+                   np.arange(len(type_1_index_lst), len(type_1_index_lst) + len(type_2_index_lst))]
+        plot_gages_map_and_scatter(data_df, [show_ind_key, "lat", "lon", "elevation"], idx_lst,
+                                   cmap_strs=["Reds", "Blues"],
+                                   labels=["zero-dor", "small-dor"], scatter_label=[attr_lst[1], show_ind_key])
+        # matplotlib.rcParams.update({'font.size': 12})
+        plt.tight_layout()
+        plt.show()
 
     def test_plot_map_dam(self):
         data_model = GagesModel.load_datamodel(self.dir_temp,
