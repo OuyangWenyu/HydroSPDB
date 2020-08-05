@@ -14,35 +14,38 @@ from hydroDL.master.master import master_test_with_pretrained_model
 
 sys.path.append("../..")
 import os
-import definitions
+from data.config import cfg, update_cfg, cmd
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-camels_exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp49", "basic_exp36"]
+# camels_exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp49", "basic_exp36"]
+camels_exp_lst = ["basic_exp31"]
 camels_pub_on_diff_dor_exp_lst = ["basic_exp12", "basic_exp14", "basic_exp15"]
 
-exp_lst = [["ecoregion_exp1", "ecoregion_exp6"], ["ecoregion_exp2", "ecoregion_exp5"],
-           ["ecoregion_exp3", "ecoregion_exp7"], camels_pub_on_diff_dor_exp_lst]
+# exp_lst = [["ecoregion_exp1", "ecoregion_exp6"], ["ecoregion_exp2", "ecoregion_exp5"],
+#            ["ecoregion_exp3", "ecoregion_exp7"], camels_pub_on_diff_dor_exp_lst]
+exp_lst = [["ecoregion_exp9", "ecoregion_exp12"], ["ecoregion_exp10", "ecoregion_exp13"],
+           ["ecoregion_exp11", "ecoregion_exp14"], camels_pub_on_diff_dor_exp_lst]
 # ["ecoregion_exp4", "ecoregion_exp8"],
 # train_data_name_lst = [["LSTM-z", "LSTM-zs"], ["LSTM-z", "LSTM-zl"], ["LSTM-s", "LSTM-sl"]]
 train_data_name_lst = [["Train-z", "Train-zs"], ["Train-z", "Train-zl"], ["Train-s", "Train-sl"],
                        ["Train-c"]]  # ["Train-c", "Train-cn"]
 test_data_name_lst = [["Train-z", "PUB-z", "PUB-s"], ["Train-z", "PUB-z", "PUB-l"], ["Train-s", "PUB-s", "PUB-l"],
                       ["Train-c", "PUB-z", "PUB-s", "PUB-l"]]  # ["Train-c", "PUB-c", "PUB-n"]
-config_dir = definitions.CONFIG_DIR
-test_epoch = 300
-split_num = 3
+# test_epoch = 300
+test_epoch = 20
+split_num = 2
 
 # test
 doLst = list()
 # doLst.append('train')
-# doLst.append('test')
-doLst.append('post')
+doLst.append('test')
+# doLst.append('post')
 
 if 'test' in doLst:
-    zerodor_config_data = load_dataconfig_case_exp(camels_pub_on_diff_dor_exp_lst[0])
+    zerodor_config_data = load_dataconfig_case_exp(cfg, camels_pub_on_diff_dor_exp_lst[0])
     quick_data_dir = os.path.join(zerodor_config_data.data_path["DB"], "quickdata")
     data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
     data_model_train = GagesModel.load_datamodel(data_dir,
@@ -62,7 +65,7 @@ if 'test' in doLst:
                                                 var_dict_file_name='test_dictAttribute.json',
                                                 t_s_dict_file_name='test_dictTimeSpace.json')
 
-    camels531_gageid_file = os.path.join(zerodor_config_data.data_path["DB"], "camels531", "CAMELS531.txt")
+    camels531_gageid_file = os.path.join(zerodor_config_data.data_path["DB"], "camels531", "camels531.txt")
     gauge_df = pd.read_csv(camels531_gageid_file, dtype={"GaugeID": str})
     gauge_list = gauge_df["GaugeID"].values
     all_sites_camels_531 = np.sort([str(gauge).zfill(8) for gauge in gauge_list])
@@ -84,7 +87,7 @@ if 'test' in doLst:
                                                             train_stat_dict=gages_model_zerodor_train.stat_dict,
                                                             screen_basin_area_huc4=False)
 
-    smalldor_config_data = load_dataconfig_case_exp(camels_pub_on_diff_dor_exp_lst[1])
+    smalldor_config_data = load_dataconfig_case_exp(cfg, camels_pub_on_diff_dor_exp_lst[1])
     source_data_dor1 = GagesSource.choose_some_basins(smalldor_config_data,
                                                       smalldor_config_data.model_dict["data"]["tRangeTrain"],
                                                       screen_basin_area_huc4=False,
@@ -108,7 +111,7 @@ if 'test' in doLst:
                                                              train_stat_dict=gages_model_smalldor_train.stat_dict,
                                                              screen_basin_area_huc4=False)
 
-    largedor_config_data = load_dataconfig_case_exp(camels_pub_on_diff_dor_exp_lst[2])
+    largedor_config_data = load_dataconfig_case_exp(cfg, camels_pub_on_diff_dor_exp_lst[2])
     source_data_large_dor = GagesSource.choose_some_basins(largedor_config_data,
                                                            largedor_config_data.model_dict["data"]["tRangeTrain"],
                                                            screen_basin_area_huc4=False,
@@ -128,8 +131,8 @@ if 'test' in doLst:
     gages_models_test = [gages_model_zerodor_test, gages_model_smalldor_test, gages_model_largedor_test]
     for gages_model_test in gages_models_test:
         for i in range(len(camels_exp_lst)):
-            ref_config_data = load_dataconfig_case_exp(camels_exp_lst[i])
-            with torch.cuda.device(1):
+            ref_config_data = load_dataconfig_case_exp(cfg, camels_exp_lst[i])
+            with torch.cuda.device(0):
                 pretrained_model_file = os.path.join(ref_config_data.data_path["Out"],
                                                      "model_Ep" + str(test_epoch) + ".pt")
                 pretrained_model_name = camels_exp_lst[i] + "_pretrained_model"
@@ -163,13 +166,13 @@ for k in range(len(exp_lst)):
         print("camels pub")
         ax_k = plt.subplot(gs[k * 3: k * 3 + 2])
         frames_camels_pub = []
-        inds_df_camels, pred_mean, obs_mean = load_ensemble_result(camels_exp_lst, test_epoch, return_value=True)
+        inds_df_camels, pred_mean, obs_mean = load_ensemble_result(cfg, camels_exp_lst, test_epoch, return_value=True)
         df_camels_pub = pd.DataFrame({train_set: np.full([inds_df_camels.shape[0]], train_data_name_lst[k][0]),
                                       test_set: np.full([inds_df_camels.shape[0]], test_data_name_lst[k][0]),
                                       show_ind_key: inds_df_camels[show_ind_key]})
         frames_camels_pub.append(df_camels_pub)
         for j in range(len(exp_lst[k])):
-            inds_df_camels, pred_mean, obs_mean = load_pub_ensemble_result(exp_lst[k][j], camels_exp_lst, test_epoch,
+            inds_df_camels, pred_mean, obs_mean = load_pub_ensemble_result(cfg, exp_lst[k][j], camels_exp_lst, test_epoch,
                                                                            return_value=True)
             df_camels_pub = pd.DataFrame({train_set: np.full([inds_df_camels.shape[0]], train_data_name_lst[k][0]),
                                           test_set: np.full([inds_df_camels.shape[0]], test_data_name_lst[k][j + 1]),
@@ -187,7 +190,7 @@ for k in range(len(exp_lst)):
     ax_k = plt.subplot(gs[k * 3:(k + 1) * 3])
     frames = []
     for j in range(len(exp_lst[k])):
-        config_data = load_dataconfig_case_exp(exp_lst[k][j])
+        config_data = load_dataconfig_case_exp(cfg, exp_lst[k][j])
         preds = []
         obss = []
         preds2 = []
@@ -309,5 +312,5 @@ for k in range(len(exp_lst)):
 
 sns.despine()
 plt.tight_layout()
-show_config_data = load_dataconfig_case_exp(exp_lst[0][0])
+show_config_data = load_dataconfig_case_exp(cfg, exp_lst[0][0])
 plt.savefig(os.path.join(show_config_data.data_path["Out"], '4exps_pub.png'), dpi=300, bbox_inches="tight")

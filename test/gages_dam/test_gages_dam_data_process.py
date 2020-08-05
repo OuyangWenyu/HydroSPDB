@@ -85,7 +85,6 @@ class MyTestCase(unittest.TestCase):
                        forcing_file_name='test_forcing', attr_file_name='test_attr',
                        f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
                        t_s_dict_file_name='test_dictTimeSpace.json')
-        # TODO: cut file to quickdata manually
 
     def test_dam_train(self):
         """just test for one purpose as a case"""

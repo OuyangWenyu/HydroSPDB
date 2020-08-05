@@ -6,46 +6,46 @@ pipeline:
 目的：利用GAGES-II数据训练LSTM，并进行流域径流模拟。
 基本流程： 标准机器学习pipeline，数据前处理——统计分析——模型训练及测试——可视化结果——参数调优"""
 import os
-import argparse
 import torch
-from easydict import EasyDict as edict
 import sys
 
 sys.path.append("../..")
-import definitions
+from data.config import cfg, update_cfg, cmd
 from data import GagesConfig
-from data.data_input import GagesModel, _basin_norm, save_result
+from data.data_input import _basin_norm, save_result, save_datamodel
 from data.gages_input_dataset import GagesModels
 from hydroDL import master_train, master_test
 import numpy as np
 import pandas as pd
 
-config_dir = definitions.CONFIG_DIR
-cfg = edict()
-
 
 def camels_lstm(args):
-    exp_config_file = cfg.EXP
+    update_cfg(cfg, args)
     random_seed = cfg.RANDOM_SEED
     test_epoch = cfg.TEST_EPOCH
     gpu_num = cfg.CTX
     train_mode = cfg.TRAIN_MODE
-    print("train and test in CONUS: \n")
-    config_file = os.path.join(config_dir, exp_config_file)
-    temp_file_subname = exp_config_file.split("/")
-    subexp = temp_file_subname[1].split("_")[1][:-4]
-    subdir = temp_file_subname[0] + "/" + subexp
+    cache = cfg.CACHE.STATE
+    print("train and test in CAMELS: \n")
+    config_data = GagesConfig(cfg)
 
-    config_data = GagesConfig.set_subdir(config_file, subdir)
-
-    camels531_gageid_file = os.path.join(config_data.data_path["DB"], "camels531", "CAMELS531.txt")
+    camels531_gageid_file = os.path.join(config_data.data_path["DB"], "camels531", "camels531.txt")
     gauge_df = pd.read_csv(camels531_gageid_file, dtype={"GaugeID": str})
     gauge_list = gauge_df["GaugeID"].values
     all_sites_camels_531 = np.sort([str(gauge).zfill(8) for gauge in gauge_list])
-    gages_model = GagesModels(config_data, screen_basin_area_huc4=False,
-                              sites_id=all_sites_camels_531.tolist())
+    gages_model = GagesModels(config_data, screen_basin_area_huc4=False, sites_id=all_sites_camels_531.tolist())
     gages_model_train = gages_model.data_model_train
     gages_model_test = gages_model.data_model_test
+    if cache:
+        save_datamodel(gages_model_train, data_source_file_name='data_source.txt',
+                       stat_file_name='Statistics.json', flow_file_name='flow', forcing_file_name='forcing',
+                       attr_file_name='attr', f_dict_file_name='dictFactorize.json',
+                       var_dict_file_name='dictAttribute.json', t_s_dict_file_name='dictTimeSpace.json')
+        save_datamodel(gages_model_test, data_source_file_name='test_data_source.txt',
+                       stat_file_name='test_Statistics.json', flow_file_name='test_flow',
+                       forcing_file_name='test_forcing', attr_file_name='test_attr',
+                       f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
+                       t_s_dict_file_name='test_dictTimeSpace.json')
     with torch.cuda.device(gpu_num):
         if train_mode:
             master_train(gages_model_train, random_seed=random_seed)
@@ -60,33 +60,7 @@ def camels_lstm(args):
         save_result(gages_model_test.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
 
-def cmd():
-    """input args from cmd"""
-    parser = argparse.ArgumentParser(description='Train the CAMELS 531 model')
-    parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file', default="basic/config_exp49.ini",
-                        type=str)
-    parser.add_argument('--ctx', dest='ctx',
-                        help='Running Context -- gpu num. E.g `--ctx 0` means run code in the context of gpu 0',
-                        type=int, default=1)
-    parser.add_argument('--rs', dest='rs', help='random seed', default=1111, type=int)
-    parser.add_argument('--te', dest='te', help='test epoch', default=300, type=int)
-    parser.add_argument('--train_mode', dest='train_mode', help='train or test',
-                        default=True, type=bool)
-    args = parser.parse_args()
-    if args.cfg_file is not None:
-        cfg.EXP = args.cfg_file
-    if args.ctx is not None:
-        cfg.CTX = args.ctx
-    if args.rs is not None:
-        cfg.RANDOM_SEED = args.rs
-    if args.te is not None:
-        cfg.TEST_EPOCH = args.te
-    if args.train_mode is not None:
-        cfg.TRAIN_MODE = args.train_mode
-    return args
-
-
-# python for531camels_conus_analysis.py --cfg basic/config_exp31.ini --ctx 1 --rs 1234 --te 300 --train_mode True
+# python for531camels_conus_analysis.py --sub basic/exp31  --cache_state 1 --ctx 0 --te 20 --train_epoch 20 --save_epoch 10
 # python for531camels_conus_analysis.py --cfg basic/config_exp32.ini --ctx 1 --rs 123 --te 300 --train_mode True
 # python for531camels_conus_analysis.py --cfg basic/config_exp33.ini --ctx 0 --rs 12345 --te 300 --train_mode True
 # python for531camels_conus_analysis.py --cfg basic/config_exp34.ini --ctx 0 --rs 111 --te 300 --train_mode True

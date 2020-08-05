@@ -5,6 +5,7 @@ import time
 import os
 import pandas as pd
 
+from utils import my_timer
 from utils.hydro_math import random_index, select_subset, select_subset_batch_first, select_subset_seq
 from . import rnn
 from torch.utils.tensorboard import SummaryWriter
@@ -309,6 +310,7 @@ def model_test_valid(model, x, c, *, file_path, batch_size=None):
     return y_out
 
 
+@my_timer
 def model_train(model,
                 x,
                 y,

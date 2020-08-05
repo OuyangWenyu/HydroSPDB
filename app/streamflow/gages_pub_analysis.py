@@ -6,13 +6,11 @@ pipeline:
 目的：利用GAGES-II数据训练LSTM，并进行流域径流模拟。
 基本流程： 标准机器学习pipeline，数据前处理——统计分析——模型训练及测试——可视化结果——参数调优"""
 import os
-import argparse
 import torch
-from easydict import EasyDict as edict
 import sys
 
 sys.path.append("../..")
-import definitions
+from data.config import cfg, update_cfg, cmd
 from data import GagesConfig, GagesSource
 from data.data_input import GagesModel, _basin_norm, save_result, save_datamodel
 import pandas as pd
@@ -22,28 +20,20 @@ from sklearn.model_selection import KFold
 from functools import reduce
 from utils.hydro_math import random_choice_no_return
 
-config_dir = definitions.CONFIG_DIR
-cfg = edict()
-
 
 def pub_lstm(args):
-    exp_config_file = cfg.EXP
+    update_cfg(cfg, args)
     random_seed = cfg.RANDOM_SEED
     test_epoch = cfg.TEST_EPOCH
     gpu_num = cfg.CTX
     train_mode = cfg.TRAIN_MODE
-    cache = cfg.CACHE
+    cache = cfg.CACHE.STATE
     pub_plan = cfg.PUB_PLAN
     plus = cfg.PLUS
-    print("train and test in CONUS: \n")
-    config_file = os.path.join(config_dir, exp_config_file)
-    temp_file_subname = exp_config_file.split("/")
-    subexp = temp_file_subname[1].split("_")[1][:-4]
-    subdir = temp_file_subname[0] + "/" + subexp
-    config_data = GagesConfig.set_subdir(config_file, subdir)
-    split_num = 3
-
-    if cache > 0:
+    print("train and test for PUB: \n")
+    config_data = GagesConfig(cfg)
+    split_num = cfg.SPLIT_NUM
+    if cache:
         eco_names = [("ECO2_CODE", 5.2), ("ECO2_CODE", 5.3), ("ECO2_CODE", 6.2), ("ECO2_CODE", 7.1),
                      ("ECO2_CODE", 8.1), ("ECO2_CODE", 8.2), ("ECO2_CODE", 8.3), ("ECO2_CODE", 8.4),
                      ("ECO2_CODE", 8.5), ("ECO2_CODE", 9.2), ("ECO2_CODE", 9.3), ("ECO2_CODE", 9.4),
@@ -229,9 +219,7 @@ def pub_lstm(args):
             sites_ids_test_ilst_2 = [sites_lst_test_2[j] for j in range(len(sites_lst_test_2)) if
                                      j % split_num == i]
             sites_ids_test_i_2 = np.sort(reduce(lambda x, y: np.hstack((x, y)), sites_ids_test_ilst_2))
-
-            subdir_i = os.path.join(subdir, str(i))
-            config_data_i = GagesConfig.set_subdir(config_file, subdir_i)
+            config_data_i = GagesConfig.set_subdir(cfg, str(i))
             gages_model_train_i = GagesModel.update_data_model(config_data_i, data_model_train,
                                                                sites_id_update=sites_ids_train_i,
                                                                data_attr_update=True, screen_basin_area_huc4=False)
@@ -343,52 +331,12 @@ def pub_lstm(args):
                         pred_name='flow_pred_2', obs_name='flow_obs_2')
 
 
-def cmd():
-    """input args from cmd"""
-    parser = argparse.ArgumentParser(description='Train the CONUS model')
-    parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file',
-                        default="ecoregion/config_exp4.ini", type=str)
-    parser.add_argument('--ctx', dest='ctx',
-                        help='Running Context -- gpu num. E.g `--ctx 0` means run code in the context of gpu 0',
-                        type=int, default=0)
-    parser.add_argument('--rs', dest='rs', help='random seed', default=1234, type=int)
-    parser.add_argument('--te', dest='te', help='test epoch', default=300, type=int)
-    parser.add_argument('--train_mode', dest='train_mode', help='train or test',
-                        default=True, type=bool)
-    parser.add_argument('--cache', dest='cache', help='do save the data model?', default=1, type=int)
-    parser.add_argument('--plus', dest='plus', help='Do training dataset contain data from both A and B?',
-                        default=0, type=int)
-    parser.add_argument('--pub_plan', dest='pub_plan',
-                        help='4 plans:0-camels->non-camels 1-no dam->small dor;2:no dam->large dor;3:small_dor->large_dor',
-                        default=0, type=int)
-    args = parser.parse_args()
-    if args.cfg_file is not None:
-        cfg.EXP = args.cfg_file
-    if args.ctx is not None:
-        cfg.CTX = args.ctx
-    if args.rs is not None:
-        cfg.RANDOM_SEED = args.rs
-    if args.te is not None:
-        cfg.TEST_EPOCH = args.te
-    if args.train_mode is not None:
-        cfg.TRAIN_MODE = args.train_mode
-    if args.cache is not None:
-        cfg.CACHE = args.cache
-    if args.plus is not None:
-        cfg.PLUS = args.plus
-    if args.pub_plan is not None:
-        cfg.PUB_PLAN = args.pub_plan
-    return args
-
-
-# python gages_pub_analysis.py --cache 0 --cfg ecoregion/config_exp1.ini --ctx 1 --pub_plan 1 --plus 0 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp3.ini --ctx 0 --pub_plan 3 --plus 0 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp6.ini --ctx 1 --pub_plan 1 --plus 1 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp7.ini --ctx 0 --pub_plan 3 --plus 1 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp2.ini --ctx 2 --pub_plan 2 --plus 0 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp5.ini --ctx 0 --pub_plan 2 --plus 1 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp4.ini --ctx 1 --pub_plan 0 --plus 0 --rs 1234 --te 300 --train_mode True
-# python gages_pub_analysis.py --cache 1 --cfg ecoregion/config_exp8.ini --ctx 1 --pub_plan 0 --plus 1 --rs 1234 --te 300 --train_mode True
+# python gages_pub_analysis.py --sub ecoregion/exp9 --cache_state 1 --pub_plan 1 --plus 0 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
+# python gages_pub_analysis.py --sub ecoregion/exp12 --cache_state 1 --pub_plan 1 --plus 1 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
+# python gages_pub_analysis.py --sub ecoregion/exp10 --cache_state 1 --pub_plan 2 --plus 0 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
+# python gages_pub_analysis.py --sub ecoregion/exp13 --cache_state 1 --pub_plan 2 --plus 1 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
+# python gages_pub_analysis.py --sub ecoregion/exp11 --cache_state 1 --pub_plan 3 --plus 0 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
+# python gages_pub_analysis.py --sub ecoregion/exp14 --cache_state 1 --pub_plan 3 --plus 1 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

@@ -258,7 +258,7 @@ def master_test_with_pretrained_model(data_model, pretrained_model_file, pretrai
     t_range = data_model.t_s_dict["t_final_range"]
     save_dir = os.path.join(model_dict['dir']['Out'], pretrained_name)
     if not os.path.isdir(save_dir):
-        os.mkdir(save_dir)
+        os.makedirs(save_dir)
     file_name = '_'.join([str(t_range[0]), str(t_range[1])])
     file_path = os.path.join(save_dir, file_name + '.csv')
     print('output files:', file_path)

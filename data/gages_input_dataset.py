@@ -10,7 +10,6 @@ import torch
 import numpy as np
 import geopandas as gpd
 from scipy import constants, interpolate
-import definitions
 from data import DataModel, GagesSource, GagesConfig
 from data.data_config import update_config_item
 from data.data_input import GagesModel, _trans_norm, GagesModelWoBasinNorm, load_result
@@ -24,10 +23,10 @@ from utils.dataset_format import subset_of_dict
 from utils.hydro_math import concat_two_3darray, copy_attr_array_in2d
 
 
-def load_pub_ensemble_result(pub_exp, trained_exp_lst, test_epoch, return_value=False):
+def load_pub_ensemble_result(config_file, pub_exp, trained_exp_lst, test_epoch, return_value=False):
     preds = []
     obss = []
-    dor_config_data = load_dataconfig_case_exp(pub_exp)
+    dor_config_data = load_dataconfig_case_exp(config_file, pub_exp)
     for i in range(len(trained_exp_lst)):
         pretrained_model_name = trained_exp_lst[i] + "_pretrained_model"
         save_dir_i = os.path.join(dor_config_data.data_path['Out'], pretrained_model_name)
@@ -49,11 +48,11 @@ def load_pub_ensemble_result(pub_exp, trained_exp_lst, test_epoch, return_value=
     return inds_df
 
 
-def load_ensemble_result(cases_exps, test_epoch, return_value=False):
+def load_ensemble_result(cfg, cases_exps, test_epoch, return_value=False):
     preds = []
     obss = []
     for case_exp in cases_exps:
-        config_data_i = load_dataconfig_case_exp(case_exp)
+        config_data_i = load_dataconfig_case_exp(cfg, case_exp)
         pred_i, obs_i = load_result(config_data_i.data_path['Temp'], test_epoch)
         pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
         obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
@@ -108,26 +107,16 @@ def load_pub_test_result(config_data, i, test_epoch):
     return inds_df, inds_majordam_df
 
 
-def load_dataconfig_case_exp(case_exp):
-    config_dir = definitions.CONFIG_DIR
+def load_dataconfig_case_exp(cfg, case_exp):
     (case, exp) = case_exp.split("_")
-    if case == "inv" or case == "simulate" or case == "storage":
-        config_file_i = os.path.join(config_dir, case + "/config2_" + exp + ".ini")
-        subdir = case + "/" + exp
-    elif case == "siminv":
-        config_file_i = os.path.join(config_dir, case + "/config3_" + exp + ".ini")
-        subdir = case + "/" + exp
-    elif case == 'dam':
-        config_file_i = os.path.join(config_dir, case + "/config_" + exp + ".ini")
-        subdir = case + "/" + exp
-        if not os.path.isfile(config_file_i):
-            config_file_i = os.path.join(config_dir, case + "/config2_" + exp + ".ini")
-            if not os.path.isfile(config_file_i):
-                config_file_i = os.path.join(config_dir, case + "/config3_" + exp + ".ini")
-    else:
-        config_file_i = os.path.join(config_dir, case + "/config_" + exp + ".ini")
-        subdir = case + "/" + exp
-    config_data_i = GagesConfig.set_subdir(config_file_i, subdir)
+    cfg_file = copy.deepcopy(cfg)
+    cfg_file.SUBSET = case
+    cfg_file.SUB_EXP = exp
+    cfg_file.TEMP_PATH = os.path.join(cfg_file.ROOT_DIR, 'temp', cfg_file.DATASET, cfg_file.SUBSET,
+                                      cfg_file.SUB_EXP)
+    cfg_file.OUT_PATH = os.path.join(cfg_file.ROOT_DIR, 'output', cfg_file.DATASET, cfg_file.SUBSET,
+                                     cfg_file.SUB_EXP)
+    config_data_i = GagesConfig(cfg_file)
     return config_data_i
 
 

@@ -13,25 +13,33 @@ import pandas as pd
 
 sys.path.append("../..")
 import os
-import definitions
+from data.config import cfg, update_cfg, cmd
 
-conus_exps = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
-pair1_exps = ["dam_exp1", "dam_exp2", "dam_exp3", "dam_exp7", "dam_exp8", "dam_exp9"]
-pair2_exps = ["nodam_exp7", "nodam_exp8", "nodam_exp9", "nodam_exp10", "nodam_exp11", "nodam_exp12"]
-pair3_exps = ["dam_exp27", "dam_exp26", "dam_exp28", "dam_exp29", "dam_exp30", "dam_exp31"]
-nodam_exp_lst = ["nodam_exp1", "nodam_exp2", "nodam_exp3", "nodam_exp4", "nodam_exp5", "nodam_exp6"]
-smalldam_exp_lst = ["dam_exp20", "dam_exp21", "dam_exp22", "dam_exp23", "dam_exp24", "dam_exp25"]
-largedam_exp_lst = ["dam_exp4", "dam_exp5", "dam_exp6", "dam_exp13", "dam_exp16", "dam_exp19"]
-config_dir = definitions.CONFIG_DIR
-test_epoch = 300
+# conus_exps = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
+# pair1_exps = ["dam_exp1", "dam_exp2", "dam_exp3", "dam_exp7", "dam_exp8", "dam_exp9"]
+# pair2_exps = ["nodam_exp7", "nodam_exp8", "nodam_exp9", "nodam_exp10", "nodam_exp11", "nodam_exp12"]
+# pair3_exps = ["dam_exp27", "dam_exp26", "dam_exp28", "dam_exp29", "dam_exp30", "dam_exp31"]
+# nodam_exp_lst = ["nodam_exp1", "nodam_exp2", "nodam_exp3", "nodam_exp4", "nodam_exp5", "nodam_exp6"]
+# smalldam_exp_lst = ["dam_exp20", "dam_exp21", "dam_exp22", "dam_exp23", "dam_exp24", "dam_exp25"]
+# largedam_exp_lst = ["dam_exp4", "dam_exp5", "dam_exp6", "dam_exp13", "dam_exp16", "dam_exp19"]
+
+conus_exps = ["basic_exp37"]
+pair1_exps = ["dam_exp1"]
+pair2_exps = ["nodam_exp7"]
+pair3_exps = ["dam_exp27"]
+nodam_exp_lst = ["nodam_exp1"]
+smalldam_exp_lst = ["dam_exp20"]
+largedam_exp_lst = ["dam_exp4"]
+# test_epoch = 300
+test_epoch = 20
 
 # nodam_config_data = load_dataconfig_case_exp(nodam_exp_lst[0])
 # smalldam_config_data = load_dataconfig_case_exp(smalldam_exp_lst[0])
 # largedam_config_data = load_dataconfig_case_exp(largedam_exp_lst[0])
-pair1_config_data = load_dataconfig_case_exp(pair1_exps[0])
-pair2_config_data = load_dataconfig_case_exp(pair2_exps[0])
-pair3_config_data = load_dataconfig_case_exp(pair3_exps[0])
-conus_config_data = load_dataconfig_case_exp(conus_exps[0])
+pair1_config_data = load_dataconfig_case_exp(cfg, pair1_exps[0])
+pair2_config_data = load_dataconfig_case_exp(cfg, pair2_exps[0])
+pair3_config_data = load_dataconfig_case_exp(cfg, pair3_exps[0])
+conus_config_data = load_dataconfig_case_exp(cfg, conus_exps[0])
 
 conus_data_model = GagesModel.load_datamodel(conus_config_data.data_path["Temp"],
                                              data_source_file_name='test_data_source.txt',
@@ -125,7 +133,7 @@ idx_lst_largedam_in_conus = [i for i in range(len(conus_sites)) if conus_sites[i
 
 compare_item = 2
 if compare_item == 0:
-    inds_df = load_ensemble_result(pair1_exps, test_epoch)
+    inds_df = load_ensemble_result(cfg, pair1_exps, test_epoch)
     keys_nse = "NSE"
     xs = []
     ys = []
@@ -138,11 +146,11 @@ if compare_item == 0:
     x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_smalldam_in_pair1])
     xs.append(x2)
     ys.append(y2)
-    inds_df_nodam = load_ensemble_result(nodam_exp_lst, test_epoch)
+    inds_df_nodam = load_ensemble_result(cfg, nodam_exp_lst, test_epoch)
     x3, y3 = ecdf(inds_df_nodam[keys_nse])
     xs.append(x3)
     ys.append(y3)
-    inds_df_smalldam = load_ensemble_result(smalldam_exp_lst, test_epoch)
+    inds_df_smalldam = load_ensemble_result(cfg, smalldam_exp_lst, test_epoch)
     x4, y4 = ecdf(inds_df_smalldam[keys_nse])
     xs.append(x4)
     ys.append(y4)
@@ -155,10 +163,10 @@ if compare_item == 0:
                event_str="is_pooling_together", x_str="NSE", y_str="CDF", ax_as_subplot=ax1)
 elif compare_item == 2:
     print("multi box")
-    inds_df_pair1 = load_ensemble_result(pair1_exps, test_epoch)
-    inds_df_pair2 = load_ensemble_result(pair2_exps, test_epoch)
-    inds_df_pair3 = load_ensemble_result(pair3_exps, test_epoch)
-    inds_df_conus = load_ensemble_result(conus_exps, test_epoch)
+    inds_df_pair1 = load_ensemble_result(cfg, pair1_exps, test_epoch)
+    inds_df_pair2 = load_ensemble_result(cfg, pair2_exps, test_epoch)
+    inds_df_pair3 = load_ensemble_result(cfg, pair3_exps, test_epoch)
+    inds_df_conus = load_ensemble_result(cfg, conus_exps, test_epoch)
 
     fig = plt.figure(figsize=(15, 8))
     gs = gridspec.GridSpec(1, 3)
@@ -171,7 +179,7 @@ elif compare_item == 2:
     attr_nodam = "zero_dor"
     cases_exps_legends_nodam = ["LSTM-Z", "LSTM-ZS", "LSTM-ZL", "LSTM-CONUS"]
     frames_nodam = []
-    inds_df_nodam = load_ensemble_result(nodam_exp_lst, test_epoch)
+    inds_df_nodam = load_ensemble_result(cfg, nodam_exp_lst, test_epoch)
     df_nodam_alone = pd.DataFrame({attr_nodam: np.full([inds_df_nodam.shape[0]], cases_exps_legends_nodam[0]),
                                    keys_nse: inds_df_nodam[keys_nse]})
     frames_nodam.append(df_nodam_alone)
@@ -208,7 +216,7 @@ elif compare_item == 2:
     attr_smalldam = "small_dor"
     cases_exps_legends_smalldam = ["LSTM-S", "LSTM-ZS", "LSTM-SL", "LSTM-CONUS"]
     frames_smalldam = []
-    inds_df_smalldam = load_ensemble_result(smalldam_exp_lst, test_epoch)
+    inds_df_smalldam = load_ensemble_result(cfg, smalldam_exp_lst, test_epoch)
     df_smalldam_alone = pd.DataFrame(
         {attr_smalldam: np.full([inds_df_smalldam.shape[0]], cases_exps_legends_smalldam[0]),
          keys_nse: inds_df_smalldam[keys_nse]})
@@ -247,7 +255,7 @@ elif compare_item == 2:
     attr_largedam = "large_dor"
     cases_exps_legends_largedam = ["LSTM-L", "LSTM-ZL", "LSTM-SL", "LSTM-CONUS"]
     frames_largedam = []
-    inds_df_largedam = load_ensemble_result(largedam_exp_lst, test_epoch)
+    inds_df_largedam = load_ensemble_result(cfg, largedam_exp_lst, test_epoch)
     df_largedam_alone = pd.DataFrame(
         {attr_largedam: np.full([inds_df_largedam.shape[0]], cases_exps_legends_largedam[0]),
          keys_nse: inds_df_largedam[keys_nse]})
@@ -289,10 +297,10 @@ elif compare_item == 2:
 
 elif compare_item == 1:  # ecdf
     print("multi plots")
-    inds_df_pair1 = load_ensemble_result(pair1_exps, test_epoch)
-    inds_df_pair2 = load_ensemble_result(pair2_exps, test_epoch)
-    inds_df_pair3 = load_ensemble_result(pair3_exps, test_epoch)
-    inds_df_conus = load_ensemble_result(conus_exps, test_epoch)
+    inds_df_pair1 = load_ensemble_result(cfg, pair1_exps, test_epoch)
+    inds_df_pair2 = load_ensemble_result(cfg, pair2_exps, test_epoch)
+    inds_df_pair3 = load_ensemble_result(cfg, pair3_exps, test_epoch)
+    inds_df_conus = load_ensemble_result(cfg, conus_exps, test_epoch)
 
     fig = plt.figure(figsize=(12, 4))
     gs = gridspec.GridSpec(1, 3)
@@ -301,7 +309,7 @@ elif compare_item == 1:  # ecdf
     xs_nodam = []
     ys_nodam = []
     cases_exps_legends_nodam = ["no_dam_alone", "no_dam_in_pair1", "no_dam_in_pair2", "no_dam_in_conus"]
-    inds_df_nodam = load_ensemble_result(nodam_exp_lst, test_epoch)
+    inds_df_nodam = load_ensemble_result(cfg, nodam_exp_lst, test_epoch)
     x_nodam_solo, y_nodam_solo = ecdf(inds_df_nodam[keys_nse])
     xs_nodam.append(x_nodam_solo)
     ys_nodam.append(y_nodam_solo)
@@ -320,7 +328,7 @@ elif compare_item == 1:  # ecdf
     xs_smalldam = []
     ys_smalldam = []
     cases_exps_legends_smalldam = ["small_dam_alone", "small_dam_in_pair1", "small_dam_in_pair3", "small_dam_in_conus"]
-    inds_df_smalldam = load_ensemble_result(smalldam_exp_lst, test_epoch)
+    inds_df_smalldam = load_ensemble_result(cfg, smalldam_exp_lst, test_epoch)
     x_smalldam_solo, y_smalldam_solo = ecdf(inds_df_smalldam[keys_nse])
     xs_smalldam.append(x_smalldam_solo)
     ys_smalldam.append(y_smalldam_solo)
@@ -339,7 +347,7 @@ elif compare_item == 1:  # ecdf
     xs_largedam = []
     ys_largedam = []
     cases_exps_legends_largedam = ["large_dam_alone", "large_dam_in_pair2", "large_dam_in_pair3", "large_dam_in_conus"]
-    inds_df_largedam = load_ensemble_result(largedam_exp_lst, test_epoch)
+    inds_df_largedam = load_ensemble_result(cfg, largedam_exp_lst, test_epoch)
     x_largedam_solo, y_largedam_solo = ecdf(inds_df_largedam[keys_nse])
     xs_largedam.append(x_largedam_solo)
     ys_largedam.append(y_largedam_solo)

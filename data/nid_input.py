@@ -23,18 +23,11 @@ def save_nidinput(nid_model, data_path, num_str=None, **kwargs):
 
 
 class NidConfig(object):
-    nidUrl = 'https://nid.sec.usace.army.mil/ords/NID_R.DOWNLOADFILE?InFileName={nidFile}'
-    nidDir = os.path.join(definitions.ROOT_DIR, "example", 'data', 'nid')
-    # EPSG:4269 --  https://epsg.io/4269
-    nidEpsg = 4269
 
-    def __init__(self, nid_file_name):
-        if not os.path.isdir(NidConfig.nidDir):
-            os.mkdir(NidConfig.nidDir)
-        self.nid_url = NidConfig.nidUrl.format(nidFile=nid_file_name)
-        self.nid_dir = NidConfig.nidDir
-        self.nid_file = os.path.join(NidConfig.nidDir, nid_file_name)
-        self.nid_epsg = NidConfig.nidEpsg
+    def __init__(self, config_file):
+        self.nid_dir = config_file.NID.NID_DIR
+        self.nid_file = config_file.NID.NID_FILE
+        self.nid_epsg = config_file.NID.NID_EPSG
 
 
 class NidSource(object):
@@ -42,10 +35,6 @@ class NidSource(object):
     def __init__(self, config_data):
         """read configuration of data source. 读取配置，准备数据，关于数据读取部分，可以放在外部需要的时候再执行"""
         self.data_config = config_data
-        self.prepare_data()
-
-    def prepare_data(self):
-        download_excel(self.data_config.nid_url, self.data_config.nid_file)
 
     def read_nid(self):
         df = pd.read_excel(self.data_config.nid_file)
@@ -64,10 +53,10 @@ class NidSource(object):
 class NidModel(object):
     """data formatter， utilizing function of DataSource object to read data and transform"""
 
-    def __init__(self, nid_file='NID2018_U.xlsx', *args):
+    def __init__(self, cfg_file, *args):
         """:parameter data_source: DataSource object"""
         if len(args) == 0:
-            nid_config = NidConfig(nid_file)
+            nid_config = NidConfig(cfg_file)
             self.nid_source = NidSource(nid_config)
             self.nid_data = self.nid_source.read_nid()
         else:

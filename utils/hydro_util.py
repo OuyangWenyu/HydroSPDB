@@ -74,6 +74,7 @@ def unserialize_numpy(my_file):
 
 
 def serialize_geopandas(gpd_df, my_file):
+    # TODO: it seems that new edition of geopandas didn't support serialization by this way
     gpd_df.to_file(my_file)
 
 
