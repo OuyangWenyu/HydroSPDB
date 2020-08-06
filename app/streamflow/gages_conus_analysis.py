@@ -55,7 +55,7 @@ def conus_lstm(args):
 def cmd():
     """input args from cmd"""
     parser = argparse.ArgumentParser(description='Train the CONUS model')
-    parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file', default="basic/config_exp11.ini",
+    parser.add_argument('--cfg', dest='cfg_file', help='Optional configuration file', default="basic/config_exp16.ini",
                         type=str)
     parser.add_argument('--ctx', dest='ctx',
                         help='Running Context -- gpu num. E.g `--ctx 0` means run code in the context of gpu 0',
@@ -105,6 +105,7 @@ def cmd():
 # python gages_conus_analysis.py --cfg basic/config_exp8.ini --ctx 0 --rs 1111 --te 300 --train_mode True
 # python gages_conus_analysis.py --cfg basic/config_exp9.ini --ctx 0 --rs 11111 --te 300 --train_mode True
 # python gages_conus_analysis.py --cfg basic/config_exp50.ini --ctx 1 --rs 1234 --te 300 --train_mode True
+# python gages_conus_analysis.py --cfg basic/config_exp16.ini --ctx 0 --rs 1234 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()
