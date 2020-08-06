@@ -351,15 +351,15 @@ def plot_loss_early_stop(train_loss, valid_loss):
     return fig
 
 
-def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_size=(8, 8), cmap_str="viridis"):
-    temp = data
+def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_size=(8, 8), cmap_str="jet",
+                   idx_lst=None, markers=None):
     if pertile_range is None:
-        vmin = np.amin(temp)
-        vmax = np.amax(temp)
+        vmin = np.amin(data)
+        vmax = np.amax(data)
     else:
         assert 0 <= pertile_range[0] < pertile_range[1] <= 100
-        vmin = np.percentile(temp, pertile_range[0])
-        vmax = np.percentile(temp, pertile_range[1])
+        vmin = np.percentile(data, pertile_range[0])
+        vmax = np.percentile(data, pertile_range[1])
     llcrnrlat = np.min(lat),
     urcrnrlat = np.max(lat),
     llcrnrlon = np.min(lon),
@@ -373,9 +373,16 @@ def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_si
                                  name="admin_1_states_provinces_shp")
     ax.add_feature(states, linewidth=.5, edgecolor="black")
     ax.coastlines('50m', linewidth=0.8)
-    # auto projection
-    scat = plt.scatter(lon, lat, c=temp, s=10, cmap=cmap_str, vmin=vmin, vmax=vmax)
-    fig.colorbar(scat, ax=ax, pad=0.01)
+    if idx_lst is not None:
+        assert markers is not None
+        assert type(cmap_str) == list
+        assert len(cmap_str) == len(idx_lst) == len(markers)
+        for i in range(len(idx_lst)):
+            scat = plt.scatter(lon[idx_lst[i]], lat[idx_lst[i]], c=data[idx_lst[i]], marker=markers[i], s=20,
+                               cmap=cmap_str[i], vmin=vmin, vmax=vmax)
+    else:
+        scat = plt.scatter(lon, lat, c=data, s=10, cmap=cmap_str, vmin=vmin, vmax=vmax)
+        fig.colorbar(scat, ax=ax, pad=0.01)
     return ax
 
 

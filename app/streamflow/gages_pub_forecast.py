@@ -155,16 +155,21 @@ train_set = "training"
 test_set = "testing"
 show_ind_key = "NSE"
 
-fig = plt.figure(figsize=(12, 4))
-# gs = gridspec.GridSpec(2, 2)
-gs = gridspec.GridSpec(1, 11)
+# fig = plt.figure(figsize=(12, 4))
+# gs = gridspec.GridSpec(1, 11)
+fig = plt.figure(figsize=(8, 9))
+gs = gridspec.GridSpec(2, 2)
+titles = ["(a)", "(b)", "(c)", "(d)"]
+
 colors = ["Greens", "Blues", "Reds", "Greys"]
 sns.set(font_scale=1.2)
 
 for k in range(len(exp_lst)):
     if k == len(exp_lst) - 1:
         print("camels pub")
-        ax_k = plt.subplot(gs[k * 3: k * 3 + 2])
+        # ax_k = plt.subplot(gs[k * 3: k * 3 + 2])
+        ax_k = plt.subplot(gs[1, 1])
+        ax_k.set_title(titles[k])
         frames_camels_pub = []
         inds_df_camels, pred_mean, obs_mean = load_ensemble_result(cfg, camels_exp_lst, test_epoch, return_value=True)
         df_camels_pub = pd.DataFrame({train_set: np.full([inds_df_camels.shape[0]], train_data_name_lst[k][0]),
@@ -172,7 +177,8 @@ for k in range(len(exp_lst)):
                                       show_ind_key: inds_df_camels[show_ind_key]})
         frames_camels_pub.append(df_camels_pub)
         for j in range(len(exp_lst[k])):
-            inds_df_camels, pred_mean, obs_mean = load_pub_ensemble_result(cfg, exp_lst[k][j], camels_exp_lst, test_epoch,
+            inds_df_camels, pred_mean, obs_mean = load_pub_ensemble_result(cfg, exp_lst[k][j], camels_exp_lst,
+                                                                           test_epoch,
                                                                            return_value=True)
             df_camels_pub = pd.DataFrame({train_set: np.full([inds_df_camels.shape[0]], train_data_name_lst[k][0]),
                                           test_set: np.full([inds_df_camels.shape[0]], test_data_name_lst[k][j + 1]),
@@ -187,7 +193,9 @@ for k in range(len(exp_lst)):
         # plt.subplots_adjust(hspace=0.8)
         # sns.boxplot(ax=ax_k, x=test_set, y=show_ind_key, data=result_camels_pub, showfliers=False, palette=colors[k])
         continue
-    ax_k = plt.subplot(gs[k * 3:(k + 1) * 3])
+    # ax_k = plt.subplot(gs[k * 3:(k + 1) * 3])
+    ax_k = plt.subplot(gs[int(k / 2), k % 2])
+    ax_k.set_title(titles[k])
     frames = []
     for j in range(len(exp_lst[k])):
         config_data = load_dataconfig_case_exp(cfg, exp_lst[k][j])

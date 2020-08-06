@@ -175,71 +175,6 @@ if 'post' in doLst:
 
     x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_largedor])
     xs.append(x2)
-    ys.a                         screen_basin_area_huc4=False,
-                                                      DOR=dor_2)
-    sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
-    sites_id_dor2 = source_data_dor2.all_configs['flow_screen_gage_id']
-
-    # basins with dams
-    source_data_withdams = GagesSource.choose_some_basins(config_data,
-                                                          config_data.model_dict["data"]["tRangeTrain"],
-                                                          screen_basin_area_huc4=False,
-                                                          dam_num=[1, 100000])
-    sites_id_withdams = source_data_withdams.all_configs['flow_screen_gage_id']
-    sites_id_dor1 = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
-
-    no_divert_small_dor = np.intersect1d(sites_id_nodivert, sites_id_dor1)
-    no_divert_large_dor = np.intersect1d(sites_id_nodivert, sites_id_dor2)
-    diversion_small_dor = np.intersect1d(sites_id_diversion, sites_id_dor1)
-    diversion_large_dor = np.intersect1d(sites_id_diversion, sites_id_dor2)
-
-    all_sites = data_model.t_s_dict["sites_id"]
-    idx_lst_nodivert_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in no_divert_small_dor]
-    idx_lst_nodivert_largedor = [i for i in range(len(all_sites)) if all_sites[i] in no_divert_large_dor]
-    idx_lst_diversion_smalldor = [i for i in range(len(all_sites)) if all_sites[i] in diversion_small_dor]
-    idx_lst_diversion_largedor = [i for i in range(len(all_sites)) if all_sites[i] in diversion_large_dor]
-
-    keys_nse = "NSE"
-    xs = []
-    ys = []
-    cases_exps_legends_together = ["not_diverted_small_dor", "not_diverted_large_dor", "diversion_small_dor",
-                                   "diversion_large_dor", "CONUS"]
-
-    x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_smalldor])
-    xs.append(x1)
-    ys.append(y1)
-
-    x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_largedor])
-    xs.append(x2)
-    ys.a                         screen_basin_area_huc4=False,
-                                                      DOR=dor_2)
-    sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
-    sites_id_dor2 = source_data_dor2.all_configs['flow_screen_gage_id']
-
-    # basins with dams
-    source_data_withdams = GagesSource.choose_some_basins(config_data,
-                                                          config_data.model_dict["data"]["tRangeTrain"],
-                                                          screen_basin_area_huc4=False,
-                                                          dam_num=[1, 100000])
-    sites_id_withdams = source_data_withdams.all_configs['flow_screen_gage_id']
-    sites_id_dor1 = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
-
-    no_divert_small_dor = np.intersect1d(sites_id_nodivert, sites_id_dor1)
-    no_divert_large_dor = np.intersect1d(sites_id_nodivert, sites_id_dor2)
-    diversion_small_dor = np.intersect1d(sites_id_diversion, snge(len(all_sites)) if all_sites[i] in diversion_large_dor]
-
-    keys_nse = "NSE"
-    xs = []
-    ys = []
-    cases_exps_legends_together = ["not_diverted_small_dor", "not_diverted_large_dor", "diversion_small_dor",
-                                   "diversion_large_dor", "CONUS"]
-
-    x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_smalldor])
-    xs.append(x1)
-    ys.append(y1)
-
-    x2, y2 = ecdf(inds_df[keys_nse].iloc[idx_lst_nodivert_largedor])
-    xs.append(x2)
     ys.append(y2)
 
     x3, y3 = ecdf(inds_df[keys_nse].iloc[idx_lst_diversion_smalldor])
@@ -351,3 +286,74 @@ if 'post' in doLst:
                                        forcing_file_name='forcing.npy', attr_file_name='attr.npy',
                                        f_dict_file_name='dictFactorize.json',
                                        var_dict_file_name='dictAttribute.json',
+                                       t_s_dict_file_name='dictTimeSpace.json')
+        nid_input = NidModel(cfg)
+        nid_dir = os.path.join(cfg.NID.NID_DIR, "test")
+        save_nidinput(nid_input, nid_dir, nid_source_file_name='nid_source.txt', nid_data_file_name='nid_data.shp')
+        data_input = GagesDamDataModel(df, nid_input, care_1purpose=True)
+        serialize_json(data_input.gage_main_dam_purpose, os.path.join(nid_dir, "dam_main_purpose_dict.json"))
+    gage_main_dam_purpose = unserialize_json(nid_gene_file)
+    gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())
+    gage_main_dam_purpose_lst_merge = "".join(gage_main_dam_purpose_lst)
+    gage_main_dam_purpose_unique = np.unique(list(gage_main_dam_purpose_lst_merge))
+    # gage_main_dam_purpose_unique = np.unique(gage_main_dam_purpose_lst)
+    purpose_regions = {}
+    for i in range(gage_main_dam_purpose_unique.size):
+        sites_id = []
+        for key, value in gage_main_dam_purpose.items():
+            if gage_main_dam_purpose_unique[i] in value:
+                sites_id.append(key)
+        assert (all(x < y for x, y in zip(sites_id, sites_id[1:])))
+        purpose_regions[gage_main_dam_purpose_unique[i]] = sites_id
+    id_regions_idx = []
+    id_regions_sites_ids = []
+    regions_name = []
+    show_min_num = 10
+    df_id_region = np.array(data_model.t_s_dict["sites_id"])
+    for key, value in purpose_regions.items():
+        gages_id = value
+        c, ind1, ind2 = np.intersect1d(df_id_region, gages_id, return_indices=True)
+        if c.size < show_min_num:
+            continue
+        assert (all(x < y for x, y in zip(ind1, ind1[1:])))
+        assert (all(x < y for x, y in zip(c, c[1:])))
+        id_regions_idx.append(ind1)
+        id_regions_sites_ids.append(c)
+        regions_name.append(key)
+    preds, obss, inds_dfs = split_results_to_regions(data_model, test_epoch, id_regions_idx,
+                                                     id_regions_sites_ids)
+    frames = []
+    x_name = "purposes"
+    y_name = "NSE"
+    hue_name = "DOR"
+    col_name = "diversion"
+    for i in range(len(id_regions_idx)):
+        # plot box，使用seaborn库
+        keys = ["NSE"]
+        inds_test = subset_of_dict(inds_dfs[i], keys)
+        inds_test = inds_test[keys[0]].values
+        df_dict_i = {}
+        str_i = regions_name[i]
+        df_dict_i[x_name] = np.full([inds_test.size], str_i)
+        df_dict_i[y_name] = inds_test
+        df_dict_i[hue_name] = dors[id_regions_idx[i]]
+        df_dict_i[col_name] = diversions[id_regions_idx[i]]
+        # df_dict_i[hue_name] = nor_storage[id_regions_idx[i]]
+        df_i = pd.DataFrame(df_dict_i)
+        frames.append(df_i)
+    result = pd.concat(frames)
+    plot_boxs(result, x_name, y_name, ylim=[0, 1.0])
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'purpose_distribution.png'), dpi=500, bbox_inches="tight")
+    # g = sns.catplot(x=x_name, y=y_name, hue=hue_name, col=col_name,
+    #                 data=result, kind="swarm",
+    #                 height=4, aspect=.7)
+    sns.set(font_scale=1.5)
+    fig, ax = plt.subplots()
+    fig.set_size_inches(11.7, 8.27)
+    g = sns.catplot(ax=ax, x=x_name, y=y_name,
+                    hue=hue_name, col=col_name,
+                    data=result, palette="Set1",
+                    kind="box", dodge=True, showfliers=False)
+    # g.set(ylim=(-1, 1))
+    plt.savefig(os.path.join(config_data.data_path["Out"], '3factors_distribution.png'), dpi=500, bbox_inches="tight")
+    plt.show()

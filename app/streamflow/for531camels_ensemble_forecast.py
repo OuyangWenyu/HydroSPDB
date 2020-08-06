@@ -100,7 +100,8 @@ inds_df = load_ensemble_result(cfg, conus_exps, test_epoch)
 keys_nse = "NSE"
 xs = []
 ys = []
-cases_exps_legends = ["523sites_from_LSTM-CONUS", "523sites_trained_in_LSTM-CAMELS"]
+# cases_exps_legends = ["523sites_from_LSTM-CONUS", "523sites_trained_in_LSTM-CAMELS"]
+cases_exps_legends = ["Train: LSTM-CONUS; Test: 523 basins in CAMES", "Train: 523 basins in CAMELS; Test: 523 basins in CAMES"]
 x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_camels])
 xs.append(x1)
 ys.append(y1)

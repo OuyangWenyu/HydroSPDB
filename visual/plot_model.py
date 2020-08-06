@@ -11,7 +11,8 @@ import seaborn as sns
 from explore.stat import statError
 from utils import hydro_time
 from utils.dataset_format import subset_of_dict
-from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf, plot_ts_map, plot_map_carto
+from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf, plot_ts_map, \
+    plot_map_carto
 
 
 def plot_scatter_multi_attrs(data_model, inds_df, idx_lst_nse_range, attr_lst, y_var_lst):
@@ -206,8 +207,8 @@ def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst,
     if plot_ts:
         plot_ts_map(data_map.tolist(), data_ts, lat, lon, t, sites.tolist(), pertile_range=pertile_range)
     else:
-        f = plot_map_carto(data_map, lat=lat, lon=lon, pertile_range=pertile_range, fig_size=fig_size,
-                           cmap_str=cmap_str)
+        f = plot_map_carto(data_map, lat=lat, lon=lon, pertile_range=pertile_range,
+                           fig_size=(fig_size[0], fig_size[1] - 2), cmap_str=cmap_str)
         return f
 
 
@@ -246,3 +247,55 @@ def plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lst=None, pert
              pos2.height / wh_ratio[1]]
     ax2.set_position(pos2_)  # set a new position
     return fig
+
+
+def plot_gages_map_and_scatter(inds_df, items, idx_lst, cmap_strs=["Reds", "Blues"], markers=["o", "x"],
+                               labels=["zero-dor", "small-dor"], scatter_label=["SLOPE_PCT", "NSE"], hist_bins=50,
+                               wspace=3, hspace=1.2, legend_x=.01, legend_y=.7, sub_fig_ratio=[8, 4, 1]):
+    """inds_df: Lat,lon, slope/elavation, dor range, NSE"""
+    SMALL_SIZE = 12
+    MEDIUM_SIZE = 14
+    BIGGER_SIZE = 16
+
+    plt.rc('font', size=SMALL_SIZE)  # controls default text sizes
+    plt.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
+    plt.rc('axes', labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+    plt.rc('legend', fontsize=MEDIUM_SIZE)  # legend fontsize
+    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+    fig_width = np.sum(sub_fig_ratio)
+    fig_length = sub_fig_ratio[1] + sub_fig_ratio[2]
+    fig = plt.figure(figsize=(fig_width, fig_length))
+    grid = plt.GridSpec(fig_length, fig_width, wspace=wspace, hspace=hspace)
+
+    ax1 = plt.subplot(grid[0:sub_fig_ratio[1], 0:sub_fig_ratio[0]], projection=ccrs.PlateCarree())
+    data = inds_df[items[0]].values
+    lat = inds_df[items[1]].values
+    lon = inds_df[items[2]].values
+    plot_map_carto(data, lat, lon, fig=grid, ax=ax1, cmap_str=cmap_strs, idx_lst=idx_lst, markers=markers)
+
+    ax2 = plt.subplot(grid[0:sub_fig_ratio[1], sub_fig_ratio[0]:sub_fig_ratio[0] + sub_fig_ratio[1]])
+    attr = inds_df[items[3]].values
+    ax2.scatter(attr[idx_lst[0]], data[idx_lst[0]], color='red', marker=markers[0], alpha=0.5, label=labels[0])
+    ax2.scatter(attr[idx_lst[1]], data[idx_lst[1]], color='blue', marker=markers[1], alpha=0.5, label=labels[1])
+    ax2.set_xlabel(scatter_label[0])
+    ax2.set_ylabel(scatter_label[1])
+    handles, labels = ax2.get_legend_handles_labels()
+
+    y_hist = plt.subplot(grid[0:sub_fig_ratio[1], (sub_fig_ratio[0] + sub_fig_ratio[1]):np.sum(sub_fig_ratio)],
+                         xticklabels=[], sharey=ax2)
+    plt.hist(data[idx_lst[0]], hist_bins, orientation='horizontal', color='red', alpha=0.5)
+    plt.hist(data[idx_lst[1]], hist_bins, orientation='horizontal', color='blue', alpha=0.5)
+
+    x_hist = plt.subplot(grid[sub_fig_ratio[1]:sub_fig_ratio[1] + sub_fig_ratio[2],
+                         sub_fig_ratio[0]:(sub_fig_ratio[0] + sub_fig_ratio[1])], yticklabels=[], sharex=ax2)
+    plt.hist(attr[idx_lst[0]], hist_bins, orientation='vertical', color='red', alpha=0.5)
+    plt.hist(attr[idx_lst[1]], hist_bins, orientation='vertical', color='blue', alpha=0.5)
+    x_hist.invert_yaxis()  # y轴调换方向
+
+    x_value = legend_x  # Offset by eye
+    y_value = legend_y
+    axbox = ax1.get_position()
+    fig.legend(handles, labels, loc=(axbox.x0 - x_value, axbox.y1 - y_value))
