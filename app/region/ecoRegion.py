@@ -132,6 +132,9 @@ def cmd():
 # python ecoRegion.py --cfg ecoregion/config_exp15.ini --ctx 1 --rs 1234 --te 300 --train_mode True --cache 1
 # python ecoRegion.py --cfg ecoregion/config_exp16.ini --ctx 1 --rs 123 --te 300 --train_mode True
 # python ecoRegion.py --cfg ecoregion/config_exp17.ini --ctx 0 --rs 12345 --te 300 --train_mode True
+# python ecoRegion.py --cfg ecoregion/config_exp18.ini --ctx 1 --rs 111 --te 300 --train_mode True
+# python ecoRegion.py --cfg ecoregion/config_exp19.ini --ctx 1 --rs 1111 --te 300 --train_mode True
+# python ecoRegion.py --cfg ecoregion/config_exp20.ini --ctx 0 --rs 11111 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()
