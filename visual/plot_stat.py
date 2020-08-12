@@ -123,7 +123,7 @@ def plot_boxs(data, x_name, y_name, uniform_color=None, swarm_plot=False, hue=No
         if ylim is not None:
             plt.ylim(ylim[0], ylim[1])
 
-    sns.despine(offset=10, trim=True)
+    sns.despine()
     locs, labels = plt.xticks()
     plt.setp(labels, rotation=45)
     plt.show()

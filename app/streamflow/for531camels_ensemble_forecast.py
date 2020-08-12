@@ -24,7 +24,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 conus_exps = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
-exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp49", "basic_exp36"]
+exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp35", "basic_exp36"]
 gpu_lst = [1, 1, 0, 0, 1, 1]
 doLst = list()
 # doLst.append('cache')
@@ -109,7 +109,8 @@ keys_nse = "NSE"
 xs = []
 ys = []
 # cases_exps_legends = ["523sites_from_LSTM-CONUS", "523sites_trained_in_LSTM-CAMELS"]
-cases_exps_legends = ["Train: LSTM-CONUS; Test: 523 basins in CAMES", "Train: 523 basins in CAMELS; Test: 523 basins in CAMES"]
+cases_exps_legends = ["Train: LSTM-CONUS; Test: 523 basins in CAMELS",
+                      "Train: 523 basins in CAMELS; Test: 523 basins in CAMELS"]
 x1, y1 = ecdf(inds_df[keys_nse].iloc[idx_lst_camels])
 xs.append(x1)
 ys.append(y1)

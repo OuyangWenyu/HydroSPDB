@@ -91,7 +91,8 @@ def cmd():
 # python for531camels_conus_analysis.py --cfg basic/config_exp33.ini --ctx 0 --rs 12345 --te 300 --train_mode True
 # python for531camels_conus_analysis.py --cfg basic/config_exp34.ini --ctx 0 --rs 111 --te 300 --train_mode True
 # python for531camels_conus_analysis.py --cfg basic/config_exp35.ini --ctx 1 --rs 1111 --te 300 --train_mode True
-# retrain: python for531camels_conus_analysis.py --cfg basic/config_exp49.ini --ctx 1 --rs 1111 --te 300 --train_mode True
+# retrain: python for531camels_conus_analysis.py --cfg basic/config_exp49.ini --ctx 0 --rs 1111 --te 300 --train_mode True
+# retrain: python for531camels_conus_analysis.py --cfg basic/config_exp51.ini --ctx 1 --rs 1111 --te 300 --train_mode True
 # python for531camels_conus_analysis.py --cfg basic/config_exp36.ini --ctx 1 --rs 11111 --te 300 --train_mode True
 if __name__ == '__main__':
     print("Begin\n")

@@ -124,7 +124,7 @@ idx_lst_largedam_in_pair2 = [i for i in range(len(pair2_sites)) if pair2_sites[i
 idx_lst_largedam_in_pair3 = [i for i in range(len(pair3_sites)) if pair3_sites[i] in sites_id_largedam]
 idx_lst_largedam_in_conus = [i for i in range(len(conus_sites)) if conus_sites[i] in sites_id_largedam]
 
-compare_item = 3
+compare_item = 2
 if compare_item == 0:
     inds_df, pred, obs = load_ensemble_result(conus_exps, test_epoch, return_value=True)
 
@@ -224,6 +224,7 @@ elif compare_item == 2:
     frames_nodam.append(df_nodam_in_conus)
     result_nodam = pd.concat(frames_nodam)
     ax1 = plt.subplot(gs[0])
+    ax1.set_title("(a)")
     ax1.set_xticklabels(ax1.get_xticklabels(), rotation=30)
     ax1.set_ylim([0, 1])
     sns.boxplot(ax=ax1, x=attr_nodam, y=keys_nse, data=result_nodam, showfliers=False, palette=color_chosen[0])
@@ -262,6 +263,7 @@ elif compare_item == 2:
     frames_smalldam.append(df_smalldam_in_conus)
     result_smalldam = pd.concat(frames_smalldam)
     ax2 = plt.subplot(gs[1])
+    ax2.set_title("(b)")
     ax2.set_xticklabels(ax2.get_xticklabels(), rotation=30)
     ax2.set_ylim([0, 1])
     ax2.set(ylabel=None)
@@ -301,6 +303,7 @@ elif compare_item == 2:
     frames_largedam.append(df_largedam_in_conus)
     result_largedam = pd.concat(frames_largedam)
     ax3 = plt.subplot(gs[2])
+    ax3.set_title("(c)")
     ax3.set_xticklabels(ax3.get_xticklabels(), rotation=30)
     ax3.set_ylim([0, 1])
     ax3.set(ylabel=None)

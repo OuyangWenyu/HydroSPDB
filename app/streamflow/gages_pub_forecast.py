@@ -20,28 +20,34 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-camels_exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp49", "basic_exp36"]
-camels_pub_on_diff_dor_exp_lst = ["basic_exp12", "basic_exp14", "basic_exp15"]
+# camels_exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp35", "basic_exp36"]
+# camels_exp_lst = ["ecoregion_exp8"]
+# camels_exp_lst = ["ecoregion_exp4"]
+camels_exp_lst = ["ecoregion_exp6"]
+# camels_pub_on_diff_dor_exp_lst = ["basic_exp12", "basic_exp14", "basic_exp15"]
+# camels_pub_on_diff_dor_exp_lst = ["basic_exp21", "basic_exp22", "basic_exp23"]
+# camels_pub_on_diff_dor_exp_lst = ["basic_exp26", "basic_exp27", "basic_exp28"]
+camels_pub_on_diff_dor_exp_lst = ["basic_exp18", "basic_exp29", "basic_exp30"]
 
 # exp_lst = [["ecoregion_exp1", "ecoregion_exp6"], ["ecoregion_exp2", "ecoregion_exp5"],
 #            ["ecoregion_exp3", "ecoregion_exp7"], camels_pub_on_diff_dor_exp_lst]
 exp_lst = [["ecoregion_exp9", "ecoregion_exp12"], ["ecoregion_exp10", "ecoregion_exp13"],
-           ["ecoregion_exp11", "ecoregion_exp14"], camels_pub_on_diff_dor_exp_lst]
-# ["ecoregion_exp4", "ecoregion_exp8"],
+           ["ecoregion_exp11", "ecoregion_exp14"], camels_exp_lst + camels_pub_on_diff_dor_exp_lst]
 # train_data_name_lst = [["LSTM-z", "LSTM-zs"], ["LSTM-z", "LSTM-zl"], ["LSTM-s", "LSTM-sl"]]
 train_data_name_lst = [["Train-z", "Train-zs"], ["Train-z", "Train-zl"], ["Train-s", "Train-sl"],
                        ["Train-c"]]  # ["Train-c", "Train-cn"]
 test_data_name_lst = [["Train-z", "PUB-z", "PUB-s"], ["Train-z", "PUB-z", "PUB-l"], ["Train-s", "PUB-s", "PUB-l"],
-                      ["Train-c", "PUB-z", "PUB-s", "PUB-l"]]  # ["Train-c", "PUB-c", "PUB-n"]
+                      ["Train-c", "PUB-c", "PUB-z", "PUB-s", "PUB-l"]]  # ["Train-c", "PUB-c", "PUB-n"]
 config_dir = definitions.CONFIG_DIR
 test_epoch = 300
 split_num = 2
+camels_pub_split_num = 12
 
 # test
 doLst = list()
 # doLst.append('train')
-# doLst.append('test')
-doLst.append('post')
+doLst.append('test')
+# doLst.append('post')
 
 if 'test' in doLst:
     zerodor_config_data = load_dataconfig_case_exp(camels_pub_on_diff_dor_exp_lst[0])
@@ -77,14 +83,14 @@ if 'test' in doLst:
     sites_id_zerodor = source_data_withoutdams.all_configs['flow_screen_gage_id']
     sites_zero_dor_not_in_camels = [sites_id_zerodor[i] for i in range(len(sites_id_zerodor)) if
                                     sites_id_zerodor[i] not in all_sites_camels_531]
-    gages_model_zerodor_train = GagesModel.update_data_model(zerodor_config_data, data_model_train,
-                                                             sites_id_update=sites_zero_dor_not_in_camels,
-                                                             data_attr_update=True, screen_basin_area_huc4=False)
-    gages_model_zerodor_test = GagesModel.update_data_model(zerodor_config_data, data_model_test,
-                                                            sites_id_update=sites_zero_dor_not_in_camels,
-                                                            data_attr_update=True,
-                                                            train_stat_dict=gages_model_zerodor_train.stat_dict,
-                                                            screen_basin_area_huc4=False)
+    # gages_model_zerodor_train = GagesModel.update_data_model(zerodor_config_data, data_model_train,
+    #                                                          sites_id_update=sites_zero_dor_not_in_camels,
+    #                                                          data_attr_update=True, screen_basin_area_huc4=False)
+    # gages_model_zerodor_test = GagesModel.update_data_model(zerodor_config_data, data_model_test,
+    #                                                         sites_id_update=sites_zero_dor_not_in_camels,
+    #                                                         data_attr_update=True,
+    #                                                         train_stat_dict=gages_model_zerodor_train.stat_dict,
+    #                                                         screen_basin_area_huc4=False)
 
     smalldor_config_data = load_dataconfig_case_exp(camels_pub_on_diff_dor_exp_lst[1])
     source_data_dor1 = GagesSource.choose_some_basins(smalldor_config_data,
@@ -101,14 +107,14 @@ if 'test' in doLst:
     sites_id_smalldor = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
     sites_small_dor_not_in_camels = [sites_id_smalldor[i] for i in range(len(sites_id_smalldor)) if
                                      sites_id_smalldor[i] not in all_sites_camels_531]
-    gages_model_smalldor_train = GagesModel.update_data_model(smalldor_config_data, data_model_train,
-                                                              sites_id_update=sites_small_dor_not_in_camels,
-                                                              data_attr_update=True, screen_basin_area_huc4=False)
-    gages_model_smalldor_test = GagesModel.update_data_model(smalldor_config_data, data_model_test,
-                                                             sites_id_update=sites_small_dor_not_in_camels,
-                                                             data_attr_update=True,
-                                                             train_stat_dict=gages_model_smalldor_train.stat_dict,
-                                                             screen_basin_area_huc4=False)
+    # gages_model_smalldor_train = GagesModel.update_data_model(smalldor_config_data, data_model_train,
+    #                                                           sites_id_update=sites_small_dor_not_in_camels,
+    #                                                           data_attr_update=True, screen_basin_area_huc4=False)
+    # gages_model_smalldor_test = GagesModel.update_data_model(smalldor_config_data, data_model_test,
+    #                                                          sites_id_update=sites_small_dor_not_in_camels,
+    #                                                          data_attr_update=True,
+    #                                                          train_stat_dict=gages_model_smalldor_train.stat_dict,
+    #                                                          screen_basin_area_huc4=False)
 
     largedor_config_data = load_dataconfig_case_exp(camels_pub_on_diff_dor_exp_lst[2])
     source_data_large_dor = GagesSource.choose_some_basins(largedor_config_data,
@@ -118,23 +124,37 @@ if 'test' in doLst:
     sites_id_largedor = source_data_large_dor.all_configs['flow_screen_gage_id']
     sites_large_dor_not_in_camels = [sites_id_largedor[i] for i in range(len(sites_id_largedor)) if
                                      sites_id_largedor[i] not in all_sites_camels_531]
-    gages_model_largedor_train = GagesModel.update_data_model(largedor_config_data, data_model_train,
-                                                              sites_id_update=sites_large_dor_not_in_camels,
-                                                              data_attr_update=True, screen_basin_area_huc4=False)
-    gages_model_largedor_test = GagesModel.update_data_model(largedor_config_data, data_model_test,
-                                                             sites_id_update=sites_large_dor_not_in_camels,
-                                                             data_attr_update=True,
-                                                             train_stat_dict=gages_model_largedor_train.stat_dict,
-                                                             screen_basin_area_huc4=False)
+    # gages_model_largedor_train = GagesModel.update_data_model(largedor_config_data, data_model_train,
+    #                                                           sites_id_update=sites_large_dor_not_in_camels,
+    #                                                           data_attr_update=True, screen_basin_area_huc4=False)
+    # gages_model_largedor_test = GagesModel.update_data_model(largedor_config_data, data_model_test,
+    #                                                          sites_id_update=sites_large_dor_not_in_camels,
+    #                                                          data_attr_update=True,
+    #                                                          train_stat_dict=gages_model_largedor_train.stat_dict,
+    #                                                          screen_basin_area_huc4=False)
 
-    gages_models_test = [gages_model_zerodor_test, gages_model_smalldor_test, gages_model_largedor_test]
-    for gages_model_test in gages_models_test:
-        for i in range(len(camels_exp_lst)):
-            ref_config_data = load_dataconfig_case_exp(camels_exp_lst[i])
+    # gages_models_test = [gages_model_zerodor_test, gages_model_smalldor_test, gages_model_largedor_test]
+    gages_configs_test = [zerodor_config_data, smalldor_config_data, largedor_config_data]
+    gages_sites_test = [sites_zero_dor_not_in_camels, sites_small_dor_not_in_camels, sites_large_dor_not_in_camels]
+    for j in range(len(gages_configs_test)):
+        config_data = load_dataconfig_case_exp(camels_exp_lst[0])
+        for i in range(camels_pub_split_num):
+            data_model_i = GagesModel.load_datamodel(config_data.data_path["Temp"], str(i),
+                                                     data_source_file_name='data_source.txt',
+                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                                     forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                                     f_dict_file_name='dictFactorize.json',
+                                                     var_dict_file_name='dictAttribute.json',
+                                                     t_s_dict_file_name='dictTimeSpace.json')
+            gages_model_test = GagesModel.update_data_model(gages_configs_test[j], data_model_test,
+                                                            sites_id_update=gages_sites_test[j],
+                                                            data_attr_update=True,
+                                                            train_stat_dict=data_model_i.stat_dict,
+                                                            screen_basin_area_huc4=False)
             with torch.cuda.device(1):
-                pretrained_model_file = os.path.join(ref_config_data.data_path["Out"],
+                pretrained_model_file = os.path.join(data_model_i.data_source.data_config.data_path["Out"],
                                                      "model_Ep" + str(test_epoch) + ".pt")
-                pretrained_model_name = camels_exp_lst[i] + "_pretrained_model"
+                pretrained_model_name = camels_exp_lst[0] + "_pretrained_model" + str(i)
                 pred, obs = master_test_with_pretrained_model(gages_model_test, pretrained_model_file,
                                                               pretrained_model_name)
                 basin_area = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"],
@@ -149,6 +169,27 @@ if 'test' in doLst:
                 save_dir = os.path.join(gages_model_test.data_source.data_config.data_path['Out'],
                                         pretrained_model_name)
                 save_result(save_dir, test_epoch, pred, obs)
+
+        # for i in range(len(camels_exp_lst)):
+        #     ref_config_data = load_dataconfig_case_exp(camels_exp_lst[i])
+        #     with torch.cuda.device(1):
+        #         pretrained_model_file = os.path.join(ref_config_data.data_path["Out"],
+        #                                              "model_Ep" + str(test_epoch) + ".pt")
+        #         pretrained_model_name = camels_exp_lst[i] + "_pretrained_model"
+        #         pred, obs = master_test_with_pretrained_model(gages_model_test, pretrained_model_file,
+        #                                                       pretrained_model_name)
+        #         basin_area = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"],
+        #                                                             ['DRAIN_SQKM'],
+        #                                                             is_return_dict=False)
+        #         mean_prep = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"],
+        #                                                            ['PPTAVG_BASIN'],
+        #                                                            is_return_dict=False)
+        #         mean_prep = mean_prep / 365 * 10
+        #         pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
+        #         obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
+        #         save_dir = os.path.join(gages_model_test.data_source.data_config.data_path['Out'],
+        #                                 pretrained_model_name)
+        #         save_result(save_dir, test_epoch, pred, obs)
 
 train_set = "training"
 test_set = "testing"
@@ -170,13 +211,78 @@ for k in range(len(exp_lst)):
         ax_k = plt.subplot(gs[1, 1])
         ax_k.set_title(titles[k])
         frames_camels_pub = []
-        inds_df_camels, pred_mean, obs_mean = load_ensemble_result(camels_exp_lst, test_epoch, return_value=True)
-        df_camels_pub = pd.DataFrame({train_set: np.full([inds_df_camels.shape[0]], train_data_name_lst[k][0]),
-                                      test_set: np.full([inds_df_camels.shape[0]], test_data_name_lst[k][0]),
-                                      show_ind_key: inds_df_camels[show_ind_key]})
-        frames_camels_pub.append(df_camels_pub)
-        for j in range(len(exp_lst[k])):
+        # only camels test, no pub
+        # inds_df_camels, pred_mean, obs_mean = load_ensemble_result(camels_exp_lst, test_epoch, return_value=True)
+        # df_camels_pub = pd.DataFrame({train_set: np.full([inds_df_camels.shape[0]], train_data_name_lst[k][0]),
+        #                               test_set: np.full([inds_df_camels.shape[0]], test_data_name_lst[k][0]),
+        #                               show_ind_key: inds_df_camels[show_ind_key]})
+        # frames_camels_pub.append(df_camels_pub)
+        # pub in camels
+        config_data = load_dataconfig_case_exp(exp_lst[k][0])
+        preds = []
+        obss = []
+        preds2 = []
+        obss2 = []
+        predsbase = []
+        obssbase = []
+        for i in range(camels_pub_split_num):
+            data_model_base = GagesModel.load_datamodel(config_data.data_path["Temp"], str(i),
+                                                        data_source_file_name='test_data_source_base.txt',
+                                                        stat_file_name='test_Statistics_base.json',
+                                                        flow_file_name='test_flow_base.npy',
+                                                        forcing_file_name='test_forcing_base.npy',
+                                                        attr_file_name='test_attr_base.npy',
+                                                        f_dict_file_name='test_dictFactorize_base.json',
+                                                        var_dict_file_name='test_dictAttribute_base.json',
+                                                        t_s_dict_file_name='test_dictTimeSpace_base.json')
+            data_model = GagesModel.load_datamodel(config_data.data_path["Temp"], str(i),
+                                                   data_source_file_name='test_data_source.txt',
+                                                   stat_file_name='test_Statistics.json',
+                                                   flow_file_name='test_flow.npy',
+                                                   forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                                   f_dict_file_name='test_dictFactorize.json',
+                                                   var_dict_file_name='test_dictAttribute.json',
+                                                   t_s_dict_file_name='test_dictTimeSpace.json')
+            pred_base, obs_base = load_result(data_model_base.data_source.data_config.data_path['Temp'],
+                                              test_epoch, pred_name='flow_pred_base',
+                                              obs_name='flow_obs_base')
+            pred_base = pred_base.reshape(pred_base.shape[0], pred_base.shape[1])
+            obs_base = obs_base.reshape(obs_base.shape[0], obs_base.shape[1])
+            print("the size of", str(k), str(0), str(i), "Train-c", str(pred_base.shape[0]))
+            predsbase.append(pred_base)
+            obssbase.append(obs_base)
+
+            pred_i, obs_i = load_result(data_model.data_source.data_config.data_path['Temp'], test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            print("the size of", str(k), str(0), str(i), "PUB-c", str(pred_i.shape[0]))
+            preds.append(pred_i)
+            obss.append(obs_i)
+
+        predsbase_np = reduce(lambda a, b: np.vstack((a, b)), predsbase)
+        obssbase_np = reduce(lambda a, b: np.vstack((a, b)), obssbase)
+        indsbase = statError(obssbase_np, predsbase_np)
+        inds_df_abase = pd.DataFrame(indsbase)
+
+        preds_np = reduce(lambda a, b: np.vstack((a, b)), preds)
+        obss_np = reduce(lambda a, b: np.vstack((a, b)), obss)
+        inds = statError(obss_np, preds_np)
+        inds_df_a = pd.DataFrame(inds)
+
+        df_abase = pd.DataFrame({train_set: np.full([inds_df_abase.shape[0]], train_data_name_lst[k][0]),
+                                 test_set: np.full([inds_df_abase.shape[0]], test_data_name_lst[k][0]),
+                                 # train_data_name_lst[k][j] + "-" + test_data_name_lst[k][1]),
+                                 show_ind_key: inds_df_abase[show_ind_key]})
+        df_a = pd.DataFrame({train_set: np.full([inds_df_a.shape[0]], train_data_name_lst[k][0]),
+                             test_set: np.full([inds_df_a.shape[0]], test_data_name_lst[k][1]),
+                             # train_data_name_lst[k][j] + "-" + test_data_name_lst[k][0])
+                             show_ind_key: inds_df_a[show_ind_key]})
+        frames_camels_pub.append(df_abase)
+        frames_camels_pub.append(df_a)
+
+        for j in range(1, len(exp_lst[k])):
             inds_df_camels, pred_mean, obs_mean = load_pub_ensemble_result(exp_lst[k][j], camels_exp_lst, test_epoch,
+                                                                           split_num=camels_pub_split_num,
                                                                            return_value=True)
             df_camels_pub = pd.DataFrame({train_set: np.full([inds_df_camels.shape[0]], train_data_name_lst[k][0]),
                                           test_set: np.full([inds_df_camels.shape[0]], test_data_name_lst[k][j + 1]),
@@ -186,6 +292,8 @@ for k in range(len(exp_lst)):
         result_camels_pub = pd.concat(frames_camels_pub)
         ax_k.set_ylim([-1, 1])
         ax_k.set_yticks(np.arange(-1, 1, 0.2))
+        medians = result_camels_pub.groupby([train_set, test_set], sort=False)[show_ind_key].median().values
+        print(medians)
         sns_box = sns.boxplot(ax=ax_k, x=train_set, y=show_ind_key, hue=test_set, data=result_camels_pub,
                               showfliers=False, palette=colors[k])
         # plt.subplots_adjust(hspace=0.8)
