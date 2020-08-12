@@ -34,14 +34,14 @@ train_data_name_lst = [["Train-z", "Train-zs"], ["Train-z", "Train-zl"], ["Train
                        ["Train-c"]]  # ["Train-c", "Train-cn"]
 test_data_name_lst = [["Train-z", "PUB-z", "PUB-s"], ["Train-z", "PUB-z", "PUB-l"], ["Train-s", "PUB-s", "PUB-l"],
                       ["Train-c", "PUB-z", "PUB-s", "PUB-l"]]  # ["Train-c", "PUB-c", "PUB-n"]
-# test_epoch = 300
-test_epoch = 20
+test_epoch = 300
+# test_epoch = 20
 split_num = 2
 
 # test
 doLst = list()
 # doLst.append('train')
-doLst.append('test')
+# doLst.append('test')
 # doLst.append('post')
 
 if 'test' in doLst:
