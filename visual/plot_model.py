@@ -1,4 +1,4 @@
-"""本项目调用可视化函数进行可视化的一些函数"""
+"""some plot functions based on plot.py and plot_stat.py"""
 import os
 import cartopy.crs as ccrs
 import pandas as pd
@@ -33,7 +33,7 @@ def plot_region_seperately(gages_data_model, epoch, id_regions_idx, preds, obss,
     df_id_region = np.array(gages_data_model.t_s_dict["sites_id"])
     regions_name = gages_data_model.data_source.all_configs.get("regions")
     for i in range(len(id_regions_idx)):
-        # plot box，使用seaborn库
+        # plot box
         keys = ["Bias", "RMSE", "NSE"]
         inds_test = subset_of_dict(inds_dfs[i], keys)
         box_fig = plot_diff_boxes(inds_test)
@@ -62,7 +62,7 @@ def plot_we_need(data_model_test, obs, pred, show_me_num=5, point_file=None, **k
     pred = pred.reshape(pred.shape[0], pred.shape[1])
     obs = obs.reshape(pred.shape[0], pred.shape[1])
     inds = statError(obs, pred)
-    # plot box，使用seaborn库
+    # plot box
     keys = ["Bias", "RMSE", "NSE"]
     inds_test = subset_of_dict(inds, keys)
     box_fig = plot_diff_boxes(inds_test)
@@ -87,7 +87,7 @@ def plot_we_need(data_model_test, obs, pred, show_me_num=5, point_file=None, **k
 def plot_box_inds(indicators):
     """plot boxplots in one coordination"""
     data = pd.DataFrame(indicators)
-    # 将数据转换为tidy data格式，首先，增加一列名称列，然后剩下的所有值重组到var_name和value_name两列中
+    # transform data to "tidy data". Firstly add a column，then assign all other values to "var_name" and "value_name" columns
     indict_name = "indicator"
     indicts = pd.Series(data.columns.values, name=indict_name)
     data_t = pd.DataFrame(data.values.T)
@@ -117,14 +117,13 @@ def plot_gages_attrs_boxes(sites1, sites2, attr_lst, attrs1, attrs2, diff_str, r
 
 
 def plot_ts_obs_pred(obs, pred, sites, t_range, num):
-    """绘制观测值和预测值比较的时间序列图
+    """plot time series for observation and prediction
     :parameter
-        obs, pred: 都是二维序列变量，第一维是站点，第二维是值，
-        sites: 所有站点的编号
-        num:随机抽选num个并列到两个图上比较
+        obs, pred: 2d variables, first are sites/basins，second are their values，
+        sites: the ids
+        num:randomly choose "num" plots to show
     """
     num_lst = np.sort(np.random.choice(obs.shape[0], num, replace=False))
-    # 首先把随机抽到的两个变量的几个站点数据整合到一个dataframe中，时间序列也要整合到该dataframe中
     sites_lst = pd.Series(sites[num_lst])
     obs_value = pd.DataFrame(obs[num_lst].T, columns=sites_lst)
     pred_value = pd.DataFrame(pred[num_lst].T, columns=sites_lst)
@@ -230,7 +229,7 @@ def plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lst=None, pert
 
     # Figure
     fig = plt.figure(figsize=fig_size)
-    # 第一个坐标轴，绘制地图
+    # first ax for plotting map
     ax1 = plt.subplot(2, 1, 1, projection=ccrs.PlateCarree())
     ax1.set(title=titles[0])
     plot_map_carto(data_map, lat=lat, lon=lon, fig=fig, ax=ax1, fig_size=(fig_size[0], fig_size[1] - 2),
@@ -240,7 +239,7 @@ def plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lst=None, pert
     ax2.set(title=titles[1])
     sns.boxplot(data=data_map, orient='h', linewidth=3, ax=ax2, showfliers=False)
 
-    # 调整位置
+    # adjust location
     pos1 = ax1.get_position()  # get the original position
     pos2 = ax2.get_position()  # get the original position
     pos2_ = [pos1.x0 + adjust_xy[0], pos1.y0 - pos2.height / wh_ratio[1] - adjust_xy[1], pos1.width / wh_ratio[0],
@@ -293,7 +292,7 @@ def plot_gages_map_and_scatter(inds_df, items, idx_lst, cmap_strs=["Reds", "Blue
                          sub_fig_ratio[0]:(sub_fig_ratio[0] + sub_fig_ratio[1])], yticklabels=[], sharex=ax2)
     plt.hist(attr[idx_lst[0]], hist_bins, orientation='vertical', color='red', alpha=0.5)
     plt.hist(attr[idx_lst[1]], hist_bins, orientation='vertical', color='blue', alpha=0.5)
-    x_hist.invert_yaxis()  # y轴调换方向
+    x_hist.invert_yaxis()  # invert y ax
 
     x_value = legend_x  # Offset by eye
     y_value = legend_y

@@ -68,19 +68,19 @@ def array2grid(data, *, lat, lon):
 
 
 def trans_points(from_crs, to_crs, pxs, pys):
-    """不要循环处理，放入到dataframe中可以极大地提高速度，那完全不是一个量级的
+    """put the data into dataframe so that the speed of processing could be improved obviously
     :param
-    pxs: 各点的x坐标组成的list的array
-    pys: 各点的y坐标组成的list的array
+    pxs: x of every point (list/array)
+    pys: y of every point (list/array)
     :return
-    pxys_out: x和y两两值组成的list，可用于初始化一个polygon
+    pxys_out: x and y compared a pair list to initialize a polygon
     """
     df = pd.DataFrame({'x': pxs, 'y': pys})
     start = time.time()
     df['x2'], df['y2'] = transform(from_crs, to_crs, df['x'].tolist(), df['y'].tolist())
     end = time.time()
-    print('计算耗时：', '%.7f' % (end - start))
-    # 坐标转换完成后，将x2, y2数据取出，首先转为numpy数组，然后转置，然后每行一个坐标放入list中即可
+    print('time consuming：', '%.7f' % (end - start))
+    # after transforming xs and ys, pick out x2, y2，and tranform to numpy array，then do a transportation. Finally put coordination of every row to a list
     arr_x = df['x2'].values
     arr_y = df['y2'].values
     pxys_out = np.stack((arr_x, arr_y), 0).T
@@ -88,7 +88,7 @@ def trans_points(from_crs, to_crs, pxs, pys):
 
 
 def trans_polygon(from_crs, to_crs, polygon_from):
-    """转换多边形的各点坐标"""
+    """transform coordination of every point of a polygon to one in a given coordination system"""
     polygon_to = Polygon()
     # 多边形外边界的各点坐标list里面是tuple
     boundary = polygon_from.boundary
@@ -100,7 +100,7 @@ def trans_polygon(from_crs, to_crs, polygon_from):
         pxys_out = trans_points(from_crs, to_crs, pxs, pys)
         polygon_to = Polygon(pxys_out)
     elif boundary_type == 'MultiLineString':
-        # 如果polygon有内部边界，则还需要将内部边界各点坐标也进行转换，然后后面再将内外部边界一起给到一个新的polygon，注意内部边界有可能有多个
+        # if there is interior boundary in a polygon，then we need to transform its coordinations. Notice: maybe multiple interior boundaries exist.
         exts_x = boundary[0].xy[0]
         exts_y = boundary[0].xy[1]
         pxys_ext = trans_points(from_crs, to_crs, exts_x, exts_y)
@@ -120,10 +120,10 @@ def trans_polygon(from_crs, to_crs, polygon_from):
 
 
 def write_shpfile(geodata, output_folder, id_str="hru_id"):
-    """根据geodataframe生成shpfile，用dataframe的id项做名称。"""
+    """generate a shpfile from geodataframe，the name is id of the pandas dataframe"""
     # Create a output path for the data
     gage_id = geodata.iloc[0, :][id_str]
-    # 读取的id是数字，这里转为字符串
+    # id is number，here turn it to str
     output_file = str(int(gage_id)).zfill(8)
     output_fp = os.path.join(output_folder, output_file + '.shp')
     # Write those rows into a new file (the default output file format is Shapefile)
@@ -132,47 +132,47 @@ def write_shpfile(geodata, output_folder, id_str="hru_id"):
 
 def trans_shp_coord(input_folder, input_shp_file, output_folder,
                     output_crs_epsg_or_proj4_str='4326'):
-    """按照坐标系信息，转换shapefile，被转换坐标读取自shapefile，默认转换为WGS84经纬度坐标  +proj=longlat +datum=WGS84 +no_defs"""
+    """tranform a shapefile to a target coord，default target coord is WGS84:  +proj=longlat +datum=WGS84 +no_defs"""
     # Join folder path and filename
     fp = os.path.join(input_folder, input_shp_file)
     data = gpd.read_file(fp)
     # crs_proj4 = CRS(data.crs).to_proj4()
     crs_proj4 = CRS(data.crs)
     # crs_final = CRS.from_proj4(output_crs_proj4_str)
-    # 注意一定要用Proj，否则可能出现x和y在不一样的坐标系代表的含义不同的情况，比如一个x代表经度，另一却代表纬度，那就会出错了。
+    # Proj must be used，if not, maybe x represent longitude, and the other represent latitude and it's wrong
     crs_final = Proj(init='epsg:' + output_crs_epsg_or_proj4_str)
     # crs_final = CRS.from_epsg(output_crs_epsg_or_proj4_str)
     all_columns = data.columns.values  # ndarray type
     new_datas = []
     start = time.time()
     for i in range(0, data.shape[0]):  # data.shape[0]
-        print("生成第 ", i, " 个流域的shapefile:")
+        print("the  ", i, "st basin's shapefile:")
         newdata = gpd.GeoDataFrame()
         for column in all_columns:
-            # geodataframe读取shapefile之后几何属性名称就是geometry
+            # when read shapefile using geodataframe, the name of geo column is "geometry"
             if column == 'geometry':
-                # 首先转换坐标
+                # first change the coord
                 polygon_from = data.iloc[i, :]['geometry']
                 polygon_to = trans_polygon(crs_proj4, crs_final, polygon_from)
-                # 要赋值到newdata的i位置上，否则就成为geoseries了，无法导出到shapefile
+                # assign value to location i of newdata，if not it will be geoseries，which cannot be imported to shapefile
                 newdata.at[0, 'geometry'] = polygon_to
                 print(type(newdata.at[0, 'geometry']))
             else:
                 newdata.at[0, column] = data.iloc[i, :][column]
-        print("转换该流域的坐标完成！")
+        print("coordination transform！")
         print(newdata)
-        # 必须得使用fiona的crs才能保证后面转出来的结果是正确的
+        # must use fiona's crs to guarantee the result is correct
         newdata.crs = fiona.crs.from_epsg(int(output_crs_epsg_or_proj4_str))
-        print("坐标系: ", newdata.crs)
+        print("Coordination system: ", newdata.crs)
         new_datas.append(newdata)
         write_shpfile(newdata, output_folder)
     end = time.time()
-    print('计算耗时：', '%.7f' % (end - start))
+    print('time consuming：', '%.7f' % (end - start))
     return new_datas
 
 
 def nearest_point_index(crs_from, crs_to, lon, lat, xs, ys):
-    # x和y是投影坐标，lon, lat需要先转换一下，注意x是代表经度投影，y是纬度投影
+    # x and y are proj coord，lon, lat should be transformed (x is longtitude projection，y is lat)
     x, y = transform(crs_from, crs_to, lon, lat)
     index_x = (np.abs(xs - x)).argmin()
     index_y = (np.abs(ys - y)).argmin()

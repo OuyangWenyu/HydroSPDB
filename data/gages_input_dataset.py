@@ -1,4 +1,4 @@
-"""for stacked lstm"""
+"""gages data model"""
 import copy
 import operator
 import os
@@ -23,29 +23,47 @@ from utils.dataset_format import subset_of_dict
 from utils.hydro_math import concat_two_3darray, copy_attr_array_in2d
 
 
-def load_pub_ensemble_result(config_file, pub_exp, trained_exp_lst, test_epoch, return_value=False):
+def load_pub_ensemble_result(config_file, pub_exp, trained_exp_lst, test_epoch, split_num=None, return_value=False):
     preds = []
     obss = []
     dor_config_data = load_dataconfig_case_exp(config_file, pub_exp)
-    for i in range(len(trained_exp_lst)):
-        pretrained_model_name = trained_exp_lst[i] + "_pretrained_model"
-        save_dir_i = os.path.join(dor_config_data.data_path['Out'], pretrained_model_name)
-        pred_i, obs_i = load_result(save_dir_i, test_epoch)
-        pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
-        obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
-        print(obs_i)
-        preds.append(pred_i)
-        obss.append(obs_i)
+    if split_num is None:
+        for i in range(len(trained_exp_lst)):
+            pretrained_model_name = trained_exp_lst[i] + "_pretrained_model"
+            save_dir_i = os.path.join(dor_config_data.data_path['Out'], pretrained_model_name)
+            pred_i, obs_i = load_result(save_dir_i, test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            print(obs_i)
+            preds.append(pred_i)
+            obss.append(obs_i)
 
-    preds_np = np.array(preds)
-    obss_np = np.array(obss)
-    pred_mean = np.mean(preds_np, axis=0)
-    obs_mean = np.mean(obss_np, axis=0)
-    inds = statError(obs_mean, pred_mean)
-    inds_df = pd.DataFrame(inds)
-    if return_value:
-        return inds_df, pred_mean, obs_mean
-    return inds_df
+        preds_np = np.array(preds)
+        obss_np = np.array(obss)
+        pred_mean = np.mean(preds_np, axis=0)
+        obs_mean = np.mean(obss_np, axis=0)
+        inds = statError(obs_mean, pred_mean)
+        inds_df = pd.DataFrame(inds)
+        if return_value:
+            return inds_df, pred_mean, obs_mean
+        return inds_df
+    else:
+        for i in range(split_num):
+            pretrained_model_name = trained_exp_lst[0] + "_pretrained_model" + str(i)
+            save_dir_i = os.path.join(dor_config_data.data_path['Out'], pretrained_model_name)
+            pred_i, obs_i = load_result(save_dir_i, test_epoch)
+            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+            print(obs_i)
+            preds.append(pred_i)
+            obss.append(obs_i)
+        predsbase_np = reduce(lambda a, b: np.vstack((a, b)), preds)
+        obssbase_np = reduce(lambda a, b: np.vstack((a, b)), obss)
+        indsbase = statError(obssbase_np, predsbase_np)
+        inds_df_abase = pd.DataFrame(indsbase)
+        if return_value:
+            return inds_df_abase, predsbase_np, obssbase_np
+        return inds_df_abase
 
 
 def load_ensemble_result(cfg, cases_exps, test_epoch, return_value=False):

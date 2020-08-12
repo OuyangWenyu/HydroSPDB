@@ -1,5 +1,5 @@
 """
-Define 数据处理所需的一些基础类型工具类型的函数
+Define basic functions for data processing
 """
 import fnmatch
 import zipfile

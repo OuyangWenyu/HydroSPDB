@@ -1,4 +1,6 @@
-"""基本绘制库，使用的是matplotlib库"""
+"""basic plot functions, mainly using matplotlib"""
+import warnings
+
 import numpy as np
 import scipy
 import matplotlib.pyplot as plt
@@ -173,6 +175,7 @@ def plotMap(data,
             pts=None,
             figsize=(8, 4),
             plotColorBar=True):
+    warnings.warn("this function used basemap, so now it is deprecated", DeprecationWarning)
     if cRange is not None:
         vmin = cRange[0]
         vmax = cRange[1]
