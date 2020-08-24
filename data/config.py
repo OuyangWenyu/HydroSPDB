@@ -275,8 +275,8 @@ def cmd():
     return args
 
 
-def update_cfg(cfg_file, new_args):
-    print("update config file")
+def update_cfg_item(cfg_file, new_args):
+    print("update an item of config file")
     if new_args.sub is not None:
         subset, subexp = new_args.sub.split("/")
         cfg_file.SUBSET = subset
@@ -289,6 +289,14 @@ def update_cfg(cfg_file, new_args):
                                          cfg_file.SUB_EXP)
         if not os.path.exists(cfg_file.OUT_PATH):
             os.makedirs(cfg_file.OUT_PATH)
+    else:
+        print("no update")
+
+
+def update_cfg(cfg_file, new_args):
+    print("update config file")
+    if new_args.sub is not None:
+        update_cfg_item(cfg_file, new_args)
     if new_args.ctx is not None:
         cfg_file.CTX = new_args.ctx
     if new_args.rs is not None:

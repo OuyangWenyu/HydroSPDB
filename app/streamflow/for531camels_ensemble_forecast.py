@@ -18,7 +18,7 @@ exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_ex
 gpu_lst = [1, 1, 0, 0, 1, 1]
 doLst = list()
 # doLst.append('cache')
-test_epoch = 20
+test_epoch = 300
 
 all_config_Data = load_dataconfig_case_exp(cfg, conus_exps[0])
 config_data = load_dataconfig_case_exp(cfg, exp_lst[0])

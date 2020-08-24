@@ -5,6 +5,7 @@ import time
 import os
 import pandas as pd
 
+import hydroDL.model.ann
 from utils import my_timer
 from utils.hydro_math import random_index, select_subset, select_subset_batch_first, select_subset_seq
 from . import rnn
@@ -360,7 +361,7 @@ def model_train(model,
                 x_train = select_subset(x, i_grid, i_t, rho, c=c)
                 y_train = select_subset(y, i_grid, i_t, rho)
                 y_p = model(x_train)
-            elif type(model) in [rnn.LstmCloseModel, rnn.AnnCloseModel]:
+            elif type(model) in [rnn.LstmCloseModel, hydroDL.model.ann.AnnCloseModel]:
                 i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
                 x_train = select_subset(x, i_grid, i_t, rho, c=c)
                 y_train = select_subset(y, i_grid, i_t, rho)
@@ -463,7 +464,7 @@ def model_test(model, x, c, *, file_path, batch_size=None):
                     z_test = z_test.cuda()
             if type(model) in [rnn.CudnnLstmModel, rnn.CudnnLstmModelPretrain]:
                 y_p = model(x_test)
-            if type(model) in [rnn.LstmCloseModel, rnn.AnnCloseModel]:
+            if type(model) in [rnn.LstmCloseModel, hydroDL.model.ann.AnnCloseModel]:
                 y_p = model(x_test, z_test)
             if type(model) in [rnn.LstmCnnForcast]:
                 y_p = model(x_test, z_test)

@@ -7,8 +7,9 @@ from functools import reduce
 import random
 from torch.utils.data import DataLoader
 
+import hydroDL.model.ann
 from data.data_config import name_pred
-from data.data_input import _trans_norm, create_datasets, _basin_norm
+from data.data_input import _trans_norm, create_datasets
 from explore import stat
 from hydroDL.model import *
 
@@ -37,10 +38,10 @@ def master_test_1by1(data_model):
         model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
                                    fillObs=True)
     elif opt_model['name'] == 'AnnModel':
-        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
     elif opt_model['name'] == 'AnnCloseModel':
-        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
-                                  fillObs=True)
+        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                                fillObs=True)
     model.load_state_dict(torch.load(model_file))
     testloader = create_datasets(data_model, train_mode=False)
     pred_list, obs_list = model_run.test_dataloader(model, testloader, seq_first=True)
@@ -79,10 +80,10 @@ def master_train_1by1(data_model, valid_size=0.2):
         model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
                                    fillObs=True)
     elif opt_model['name'] == 'AnnModel':
-        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
     elif opt_model['name'] == 'AnnCloseModel':
-        model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
-                                  fillObs=True)
+        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                                fillObs=True)
 
     # train model
     output_dir = model_dict['dir']['Out']
@@ -152,10 +153,10 @@ def master_train(data_model, valid_size=0, pre_trained_model_epoch=1, random_see
             model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
                                        fillObs=True)
         elif opt_model['name'] == 'AnnModel':
-            model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
         elif opt_model['name'] == 'AnnCloseModel':
-            model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
-                                      fillObs=True)
+            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                                    fillObs=True)
 
     # train model
     if valid_size > 0:
@@ -203,10 +204,10 @@ def master_test(data_model, epoch=-1, save_file_suffix=None):
             model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
                                        fillObs=True)
         elif opt_model['name'] == 'AnnModel':
-            model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
         elif opt_model['name'] == 'AnnCloseModel':
-            model = rnn.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
-                                      fillObs=True)
+            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                                    fillObs=True)
         model.load_state_dict(torch.load(model_file))
         model.eval()
         model_run.model_test_valid(model, x, c, file_path=file_path, batch_size=batch_size)

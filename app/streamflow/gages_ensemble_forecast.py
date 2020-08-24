@@ -23,20 +23,15 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# exp_lst = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
-# exp_attr_lst = ["basic_exp2", "basic_exp3", "basic_exp13", "basic_exp19", "basic_exp20", "basic_exp25"]
-# gpu_lst = [1, 1, 0, 0, 2, 2]
-# gpu_attr_lst = [2, 2, 1, 1, 0, 0]
-
-exp_lst = ["basic_exp37"]
-exp_attr_lst = ["basic_exp2"]
-gpu_lst = [0]
-gpu_attr_lst = [0]
+exp_lst = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
+exp_attr_lst = ["basic_exp2", "basic_exp3", "basic_exp13", "basic_exp19", "basic_exp20", "basic_exp25"]
+gpu_lst = [1, 1, 0, 0, 2, 2]
+gpu_attr_lst = [2, 2, 1, 1, 0, 0]
 doLst = list()
 # doLst.append('train')
 # doLst.append('test')
 doLst.append('post')
-test_epoch = 20
+test_epoch = 300
 
 # test
 if 'test' in doLst:
