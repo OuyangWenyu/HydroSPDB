@@ -52,12 +52,14 @@ def model_train_water_balance_nn(model,
         loss_ep = 0
         t0 = time.time()
         for iIter in range(0, n_iter_ep):
-            # training iterations
+            # TODO: i_t should be the period with normal storage
             i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
-            x_train = select_subset(x, i_grid, i_t, rho, c=c, tuple_out=True)
-            initial_state = select_subset(initial_states)
+            x_train = select_subset(x, i_grid, i_t, rho)
+            initial_state = torch.from_numpy(initial_states[i_grid]).float()
+            if torch.cuda.is_available():
+                initial_state = initial_state.cuda()
             y_train = select_subset(y, i_grid, i_t, rho)
-            y_p = model(x_train, initial_state)
+            gens, y_p = model(x_train, initial_state)
 
             loss = loss_fun(y_p, y_train)
             loss.backward()

@@ -12,17 +12,11 @@ class AnnModel(torch.nn.Module):
         self.h2o = nn.Linear(hidden_size, ny)
         self.ny = ny
 
-    def forward(self, x, y=None):
-        nt, ngrid, nx = x.shape
-        yt = torch.zeros(ngrid, 1).cuda()
-        out = torch.zeros(nt, ngrid, self.ny).cuda()
-        for t in range(nt):
-            xt = x[t, :, :]
-            ht = F.relu(self.i2h(xt))
-            ht2 = self.h2h(ht)
-            yt = self.h2o(ht2)
-            out[t, :, :] = yt
-        return out
+    def forward(self, x):
+        h = F.relu(self.i2h(x))
+        h2 = self.h2h(h)
+        y = self.h2o(h2)
+        return y
 
 
 class AnnCloseModel(torch.nn.Module):

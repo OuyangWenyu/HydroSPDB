@@ -4,24 +4,24 @@ from hydroDL.model.ann import AnnModel
 
 
 class CudnnWaterBalanceNN(torch.nn.Module):
-    def __init__(self, nx, ny, hidden_size_stroage, hidden_size, iter_num):
+    def __init__(self, nx, ny, hidden_size, iter_num, delta_t):
         super(CudnnWaterBalanceNN, self).__init__()
         self.nx = nx
         self.ny = ny
         self.hiddenSize = hidden_size
         self.iter_num = iter_num
-        self.nn_outflow = AnnModel(nx=nx[1], ny=nx[2], hidden_size=hidden_size_stroage)
-        self.linear_water_balance = torch.nn.Linear(nx[0] + nx[2], ny)
+        self.delta_t = delta_t
+        self.nn_outflow = AnnModel(nx=nx, ny=ny, hidden_size=hidden_size)
 
     def forward(self, inflows, storage0):
         iter_num = self.iter_num
-        storages = torch.empty(iter_num + 1)
-        outflows = torch.empty(iter_num)
-        for i in iter_num:
+        delta_t = torch.from_numpy(self.delta_t).cuda()
+        storages = torch.Tensor(iter_num + 1, list(storage0.shape)[0], 1).cuda()
+        outflows = torch.Tensor(iter_num, list(storage0.shape)[0], 1).cuda()
+        for i in range(iter_num):
             if i == 0:
-                storages[i] = storage0
-            storflowi = torch.cat((inflows[i], storages[i]), 0)
-            outflows[i] = self.nn_outflow(storflowi)
-            outstorflowi = torch.cat((outflows[i], storflowi), 0)
-            storages[i + 1] = self.linear_water_balance(outstorflowi)
-        return storages
+                storages[i, :, 0] = storage0
+            storflowi = torch.cat((inflows[i, :, :], storages[i, :, :]), 1)
+            outflows[i, :, :] = self.nn_outflow(storflowi)
+            storages[i + 1, :, :] = delta_t[0] * (inflows[i, :, :] - outflows[i, :, :]) + storages[i, :, :]
+        return storages, outflows

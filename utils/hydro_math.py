@@ -233,3 +233,28 @@ def select_subset_seq(x, i_grid, i_t, rho, *, c=None, seq_len=100):
     if torch.cuda.is_available():
         out = out.cuda()
     return out
+
+
+def choose_continuous_largest(arr, length):
+    """[1,2,3,4,5] length=2, then [1+2,2+3,3+4,4+5] return index(9)=3 which is a array"""
+    new_arr = np.zeros(len(arr) - length + 1)
+    for i in range(new_arr.size):
+        new_arr[i] = np.sum(arr[i:i + length])
+    result = np.where(new_arr == np.amax(new_arr))
+    # result is a tuple, here just select the value of it
+    return result[0]
+
+
+def index_of_continuous_largest(arr2d, train_days, time_length_chosen):
+    train_day_indices = [0] + [i for i in range(1, len(train_days)) if train_days[i] < train_days[i - 1]] + [
+        len(train_days)]
+    days_chosen = []
+    for i in range(arr2d.shape[0]):
+        site_days_chosen = []
+        for j in range(1, len(train_day_indices)):
+            a_year_prcp = arr2d[i][train_day_indices[j - 1]:train_day_indices[j]]
+            largest_part = choose_continuous_largest(a_year_prcp, time_length_chosen)
+            # there maybe some same days with largest value, here only choose the first
+            site_days_chosen.append(largest_part[0] + time_length_chosen)
+        days_chosen.append(site_days_chosen)
+    return days_chosen

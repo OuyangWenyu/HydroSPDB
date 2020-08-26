@@ -450,7 +450,9 @@ class GagesSimDataModel(object):
         natural_epoch = model_dict["train"]["nEpoch"]
         file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(natural_epoch)])
         file_path = os.path.join(out_folder, file_name) + '.csv'
-        model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
+        print('inflow files:', file_path)
+        if not os.path.isfile(file_path):
+            model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
         # read natural_flow from file
         np_natural_flow = pd.read_csv(file_path, dtype=np.float, header=None).values
         return np_natural_flow
