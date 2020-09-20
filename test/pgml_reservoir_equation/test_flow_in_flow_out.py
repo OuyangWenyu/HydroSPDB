@@ -6,12 +6,13 @@ import numpy as np
 import torch
 from easydict import EasyDict
 
-from data import GagesConfig
+from data import GagesConfig, GagesSource
 from data.config import cfg, update_cfg_item
 from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result, load_result
 from data.gages_input_dataset import GagesSimDataModel
 from explore.stat import statError
 from hydroDL.master.master import master_train_natural_flow, master_test_natural_flow
+from hydroDL.master.pgml import generate_fake_outflow
 from utils import serialize_numpy, unserialize_numpy
 from utils.dataset_format import subset_of_dict
 from utils.hydro_math import choose_continuous_largest, index_of_continuous_largest
@@ -34,6 +35,15 @@ class MyTestCase(unittest.TestCase):
         model_layer = EasyDict(miniBatch=[100, 30], nEpoch=20)
         self.sim_config_file.MODEL.update(model_layer)
         self.sim_config_data = GagesConfig(self.sim_config_file)
+
+        self.config_file = copy.deepcopy(cfg)
+        gages_layer = EasyDict(
+            gageIdScreen=["01407500", "05017500", "06020600", "06036650", "06089000", "06101500", "06108000",
+                          "06126500", "06130500", "06225500"])
+        self.config_file.GAGES.update(gages_layer)
+        pgml_model_layer = EasyDict(miniBatch=[5, 30], nEpoch=20)
+        self.config_file.MODEL.update(pgml_model_layer)
+        self.config_data = GagesConfig(self.config_file)
         self.test_epoch = 300
 
     def test_choose_the_initial_stages_day(self):
@@ -68,33 +78,40 @@ class MyTestCase(unittest.TestCase):
         test_days = t_range_to_julian(test_years)
         days_chosen_test = index_of_continuous_largest(test_prep, test_days, time_length_chosen)
         days_chosen = np.concatenate((np.array(days_chosen_train), np.array(days_chosen_test)), axis=1)
-        my_file = os.path.join(cfg.CACHE.QUICK_DATA_DIR, "initial_storage")
+        my_file = os.path.join(cfg.CACHE.QUICK_DATA_DIR, "init_stor_time_idx")
         serialize_numpy(days_chosen, my_file)
         print(days_chosen)
         print("read and save data model")
 
-    def test_train_gages_sim(self):
-        with torch.cuda.device(1):
-            # load model from npy data and then update some params for the test func
-            data_model1 = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "1",
-                                                    data_source_file_name='data_source.txt',
-                                                    stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                                    forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                                    f_dict_file_name='dictFactorize.json',
-                                                    var_dict_file_name='dictAttribute.json',
-                                                    t_s_dict_file_name='dictTimeSpace.json')
-            data_model1.update_model_param('train', nEpoch=300)
-            data_model2 = GagesModel.load_datamodel(self.config_data.data_path["Temp"], "2",
-                                                    data_source_file_name='data_source.txt',
-                                                    stat_file_name='Statistics.json', flow_file_name='flow.npy',
-                                                    forcing_file_name='forcing.npy', attr_file_name='attr.npy',
-                                                    f_dict_file_name='dictFactorize.json',
-                                                    var_dict_file_name='dictAttribute.json',
-                                                    t_s_dict_file_name='dictTimeSpace.json')
-            data_model = GagesSimDataModel(data_model1, data_model2)
-            pre_trained_model_epoch = 150
-            master_train_natural_flow(data_model, pre_trained_model_epoch)
-            # master_train_natural_flow(data_model)
+    def test_generate_outflow(self):
+        """generate fake outflow by using operation rules"""
+        my_file = os.path.join(cfg.CACHE.QUICK_DATA_DIR, "init_stor_time_idx.npy")
+        initial_storages_time_idx = unserialize_numpy(my_file)
+        data_dir = cfg.CACHE.DATA_DIR
+        data_model_train = GagesModel.load_datamodel(data_dir,
+                                                     data_source_file_name='data_source.txt',
+                                                     stat_file_name='Statistics.json', flow_file_name='flow.npy',
+                                                     forcing_file_name='forcing.npy', attr_file_name='attr.npy',
+                                                     f_dict_file_name='dictFactorize.json',
+                                                     var_dict_file_name='dictAttribute.json',
+                                                     t_s_dict_file_name='dictTimeSpace.json')
+        conus_sites_id = data_model_train.t_s_dict["sites_id"]
+        nolargedam_source_data = GagesSource.choose_some_basins(self.sim_config_data,
+                                                                self.sim_config_data.model_dict["data"][
+                                                                    "tRangeTrain"],
+                                                                screen_basin_area_huc4=False, DOR=-0.02)
+        nolargedam_sites_id = nolargedam_source_data.all_configs['flow_screen_gage_id']
+        nolargedam_in_conus = np.intersect1d(conus_sites_id, nolargedam_sites_id)
+
+        gages_model_train_inflow = GagesModel.update_data_model(self.sim_config_data, data_model_train,
+                                                                sites_id_update=nolargedam_in_conus,
+                                                                data_attr_update=True, screen_basin_area_huc4=False)
+        gages_model_train = GagesModel.update_data_model(self.config_data, data_model_train,
+                                                         sites_id_update=self.config_file.GAGES.gageIdScreen,
+                                                         data_attr_update=True,
+                                                         screen_basin_area_huc4=False)
+        data_model = GagesSimDataModel(gages_model_train_inflow, gages_model_train)
+        generate_fake_outflow(data_model, initial_storages_time_idx)
 
     def test_test_gages_sim(self):
         with torch.cuda.device(1):
