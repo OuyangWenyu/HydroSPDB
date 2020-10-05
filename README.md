@@ -84,7 +84,7 @@ mkdir data
 mkdir gages
 ```
 and put all downloaded zip files in it.
-- Run the config.py as a script, and then you are ready to run this repo
+- Run the data/config.py, and then you are ready to run this repo
 - Now you can run the script, such as "app/streamflow/gages_conus_analysis.py", using Ubuntu "screen" tool: 
 
 ```Shell
