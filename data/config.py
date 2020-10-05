@@ -25,10 +25,11 @@ if not os.path.exists(__C.DATA_PATH):
 # data config
 __C.GAGES = edict()
 # __C.GAGES.DOWNLOAD = True
-__C.GAGES.DOWNLOAD = False
-__C.GAGES.DOWNLOAD_FROM_OWEN = True
-__C.GAGES.ARE_YOU_OWEN = True
+__C.GAGES.DOWNLOAD = True
+__C.GAGES.DOWNLOAD_FROM_OWEN = False
+__C.GAGES.ARE_YOU_OWEN = False
 __C.GAGES.DOWNLOAD_FROM_WEB = False
+__C.GAGES.DOWNLOAD_MANUALLY = True
 
 __C.GAGES.tRangeAll = ['1980-01-01', '2020-01-01']
 
@@ -80,6 +81,10 @@ find_gages_data_path = True
 if __C.GAGES.DOWNLOAD:
     find_gages_data_path = False
     if __C.GAGES.DOWNLOAD_FROM_OWEN and __C.GAGES.DOWNLOAD_FROM_WEB:
+        raise RuntimeError("Don't download data by two ways at the same time!")
+    elif __C.GAGES.DOWNLOAD_FROM_OWEN and __C.GAGES.DOWNLOAD_MANUALLY:
+        raise RuntimeError("Don't download data by two ways at the same time!")
+    elif __C.GAGES.DOWNLOAD_FROM_WEB and __C.GAGES.DOWNLOAD_MANUALLY:
         raise RuntimeError("Don't download data by two ways at the same time!")
 
 if not find_gages_data_path:
@@ -152,6 +157,23 @@ if not find_gages_data_path:
                 temp_file = os.path.join(dir_huc_02, str(usgs_id_lst[ind]) + '.txt')
                 download_small_file(url, temp_file)
                 print("成功写入 " + temp_file + " 径流数据！")
+    elif __C.GAGES.DOWNLOAD_MANUALLY:
+        print("Please download data manually!")
+        zip_files = ["59692a64e4b0d1f9f05fbd39", "basin_mean_forcing.zip", "basinchar_and_report_sept_2011.zip",
+                     "boundaries_shapefiles_by_aggeco.zip", "camels531.zip", "gages_streamflow.zip",
+                     "gagesII_9322_point_shapefile.zip", "mainstem_line_covers.zip", "nid.zip",
+                     "wbdhu4-a-us-september2019-shpfile.zip"]
+        download_zip_files = [os.path.join(__C.DATA_PATH, zip_file) for zip_file in zip_files]
+        for download_zip_file in download_zip_files:
+            if not os.path.isfile(download_zip_file):
+                raise RuntimeError(download_zip_file + "not found! Please download the data")
+        unzip_dirs = [os.path.join(__C.DATA_PATH, zip_file[:-4]) for zip_file in zip_files]
+        for i in range(len(unzip_dirs)):
+            if not os.path.isdir(unzip_dirs[i]):
+                print("unzip directory:" + unzip_dirs[i])
+                unzip_nested_zip(download_zip_files[i], unzip_dirs[i])
+            else:
+                print("unzip directory -- " + unzip_dirs[i] + " has existed")
     else:
         raise RuntimeError("Initial database is not found! Please download the data")
 
