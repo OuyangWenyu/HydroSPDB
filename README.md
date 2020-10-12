@@ -95,7 +95,7 @@ screen -r xxx (use the id of the process to enter the process. you can use "scre
 python gages_conus_analysis.py --sub basic/exp37 --cache_state 1
 ```
 
-All "xxx_xxx_analysis" scripts are run for training, while all "xxx_xxx_forecast" files are testing files. 
+All "xxx_xxx_analysis" scripts are run for training and testing, while all "xxx_xxx_forecast" files are used for showing the results. 
 To run the testing file, please make sure you have run the corresponding training scripts 
 and saved some cache for input data and trained model. If there is no cache for input, it will take much time to do test.
 You can use the following code to generate some quickly-accessed binary data:
