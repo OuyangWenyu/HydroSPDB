@@ -2,6 +2,8 @@
 
 ## Code
 
+Notice: ONLY tested in an "Ubuntu" machine with NVIDIA GPU
+
 Clone this repo to your local directory.
 
 You should use the "master" branch, but if you want to use another branch, for example, the "dev" branch, you can run the commands:
@@ -13,39 +15,22 @@ git checkout -b dev origin/dev
 
 ## Setup
 
-The following are processes of generating environment.yml:
+Please move to the root directory of this repo and then use the following code to generate the python environment:
 
 ```Shell
-conda create --prefix ./envs python=3.7
-# /mnt/sdc/wvo5024/hydro-anthropogenic-lstm/ is my root directory. Other dirs also could be used.
-conda activate /mnt/sdc/wvo5024/hydro-anthropogenic-lstm/envs
+conda env create -f environment.yml
 ```
  
-and then use conda to install package, for example:
+The main packages are as follows:
 
-```Shell
-conda install pytorch==1.2.0 torchvision==0.4.0 cudatoolkit=10.0 -c pytorch
-conda install -c conda-forge pydrive
-conda install -c conda-forge geopandas
-conda install -c conda-forge netcdf4
-conda install -c conda-forge scipy
-conda install -c conda-forge tensorboard
-conda install -c conda-forge future
-conda install -c conda-forge matplotlib
-conda install -c conda-forge statsmodels
-conda install -c conda-forge seaborn
-conda install -c conda-forge cartopy
-conda install -c conda-forge geoplot
-conda install -c conda-forge easydict
-conda install -c conda-forge pyarrow
-conda install -c conda-forge xlrd
-# if any package cannot be installed by conda (for example, xlrd), pip could be tried after all others were installed: pip install xlrd
+```conda
+pytorch==1.2.0 torchvision==0.4.0 cudatoolkit=10.0 pydrive geopandas netcdf4 scipy tensorboard future matplotlib statsmodels seaborn cartopy geoplot easydict pyarrow xlrd
 ```
 
-Finally, generate environment.yml file by conda:
+After installing the environment, you should activate it before running the code:
 
 ```Shell
-conda env export > environment.yml
+conda activate SPDB
 ```
 
 ## Workflow

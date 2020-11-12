@@ -166,7 +166,7 @@ if not find_gages_data_path:
         download_zip_files = [os.path.join(__C.DATA_PATH, zip_file) for zip_file in zip_files]
         for download_zip_file in download_zip_files:
             if not os.path.isfile(download_zip_file):
-                raise RuntimeError(download_zip_file + "not found! Please download the data")
+                raise RuntimeError(download_zip_file + " not found! Please download the data")
         unzip_dirs = [os.path.join(__C.DATA_PATH, zip_file[:-4]) for zip_file in zip_files]
         for i in range(len(unzip_dirs)):
             if not os.path.isdir(unzip_dirs[i]):
