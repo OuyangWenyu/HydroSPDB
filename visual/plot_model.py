@@ -16,7 +16,7 @@ from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map
 
 
 def plot_scatter_multi_attrs(data_model, inds_df, idx_lst_nse_range, attr_lst, y_var_lst):
-    """scatter plot: there are many independent vars and  dependent var"""
+    """scatter plot: there are many independent vars and dependent var"""
     sites_all = data_model.t_s_dict["sites_id"]
     attrs_ = data_model.data_source.read_attr(sites_all, attr_lst, is_return_dict=False)
     x_var_values = [attrs_[idx_lst_nse_range, i] for i in range(len(attr_lst))]
@@ -298,3 +298,16 @@ def plot_gages_map_and_scatter(inds_df, items, idx_lst, cmap_strs=["Reds", "Blue
     y_value = legend_y
     axbox = ax1.get_position()
     fig.legend(handles, labels, loc=(axbox.x0 - x_value, axbox.y1 - y_value))
+
+
+def plot_sites_and_attr(all_sites_id, all_lon, all_lat, sites_lst1, sites_lst2, data_attr, is_discrete=False,
+                        cmap_str="viridis", sites_names=["CAMELS", "Non_CAMELS"], fig_size=(11, 4), markers=["o", "x"],
+                        marker_sizes=[1, 3], colors=["r", "b"]):
+    """plot a map for all 3557 sites and all camels ones, and show one attributes"""
+    type_1_index_lst = [i for i in range(len(all_sites_id)) if all_sites_id[i] in sites_lst1]
+    type_2_index_lst = [i for i in range(len(all_sites_id)) if all_sites_id[i] in sites_lst2]
+
+    idx_lst = [type_1_index_lst, type_2_index_lst]
+
+    plot_map_carto(data_attr, all_lat, all_lon, fig_size=fig_size, cmap_str=cmap_str, idx_lst=idx_lst, markers=markers,
+                   marker_size=marker_sizes, is_discrete=is_discrete, category_names=sites_names, colors=colors)

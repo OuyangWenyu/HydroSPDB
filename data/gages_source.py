@@ -673,6 +673,8 @@ class GagesSource(DataSource):
         key_lst.remove('x_region_names')
         var_lst = list()
         out_lst = []
+        for i in range(len(attr_lst)):
+            out_lst.append([])
         # 因为选择的站点可能是站点的一部分，所以需要求交集，ind2是所选站点在conterm_文件中所有站点里的index，把这些值放到out_temp中
         range1 = gages_ids
         gage_id_file = self.all_configs.get("gage_id_file")
@@ -706,11 +708,9 @@ class GagesSource(DataSource):
             do_exist, idx_lst = is_any_elem_in_a_lst(attr_lst, var_lst_temp, return_index=True)
             if do_exist:
                 for idx in idx_lst:
-                    idx_in_var = var_lst_temp.index(attr_lst[idx]) + 1  # +1 because var_lst_temp starts from 1
-                    out_temp = data_temp.iloc[ind2, idx_in_var].values
-                    out_lst.append(out_temp)
+                    idx_in_var = var_lst_temp.index(attr_lst[idx]) + 1  # +1 because the first col of data_temp is ID
+                    out_lst[idx] = data_temp.iloc[ind2, idx_in_var].values
             else:
                 continue
-
         out = np.array(out_lst)
         return out

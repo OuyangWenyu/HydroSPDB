@@ -352,7 +352,8 @@ def plot_loss_early_stop(train_loss, valid_loss):
 
 
 def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_size=(8, 8), cmap_str="jet",
-                   idx_lst=None, markers=None):
+                   idx_lst=None, markers=None, marker_size=20, is_discrete=False, colors=["r", "b"],
+                   category_names=None):
     if pertile_range is None:
         vmin = np.amin(data)
         vmax = np.amax(data)
@@ -374,15 +375,37 @@ def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_si
     ax.add_feature(states, linewidth=.5, edgecolor="black")
     ax.coastlines('50m', linewidth=0.8)
     if idx_lst is not None:
-        assert markers is not None
-        assert type(cmap_str) == list
-        assert len(cmap_str) == len(idx_lst) == len(markers)
-        for i in range(len(idx_lst)):
-            scat = plt.scatter(lon[idx_lst[i]], lat[idx_lst[i]], c=data[idx_lst[i]], marker=markers[i], s=20,
-                               cmap=cmap_str[i], vmin=vmin, vmax=vmax)
+        if type(marker_size) != list:
+            marker_size = np.full(len(idx_lst), marker_size).tolist()
+        else:
+            assert len(marker_size) == len(idx_lst)
+        if type(markers) != list:
+            markers = np.full(len(idx_lst), markers).tolist()
+        else:
+            assert len(markers) == len(idx_lst)
+        if type(cmap_str) != list:
+            cmap_str = np.full(len(idx_lst), cmap_str).tolist()
+        else:
+            assert len(cmap_str) == len(idx_lst)
+        if is_discrete:
+            for i in range(len(idx_lst)):
+                ax.plot(lon[idx_lst[i]], lat[idx_lst[i]], marker=markers[i], ms=marker_size[i],
+                        label=category_names[i], c=colors[i], linestyle='')
+            ax.legend()
+        else:
+            for i in range(len(idx_lst)):
+                scat = plt.scatter(lon[idx_lst[i]], lat[idx_lst[i]], c=data[idx_lst[i]], marker=markers[i],
+                                   s=marker_size[i], cmap=cmap_str[i], vmin=vmin, vmax=vmax)
+            fig.colorbar(scat, ax=ax, pad=0.01)
     else:
-        scat = plt.scatter(lon, lat, c=data, s=10, cmap=cmap_str, vmin=vmin, vmax=vmax)
-        fig.colorbar(scat, ax=ax, pad=0.01)
+        if is_discrete:
+            scatter = ax.scatter(lon, lat, c=data, s=marker_size)
+            # produce a legend with the unique colors from the scatter
+            legend1 = ax.legend(*scatter.legend_elements(), loc="lower left", title="Classes")
+            ax.add_artist(legend1)
+        else:
+            scat = plt.scatter(lon, lat, c=data, s=marker_size, cmap=cmap_str, vmin=vmin, vmax=vmax)
+            fig.colorbar(scat, ax=ax, pad=0.01)
     return ax
 
 

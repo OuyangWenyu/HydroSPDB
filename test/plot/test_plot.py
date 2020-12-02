@@ -18,7 +18,7 @@ from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred
 from visual.plot import plotCDF
 from visual.plot_model import plot_ind_map, plot_map, plot_gages_map_and_ts, plot_gages_map_and_box, \
-    plot_gages_map_and_scatter
+    plot_gages_map_and_scatter, plot_sites_and_attr
 from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs, plot_diff_boxes, plot_ecdfs_matplot
 import matplotlib.pyplot as plt
 
@@ -66,7 +66,6 @@ def test_stat():
 
 
 class MyTestCase(unittest.TestCase):
-    config_file = definitions.CONFIG_FILE
     project_dir = definitions.ROOT_DIR
     dataset = 'gages'
     dataset_exp = dataset + '/basic/exp11'
@@ -368,6 +367,42 @@ class MyTestCase(unittest.TestCase):
         # save figure without padding
         # plt.savefig('testmapbox.png', dpi=500, bbox_inches="tight")
         plt.show()
+
+    def test_plot_sites_and_attrs(self):
+        """plot points of all 3557 sites and camels sites with different colors;
+            plot polygons of all 3557 basins and camels basins with different colors"""
+        data_model = GagesModel.load_datamodel(self.dir_temp,
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        camels_gageid_file = os.path.join(self.dir_db, "camels_attributes_v2.0", "camels_attributes_v2.0",
+                                          "camels_name.txt")
+        gauge_df = pd.read_csv(camels_gageid_file, dtype={"gauge_id": str}, sep=';')
+        gauge_list = gauge_df["gauge_id"].values
+        chosen_sites = np.intersect1d(gauge_list, data_model.t_s_dict["sites_id"])
+        remain_sites = [site_tmp for site_tmp in data_model.t_s_dict["sites_id"] if site_tmp not in chosen_sites]
+
+        all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
+        all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
+        all_sites_id = data_model.data_source.gage_dict["STAID"]
+
+        is_camels = np.array([1 if data_model.t_s_dict["sites_id"][i] in chosen_sites else 0 for i in
+                              range(len(data_model.t_s_dict["sites_id"]))])
+        # plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, is_camels, is_discrete=True,
+        #                     markers=["x", "o"], marker_sizes=[4, 2], colors=["b", "r"])
+        # plt.savefig(os.path.join(self.dir_out, 'map_camels_or_not.png'), dpi=500, bbox_inches="tight")
+
+        attrs_lst = ["SLOPE_PCT", "FORESTNLCD06", "PERMAVE", "GEOL_REEDBUSH_DOM_PCT", "STOR_NOR_2009",
+                     "FRESHW_WITHDRAWAL"]
+        data_attrs = data_model.data_source.read_attr_origin(all_sites_id.tolist(), attrs_lst)
+        for i in range(len(attrs_lst)):
+            data_attr = data_attrs[i]
+            plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
+                                markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet")
+            plt.savefig(os.path.join(self.dir_out, attrs_lst[i] + '.png'), dpi=500, bbox_inches="tight")
 
     def test_plot_kuai_cdf(self):
         t_s_dict = unserialize_json(self.t_s_dict_file)
