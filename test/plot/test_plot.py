@@ -391,17 +391,21 @@ class MyTestCase(unittest.TestCase):
 
         is_camels = np.array([1 if data_model.t_s_dict["sites_id"][i] in chosen_sites else 0 for i in
                               range(len(data_model.t_s_dict["sites_id"]))])
-        # plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, is_camels, is_discrete=True,
-        #                     markers=["x", "o"], marker_sizes=[4, 2], colors=["b", "r"])
-        # plt.savefig(os.path.join(self.dir_out, 'map_camels_or_not.png'), dpi=500, bbox_inches="tight")
+        plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, is_camels, is_discrete=True,
+                            markers=["x", "o"], marker_sizes=[4, 2], colors=["b", "r"])
+        plt.savefig(os.path.join(self.dir_out, 'map_camels_or_not.png'), dpi=500, bbox_inches="tight")
 
         attrs_lst = ["SLOPE_PCT", "FORESTNLCD06", "PERMAVE", "GEOL_REEDBUSH_DOM_PCT", "STOR_NOR_2009",
                      "FRESHW_WITHDRAWAL"]
         data_attrs = data_model.data_source.read_attr_origin(all_sites_id.tolist(), attrs_lst)
         for i in range(len(attrs_lst)):
             data_attr = data_attrs[i]
-            plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
-                                markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet")
+            if attrs_lst[i] == "STOR_NOR_2009" or attrs_lst[i] == "FRESHW_WITHDRAWAL":
+                plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
+                                    pertile_range=[0, 95], markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet")
+            else:
+                plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
+                                    markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet")
             plt.savefig(os.path.join(self.dir_out, attrs_lst[i] + '.png'), dpi=500, bbox_inches="tight")
 
     def test_plot_kuai_cdf(self):

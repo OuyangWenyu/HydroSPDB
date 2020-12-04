@@ -36,7 +36,7 @@ doLst = list()
 # doLst.append('train')
 # doLst.append('test')
 doLst.append('post')
-test_epoch = 20
+test_epoch = 300
 
 # test
 if 'test' in doLst:

@@ -659,6 +659,7 @@ class GagesSource(DataSource):
             return out
 
     def read_attr_origin(self, gages_ids, attr_lst):
+        """:return np.array -- the first dim is types of attrs, and the second one is sites"""
         dir_gage_attr = self.all_configs.get("gage_files_dir")
         data_temp_chosen_lst = list()
         # 读取所有属性，直接按类型判断要读取的文件名

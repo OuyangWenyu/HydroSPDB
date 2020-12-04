@@ -300,14 +300,15 @@ def plot_gages_map_and_scatter(inds_df, items, idx_lst, cmap_strs=["Reds", "Blue
     fig.legend(handles, labels, loc=(axbox.x0 - x_value, axbox.y1 - y_value))
 
 
-def plot_sites_and_attr(all_sites_id, all_lon, all_lat, sites_lst1, sites_lst2, data_attr, is_discrete=False,
-                        cmap_str="viridis", sites_names=["CAMELS", "Non_CAMELS"], fig_size=(11, 4), markers=["o", "x"],
-                        marker_sizes=[1, 3], colors=["r", "b"]):
+def plot_sites_and_attr(all_sites_id, all_lon, all_lat, sites_lst1, sites_lst2, data_attr, pertile_range=None,
+                        is_discrete=False, cmap_str="viridis", sites_names=["CAMELS", "Non_CAMELS"], fig_size=(11, 4),
+                        markers=["o", "x"], marker_sizes=[1, 3], colors=["r", "b"]):
     """plot a map for all 3557 sites and all camels ones, and show one attributes"""
     type_1_index_lst = [i for i in range(len(all_sites_id)) if all_sites_id[i] in sites_lst1]
     type_2_index_lst = [i for i in range(len(all_sites_id)) if all_sites_id[i] in sites_lst2]
 
     idx_lst = [type_1_index_lst, type_2_index_lst]
 
-    plot_map_carto(data_attr, all_lat, all_lon, fig_size=fig_size, cmap_str=cmap_str, idx_lst=idx_lst, markers=markers,
-                   marker_size=marker_sizes, is_discrete=is_discrete, category_names=sites_names, colors=colors)
+    plot_map_carto(data_attr, all_lat, all_lon, fig_size=fig_size, pertile_range=pertile_range, cmap_str=cmap_str,
+                   idx_lst=idx_lst, markers=markers, marker_size=marker_sizes, is_discrete=is_discrete,
+                   category_names=sites_names, colors=colors)

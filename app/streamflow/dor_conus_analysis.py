@@ -48,15 +48,16 @@ def dor_lstm(args):
         save_result(gages_model_test.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
 
-# python dor_conus_analysis.py --sub dam/exp1 --ctx 0 --attr_screen {\"DOR\":-0.02} --cache_state 1 --train_epoch 20 --save_epoch 10 --te 20
+# python dor_conus_analysis.py --sub dam/exp1 --ctx 0 --attr_screen {\"DOR\":-0.02} --cache_state 1
+# python dor_conus_analysis.py --sub dam/exp2 --attr_screen {\"DOR\":-0.02} --rs 123
+# python dor_conus_analysis.py --sub dam/exp3 --ctx 0 --attr_screen {\"DOR\":-0.02} --rs 12345
+# python dor_conus_analysis.py --sub dam/exp7 --ctx 0 --attr_screen {\"DOR\":-0.02} --rs 111
+# python dor_conus_analysis.py --sub dam/exp8 --ctx 0 --attr_screen {\"DOR\":-0.02} --rs 1111
+# python dor_conus_analysis.py --sub dam/exp9 --ctx 0 --attr_screen {\"DOR\":-0.02} --rs 11111
+
 # python dor_conus_analysis.py --sub dam/exp4 --ctx 0 --attr_screen {\"DOR\":0.02} --train_epoch 20 --save_epoch 10 --te 20
-# python dor_conus_analysis.py --cfg dam/config_exp2.ini --ctx 1 --dor -0.02 --rs 123 --te 300 --train_mode True
-# python dor_conus_analysis.py --cfg dam/config_exp3.ini --ctx 0 --dor -0.02 --rs 12345 --te 300 --train_mode True
 # python dor_conus_analysis.py --cfg dam/config_exp5.ini --ctx 0 --dor 0.02 --rs 123 --te 300 --train_mode True
 # python dor_conus_analysis.py --cfg dam/config_exp6.ini --ctx 2 --dor 0.02 --rs 12345 --te 300 --train_mode True
-# python dor_conus_analysis.py --cfg dam/config_exp7.ini --ctx 0 --dor -0.02 --rs 111 --te 300 --train_mode True
-# python dor_conus_analysis.py --cfg dam/config_exp8.ini --ctx 2 --dor -0.02 --rs 1111 --te 300 --train_mode True
-# python dor_conus_analysis.py --cfg dam/config_exp9.ini --ctx 2 --dor -0.02 --rs 11111 --te 300 --train_mode True
 # python dor_conus_analysis.py --cfg dam/config_exp13.ini --ctx 2 --dor 0.02 --rs 111 --te 300 --train_mode True
 # python dor_conus_analysis.py --cfg dam/config_exp16.ini --ctx 1 --dor 0.02 --rs 1111 --te 300 --train_mode True
 # python dor_conus_analysis.py --cfg dam/config_exp19.ini --ctx 1 --dor 0.02 --rs 11111 --te 300 --train_mode True

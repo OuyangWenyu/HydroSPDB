@@ -59,7 +59,17 @@ Directories:
 
 ## Usage
 
-- Please make sure that you have all input data. If you don't have, please connect with me: hust2014owen@gmail.com
+- Please make sure that you have all input data. The data list is shown below. If you miss any one, please connect with me: hust2014owen@gmail.com
+    - basin_mean_forcing.zip 
+    - basinchar_and_report_sept_2011.zip 
+    - boundaries_shapefiles_by_aggeco.zip 
+    - camels531.zip 
+    - camels_attributes_v2.0.zip 
+    - gages_streamflow.zip 
+    - gagesII_9322_point_shapefile.zip 
+    - mainstem_line_covers.zip
+    - nid.zip 
+    - wbdhu4-a-us-september2019-shpfile.zip
 - You should download the data manually if you don't have an access to my google drive or you don't know how to use PyDrive. 
 Then you have to make a directory:
 ```Shell
