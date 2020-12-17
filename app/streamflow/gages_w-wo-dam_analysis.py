@@ -81,13 +81,12 @@ def dam_lstm(args):
 # python gages_w-wo-dam_analysis.py --sub nodam/exp10 --ctx 0 --dam_plan 2 --rs 111
 # python gages_w-wo-dam_analysis.py --sub nodam/exp11 --ctx 0 --dam_plan 2 --rs 1111
 # python gages_w-wo-dam_analysis.py --sub nodam/exp12 --ctx 0 --dam_plan 2 --rs 11111
-
-# python gages_w-wo-dam_analysis.py --sub dam/exp27 --cache_state 1 --dam_plan 3 --train_epoch 20 --save_epoch 10 --te 20 --rs 123
-# python gages_w-wo-dam_analysis.py --cfg dam/config_exp26.ini --ctx 2 --dam_plan 3 --rs 1234 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg dam/config_exp28.ini --ctx 0 --dam_plan 3 --rs 12345 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg dam/config_exp29.ini --ctx 2 --dam_plan 3 --rs 111 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg dam/config_exp30.ini --ctx 1 --dam_plan 3 --rs 1111 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg dam/config_exp31.ini --ctx 0 --dam_plan 3 --rs 11111 --te 300 --train_mode True
+# python gages_w-wo-dam_analysis.py --sub dam/exp27 --cache_state 1 --dam_plan 3 --rs 123
+# python gages_w-wo-dam_analysis.py --sub dam/exp26 --ctx 0 --dam_plan 3 --rs 1234
+# python gages_w-wo-dam_analysis.py --sub dam/exp28 --ctx 0 --dam_plan 3 --rs 12345
+# python gages_w-wo-dam_analysis.py --sub dam/exp29 --ctx 0 --dam_plan 3 --rs 111
+# python gages_w-wo-dam_analysis.py --sub dam/exp30 --ctx 0 --dam_plan 3 --rs 1111
+# python gages_w-wo-dam_analysis.py --sub dam/exp31 --ctx 0 --dam_plan 3 --rs 11111
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

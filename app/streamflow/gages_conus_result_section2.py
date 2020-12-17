@@ -12,8 +12,8 @@ from hydroDL import master_test
 from utils import unserialize_json, serialize_json
 from utils.dataset_format import subset_of_dict
 from utils.hydro_math import is_any_elem_in_a_lst
-from visual.plot_model import plot_we_need, plot_gages_map_and_box
-from visual.plot_stat import plot_ecdfs, plot_ecdfs_matplot, plot_boxs
+from visual.plot_model import plot_we_need, plot_gages_map_and_box, plot_gages_map
+from visual.plot_stat import plot_ecdfs, plot_ecdfs_matplot, plot_boxs, plot_diff_boxes
 
 sys.path.append("../..")
 import os
@@ -23,15 +23,15 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# exp_lst = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
-# exp_attr_lst = ["basic_exp2", "basic_exp3", "basic_exp13", "basic_exp19", "basic_exp20", "basic_exp25"]
-# gpu_lst = [1, 1, 0, 0, 2, 2]
-# gpu_attr_lst = [2, 2, 1, 1, 0, 0]
+exp_lst = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
+exp_attr_lst = ["basic_exp2", "basic_exp3", "basic_exp13", "basic_exp19", "basic_exp20", "basic_exp25"]
+gpu_lst = [0, 0, 0, 0, 0, 0]
+gpu_attr_lst = [0, 0, 0, 0, 0, 0]
 
-exp_lst = ["basic_exp37"]
-exp_attr_lst = ["basic_exp2"]
-gpu_lst = [0]
-gpu_attr_lst = [0]
+# exp_lst = ["basic_exp37"]
+# exp_attr_lst = ["basic_exp2"]
+# gpu_lst = [0]
+# gpu_attr_lst = [0]
 doLst = list()
 # doLst.append('train')
 # doLst.append('test')
@@ -117,7 +117,7 @@ if 'post' in doLst:
 
     inds_df, pred_mean, obs_mean = load_ensemble_result(cfg, exp_lst, test_epoch, return_value=True)
 
-    # plot diversion dor ecdf
+    ########################### plot diversion dor ecdf  ###########################
     diversion_yes = True
     diversion_no = False
     source_data_diversion = GagesSource.choose_some_basins(config_data,
@@ -192,42 +192,69 @@ if 'post' in doLst:
                        dash_lines=[False, False, False, False, True], x_str="NSE", y_str="CDF")
     plt.savefig(os.path.join(config_data.data_path["Out"], 'dor_divert_comp_matplotlib.png'), dpi=500,
                 bbox_inches="tight")
-    plt.figure()
-    plot_ecdfs(xs, ys, cases_exps_legends_together, x_str="NSE", y_str="CDF")
-    sns.despine()
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'dor_divert_comp.png'), dpi=500, bbox_inches="tight")
-    plt.figure()
-    # plot box
-    # keys = ["Bias", "RMSE", "NSE"]
-    # box_fig = plot_diff_boxes(inds_df[keys])
 
-    # plot map ts
-    show_ind_key = 'NSE'
+    ############################ plot map  ###########################
+    show_ind_NSE = 'NSE'
     idx_lst = np.arange(len(data_model.t_s_dict["sites_id"])).tolist()
     # nse_range = [0.5, 1]
     nse_range = [0, 1]
     # nse_range = [-10000, 1]
     # nse_range = [-10000, 0]
     idx_lstl_nse = inds_df[
-        (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] <= nse_range[1])].index.tolist()
-    plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lstl_nse, titles=["NSE map", "NSE boxplot"],
-                           wh_ratio=[1, 5], adjust_xy=(0, 0.04))
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box.png'), dpi=500, bbox_inches="tight")
-    plt.figure()
-    # plot_gages_map_and_ts(data_model, obs_mean, pred_mean, inds_df, show_ind_key, idx_lstl_nse,
-    #                       pertile_range=[0, 100], plot_ts=False, fig_size=(8, 4), cmap_str="jet")
+        (inds_df[show_ind_NSE] >= nse_range[0]) & (inds_df[show_ind_NSE] <= nse_range[1])].index.tolist()
+    plot_gages_map(data_model, inds_df, show_ind_NSE, idx_lstl_nse)
 
-    # plot comparation
-    # config_data_attr = load_dataconfig_case_exp(exp_attr_lst[0])
-    # gages_attr_train = GagesModel.update_data_model(config_data_attr, data_model_train, data_attr_update=True,
-    #                                                 screen_basin_area_huc4=False)
-    # data_model_attr = GagesModel.update_data_model(config_data_attr, data_model_test, data_attr_update=True,
-    #                                                train_stat_dict=gages_attr_train.stat_dict,
-    #                                                screen_basin_area_huc4=False)
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_NSE.png'), dpi=500, bbox_inches="tight")
+    plt.figure()
+
+    # plot box，使用seaborn库
+    keys = ["Bias", "NSE", "BFHV", "BFLV"]
+    inds_test = subset_of_dict(inds_df, keys)
+    plot_diff_boxes(inds_test)
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'boxes.png'), dpi=500, bbox_inches="tight")
+    plt.figure()
+
+    ############################ plot map box   ###########################
+    # plot NSE
+    nse_range = [0, 1]
+    # nse_range = [-10000, 1]
+    # nse_range = [-10000, 0]
+    idx_lstl_nse = inds_df[
+        (inds_df[show_ind_NSE] >= nse_range[0]) & (inds_df[show_ind_NSE] <= nse_range[1])].index.tolist()
+    plot_gages_map_and_box(data_model, inds_df, show_ind_NSE, idx_lstl_nse, titles=["NSE map", "NSE boxplot"],
+                           wh_ratio=[1, 5], adjust_xy=(0, 0.04))
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_NSE.png'), dpi=500, bbox_inches="tight")
+    plt.figure()
+
+    # plot %BiasFLV (the percentage of bias of FDC Low-segment Volume)
+    show_ind_FLV = 'BFLV'
+    percentile_range_FLV = [2, 98]
+    plot_gages_map_and_box(data_model, inds_df, show_ind_FLV, pertile_range=percentile_range_FLV,
+                           titles=["BFLV map", "BFLV boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_BFLV.png'), dpi=500, bbox_inches="tight")
+    plt.figure()
+
+    # plot %BiasFHV (the percentage of bias of FDC High-segment Volume)
+    show_ind_FHV = 'BFHV'
+    percentile_range_FHV = [2, 98]
+    plot_gages_map_and_box(data_model, inds_df, show_ind_FHV, pertile_range=percentile_range_FHV,
+                           titles=["BFHV map", "BFHV boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_BFHV.png'), dpi=500, bbox_inches="tight")
+    plt.figure()
+
+    # plot Bias
+    show_ind_bias = 'Bias'
+    percent_range_bias = [2, 98]
+    plot_gages_map_and_box(data_model, inds_df, show_ind_bias, pertile_range=percent_range_bias,
+                           titles=["Bias map", "Bias boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_bias.png'), dpi=500, bbox_inches="tight")
+    plt.figure()
+
+    ###################### plot map and box between LSTM with and without anthropogenic attrs####################
     comp_version = 1
     inds_df_attr, pred_mean_attr, obs_mean_attr = load_ensemble_result(cfg, exp_attr_lst, test_epoch, return_value=True)
     if comp_version == 0:
-        show_ind_key = "NSE"
+        show_ind_NSE = "NSE"
         attr = "attributes_combination"
         cases_exps_legends = ["attr_comb_1", "attr_comb_2"]
         inds_df_lst = []
@@ -236,25 +263,25 @@ if 'post' in doLst:
         frames = []
         for i in range(len(cases_exps_legends)):
             df_i = pd.DataFrame({attr: np.full([inds_df_lst[i].shape[0]], cases_exps_legends[i]),
-                                 show_ind_key: inds_df_lst[i][show_ind_key]})
+                                 show_ind_NSE: inds_df_lst[i][show_ind_NSE]})
             frames.append(df_i)
         result = pd.concat(frames)
 
-        sns.boxplot(x=attr, y=show_ind_key, data=result, showfliers=False)
+        sns.boxplot(x=attr, y=show_ind_NSE, data=result, showfliers=False)
         # sns.despine(offset=10, trim=True)
     else:
         delta_nse = inds_df - inds_df_attr
         delta_range = [-0.1, 0.1]
         idx_lst_delta = delta_nse[
-            (delta_nse[show_ind_key] >= delta_range[0]) & (delta_nse[show_ind_key] < delta_range[1])].index.tolist()
-        fig = plot_gages_map_and_box(data_model, delta_nse, show_ind_key, idx_lst=idx_lst_delta,
+            (delta_nse[show_ind_NSE] >= delta_range[0]) & (delta_nse[show_ind_NSE] < delta_range[1])].index.tolist()
+        fig = plot_gages_map_and_box(data_model, delta_nse, show_ind_NSE, idx_lst=idx_lst_delta,
                                      titles=["NSE delta map", "NSE delta boxplot"], wh_ratio=[1, 5],
                                      adjust_xy=(0, 0.04))
         plt.savefig(os.path.join(config_data.data_path["Out"], 'w-wo-attr_delta_map_box.png'), dpi=500,
                     bbox_inches="tight")
     plt.figure()
 
-    # plot three factors
+    ############################ plot three factors  ###########################
     attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
     usgs_id = data_model.t_s_dict["sites_id"]
     attrs_runavg_stor = data_model.data_source.read_attr(usgs_id, attr_lst, is_return_dict=False)
@@ -328,7 +355,7 @@ if 'post' in doLst:
     hue_name = "DOR"
     col_name = "diversion"
     for i in range(len(id_regions_idx)):
-        # plot box，使用seaborn库
+        # plot box with seaborn
         keys = ["NSE"]
         inds_test = subset_of_dict(inds_dfs[i], keys)
         inds_test = inds_test[keys[0]].values
@@ -342,7 +369,7 @@ if 'post' in doLst:
         df_i = pd.DataFrame(df_dict_i)
         frames.append(df_i)
     result = pd.concat(frames)
-    plot_boxs(result, x_name, y_name, ylim=[0, 1.0])
+    plot_boxs(result, x_name, y_name, ylim=[-1.0, 1.0])
     plt.savefig(os.path.join(config_data.data_path["Out"], 'purpose_distribution.png'), dpi=500, bbox_inches="tight")
     # g = sns.catplot(x=x_name, y=y_name, hue=hue_name, col=col_name,
     #                 data=result, kind="swarm",
@@ -356,4 +383,3 @@ if 'post' in doLst:
                     kind="box", dodge=True, showfliers=False)
     # g.set(ylim=(-1, 1))
     plt.savefig(os.path.join(config_data.data_path["Out"], '3factors_distribution.png'), dpi=500, bbox_inches="tight")
-    plt.show()

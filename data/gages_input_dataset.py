@@ -4,7 +4,6 @@ import operator
 import os
 from calendar import isleap
 from functools import reduce
-
 import pandas as pd
 import torch
 import numpy as np
@@ -21,6 +20,7 @@ from hydroDL.model import model_run
 from utils import hydro_time
 from utils.dataset_format import subset_of_dict
 from utils.hydro_math import concat_two_3darray, copy_attr_array_in2d
+from utils.hydro_util import hydro_logger
 
 
 def load_pub_ensemble_result(config_file, pub_exp, trained_exp_lst, test_epoch, split_num=None, return_value=False):
@@ -34,7 +34,7 @@ def load_pub_ensemble_result(config_file, pub_exp, trained_exp_lst, test_epoch, 
             pred_i, obs_i = load_result(save_dir_i, test_epoch)
             pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
             obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
-            print(obs_i)
+            hydro_logger.debug(obs_i)
             preds.append(pred_i)
             obss.append(obs_i)
 
@@ -54,7 +54,7 @@ def load_pub_ensemble_result(config_file, pub_exp, trained_exp_lst, test_epoch, 
             pred_i, obs_i = load_result(save_dir_i, test_epoch)
             pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
             obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
-            print(obs_i)
+            hydro_logger.debug(obs_i)
             preds.append(pred_i)
             obss.append(obs_i)
         predsbase_np = reduce(lambda a, b: np.vstack((a, b)), preds)
@@ -74,7 +74,7 @@ def load_ensemble_result(cfg, cases_exps, test_epoch, return_value=False):
         pred_i, obs_i = load_result(config_data_i.data_path['Temp'], test_epoch)
         pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
         obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
-        print(obs_i)
+        hydro_logger.debug(obs_i)
         preds.append(pred_i)
         obss.append(obs_i)
     preds_np = np.array(preds)

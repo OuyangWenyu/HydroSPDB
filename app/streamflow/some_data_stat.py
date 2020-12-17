@@ -8,10 +8,23 @@ from data import GagesSource
 from data.data_input import GagesModel
 from data.gages_input_dataset import load_dataconfig_case_exp, load_ensemble_result
 from data.config import cfg, update_cfg, cmd
+from utils.hydro_util import hydro_logger
 from visual.plot_model import plot_sites_and_attr, plot_scatter_multi_attrs
 
-exp_lst = ["basic_exp37"]
 test_epoch = 300
+
+all_exps_lst = ["basic_exp39", "basic_exp37", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43",
+                "basic_exp32", "basic_exp31", "basic_exp33", "basic_exp34", "basic_exp35", "basic_exp36"]
+all_exps_random_seeds = ["123", "1234", "12345", "111", "1111", "11111", "123", "1234", "12345", "111", "1111", "11111"]
+idx_tmp_now = 0
+for exp_tmp in all_exps_lst:
+    exp_tmp_lst = [exp_tmp]
+    inds_df_tmp = load_ensemble_result(cfg, exp_tmp_lst, test_epoch)
+    hydro_logger.info("The median NSE value of %s is %.2f (random seed: %s)", exp_tmp, inds_df_tmp.median()["NSE"],
+                      all_exps_random_seeds[idx_tmp_now])
+    idx_tmp_now = idx_tmp_now + 1
+
+exp_lst = ["basic_exp37"]
 config_data = load_dataconfig_case_exp(cfg, exp_lst[0])
 data_model = GagesModel.load_datamodel(config_data.data_path["Temp"],
                                        data_source_file_name='test_data_source.txt',
@@ -84,9 +97,27 @@ sites_id_largedor = source_data2.all_configs['flow_screen_gage_id']
 largedor_in_camels = np.intersect1d(sites_id_largedor, gauge_list)
 smalldor_in_camels = np.intersect1d(sites_id_smalldor, gauge_list)
 zerodor_in_camels = np.intersect1d(sites_id_zerodor, gauge_list)
-print("The number of large-dor basins in CAMELS: " + str(largedor_in_camels.size))
-print("The number of small-dor basins in CAMELS: " + str(smalldor_in_camels.size))
-print("The number of zero-dor basins in CAMELS: " + str(zerodor_in_camels.size))
+hydro_logger.info("The number of large-dor basins in CAMELS: %d", largedor_in_camels.size)
+hydro_logger.info("The number of small-dor basins in CAMELS: %d", smalldor_in_camels.size)
+hydro_logger.info("The number of zero-dor basins in CAMELS: %d", zerodor_in_camels.size)
+
+"how many zero-dor, small-dor and large-dor basins in the 523-CAMELS dataset"
+exp_523basins_lst = ["basic_exp31"]
+config_data_523basins = load_dataconfig_case_exp(cfg, exp_523basins_lst[0])
+data_model_523basins = GagesModel.load_datamodel(config_data_523basins.data_path["Temp"],
+                                                 data_source_file_name='test_data_source.txt',
+                                                 stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                                 forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                                 f_dict_file_name='test_dictFactorize.json',
+                                                 var_dict_file_name='test_dictAttribute.json',
+                                                 t_s_dict_file_name='test_dictTimeSpace.json')
+basins523 = data_model_523basins.t_s_dict["sites_id"]
+largedor_in_523acamels = np.intersect1d(sites_id_largedor, basins523)
+smalldor_in_523camels = np.intersect1d(sites_id_smalldor, basins523)
+zerodor_in_523camels = np.intersect1d(sites_id_zerodor, basins523)
+hydro_logger.info("The number of large-dor basins in 523-CAMELS: %d", largedor_in_523acamels.size)
+hydro_logger.info("The number of small-dor basins in 523-CAMELS: %d", smalldor_in_523camels.size)
+hydro_logger.info("The number of zero-dor basins in 523-CAMELS: %d", zerodor_in_523camels.size)
 
 "plot points of all 3557 sites and camels sites with different colors; plot polygons of all 3557 basins and camels " \
 "basins with different colors "

@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.stats
 
+from utils.hydro_util import hydro_logger
+
 keyLst = ['Bias', 'RMSE', 'Corr', 'NSE']
 
 
@@ -22,6 +24,8 @@ def statError(target, pred):
     NSE = np.full(ngrid, np.nan)
     PBiaslow = np.full(ngrid, np.nan)
     PBiashigh = np.full(ngrid, np.nan)
+    PBias = np.full(ngrid, np.nan)
+    num_lowtarget_zero = 0
     for k in range(0, ngrid):
         x = pred[k, :]
         y = target[k, :]
@@ -29,13 +33,17 @@ def statError(target, pred):
         if ind.shape[0] > 0:
             xx = x[ind]
             yy = y[ind]
-            Corr[k] = scipy.stats.pearsonr(xx, yy)[0]
-            yymean = yy.mean()
-            SST = np.sum((yy - yymean) ** 2)
-            SSReg = np.sum((xx - yymean) ** 2)
-            SSRes = np.sum((yy - xx) ** 2)
-            R2[k] = 1 - SSRes / SST
-            NSE[k] = 1 - SSRes / SST
+            # percent bias
+            PBias[k] = np.sum(xx - yy) / np.sum(yy) * 100
+            if ind.shape[0] > 1:
+                # Theoretically at least two points for correlation
+                Corr[k] = scipy.stats.pearsonr(xx, yy)[0]
+                yymean = yy.mean()
+                SST = np.sum((yy - yymean) ** 2)
+                SSReg = np.sum((xx - yymean) ** 2)
+                SSRes = np.sum((yy - xx) ** 2)
+                R2[k] = 1 - SSRes / SST
+                NSE[k] = 1 - SSRes / SST
             # FHV the peak flows bias 2%
             # FLV the low flows bias bottom 30%, log space
             pred_sort = np.sort(xx)
@@ -46,9 +54,15 @@ def statError(target, pred):
             highpred = pred_sort[indexhigh:]
             lowtarget = target_sort[:indexlow]
             hightarget = target_sort[indexhigh:]
+            if np.sum(lowtarget) == 0:
+                num_lowtarget_zero = num_lowtarget_zero + 1
             PBiaslow[k] = np.sum(lowpred - lowtarget) / np.sum(lowtarget) * 100
             PBiashigh[k] = np.sum(highpred - hightarget) / np.sum(hightarget) * 100
-            outDict = dict(Bias=Bias, RMSE=RMSE, ubRMSE=ubRMSE, Corr=Corr, R2=R2, NSE=NSE, FLV=PBiaslow, FHV=PBiashigh)
+            outDict = dict(Bias=Bias, RMSE=RMSE, ubRMSE=ubRMSE, Corr=Corr, R2=R2, NSE=NSE,
+                           BFHV=PBiashigh, BFLV=PBiaslow)
+    hydro_logger.debug("The CDF of BFLV will not reach 1.0 because some basins have all zero flow observations for the "
+                       "30% low flow interval, the percent bias can be infinite\n" + "The number of these cases is "
+                       + str(num_lowtarget_zero))
     return outDict
 
 

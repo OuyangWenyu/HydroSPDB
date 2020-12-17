@@ -1,4 +1,4 @@
-# Impact of Reservoirs on streamflow prediction with Deep Learning model
+# Streamflow Prediction in Dammed Basins (SPDB) with Deep Learning model
 
 ## Code
 

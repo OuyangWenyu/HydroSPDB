@@ -10,6 +10,7 @@ import pandas as pd
 from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 
 from utils.hydro_math import is_any_elem_in_a_lst
+from utils.hydro_util import hydro_logger
 
 
 class GagesSource(DataSource):
@@ -256,7 +257,7 @@ class GagesSource(DataSource):
         df_id_region = data_all.iloc[:, 0].values
         assert (all(x < y for x, y in zip(df_id_region, df_id_region[1:])))
         if len(shapefiles) == 10:  # there are 10 regions in GAGES-II dataset in all
-            print("all regions included, CONUS\n")
+            hydro_logger.debug("all regions included, CONUS\n")
             if screen_basin_area_huc4:
                 assert (all(x < y for x, y in zip(gages_huc4_id, gages_huc4_id[1:])))
                 c, ind1, ind2 = np.intersect1d(df_id_region, gages_huc4_id, return_indices=True)

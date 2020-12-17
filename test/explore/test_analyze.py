@@ -248,7 +248,7 @@ class TestExploreCase(unittest.TestCase):
         nor_storage = attrs_runavg_stor[:, 1] * 1000  # m^3
         dors = nor_storage / run_avg
 
-        nid_dir = os.path.join("/".join(self.config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
+        nid_dir = os.path.join(self.config_data.data_path["DB"], "nid", "test")
         gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
         gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())
         gage_main_dam_purpose_unique = np.unique(gage_main_dam_purpose_lst)
@@ -298,6 +298,9 @@ class TestExploreCase(unittest.TestCase):
         result = pd.concat(frames)
         # can remove high hue value to keep a good map
         plot_boxs(result, x_name, y_name, ylim=[-1.0, 1.0])
+        plt.savefig(os.path.join(self.config_data.data_path["Out"], 'purpose_distribution_test.png'), dpi=500,
+                    bbox_inches="tight")
+        plt.show()
         # plot_boxs(result, x_name, y_name, uniform_color="skyblue", swarm_plot=True, hue=hue_name, colormap=True,
         #           ylim=[-1.0, 1.0])
         cmap_str = 'viridis'
