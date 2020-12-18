@@ -1,4 +1,5 @@
 """some analysis for the dataset we used"""
+import math
 import os
 import pandas as pd
 import numpy as np
@@ -11,6 +12,42 @@ from data.config import cfg, update_cfg, cmd
 from utils.hydro_util import hydro_logger
 from visual.plot_model import plot_sites_and_attr, plot_scatter_multi_attrs
 
+# calculate the dor values of this paper(https://doi.org/10.1029/2007WR005971) according to its table 1
+data_validate = pd.read_csv("paper10.1029_2007WR005971-table1.csv")
+
+idx4paper = 0
+paper_dors = []
+while idx4paper < data_validate.shape[0]:
+    dam_num_tmp = data_validate['Number of Main dams'][idx4paper]
+    if math.isnan(dam_num_tmp):
+        hydro_logger.error("miss it")
+    else:
+        dam_num_tmp = int(dam_num_tmp)
+        if type(data_validate['Watershed Area, km2'][idx4paper]) == str:
+            watershed_area = float(data_validate['Watershed Area, km2'][idx4paper].replace(',', ''))
+        else:
+            watershed_area = data_validate['Watershed Area, km2'][idx4paper]
+        if type(data_validate['Mean Runoff, mm/y'][idx4paper]) == str:
+            mean_runoff = float(data_validate['Mean Runoff, mm/y'][idx4paper].replace(',', ''))
+        else:
+            mean_runoff = data_validate['Mean Runoff, mm/y'][idx4paper]
+
+        capacity_reservoir = 0
+        for idx4paper_tmp in range(dam_num_tmp):
+            if type(data_validate['Capacity of Reservoirs, hm3'][idx4paper]) == str:
+                capa_res_tmp = float(data_validate['Capacity of Reservoirs, hm3'][idx4paper].replace(',', ''))
+            else:
+                capa_res_tmp = data_validate['Capacity of Reservoirs, hm3'][idx4paper]
+            capacity_reservoir = capacity_reservoir + capa_res_tmp
+            idx4paper = idx4paper + 1
+
+    paper_dor_tmp = (capacity_reservoir * 1000000 / (watershed_area * 1000000)) * 1000 / mean_runoff
+    paper_dors.append(paper_dor_tmp)
+paper_dors = np.array(paper_dors)
+hydro_logger.info("The dor values of those basins: %s", paper_dors)
+hydro_logger.info("Are dor values of those basins bigger than 0.02: %s", paper_dors > 0.02)
+hydro_logger.info("Are dor values of those basins bigger than 0.1: %s", paper_dors > 0.1)
+hydro_logger.info("Are dor values of those basins bigger than 1: %s", paper_dors > 1)
 test_epoch = 300
 
 all_exps_lst = ["basic_exp39", "basic_exp37", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43",

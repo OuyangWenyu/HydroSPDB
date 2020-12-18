@@ -1,0 +1,61 @@
+﻿Country,State/Region,River,Gauging Station,"Watershed Area, km2","Mean Rainfall, mm/y","Mean PE, mm/y","Mean Runoff, mm/y",Number of Main dams,"Capacity of Reservoirs, hm3","Controlled Area, km2",Main Management Objective,NSq‐i,NSq‐a
+United‐States,Oklahoma,Washita,Carnegie,"8,104",700,601,40,1,316,"3,797",WS,0.318,0.315
+United‐States,Oklahoma,Washita,Anadarko,"9,469",720,601,48,2,316,"3,797",WS,0.551,0.532
+,,,,,,,,,178,813,WS,,
+United‐States,Texas,Nueces,Three Rivers,"39,956",608,982,17,1,881,"14,323",WS,0.01,−0.107
+Brazil,Minas Gerais,São Francisco,Pirapora‐Barreiro,"61,880","1,351",983,426,1,"15,278","50,600",HE,0.42,0.574
+Brazil,Minas Gerais,São Francisco,Montante Barra do Jequitai,"90,990","1,347",983,380,1,"15,278","50,600",HE,0.711,0.774
+Brazil,Minas Gerais,São Francisco,São Romão,"154,100","1,314",983,324,1,"15,278","50,600",HE,0.79,0.822
+Brazil,Minas Gerais,São Francisco,Manga,"202,400","1,255",983,310,1,"15,278","50,600",HE,0.763,0.768
+France,Haut‐Rhin,Ill,Oberhergheim,"1,290","1,598",703,285,1,12,21,FC,0.86,0.855
+France,Haut‐Rhin,Thur,Willer‐sur‐Thur,159,"1,827",703,1071,1,12,21,FC,0.89,0.891
+France,Haut‐Rhin,Thur,Staffelfelden,249,"1,758",703,834,1,12,21,FC,0.867,0.867
+France,Nord,Helpe Majeure,Taisnières‐en‐Thiérache,320,859,687,399,1,5,178,R,0.773,0.797
+France,Aube,Seine,Troyes,"3,410",888,691,313,1,205,"2,400",FC,0.406,0.646
+France,Aube,Aube,Arcis‐sur‐Aube,"3,590",904,691,326,1,170,"1,700",FC,0.634,0.79
+France,Aube,Seine,Pont‐sur‐Seine,"9,760",875,691,260,2,205,"2,400",FC,0.771,0.831
+,,,,,,,,,170,"1,700",FC,,
+France,Yonne,Yonne,Dornecy,781,969,728,377,1,80,220,FC,0.707,0.819
+France,Yonne,Yonne,Courlon,"10,700",851,711,304,1,80,220,FC,0.826,0.835
+France,Val‐de‐Marne,Seine,Villeneuve‐Saint‐Georges,"30,800",813,707,238,3,205,"2,400",FC,0.84,0.853
+,,,,,,,,,170,"1,700",FC,,
+,,,,,,,,,80,220,FC,,
+France,Marne,Marne,Châlons‐sur‐Marne,"6,280",988,706,397,1,350,"2,950",FC,0.775,0.83
+France,Seine‐et‐Marne,Marne,Noisiel,"12,500",873,709,271,1,350,"2,950",FC,0.765,0.794
+France,Paris,Seine,Paris (Pont d'Austerlitz),"43,800",837,711,231,4,205,"2,400",FC,0.833,0.856
+,,,,,,,,,170,"1,700",FC,,
+,,,,,,,,,80,220,FC,,
+,,,,,,,,,350,"2,950",FC,,
+France,Calvados,Vire,Vire,133,"1,142",728,627,1,2,28,WS,0.415,0.424
+France,Calvados,Vire,Malloué,469,"1,036",728,526,1,2,28,WS,0.873,0.872
+France,Haute‐Loire,Allier,Monistrol d'Allier,988,"1,248",759,514,1,190,53,FC,0.247,0.35
+France,Haute‐Loire,Allier,Prades,"1,350",990,759,448,1,190,53,FC,0.7,0.713
+France,Puy‐de‐Dôme,Morge,Montcel,117,804,722,237,1,5,27,IR,0.733,0.742
+France,Puy‐de‐Dôme,Morge,Maringues,713,698,722,156,1,5,27,IR,0.717,0.729
+France,Allier,Œil,Malicome,126,836,722,201,2,1,17,WS,0.778,0.761
+,,,,,,,,,1,12,WS,,
+France,Allier,Œil,Villefranche d'Allier,319,818,722,211,2,1,17,WS,0.832,0.832
+,,,,,,,,,1,12,WS,,
+France,Haute‐Vienne,Gartempe,Saint‐Bonnet‐de‐Bellac,"1,410","1,116",719,406,2,23,77,FC,0.907,0.907
+,,,,,,,,,7,28,WS,,
+France,Vienne,Gartempe,Montmorillon,"1,870","1,054",719,388,2,23,77,FC,0.923,0.922
+,,,,,,,,,7,28,WS,,
+France,Maine‐et‐Loire,Moine,Roussay,292,835,749,288,2,4,137,WS,0.828,0.819
+,,,,,,,,,14,73,WS,,
+France,Maine‐et‐Loire,Moine,Saint‐Crespin‐sur‐Moine,373,823,749,307,2,4,137,WS,0.876,0.886
+,,,,,,,,,14,73,WS,,
+France,Loire‐Atlantique,Sèvre Nantaise,Clisson,"1,390",972,749,388,2,4,137,WS,0.941,0.94
+,,,,,,,,,14,73,WS,,
+France,Gers,Gimone,Gimont,279,640,871,190,1,25,40,IR,0.588,0.489
+France,Tarn‐et‐Garonne,Gimone,Garganvillar,827,675,871,108,1,25,40,IR,0.753,0.738
+France,Gers,Arrats,Saint Antoine,600,747,766,144,1,10,51,IR,0.784,0.793
+France,Gers,Arros,Juillac,590,"1,051",738,319,1,11,57,IR,0.814,0.812
+France,Gers,Arros,Villecomtal‐sur‐Arros,560,"1,051",738,265,1,11,57,IR,0.8,0.813
+France,Vienne,Charente,Charroux,346,899,719,367,1,10,40,FC,0.347,0.401
+France,Vienne,Charente,Saint‐Saviol,492,890,719,367,1,10,40,FC,0.822,0.837
+France,Charente,Charente,Voulême,510,890,719,376,1,10,40,FC,0.079,0.117
+France,Charente,Charente,Aunac,"1,090",907,719,342,1,10,40,FC,0.914,0.913
+France,Aude,Rougeanne,Moussoulens,130,"1,210",871,411,1,9,12,WS,0.84,0.814
+France,Aude,Fresquel,Carcassonne,939,"1,017",871,212,1,9,12,WS,0.793,0.795
+France,Hérault,Hérault,Aspiran,"1,865","1,112",898,655,1,102,76,FC,‐0.096,0.277
+France,Var,Giscle,Cogolin,195,"1,013",1225,215,1,8,32,WS,0.5,0.487
