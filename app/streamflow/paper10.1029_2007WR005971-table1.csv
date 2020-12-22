@@ -2,7 +2,7 @@
 United‐States,Oklahoma,Washita,Carnegie,"8,104",700,601,40,1,316,"3,797",WS,0.318,0.315
 United‐States,Oklahoma,Washita,Anadarko,"9,469",720,601,48,2,316,"3,797",WS,0.551,0.532
 ,,,,,,,,,178,813,WS,,
-United‐States,Texas,Nueces,Three Rivers,"39,956",608,982,17,1,881,"14,323",WS,0.01,−0.107
+United‐States,Texas,Nueces,Three Rivers,"39,956",608,982,17,1,881,"14,323",WS,0.01,-0.107
 Brazil,Minas Gerais,São Francisco,Pirapora‐Barreiro,"61,880","1,351",983,426,1,"15,278","50,600",HE,0.42,0.574
 Brazil,Minas Gerais,São Francisco,Montante Barra do Jequitai,"90,990","1,347",983,380,1,"15,278","50,600",HE,0.711,0.774
 Brazil,Minas Gerais,São Francisco,São Romão,"154,100","1,314",983,324,1,"15,278","50,600",HE,0.79,0.822
@@ -57,5 +57,5 @@ France,Charente,Charente,Voulême,510,890,719,376,1,10,40,FC,0.079,0.117
 France,Charente,Charente,Aunac,"1,090",907,719,342,1,10,40,FC,0.914,0.913
 France,Aude,Rougeanne,Moussoulens,130,"1,210",871,411,1,9,12,WS,0.84,0.814
 France,Aude,Fresquel,Carcassonne,939,"1,017",871,212,1,9,12,WS,0.793,0.795
-France,Hérault,Hérault,Aspiran,"1,865","1,112",898,655,1,102,76,FC,‐0.096,0.277
+France,Hérault,Hérault,Aspiran,"1,865","1,112",898,655,1,102,76,FC,-0.096,0.277
 France,Var,Giscle,Cogolin,195,"1,013",1225,215,1,8,32,WS,0.5,0.487

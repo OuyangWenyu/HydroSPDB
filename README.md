@@ -6,7 +6,7 @@ Notice: ONLY tested in an "Ubuntu" machine with NVIDIA GPU
 
 Clone this repo to your local directory.
 
-You should use the "master" branch, but if you want to use another branch, for example, the "dev" branch, you can run the commands:
+Please use the "master" branch, but if you want to use another branch, for example, the "dev" branch, you can run the commands:
 
 ```git
 git fetch origin dev
@@ -27,7 +27,7 @@ The main packages are as follows:
 pytorch==1.2.0 torchvision==0.4.0 cudatoolkit=10.0 pydrive geopandas netcdf4 scipy tensorboard future matplotlib statsmodels seaborn cartopy geoplot easydict pyarrow xlrd
 ```
 
-After installing the environment, you should activate it before running the code:
+After installing the environment, activate it before running the code:
 
 ```Shell
 conda activate SPDB
@@ -53,9 +53,9 @@ Directories:
 - All data were put in the "example" directory
 - Statistics code was in "explore" dir
 - "hydroDL" had the core code
-- "refine" was not used yet. It would be used for optimization of hyper-param
+- "refine" has not been used yet. It would be used for optimization of hyper-param
 - All test scripts were written with Unittest framework, and in "test" dir
-- Visualization in "visual" dir
+- Visualization codes were in "visual" dir
 
 ## Usage
 
@@ -70,12 +70,13 @@ Directories:
     - mainstem_line_covers.zip
     - nid.zip 
     - wbdhu4-a-us-september2019-shpfile.zip
-- You should download the data manually if you don't have an access to my google drive or you don't know how to use PyDrive. 
+- Download the data manually if you don't have an access to my google drive or you don't know how to use PyDrive. 
 Then you have to make a directory:
 ```Shell
 # /mnt/sdc/wvo5024/hydro-anthropogenic-lstm/ is my root directory. you should change it to yours
 cd /mnt/sdc/wvo5024/hydro-anthropogenic-lstm/example
 mkdir data
+cd data
 mkdir gages
 ```
 and put all downloaded zip files in it.

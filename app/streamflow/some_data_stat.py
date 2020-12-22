@@ -12,9 +12,19 @@ from data.config import cfg, update_cfg, cmd
 from utils.hydro_util import hydro_logger
 from visual.plot_model import plot_sites_and_attr, plot_scatter_multi_attrs
 
-# calculate the dor values of this paper(https://doi.org/10.1029/2007WR005971) according to its table 1
+# cite data from this paper(https://doi.org/10.1029/2007WR005971) according to its table 1
 data_validate = pd.read_csv("paper10.1029_2007WR005971-table1.csv")
 
+# statistical analysis for NSq. NSq-i, NSq-a: Model performance when respectively Ignoring and Accounting for the
+# volume variations in the reservoirs in control mode.
+nsqi = data_validate['NSq‐i'].astype(float)
+nsqa = data_validate['NSq‐a'].astype(float)
+hydro_logger.info(np.nanmedian(nsqi.values))
+hydro_logger.info(np.nanmean(nsqi.values))
+hydro_logger.info(np.nanmedian(nsqa.values))
+hydro_logger.info(np.nanmean(nsqa.values))
+
+# calculate the dor values of all basins
 idx4paper = 0
 paper_dors = []
 while idx4paper < data_validate.shape[0]:
