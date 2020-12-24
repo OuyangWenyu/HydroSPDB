@@ -95,7 +95,7 @@ inds_df = load_ensemble_result(cfg, conus_exps, test_epoch)
 keys_nse = "NSE"
 
 ######################################### plot 523 sites ecdf ################################################
-keys_ecdf = ["Bias", "NSE", "BFHV", "BFLV"]
+keys_ecdf = ["Bias", "NSE", "FHV", "FLV"]
 x_intervals = [50, 0.1, 50, 50]
 x_lims = [(-200, 200), (0, 1), (-100, 300), (-100, 300)]
 show_legends = [True, False, False, False]

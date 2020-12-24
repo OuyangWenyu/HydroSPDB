@@ -1,8 +1,8 @@
-# Streamflow Prediction in Dammed Basins (SPDB) with Deep Learning model
+# Streamflow Prediction in Dammed Basins (SPDB) with Deep Learning models
 
 ## Code
 
-Notice: ONLY tested in an "Ubuntu" machine with NVIDIA GPU
+Notice: ONLY tested in an "Ubuntu" machine with NVIDIA GPUs
 
 Clone this repo to your local directory.
 
@@ -85,7 +85,7 @@ and put all downloaded zip files in it.
 
 ```Shell
 screen -S xxx (give the process a name)
-conda activate xxxxx (the python environment you created for this repo. use "conda env list" to see the name)
+conda activate SPDB
 cd xx/app/streamflow （move to the directory）
 screen -r xxx (use the id of the process to enter the process. you can use "screen -ls" to see what the id is)
 python gages_conus_analysis.py --sub basic/exp37 --cache_state 1
@@ -93,7 +93,7 @@ python gages_conus_analysis.py --sub basic/exp37 --cache_state 1
 
 All "xxx_xxx_analysis.py" scripts are run for training and testing, while all "xxx_xxx_result_sectionx.py" files are used for showing the results. 
 To run the testing file, please make sure you have run the corresponding training scripts 
-and saved some cache for input data and trained model. If there is no cache for input, it will take much time to do test.
+and saved some cache for input data and trained model. If there is no cache for input, it will take much time to test models.
 You can use the following code to generate some quickly-accessed binary data:
 
 ```Shell
