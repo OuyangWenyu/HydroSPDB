@@ -41,7 +41,7 @@ test_data_name_lst = [["Train-z", "PUB-z", "PUB-s"], ["Train-z", "PUB-z", "PUB-l
                       ["Train-c", "PUB-c", "PUB-z", "PUB-s", "PUB-l"]]  # ["Train-c", "PUB-c", "PUB-n"]
 
 test_epoch = 300
-# test_epoch = 20
+FIGURE_DPI = 600
 split_num = 2
 # camels_pub_split_num = 12
 camels_pub_split_num = 2
@@ -51,6 +51,22 @@ doLst = list()
 # doLst.append('train')
 # doLst.append('test')
 doLst.append('post')
+
+
+def create_median_labels(ax, has_fliers):
+    lines = ax.get_lines()
+    # depending on fliers, toggle between 5 and 6 lines per box
+    lines_per_box = 5 + int(has_fliers)
+    # iterate directly over all median lines, with an interval of lines_per_box
+    # this enables labeling of grouped data without relying on tick positions
+    for median_line in lines[4:len(lines):lines_per_box]:
+        # get center of median line
+        mean_x = sum(median_line._x) / len(median_line._x)
+        mean_y = sum(median_line._y) / len(median_line._y)
+        # print text to center coordinates
+        text = ax.text(mean_x, mean_y + 0.03, f'{mean_y:.2f}', ha='center', va='center', fontweight='bold', size=8,
+                       color='black')
+
 
 if 'test' in doLst:
     zerodor_config_data = load_dataconfig_case_exp(cfg, camels_pub_on_diff_dor_exp_lst[0])
@@ -277,6 +293,7 @@ for k in range(len(exp_lst)):
         hydro_logger.info(medians)
         sns_box = sns.boxplot(ax=ax_k, x=train_set, y=show_ind_key, hue=test_set, data=result_camels_pub,
                               showfliers=False, palette=colors[k])
+        create_median_labels(sns_box.axes, has_fliers=False)
         # plt.subplots_adjust(hspace=0.8)
         # sns.boxplot(ax=ax_k, x=test_set, y=show_ind_key, data=result_camels_pub, showfliers=False, palette=colors[k])
         continue
@@ -399,13 +416,9 @@ for k in range(len(exp_lst)):
     ax_k.set_yticks(np.arange(-1, 1, 0.2))
     medians = result.groupby([train_set, test_set], sort=False)[show_ind_key].median().values
     hydro_logger.info(medians)
-    # median_labels = [str(np.round(s, 3)) for s in medians]
-    # pos = range(len(medians))
-    # for tick, label in zip(pos, ax_k.get_xticklabels()):
-    #     ax_k.text(pos[tick], medians[tick] + 0.02, median_labels[tick],
-    #               horizontalalignment='center', size='x-small', weight='semibold')
+    create_median_labels(sns_box.axes, has_fliers=False)
 
 sns.despine()
 plt.tight_layout()
 show_config_data = load_dataconfig_case_exp(cfg, exp_lst[0][0])
-plt.savefig(os.path.join(show_config_data.data_path["Out"], '4exps_pub.png'), dpi=500, bbox_inches="tight")
+plt.savefig(os.path.join(show_config_data.data_path["Out"], '4exps_pub.png'), dpi=FIGURE_DPI, bbox_inches="tight")

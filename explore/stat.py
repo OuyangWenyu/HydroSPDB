@@ -6,6 +6,22 @@ from utils.hydro_util import hydro_logger
 keyLst = ['Bias', 'RMSE', 'Corr', 'NSE']
 
 
+def KGE(xs, xo):
+    """
+    Kling Gupta Efficiency (Gupta et al., 2009, http://dx.doi.org/10.1016/j.jhydrol.2009.08.003)
+    input:
+        xs: simulated
+        xo: observed
+    output:
+        KGE: Kling Gupta Efficiency
+    """
+    r = np.corrcoef(xo, xs)[0, 1]
+    alpha = np.std(xs) / np.std(xo)
+    beta = np.mean(xs) / np.mean(xo)
+    kge = 1 - np.sqrt((r - 1) ** 2 + (alpha - 1) ** 2 + (beta - 1) ** 2)
+    return kge
+
+
 def statError(target, pred):
     ngrid, nt = pred.shape
     # Bias
@@ -22,6 +38,7 @@ def statError(target, pred):
     Corr = np.full(ngrid, np.nan)
     R2 = np.full(ngrid, np.nan)
     NSE = np.full(ngrid, np.nan)
+    KGe = np.full(ngrid, np.nan)
     PBiaslow = np.full(ngrid, np.nan)
     PBiashigh = np.full(ngrid, np.nan)
     PBias = np.full(ngrid, np.nan)
@@ -44,6 +61,7 @@ def statError(target, pred):
                 SSRes = np.sum((yy - xx) ** 2)
                 R2[k] = 1 - SSRes / SST
                 NSE[k] = 1 - SSRes / SST
+                KGe[k] = KGE(xx, yy)
             # FHV the peak flows bias 2%
             # FLV the low flows bias bottom 30%, log space
             pred_sort = np.sort(xx)
@@ -58,7 +76,7 @@ def statError(target, pred):
                 num_lowtarget_zero = num_lowtarget_zero + 1
             PBiaslow[k] = np.sum(lowpred - lowtarget) / np.sum(lowtarget) * 100
             PBiashigh[k] = np.sum(highpred - hightarget) / np.sum(hightarget) * 100
-            outDict = dict(Bias=Bias, RMSE=RMSE, ubRMSE=ubRMSE, Corr=Corr, R2=R2, NSE=NSE,
+            outDict = dict(Bias=Bias, RMSE=RMSE, ubRMSE=ubRMSE, Corr=Corr, R2=R2, NSE=NSE, KGE=KGe,
                            FHV=PBiashigh, FLV=PBiaslow)
     hydro_logger.debug("The CDF of BFLV will not reach 1.0 because some basins have all zero flow observations for the "
                        "30% low flow interval, the percent bias can be infinite\n" + "The number of these cases is "

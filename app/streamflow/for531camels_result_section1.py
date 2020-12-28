@@ -4,15 +4,15 @@ from data.data_input import GagesModel, save_datamodel
 from data.gages_input_dataset import load_ensemble_result, load_dataconfig_case_exp, GagesModels
 from data.config import cfg
 from explore.stat import ecdf
+from utils.hydro_util import hydro_logger
 from visual.plot_model import plot_gages_map_and_box, plot_gages_map
-from visual.plot_stat import plot_ecdfs, plot_ecdfs_matplot
+from visual.plot_stat import plot_ecdfs_matplot
 from easydict import EasyDict as edict
 
 sys.path.append("../..")
 import os
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
 
 conus_exps = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
@@ -21,7 +21,7 @@ gpu_lst = [0, 0, 0, 0, 0, 0]
 doLst = list()
 # doLst.append('cache')
 test_epoch = 300
-
+FIGURE_DPI = 600
 all_config_Data = load_dataconfig_case_exp(cfg, conus_exps[0])
 config_data = load_dataconfig_case_exp(cfg, exp_lst[0])
 
@@ -55,7 +55,7 @@ if 'cache' in doLst:
                    forcing_file_name='test_forcing', attr_file_name='test_attr',
                    f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
                    t_s_dict_file_name='test_dictTimeSpace.json')
-    print("read and save gages conus data model")
+    hydro_logger.info("read and save gages conus data model")
 
     camels531_gageid_file = os.path.join(config_data.data_path["DB"], "camels531", "camels531.txt")
     gauge_df = pd.read_csv(camels531_gageid_file, dtype={"GaugeID": str})
@@ -68,7 +68,7 @@ if 'cache' in doLst:
                    forcing_file_name='test_forcing', attr_file_name='test_attr',
                    f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
                    t_s_dict_file_name='test_dictTimeSpace.json')
-    print("read and save camels 531 data model")
+    hydro_logger.info("read and save camels 531 data model")
 # plot
 data_model = GagesModel.load_datamodel(config_data.data_path["Temp"],
                                        data_source_file_name='test_data_source.txt',
@@ -95,10 +95,10 @@ inds_df = load_ensemble_result(cfg, conus_exps, test_epoch)
 keys_nse = "NSE"
 
 ######################################### plot 523 sites ecdf ################################################
-keys_ecdf = ["Bias", "NSE", "FHV", "FLV"]
-x_intervals = [50, 0.1, 50, 50]
-x_lims = [(-200, 200), (0, 1), (-100, 300), (-100, 300)]
-show_legends = [True, False, False, False]
+keys_ecdf = ["Bias", "Corr", "NSE", "KGE", "FHV", "FLV"]
+x_intervals = [50, 0.1, 0.1, 0.1, 50, 50]
+x_lims = [(-200, 200), (0, 1), (0, 1), (0, 1), (-100, 300), (-100, 300)]
+show_legends = [True, False, False, False, False, False]
 idx_tmp = 0
 cdf_values = edict()
 for key_tmp in keys_ecdf:
@@ -131,7 +131,7 @@ for key_tmp in keys_ecdf:
     plot_ecdfs_matplot(xs, ys, cases_exps_legends, colors=colors, dash_lines=[False, False, True], x_str=key_tmp,
                        y_str="CDF", x_interval=x_intervals[idx_tmp], x_lim=x_lims[idx_tmp],
                        show_legend=show_legends[idx_tmp], legend_font_size=14)
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'camels_synergy_' + key_tmp + '.png'), dpi=500,
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'camels_synergy_' + key_tmp + '.png'), dpi=FIGURE_DPI,
                 bbox_inches="tight")
     plt.show()
     idx_tmp = idx_tmp + 1
@@ -143,7 +143,7 @@ idx_lstl_nse = inds_df_camels[
     (inds_df_camels[keys_nse] >= nse_range[0]) & (inds_df_camels[keys_nse] <= nse_range[1])].index.tolist()
 plot_gages_map(data_model, inds_df_camels, keys_nse, idx_lstl_nse)
 
-plt.savefig(os.path.join(config_data.data_path["Out"], 'map_NSE_531.png'), dpi=500, bbox_inches="tight")
+plt.savefig(os.path.join(config_data.data_path["Out"], 'map_NSE_531.png'), dpi=FIGURE_DPI, bbox_inches="tight")
 plt.figure()
 
 ###################### plot map and box between 531 in LSTM_CONUS and LSTM-CAMELS####################
@@ -152,7 +152,7 @@ camels_nse = inds_df_camels[keys_nse]
 delta_nse = pd.DataFrame({keys_nse: camels_in_all_nse.values - camels_nse.values})
 fig = plot_gages_map_and_box(data_model, delta_nse, keys_nse, pertile_range=[1, 99],
                              titles=["NSE delta map", "NSE delta boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
-plt.savefig(os.path.join(config_data.data_path["Out"], '523sites_delta_map_box.png'), dpi=500,
+plt.savefig(os.path.join(config_data.data_path["Out"], '523sites_delta_map_box.png'), dpi=FIGURE_DPI,
             bbox_inches="tight")
 plt.figure()
 

@@ -6,7 +6,7 @@ from data import GagesSource
 from data.data_input import GagesModel
 from data.gages_input_dataset import load_ensemble_result, load_dataconfig_case_exp
 from explore.stat import ecdf
-from visual.plot_model import plot_gages_map_and_box, plot_gages_map_and_ts, plot_gages_map_and_scatter
+from visual.plot_model import plot_gages_map_and_scatter
 from visual.plot_stat import plot_ecdfs
 import numpy as np
 import seaborn as sns
@@ -33,7 +33,7 @@ largedam_exp_lst = ["dam_exp4", "dam_exp5", "dam_exp6", "dam_exp13", "dam_exp16"
 # smalldam_exp_lst = ["dam_exp20"]
 # largedam_exp_lst = ["dam_exp4"]
 test_epoch = 300
-
+FIGURE_DPI = 600
 # nodam_config_data = load_dataconfig_case_exp(nodam_exp_lst[0])
 # smalldam_config_data = load_dataconfig_case_exp(smalldam_exp_lst[0])
 # largedam_config_data = load_dataconfig_case_exp(largedam_exp_lst[0])
@@ -177,7 +177,7 @@ if compare_item == 0:
                                labels=["zero-dor", "small-dor"], scatter_label=[attr_lst[0], show_ind_key], wspace=2,
                                hspace=1.5, legend_y=.8, sub_fig_ratio=[6, 4, 1])
     plt.tight_layout()
-    plt.savefig(os.path.join(conus_config_data.data_path["Out"], 'zero-small-dor_western_map_comp.png'), dpi=140,
+    plt.savefig(os.path.join(conus_config_data.data_path["Out"], 'zero-small-dor_western_map_comp.png'), dpi=FIGURE_DPI,
                 bbox_inches="tight")
 elif compare_item == 3:
     all_lst_names = ["no dam lst", "small dam lst", "large dam lst", "no and small dam lst", "no and large dam lst",
@@ -338,7 +338,7 @@ elif compare_item == 2:
                  horizontalalignment='center', size='x-small', weight='semibold')
     # sns.despine()
     plt.tight_layout()
-    plt.savefig(os.path.join(conus_config_data.data_path["Out"], '3exps_data_synergy.png'), dpi=300,
+    plt.savefig(os.path.join(conus_config_data.data_path["Out"], '3exps_data_synergy.png'), dpi=FIGURE_DPI,
                 bbox_inches="tight")
 elif compare_item == 1:  # ecdf
     print("multi plots")

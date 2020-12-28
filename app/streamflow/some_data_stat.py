@@ -12,6 +12,8 @@ from data.config import cfg, update_cfg, cmd
 from utils.hydro_util import hydro_logger
 from visual.plot_model import plot_sites_and_attr, plot_scatter_multi_attrs
 
+FIGURE_DPI = 600
+
 # cite data from this paper(https://doi.org/10.1029/2007WR005971) according to its table 1
 data_validate = pd.read_csv("paper10.1029_2007WR005971-table1.csv")
 
@@ -19,10 +21,10 @@ data_validate = pd.read_csv("paper10.1029_2007WR005971-table1.csv")
 # volume variations in the reservoirs in control mode.
 nsqi = data_validate['NSq‐i'].astype(float)
 nsqa = data_validate['NSq‐a'].astype(float)
-hydro_logger.info(np.nanmedian(nsqi.values))
-hydro_logger.info(np.nanmean(nsqi.values))
-hydro_logger.info(np.nanmedian(nsqa.values))
-hydro_logger.info(np.nanmean(nsqa.values))
+hydro_logger.info("nsq-i MEDIAN value is %s", np.nanmedian(nsqi.values))
+hydro_logger.info("nsq-i MEAN value is %s", np.nanmean(nsqi.values))
+hydro_logger.info("nsq-a MEDIAN value is %s", np.nanmedian(nsqa.values))
+hydro_logger.info("nsq-a MEAN value is %s", np.nanmean(nsqa.values))
 
 # calculate the dor values of all basins
 idx4paper = 0
@@ -115,7 +117,7 @@ for i in range(len(attr_lst_shown)):
     plt.xlim(show_min, show_max)
     plt.savefig(
         os.path.join(config_data.data_path["Out"], 'NSE-min-' + str(nse_range[0]) + '~' + attr_lst_shown[i] + '.png'),
-        dpi=500, bbox_inches="tight")
+        dpi=FIGURE_DPI, bbox_inches="tight")
     plt.show()
 
 show_ind_key = 'NSE'
@@ -179,7 +181,7 @@ is_camels = np.array([1 if data_model.t_s_dict["sites_id"][i] in chosen_sites el
                       range(len(data_model.t_s_dict["sites_id"]))])
 plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, is_camels, is_discrete=True,
                     markers=["x", "o"], marker_sizes=[4, 2], colors=["b", "r"])
-plt.savefig(os.path.join(config_data.data_path["Out"], 'map_camels_or_not.png'), dpi=500, bbox_inches="tight")
+plt.savefig(os.path.join(config_data.data_path["Out"], 'map_camels_or_not.png'), dpi=FIGURE_DPI, bbox_inches="tight")
 
 attrs_lst = ["SLOPE_PCT", "FORESTNLCD06", "PERMAVE", "GEOL_REEDBUSH_DOM_PCT", "STOR_NOR_2009",
              "FRESHW_WITHDRAWAL"]
@@ -192,4 +194,4 @@ for i in range(len(attrs_lst)):
     else:
         plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
                             markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet")
-    plt.savefig(os.path.join(config_data.data_path["Out"], attrs_lst[i] + '.png'), dpi=500, bbox_inches="tight")
+    plt.savefig(os.path.join(config_data.data_path["Out"], attrs_lst[i] + '.png'), dpi=FIGURE_DPI, bbox_inches="tight")

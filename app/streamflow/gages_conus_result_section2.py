@@ -37,7 +37,7 @@ doLst = list()
 # doLst.append('test')
 doLst.append('post')
 test_epoch = 300
-
+FIGURE_DPI = 600
 # test
 if 'test' in doLst:
     for i in range(len(exp_lst)):
@@ -190,7 +190,7 @@ if 'post' in doLst:
     ys.append(y_conus)
     plot_ecdfs_matplot(xs, ys, cases_exps_legends_together, colors=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "grey"],
                        dash_lines=[False, False, False, False, True], x_str="NSE", y_str="CDF")
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'dor_divert_comp_matplotlib.png'), dpi=500,
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'dor_divert_comp_matplotlib.png'), dpi=FIGURE_DPI,
                 bbox_inches="tight")
 
     ############################ plot map  ###########################
@@ -204,14 +204,14 @@ if 'post' in doLst:
         (inds_df[show_ind_NSE] >= nse_range[0]) & (inds_df[show_ind_NSE] <= nse_range[1])].index.tolist()
     plot_gages_map(data_model, inds_df, show_ind_NSE, idx_lstl_nse)
 
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_NSE.png'), dpi=500, bbox_inches="tight")
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_NSE.png'), dpi=FIGURE_DPI, bbox_inches="tight")
     plt.figure()
 
     # plot box，使用seaborn库
-    keys = ["Bias", "NSE", "BFHV", "BFLV"]
+    keys = ["Bias", "NSE", "FHV", "FLV"]
     inds_test = subset_of_dict(inds_df, keys)
     plot_diff_boxes(inds_test)
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'boxes.png'), dpi=500, bbox_inches="tight")
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'boxes.png'), dpi=FIGURE_DPI, bbox_inches="tight")
     plt.figure()
 
     ############################ plot map box   ###########################
@@ -223,23 +223,23 @@ if 'post' in doLst:
         (inds_df[show_ind_NSE] >= nse_range[0]) & (inds_df[show_ind_NSE] <= nse_range[1])].index.tolist()
     plot_gages_map_and_box(data_model, inds_df, show_ind_NSE, idx_lstl_nse, titles=["NSE map", "NSE boxplot"],
                            wh_ratio=[1, 5], adjust_xy=(0, 0.04))
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_NSE.png'), dpi=500, bbox_inches="tight")
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_NSE.png'), dpi=FIGURE_DPI, bbox_inches="tight")
     plt.figure()
 
     # plot %BiasFLV (the percentage of bias of FDC Low-segment Volume)
-    show_ind_FLV = 'BFLV'
+    show_ind_FLV = 'FLV'
     percentile_range_FLV = [2, 98]
     plot_gages_map_and_box(data_model, inds_df, show_ind_FLV, pertile_range=percentile_range_FLV,
-                           titles=["BFLV map", "BFLV boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_BFLV.png'), dpi=500, bbox_inches="tight")
+                           titles=["FLV map", "FLV boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_FLV.png'), dpi=FIGURE_DPI, bbox_inches="tight")
     plt.figure()
 
     # plot %BiasFHV (the percentage of bias of FDC High-segment Volume)
-    show_ind_FHV = 'BFHV'
+    show_ind_FHV = 'FHV'
     percentile_range_FHV = [2, 98]
     plot_gages_map_and_box(data_model, inds_df, show_ind_FHV, pertile_range=percentile_range_FHV,
-                           titles=["BFHV map", "BFHV boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_BFHV.png'), dpi=500, bbox_inches="tight")
+                           titles=["FHV map", "FHV boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_FHV.png'), dpi=FIGURE_DPI, bbox_inches="tight")
     plt.figure()
 
     # plot Bias
@@ -247,7 +247,7 @@ if 'post' in doLst:
     percent_range_bias = [2, 98]
     plot_gages_map_and_box(data_model, inds_df, show_ind_bias, pertile_range=percent_range_bias,
                            titles=["Bias map", "Bias boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_bias.png'), dpi=500, bbox_inches="tight")
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_bias.png'), dpi=FIGURE_DPI, bbox_inches="tight")
     plt.figure()
 
     ###################### plot map and box between LSTM with and without anthropogenic attrs####################
@@ -277,7 +277,7 @@ if 'post' in doLst:
         fig = plot_gages_map_and_box(data_model, delta_nse, show_ind_NSE, idx_lst=idx_lst_delta,
                                      titles=["NSE delta map", "NSE delta boxplot"], wh_ratio=[1, 5],
                                      adjust_xy=(0, 0.04))
-        plt.savefig(os.path.join(config_data.data_path["Out"], 'w-wo-attr_delta_map_box.png'), dpi=500,
+        plt.savefig(os.path.join(config_data.data_path["Out"], 'w-wo-attr_delta_map_box.png'), dpi=FIGURE_DPI,
                     bbox_inches="tight")
     plt.figure()
 
@@ -370,7 +370,7 @@ if 'post' in doLst:
         frames.append(df_i)
     result = pd.concat(frames)
     plot_boxs(result, x_name, y_name, ylim=[-1.0, 1.0])
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'purpose_distribution.png'), dpi=500, bbox_inches="tight")
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'purpose_distribution.png'), dpi=FIGURE_DPI, bbox_inches="tight")
     # g = sns.catplot(x=x_name, y=y_name, hue=hue_name, col=col_name,
     #                 data=result, kind="swarm",
     #                 height=4, aspect=.7)
@@ -382,4 +382,4 @@ if 'post' in doLst:
                     data=result, palette="Set1",
                     kind="box", dodge=True, showfliers=False)
     # g.set(ylim=(-1, 1))
-    plt.savefig(os.path.join(config_data.data_path["Out"], '3factors_distribution.png'), dpi=500, bbox_inches="tight")
+    plt.savefig(os.path.join(config_data.data_path["Out"], '3factors_distribution.png'), dpi=FIGURE_DPI, bbox_inches="tight")
