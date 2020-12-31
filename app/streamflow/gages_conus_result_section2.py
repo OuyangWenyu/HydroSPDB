@@ -12,6 +12,7 @@ from hydroDL import master_test
 from utils import unserialize_json, serialize_json
 from utils.dataset_format import subset_of_dict
 from utils.hydro_math import is_any_elem_in_a_lst
+from utils.hydro_util import hydro_logger
 from visual.plot_model import plot_we_need, plot_gages_map_and_box, plot_gages_map
 from visual.plot_stat import plot_ecdfs, plot_ecdfs_matplot, plot_boxs, plot_diff_boxes
 
@@ -188,6 +189,9 @@ if 'post' in doLst:
     x_conus, y_conus = ecdf(inds_df[keys_nse])
     xs.append(x_conus)
     ys.append(y_conus)
+    hydro_logger.info("The median NSEs of all five curves (%s) are \n %.2f, %.2f, %.2f, %.2f, %.2f",
+                      cases_exps_legends_together, np.median(x1), np.median(x2), np.median(x3), np.median(x4),
+                      np.median(x_conus))
     plot_ecdfs_matplot(xs, ys, cases_exps_legends_together, colors=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "grey"],
                        dash_lines=[False, False, False, False, True], x_str="NSE", y_str="CDF")
     plt.savefig(os.path.join(config_data.data_path["Out"], 'dor_divert_comp_matplotlib.png'), dpi=FIGURE_DPI,
@@ -202,7 +206,7 @@ if 'post' in doLst:
     # nse_range = [-10000, 0]
     idx_lstl_nse = inds_df[
         (inds_df[show_ind_NSE] >= nse_range[0]) & (inds_df[show_ind_NSE] <= nse_range[1])].index.tolist()
-    plot_gages_map(data_model, inds_df, show_ind_NSE, idx_lstl_nse)
+    plot_gages_map(data_model, inds_df, show_ind_NSE, idx_lstl_nse, cbar_font_size=14)
 
     plt.savefig(os.path.join(config_data.data_path["Out"], 'map_NSE.png'), dpi=FIGURE_DPI, bbox_inches="tight")
     plt.figure()
@@ -370,7 +374,8 @@ if 'post' in doLst:
         frames.append(df_i)
     result = pd.concat(frames)
     plot_boxs(result, x_name, y_name, ylim=[-1.0, 1.0])
-    plt.savefig(os.path.join(config_data.data_path["Out"], 'purpose_distribution.png'), dpi=FIGURE_DPI, bbox_inches="tight")
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'purpose_distribution.png'), dpi=FIGURE_DPI,
+                bbox_inches="tight")
     # g = sns.catplot(x=x_name, y=y_name, hue=hue_name, col=col_name,
     #                 data=result, kind="swarm",
     #                 height=4, aspect=.7)
@@ -382,4 +387,5 @@ if 'post' in doLst:
                     data=result, palette="Set1",
                     kind="box", dodge=True, showfliers=False)
     # g.set(ylim=(-1, 1))
-    plt.savefig(os.path.join(config_data.data_path["Out"], '3factors_distribution.png'), dpi=FIGURE_DPI, bbox_inches="tight")
+    plt.savefig(os.path.join(config_data.data_path["Out"], '3factors_distribution.png'), dpi=FIGURE_DPI,
+                bbox_inches="tight")

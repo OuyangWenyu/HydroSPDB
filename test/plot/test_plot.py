@@ -193,7 +193,7 @@ class MyTestCase(unittest.TestCase):
             (sites_df[keys[0]] >= nse_range[0]) & (sites_df[keys[0]] <= nse_range[1])].index.tolist()
         colorbar_size = [0.91, 0.323, 0.02, 0.346]
         # colorbar_size = None
-        plot_gages_map(data_model, sites_df, keys[0], idx_lstl_nse, colorbar_size=colorbar_size)
+        plot_gages_map(data_model, sites_df, keys[0], idx_lstl_nse, colorbar_size=colorbar_size, cbar_font_size=14)
         plt.savefig(os.path.join(self.dir_out, 'map_NSE.png'), dpi=500, bbox_inches="tight")
         plt.show()
         # plot_map(gauge_dict, sites_df, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
@@ -394,7 +394,7 @@ class MyTestCase(unittest.TestCase):
         is_camels = np.array([1 if data_model.t_s_dict["sites_id"][i] in chosen_sites else 0 for i in
                               range(len(data_model.t_s_dict["sites_id"]))])
         plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, is_camels, is_discrete=True,
-                            markers=["x", "o"], marker_sizes=[4, 2], colors=["b", "r"])
+                            markers=["x", "o"], marker_sizes=[4, 2], colors=["b", "r"], legend_font_size=13)
         plt.savefig(os.path.join(self.dir_out, 'map_camels_or_not.png'), dpi=500, bbox_inches="tight")
 
         attrs_lst = ["SLOPE_PCT", "FORESTNLCD06", "PERMAVE", "GEOL_REEDBUSH_DOM_PCT", "STOR_NOR_2009",
@@ -404,10 +404,11 @@ class MyTestCase(unittest.TestCase):
             data_attr = data_attrs[i]
             if attrs_lst[i] == "STOR_NOR_2009" or attrs_lst[i] == "FRESHW_WITHDRAWAL":
                 plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
-                                    pertile_range=[0, 95], markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet")
+                                    pertile_range=[0, 95], markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet",
+                                    cbar_font_size=13)
             else:
                 plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
-                                    markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet")
+                                    markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet", cbar_font_size=13)
             plt.savefig(os.path.join(self.dir_out, attrs_lst[i] + '.png'), dpi=500, bbox_inches="tight")
 
     def test_plot_kuai_cdf(self):

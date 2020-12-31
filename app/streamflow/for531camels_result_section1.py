@@ -141,7 +141,7 @@ idx_lst = np.arange(len(data_model.t_s_dict["sites_id"])).tolist()
 nse_range = [0, 1]
 idx_lstl_nse = inds_df_camels[
     (inds_df_camels[keys_nse] >= nse_range[0]) & (inds_df_camels[keys_nse] <= nse_range[1])].index.tolist()
-plot_gages_map(data_model, inds_df_camels, keys_nse, idx_lstl_nse)
+plot_gages_map(data_model, inds_df_camels, keys_nse, idx_lstl_nse, cbar_font_size=14)
 
 plt.savefig(os.path.join(config_data.data_path["Out"], 'map_NSE_531.png'), dpi=FIGURE_DPI, bbox_inches="tight")
 plt.figure()
@@ -160,9 +160,9 @@ plt.figure()
 # bias_conus_larger50 = cdf_values["Bias"][cases_exps_legends[2]][0][cdf_values["Bias"][cases_exps_legends[2]][0]>50]
 # bias_conus_larger50.size
 # bias_conus_larger50_rate = bias_conus_larger50/len(cdf_values["Bias"][cases_exps_legends[2]][0])
-# bias_conus_BFHV_median = np.median(cdf_values["BFHV"][cases_exps_legends[2]][0])
-# bias_1_BFHV_median = np.median(cdf_values["BFHV"][cases_exps_legends[0]][0])
-# bias_2_BFHV_median = np.median(cdf_values["BFHV"][cases_exps_legends[1]][0])
-# bias_conus_BFLV_median = np.median(cdf_values["BFLV"][cases_exps_legends[2]][0])
-# bias_1_BFLV_median = np.median(cdf_values["BFLV"][cases_exps_legends[0]][0])
-# bias_2_BFLV_median = np.median(cdf_values["BFLV"][cases_exps_legends[1]][0])
+# bias_conus_FHV_median = np.median(cdf_values["FHV"][cases_exps_legends[2]][0])
+# bias_1_FHV_median = np.median(cdf_values["FHV"][cases_exps_legends[0]][0])
+# bias_2_FHV_median = np.median(cdf_values["FHV"][cases_exps_legends[1]][0])
+# bias_conus_FLV_median = np.median(cdf_values["FLV"][cases_exps_legends[2]][0])
+# bias_1_FLV_median = np.median(cdf_values["FLV"][cases_exps_legends[0]][0])
+# bias_2_FLV_median = np.median(cdf_values["FLV"][cases_exps_legends[1]][0])

@@ -190,7 +190,7 @@ def plot_map(gauge_dict, df_ind_value, save_file=None, proj_epsg=4269, percentil
 
 
 def plot_gages_map(data_model, inds_df, show_ind_key, idx_lst=None, pertile_range=[0, 100], fig_size=(8, 8),
-                   cmap_str="jet", colorbar_size=[0.91, 0.318, 0.02, 0.354]):
+                   cmap_str="jet", colorbar_size=[0.91, 0.318, 0.02, 0.354], cbar_font_size=None):
     if idx_lst is None:
         data_map = inds_df[show_ind_key].values
         lat = data_model.data_source.gage_dict["LAT_GAGE"]
@@ -207,7 +207,7 @@ def plot_gages_map(data_model, inds_df, show_ind_key, idx_lst=None, pertile_rang
         lon = all_lon[sites_index]
     assert len(data_map) == len(lat)
     ax = plot_map_carto(data_map, lat=lat, lon=lon, pertile_range=pertile_range, cmap_str=cmap_str, fig_size=fig_size,
-                        colorbar_size=colorbar_size)
+                        colorbar_size=colorbar_size, colorbar_font_size=cbar_font_size)
     # ax.set(title=show_ind_key + " map")
 
 
@@ -336,7 +336,8 @@ def plot_gages_map_and_scatter(inds_df, items, idx_lst, cmap_strs=["Reds", "Blue
 
 def plot_sites_and_attr(all_sites_id, all_lon, all_lat, sites_lst1, sites_lst2, data_attr, pertile_range=None,
                         is_discrete=False, cmap_str="viridis", sites_names=["CAMELS", "Non_CAMELS"], fig_size=(11, 4),
-                        markers=["o", "x"], marker_sizes=[1, 3], colors=["r", "b"]):
+                        markers=["o", "x"], marker_sizes=[1, 3], colors=["r", "b"], cbar_font_size=None,
+                        legend_font_size=None):
     """plot a map for all 3557 sites and all camels ones, and show one attributes"""
     type_1_index_lst = [i for i in range(len(all_sites_id)) if all_sites_id[i] in sites_lst1]
     type_2_index_lst = [i for i in range(len(all_sites_id)) if all_sites_id[i] in sites_lst2]
@@ -345,4 +346,5 @@ def plot_sites_and_attr(all_sites_id, all_lon, all_lat, sites_lst1, sites_lst2, 
 
     plot_map_carto(data_attr, all_lat, all_lon, fig_size=fig_size, pertile_range=pertile_range, cmap_str=cmap_str,
                    idx_lst=idx_lst, markers=markers, marker_size=marker_sizes, is_discrete=is_discrete,
-                   category_names=sites_names, colors=colors)
+                   category_names=sites_names, colors=colors, legend_font_size=legend_font_size,
+                   colorbar_font_size=cbar_font_size)

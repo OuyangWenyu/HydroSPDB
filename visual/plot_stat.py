@@ -364,7 +364,7 @@ def plot_loss_early_stop(train_loss, valid_loss):
 
 def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_size=(8, 8), need_colorbar=True,
                    colorbar_size=None, cmap_str="jet", idx_lst=None, markers=None, marker_size=20, is_discrete=False,
-                   colors=["r", "b"], category_names=None):
+                   colors=["r", "b"], category_names=None, legend_font_size=None, colorbar_font_size=None):
     # Here we ignore these inf values, transform them to nan, and then recalculate the min and max values
     try:
         data[data == np.inf] = np.nan
@@ -408,13 +408,18 @@ def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_si
             for i in range(len(idx_lst)):
                 ax.plot(lon[idx_lst[i]], lat[idx_lst[i]], marker=markers[i], ms=marker_size[i],
                         label=category_names[i], c=colors[i], linestyle='')
-            ax.legend()
+            if legend_font_size is None:
+                ax.legend()
+            else:
+                ax.legend(prop=dict(size=legend_font_size))
         else:
             for i in range(len(idx_lst)):
                 scat = plt.scatter(lon[idx_lst[i]], lat[idx_lst[i]], c=data[idx_lst[i]], marker=markers[i],
                                    s=marker_size[i], cmap=cmap_str[i], vmin=vmin, vmax=vmax)
             if need_colorbar:
-                fig.colorbar(scat, ax=ax, pad=0.01)
+                cbar = fig.colorbar(scat, ax=ax, pad=0.01)
+                if colorbar_font_size is not None:
+                    cbar.ax.tick_params(labelsize=colorbar_font_size)
     else:
         if is_discrete:
             scatter = ax.scatter(lon, lat, c=data, s=marker_size)
@@ -426,9 +431,11 @@ def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_si
             if need_colorbar:
                 if colorbar_size is not None:
                     cbar_ax = fig.add_axes(colorbar_size)
-                    fig.colorbar(scat, cax=cbar_ax, orientation='vertical')
+                    cbar = fig.colorbar(scat, cax=cbar_ax, orientation='vertical')
                 else:
-                    fig.colorbar(scat, ax=ax, pad=0.01)
+                    cbar = fig.colorbar(scat, ax=ax, pad=0.01)
+                if colorbar_font_size is not None:
+                    cbar.ax.tick_params(labelsize=colorbar_font_size)
     return ax
 
 

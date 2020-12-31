@@ -170,6 +170,9 @@ hydro_logger.info("The number of zero-dor basins in 523-CAMELS: %d", zerodor_in_
 
 "plot points of all 3557 sites and camels sites with different colors; plot polygons of all 3557 basins and camels " \
 "basins with different colors "
+legend_font_size = 14
+cbar_font_size = 13
+
 chosen_sites = np.intersect1d(gauge_list, data_model.t_s_dict["sites_id"])
 remain_sites = [site_tmp for site_tmp in data_model.t_s_dict["sites_id"] if site_tmp not in chosen_sites]
 
@@ -180,7 +183,7 @@ all_sites_id = data_model.data_source.gage_dict["STAID"]
 is_camels = np.array([1 if data_model.t_s_dict["sites_id"][i] in chosen_sites else 0 for i in
                       range(len(data_model.t_s_dict["sites_id"]))])
 plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, is_camels, is_discrete=True,
-                    markers=["x", "o"], marker_sizes=[4, 2], colors=["b", "r"])
+                    markers=["x", "o"], marker_sizes=[4, 2], colors=["b", "r"], legend_font_size=legend_font_size)
 plt.savefig(os.path.join(config_data.data_path["Out"], 'map_camels_or_not.png'), dpi=FIGURE_DPI, bbox_inches="tight")
 
 attrs_lst = ["SLOPE_PCT", "FORESTNLCD06", "PERMAVE", "GEOL_REEDBUSH_DOM_PCT", "STOR_NOR_2009",
@@ -190,8 +193,9 @@ for i in range(len(attrs_lst)):
     data_attr = data_attrs[i]
     if attrs_lst[i] == "STOR_NOR_2009" or attrs_lst[i] == "FRESHW_WITHDRAWAL":
         plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
-                            pertile_range=[0, 95], markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet")
+                            pertile_range=[0, 95], markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet",
+                            cbar_font_size=cbar_font_size)
     else:
         plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
-                            markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet")
+                            markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet", cbar_font_size=cbar_font_size)
     plt.savefig(os.path.join(config_data.data_path["Out"], attrs_lst[i] + '.png'), dpi=FIGURE_DPI, bbox_inches="tight")
