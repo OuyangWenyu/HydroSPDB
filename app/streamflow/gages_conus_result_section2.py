@@ -389,3 +389,10 @@ if 'post' in doLst:
     # g.set(ylim=(-1, 1))
     plt.savefig(os.path.join(config_data.data_path["Out"], '3factors_distribution.png'), dpi=FIGURE_DPI,
                 bbox_inches="tight")
+
+    output_excel_df = pd.DataFrame(
+        {"GAUGE ID": usgs_id, "NSE": round(inds_df["NSE"], 2), "DOR": np.round(dors_value, 2)})
+    import csv
+
+    output_excel_df.to_csv(os.path.join(data_model.data_source.all_configs["out_dir"], '3557basins_ID_NSE_DOR.csv'),
+                           quoting=csv.QUOTE_NONNUMERIC, index=None)
