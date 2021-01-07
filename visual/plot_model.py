@@ -16,7 +16,7 @@ from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map
 
 
 def plot_scatter_multi_attrs(data_model, inds_df, idx_lst_nse_range, attr_lst, y_var_lst):
-    """scatter plot: there are many independent vars and  dependent var"""
+    """scatter plot: there are many independent vars and dependent var"""
     sites_all = data_model.t_s_dict["sites_id"]
     attrs_ = data_model.data_source.read_attr(sites_all, attr_lst, is_return_dict=False)
     x_var_values = [attrs_[idx_lst_nse_range, i] for i in range(len(attr_lst))]
@@ -189,6 +189,28 @@ def plot_map(gauge_dict, df_ind_value, save_file=None, proj_epsg=4269, percentil
     plot_point_map(newdata, percentile=percentile, save_file=save_file)
 
 
+def plot_gages_map(data_model, inds_df, show_ind_key, idx_lst=None, pertile_range=[0, 100], fig_size=(8, 8),
+                   cmap_str="jet", colorbar_size=[0.91, 0.318, 0.02, 0.354], cbar_font_size=None):
+    if idx_lst is None:
+        data_map = inds_df[show_ind_key].values
+        lat = data_model.data_source.gage_dict["LAT_GAGE"]
+        lon = data_model.data_source.gage_dict["LNG_GAGE"]
+    else:
+        assert pertile_range == [0, 100]
+        data_map = (inds_df.loc[idx_lst])[show_ind_key].values
+        all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
+        all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
+        all_sites_id = data_model.data_source.gage_dict["STAID"]
+        sites = np.array(data_model.t_s_dict['sites_id'])[idx_lst]
+        sites_index = np.array([np.where(all_sites_id == i) for i in sites]).flatten()
+        lat = all_lat[sites_index]
+        lon = all_lon[sites_index]
+    assert len(data_map) == len(lat)
+    ax = plot_map_carto(data_map, lat=lat, lon=lon, pertile_range=pertile_range, cmap_str=cmap_str, fig_size=fig_size,
+                        colorbar_size=colorbar_size, colorbar_font_size=cbar_font_size)
+    # ax.set(title=show_ind_key + " map")
+
+
 def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst, pertile_range, plot_ts=True,
                           fig_size=(8, 8), cmap_str="viridis"):
     data_map = (inds_df.loc[idx_lst])[show_ind_key].values
@@ -211,13 +233,15 @@ def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst,
         return f
 
 
-def plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lst=None, pertile_range=[0, 100], fig_size=(12, 7),
-                           cmap_str="jet", titles=["title1", "title2"], wh_ratio=[1, 4], adjust_xy=(0, 0.05)):
+def plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lst=None, pertile_range=[0, 100],
+                           is_all_data_shown_in_box=True, fig_size=(12, 7), cmap_str="jet", titles=["title1", "title2"],
+                           wh_ratio=[1, 4], adjust_xy=(0, 0.05)):
     if idx_lst is None:
         data_map = inds_df[show_ind_key].values
         lat = data_model.data_source.gage_dict["LAT_GAGE"]
         lon = data_model.data_source.gage_dict["LNG_GAGE"]
     else:
+        assert pertile_range == [0, 100]
         data_map = (inds_df.loc[idx_lst])[show_ind_key].values
         all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
         all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
@@ -226,7 +250,7 @@ def plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lst=None, pert
         sites_index = np.array([np.where(all_sites_id == i) for i in sites]).flatten()
         lat = all_lat[sites_index]
         lon = all_lon[sites_index]
-
+    assert len(data_map) == len(lat)
     # Figure
     fig = plt.figure(figsize=fig_size)
     # first ax for plotting map
@@ -237,7 +261,16 @@ def plot_gages_map_and_box(data_model, inds_df, show_ind_key, idx_lst=None, pert
 
     ax2 = plt.subplot(2, 1, 2)
     ax2.set(title=titles[1])
-    sns.boxplot(data=data_map, orient='h', linewidth=3, ax=ax2, showfliers=False)
+    if is_all_data_shown_in_box:
+        sns.boxplot(data=inds_df[show_ind_key].values, orient='h', linewidth=3, ax=ax2, showfliers=False)
+    else:
+        if pertile_range != [0, 100]:
+            vmin = np.nanpercentile(data_map, pertile_range[0])
+            vmax = np.nanpercentile(data_map, pertile_range[1])
+            data_shown_in_box = np.array([i for i in data_map if vmin <= i <= vmax])
+            sns.boxplot(data=data_shown_in_box, orient='h', linewidth=3, ax=ax2, showfliers=False)
+        else:
+            sns.boxplot(data=data_map, orient='h', linewidth=3, ax=ax2, showfliers=False)
 
     # adjust location
     pos1 = ax1.get_position()  # get the original position
@@ -273,7 +306,8 @@ def plot_gages_map_and_scatter(inds_df, items, idx_lst, cmap_strs=["Reds", "Blue
     data = inds_df[items[0]].values
     lat = inds_df[items[1]].values
     lon = inds_df[items[2]].values
-    plot_map_carto(data, lat, lon, fig=grid, ax=ax1, cmap_str=cmap_strs, idx_lst=idx_lst, markers=markers)
+    plot_map_carto(data, lat, lon, fig=grid, ax=ax1, cmap_str=cmap_strs, idx_lst=idx_lst, markers=markers,
+                   need_colorbar=False)
 
     ax2 = plt.subplot(grid[0:sub_fig_ratio[1], sub_fig_ratio[0]:sub_fig_ratio[0] + sub_fig_ratio[1]])
     attr = inds_df[items[3]].values
@@ -298,3 +332,19 @@ def plot_gages_map_and_scatter(inds_df, items, idx_lst, cmap_strs=["Reds", "Blue
     y_value = legend_y
     axbox = ax1.get_position()
     fig.legend(handles, labels, loc=(axbox.x0 - x_value, axbox.y1 - y_value))
+
+
+def plot_sites_and_attr(all_sites_id, all_lon, all_lat, sites_lst1, sites_lst2, data_attr, pertile_range=None,
+                        is_discrete=False, cmap_str="viridis", sites_names=["CAMELS", "Non_CAMELS"], fig_size=(11, 4),
+                        markers=["o", "x"], marker_sizes=[1, 3], colors=["r", "b"], cbar_font_size=None,
+                        legend_font_size=None):
+    """plot a map for all 3557 sites and all camels ones, and show one attributes"""
+    type_1_index_lst = [i for i in range(len(all_sites_id)) if all_sites_id[i] in sites_lst1]
+    type_2_index_lst = [i for i in range(len(all_sites_id)) if all_sites_id[i] in sites_lst2]
+
+    idx_lst = [type_1_index_lst, type_2_index_lst]
+
+    plot_map_carto(data_attr, all_lat, all_lon, fig_size=fig_size, pertile_range=pertile_range, cmap_str=cmap_str,
+                   idx_lst=idx_lst, markers=markers, marker_size=marker_sizes, is_discrete=is_discrete,
+                   category_names=sites_names, colors=colors, legend_font_size=legend_font_size,
+                   colorbar_font_size=cbar_font_size)

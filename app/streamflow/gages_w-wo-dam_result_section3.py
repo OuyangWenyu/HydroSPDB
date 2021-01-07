@@ -6,7 +6,7 @@ from data import GagesSource
 from data.data_input import GagesModel
 from data.gages_input_dataset import load_ensemble_result, load_dataconfig_case_exp
 from explore.stat import ecdf
-from visual.plot_model import plot_gages_map_and_box, plot_gages_map_and_ts, plot_gages_map_and_scatter
+from visual.plot_model import plot_gages_map_and_scatter
 from visual.plot_stat import plot_ecdfs
 import numpy as np
 import seaborn as sns
@@ -15,6 +15,7 @@ import pandas as pd
 sys.path.append("../..")
 import os
 from data.config import cfg, update_cfg, cmd
+from utils.hydro_util import hydro_logger
 
 conus_exps = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
 pair1_exps = ["dam_exp1", "dam_exp2", "dam_exp3", "dam_exp7", "dam_exp8", "dam_exp9"]
@@ -24,7 +25,15 @@ nodam_exp_lst = ["nodam_exp1", "nodam_exp2", "nodam_exp3", "nodam_exp4", "nodam_
 smalldam_exp_lst = ["dam_exp20", "dam_exp21", "dam_exp22", "dam_exp23", "dam_exp24", "dam_exp25"]
 largedam_exp_lst = ["dam_exp4", "dam_exp5", "dam_exp6", "dam_exp13", "dam_exp16", "dam_exp19"]
 
+# conus_exps = ["basic_exp37"]
+# pair1_exps = ["dam_exp1"]
+# pair2_exps = ["nodam_exp7"]
+# pair3_exps = ["dam_exp27"]
+# nodam_exp_lst = ["nodam_exp1"]
+# smalldam_exp_lst = ["dam_exp20"]
+# largedam_exp_lst = ["dam_exp4"]
 test_epoch = 300
+FIGURE_DPI = 600
 
 # nodam_config_data = load_dataconfig_case_exp(nodam_exp_lst[0])
 # smalldam_config_data = load_dataconfig_case_exp(smalldam_exp_lst[0])
@@ -124,7 +133,11 @@ idx_lst_largedam_in_pair2 = [i for i in range(len(pair2_sites)) if pair2_sites[i
 idx_lst_largedam_in_pair3 = [i for i in range(len(pair3_sites)) if pair3_sites[i] in sites_id_largedam]
 idx_lst_largedam_in_conus = [i for i in range(len(conus_sites)) if conus_sites[i] in sites_id_largedam]
 
-compare_item = 0
+compare_item = 3
+# 0: plot the map for comparing NSE of small-dor and zero-dor
+# 1: ecdf plots of different cases
+# 2: box plots pf different cases
+# 3: show the median NSE values of different cases
 if compare_item == 0:
     inds_df, pred, obs = load_ensemble_result(cfg, conus_exps, test_epoch, return_value=True)
 
@@ -165,22 +178,32 @@ if compare_item == 0:
                                labels=["zero-dor", "small-dor"], scatter_label=[attr_lst[0], show_ind_key], wspace=2,
                                hspace=1.5, legend_y=.8, sub_fig_ratio=[6, 4, 1])
     plt.tight_layout()
-    # plt.savefig(os.path.join(conus_config_data.data_path["Out"], 'zero-small-dor_map_comp.png'), dpi=100,
-    #             bbox_inches="tight")
-    plt.savefig(os.path.join(conus_config_data.data_path["Out"], 'zero-small-dor_western_map_comp.png'), dpi=140,
+    plt.savefig(os.path.join(conus_config_data.data_path["Out"], 'zero-small-dor_western_map_comp.png'), dpi=FIGURE_DPI,
                 bbox_inches="tight")
 elif compare_item == 3:
+    all_lst_names = ["no dam lst", "small dam lst", "large dam lst", "no and small dam lst", "no and large dam lst",
+                     "small and large dam lst"]
+    all_case_seeds = [["z1234", "z123", "z12345", "z111", "z1111", "z11111"],
+                      ["s1234", "s123", "s12345", "s111", "s1111", "s11111"],
+                      ["l1234", "l123", "l12345", "l111", "l1111", "l11111"],
+                      ["zs1234", "zs123", "zs12345", "zs111", "zs1111", "zs11111"],
+                      ["zl1234", "zl123", "zl12345", "zl111", "zl1111", "zl11111"],
+                      ["sl123", "sl1234", "sl12345", "sl111", "sl1111", "sl11111"]]
     all_lst = [nodam_exp_lst, smalldam_exp_lst, largedam_exp_lst, pair1_exps, pair2_exps, pair3_exps]
+    idx_tmp = 0
     for an_exp_lst in all_lst:
         an_exp_median_nse_lst = []
         for i in range(len(an_exp_lst)):
             inds_df_an_exp_i = load_ensemble_result(cfg, [an_exp_lst[i]], test_epoch)
             an_exp_i_median = inds_df_an_exp_i.median()
             an_exp_median_nse_lst.append(an_exp_i_median["NSE"])
-        print(an_exp_median_nse_lst)
+        hydro_logger.info('the random seeds of %s are: %s', all_lst_names[idx_tmp], all_case_seeds[idx_tmp])
+        hydro_logger.info('the median NSEs of %s are: %s', all_lst_names[idx_tmp],
+                          [round(tmp_value, 2) for tmp_value in an_exp_median_nse_lst])
         inds_df_an_exp = load_ensemble_result(cfg, an_exp_lst, test_epoch)
         inds_df_an_exp_median = inds_df_an_exp.median()
-        print(inds_df_an_exp_median["NSE"])
+        hydro_logger.info('ensemble median NSE of %s is: %.2f', all_lst_names[idx_tmp], inds_df_an_exp_median["NSE"])
+        idx_tmp = idx_tmp + 1
 elif compare_item == 2:
     print("multi box")
     inds_df_pair1 = load_ensemble_result(cfg, pair1_exps, test_epoch)
@@ -193,6 +216,7 @@ elif compare_item == 2:
     keys_nse = "NSE"
     color_chosen = ["Greens", "Blues", "Reds"]
     median_loc = 0.015
+    decimal_places = 2
     sns.despine()
     sns.set(font_scale=1.5)
 
@@ -223,12 +247,12 @@ elif compare_item == 2:
     frames_nodam.append(df_nodam_in_conus)
     result_nodam = pd.concat(frames_nodam)
     ax1 = plt.subplot(gs[0])
-    ax1.set_title("(a)")
+    # ax1.set_title("(a)")
     ax1.set_xticklabels(ax1.get_xticklabels(), rotation=30)
     ax1.set_ylim([0, 1])
     sns.boxplot(ax=ax1, x=attr_nodam, y=keys_nse, data=result_nodam, showfliers=False, palette=color_chosen[0])
     medians_nodam = result_nodam.groupby([attr_nodam], sort=False)[keys_nse].median().values
-    median_labels_nodam = [str(np.round(s, 3)) for s in medians_nodam]
+    median_labels_nodam = [str(np.round(s, decimal_places)) for s in medians_nodam]
     pos1 = range(len(medians_nodam))
     for tick, label in zip(pos1, ax1.get_xticklabels()):
         ax1.text(pos1[tick], medians_nodam[tick] + median_loc, median_labels_nodam[tick],
@@ -262,13 +286,13 @@ elif compare_item == 2:
     frames_smalldam.append(df_smalldam_in_conus)
     result_smalldam = pd.concat(frames_smalldam)
     ax2 = plt.subplot(gs[1])
-    ax2.set_title("(b)")
+    # ax2.set_title("(b)")
     ax2.set_xticklabels(ax2.get_xticklabels(), rotation=30)
     ax2.set_ylim([0, 1])
     ax2.set(ylabel=None)
     sns.boxplot(ax=ax2, x=attr_smalldam, y=keys_nse, data=result_smalldam, showfliers=False, palette=color_chosen[1])
     medians_smalldam = result_smalldam.groupby([attr_smalldam], sort=False)[keys_nse].median().values
-    median_labels_smalldam = [str(np.round(s, 3)) for s in medians_smalldam]
+    median_labels_smalldam = [str(np.round(s, decimal_places)) for s in medians_smalldam]
     pos2 = range(len(medians_smalldam))
     for tick, label in zip(pos2, ax2.get_xticklabels()):
         ax2.text(pos2[tick], medians_smalldam[tick] + median_loc, median_labels_smalldam[tick],
@@ -302,22 +326,21 @@ elif compare_item == 2:
     frames_largedam.append(df_largedam_in_conus)
     result_largedam = pd.concat(frames_largedam)
     ax3 = plt.subplot(gs[2])
-    ax3.set_title("(c)")
+    # ax3.set_title("(c)")
     ax3.set_xticklabels(ax3.get_xticklabels(), rotation=30)
     ax3.set_ylim([0, 1])
     ax3.set(ylabel=None)
     sns.boxplot(ax=ax3, x=attr_largedam, y=keys_nse, data=result_largedam, showfliers=False, palette=color_chosen[2])
     medians_largedam = result_largedam.groupby([attr_largedam], sort=False)[keys_nse].median().values
-    median_labels_largedam = [str(np.round(s, 3)) for s in medians_largedam]
+    median_labels_largedam = [str(np.round(s, decimal_places)) for s in medians_largedam]
     pos3 = range(len(medians_largedam))
     for tick, label in zip(pos3, ax3.get_xticklabels()):
         ax3.text(pos3[tick], medians_largedam[tick] + median_loc, median_labels_largedam[tick],
                  horizontalalignment='center', size='x-small', weight='semibold')
     # sns.despine()
     plt.tight_layout()
-    plt.savefig(os.path.join(conus_config_data.data_path["Out"], '3exps_data_synergy.png'), dpi=300,
+    plt.savefig(os.path.join(conus_config_data.data_path["Out"], '3exps_data_synergy.png'), dpi=FIGURE_DPI,
                 bbox_inches="tight")
-
 elif compare_item == 1:  # ecdf
     print("multi plots")
     inds_df_pair1 = load_ensemble_result(cfg, pair1_exps, test_epoch)

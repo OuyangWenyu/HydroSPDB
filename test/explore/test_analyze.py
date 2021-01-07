@@ -5,6 +5,7 @@ import definitions
 from data import *
 import os
 from data.data_input import GagesModel, load_result
+from data.gages_input_dataset import load_dataconfig_case_exp
 from explore.gages_stat import split_results_to_regions
 from explore.stat import statError
 from utils import unserialize_json
@@ -15,15 +16,14 @@ from visual.plot_stat import plot_diff_boxes, plot_scatter_xyc, plot_boxs, swarm
 from matplotlib import pyplot
 import matplotlib.pyplot as plt
 import seaborn as sns
+from data.config import cfg, update_cfg, cmd
 
 
 class TestExploreCase(unittest.TestCase):
     def setUp(self):
         """analyze result of model"""
-        config_dir = definitions.CONFIG_DIR
-        self.config_file = os.path.join(config_dir, "basic/config_exp37.ini")
-        self.subdir = r"basic/exp37"
-        self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
+        self.exp_num = "basic_exp37"
+        self.config_data = load_dataconfig_case_exp(cfg, self.exp_num)
         self.test_epoch = 300
 
         self.data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
@@ -248,7 +248,7 @@ class TestExploreCase(unittest.TestCase):
         nor_storage = attrs_runavg_stor[:, 1] * 1000  # m^3
         dors = nor_storage / run_avg
 
-        nid_dir = os.path.join("/".join(self.config_data.data_path["DB"].split("/")[:-1]), "nid", "quickdata")
+        nid_dir = os.path.join(self.config_data.data_path["DB"], "nid", "test")
         gage_main_dam_purpose = unserialize_json(os.path.join(nid_dir, "dam_main_purpose_dict.json"))
         gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())
         gage_main_dam_purpose_unique = np.unique(gage_main_dam_purpose_lst)
@@ -298,6 +298,9 @@ class TestExploreCase(unittest.TestCase):
         result = pd.concat(frames)
         # can remove high hue value to keep a good map
         plot_boxs(result, x_name, y_name, ylim=[-1.0, 1.0])
+        plt.savefig(os.path.join(self.config_data.data_path["Out"], 'purpose_distribution_test.png'), dpi=500,
+                    bbox_inches="tight")
+        plt.show()
         # plot_boxs(result, x_name, y_name, uniform_color="skyblue", swarm_plot=True, hue=hue_name, colormap=True,
         #           ylim=[-1.0, 1.0])
         cmap_str = 'viridis'

@@ -1,4 +1,4 @@
-"""1. zero-dor + large-dor basins 2. small-dor + large-dor basins"""
+"""dam_plan == 2: zero-dor + large-dor basins; dam_plan==3: small-dor + large-dor basins"""
 import torch
 import sys
 
@@ -75,18 +75,18 @@ def dam_lstm(args):
         save_result(gages_model_test.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
 
-# python gages_w-wo-dam_analysis.py --sub nodam/exp7 --cache_state 1 --dam_plan 2 --train_epoch 20 --save_epoch 10 --te 20
-# python gages_w-wo-dam_analysis.py --sub dam/exp27 --cache_state 1 --dam_plan 3 --train_epoch 20 --save_epoch 10 --te 20 --rs 123
-# python gages_w-wo-dam_analysis.py --cfg dam/config_exp26.ini --ctx 2 --dam_plan 3 --rs 1234 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg nodam/config_exp8.ini --ctx 0 --dam_plan 2 --rs 123 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg nodam/config_exp9.ini --ctx 1 --dam_plan 2 --rs 12345 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg dam/config_exp28.ini --ctx 0 --dam_plan 3 --rs 12345 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg nodam/config_exp10.ini --ctx 2 --dam_plan 2 --rs 111 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg nodam/config_exp11.ini --ctx 1 --dam_plan 2 --rs 1111 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg dam/config_exp29.ini --ctx 2 --dam_plan 3 --rs 111 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg dam/config_exp30.ini --ctx 1 --dam_plan 3 --rs 1111 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg nodam/config_exp12.ini --ctx 2 --dam_plan 2 --rs 11111 --te 300 --train_mode True
-# python gages_w-wo-dam_analysis.py --cfg dam/config_exp31.ini --ctx 0 --dam_plan 3 --rs 11111 --te 300 --train_mode True
+# python gages_w-wo-dam_analysis.py --sub nodam/exp7 --cache_state 1 --dam_plan 2
+# python gages_w-wo-dam_analysis.py --sub nodam/exp8 --ctx 0 --dam_plan 2 --rs 123
+# python gages_w-wo-dam_analysis.py --sub nodam/exp9 --ctx 0 --dam_plan 2 --rs 12345
+# python gages_w-wo-dam_analysis.py --sub nodam/exp10 --ctx 0 --dam_plan 2 --rs 111
+# python gages_w-wo-dam_analysis.py --sub nodam/exp11 --ctx 0 --dam_plan 2 --rs 1111
+# python gages_w-wo-dam_analysis.py --sub nodam/exp12 --ctx 0 --dam_plan 2 --rs 11111
+# python gages_w-wo-dam_analysis.py --sub dam/exp27 --cache_state 1 --dam_plan 3 --rs 123
+# python gages_w-wo-dam_analysis.py --sub dam/exp26 --ctx 0 --dam_plan 3 --rs 1234
+# python gages_w-wo-dam_analysis.py --sub dam/exp28 --ctx 0 --dam_plan 3 --rs 12345
+# python gages_w-wo-dam_analysis.py --sub dam/exp29 --ctx 0 --dam_plan 3 --rs 111
+# python gages_w-wo-dam_analysis.py --sub dam/exp30 --ctx 0 --dam_plan 3 --rs 1111
+# python gages_w-wo-dam_analysis.py --sub dam/exp31 --ctx 0 --dam_plan 3 --rs 11111
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

@@ -14,6 +14,8 @@ from matplotlib.cm import ScalarMappable
 from explore.stat import ecdf
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from utils.hydro_util import hydro_logger
+
 
 def swarmplot_without_legend(x, y, hue, vmin, vmax, cmap, **kwargs):
     fig = plt.gcf()
@@ -75,7 +77,6 @@ def swarmplot_with_cbar(cmap_str, cbar_label, ylim, *args, **kwargs):
     sm.set_array([])
     cbar = fig.colorbar(sm, ax=ax)
     cbar.set_label(cbar_label, labelpad=10)
-    plt.show()
     return fig
 
 
@@ -126,12 +127,13 @@ def plot_boxs(data, x_name, y_name, uniform_color=None, swarm_plot=False, hue=No
     sns.despine()
     locs, labels = plt.xticks()
     plt.setp(labels, rotation=45)
-    plt.show()
+    # plt.show()
     return sns_box.get_figure()
 
 
-def plot_diff_boxes(data, row_and_col=None, y_col=None, x_col=None):
-    """绘制箱型图 in one row and different cols"""
+def plot_diff_boxes(data, row_and_col=None, y_col=None, x_col=None, hspace=0.3, wspace=1, title_str=None,
+                    title_font_size=14):
+    """plot boxplots in rows and cols"""
     # matplotlib.use('TkAgg')
     if type(data) != pd.DataFrame:
         data = pd.DataFrame(data)
@@ -143,15 +145,18 @@ def plot_diff_boxes(data, row_and_col=None, y_col=None, x_col=None):
         row_num = 1
         col_num = subplot_num
         f, axes = plt.subplots(row_num, col_num)
+        plt.subplots_adjust(hspace=hspace, wspace=wspace)
     else:
         assert subplot_num <= row_and_col[0] * row_and_col[1]
         row_num = row_and_col[0]
         col_num = row_and_col[1]
         f, axes = plt.subplots(row_num, col_num)
+        f.tight_layout()
     for i in range(subplot_num):
         if y_col is None:
             if row_num == 1 or col_num == 1:
-                sns.boxplot(y=data.columns.values[i], data=data, orient='v', ax=axes[i], showfliers=False)
+                sns.boxplot(y=data.columns.values[i], data=data, width=0.5, orient='v', ax=axes[i],
+                            showfliers=False).set(xlabel=data.columns.values[i], ylabel='')
             else:
                 row_idx = int(i / col_num)
                 col_idx = i % col_num
@@ -167,6 +172,8 @@ def plot_diff_boxes(data, row_and_col=None, y_col=None, x_col=None):
                 col_idx = i % col_num
                 sns.boxplot(x=data.columns.values[x_col], y=data.columns.values[y_col[i]],
                             data=data, orient='v', ax=axes[row_idx, col_idx], showfliers=False)
+    if title_str is not None:
+        f.suptitle(title_str, fontsize=title_font_size)
     return f
 
 
@@ -261,8 +268,8 @@ def plot_ecdf(mydataframe, mycolumn, save_file=None):
         plt.savefig(save_file)
 
 
-def plot_ecdfs_matplot(xs, ys, legends=None, colors=None, dash_lines=None, case_str="case", x_str="x", y_str="y",
-                       interval=0.1):
+def plot_ecdfs_matplot(xs, ys, legends=None, colors=None, dash_lines=None, x_str="x", y_str="y", x_interval=0.1,
+                       y_interval=0.1, x_lim=(0, 1), y_lim=(0, 1), show_legend=True, legend_font_size=16):
     """Empirical cumulative distribution function with matplotlib"""
     assert type(xs) == type(ys) == list
     assert len(xs) == len(ys)
@@ -289,20 +296,24 @@ def plot_ecdfs_matplot(xs, ys, legends=None, colors=None, dash_lines=None, case_
                 line_i.set_dashes([2, 2, 10, 2])
     else:
         for i, color in enumerate(colors):
-            assert (all(xi < yi for xi, yi in zip(xs[i], xs[i][1:])))
+            if np.nanmax(np.array(xs[i])) == np.inf or np.nanmin(np.array(xs[i])) == -np.inf:
+                assert (all(xi <= yi for xi, yi in zip(xs[i], xs[i][1:])))
+            else:
+                assert (all(xi < yi for xi, yi in zip(xs[i], xs[i][1:])))
             line_i, = ax.plot(xs[i], ys[i], color=color, label=legends[i])
             if dash_lines[i]:
                 line_i.set_dashes([2, 2, 10, 2])
 
     plt.xlabel(x_str, fontsize=18)
     plt.ylabel(y_str, fontsize=18)
-    ax.legend()
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
+    ax.set_xlim(x_lim[0], x_lim[1])
+    ax.set_ylim(y_lim[0], y_lim[1])
     # set x y number font size
-    plt.xticks(np.arange(0, 1.01, interval), fontsize=16)
-    plt.yticks(np.arange(0, 1.01, interval), fontsize=16)
-    plt.legend(prop={'size': 16})
+    plt.xticks(np.arange(x_lim[0], x_lim[1] + x_lim[1] / 100, x_interval), fontsize=16)
+    plt.yticks(np.arange(y_lim[0], y_lim[1] + y_lim[1] / 100, y_interval), fontsize=16)
+    if show_legend:
+        ax.legend()
+        plt.legend(prop={'size': legend_font_size})
     plt.grid()
     # Hide the right and top spines
     ax.spines['right'].set_visible(False)
@@ -351,15 +362,22 @@ def plot_loss_early_stop(train_loss, valid_loss):
     return fig
 
 
-def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_size=(8, 8), cmap_str="jet",
-                   idx_lst=None, markers=None):
+def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_size=(8, 8), need_colorbar=True,
+                   colorbar_size=None, cmap_str="jet", idx_lst=None, markers=None, marker_size=20, is_discrete=False,
+                   colors=["r", "b"], category_names=None, legend_font_size=None, colorbar_font_size=None):
+    # Here we ignore these inf values, transform them to nan, and then recalculate the min and max values
+    try:
+        data[data == np.inf] = np.nan
+        data[data == -np.inf] = np.nan
+    except ValueError as e:
+        hydro_logger.warning(e)
     if pertile_range is None:
-        vmin = np.amin(data)
-        vmax = np.amax(data)
+        vmin = np.nanmin(data)
+        vmax = np.nanmax(data)
     else:
         assert 0 <= pertile_range[0] < pertile_range[1] <= 100
-        vmin = np.percentile(data, pertile_range[0])
-        vmax = np.percentile(data, pertile_range[1])
+        vmin = np.nanpercentile(data, pertile_range[0])
+        vmax = np.nanpercentile(data, pertile_range[1])
     llcrnrlat = np.min(lat),
     urcrnrlat = np.max(lat),
     llcrnrlon = np.min(lon),
@@ -374,15 +392,50 @@ def plot_map_carto(data, lat, lon, fig=None, ax=None, pertile_range=None, fig_si
     ax.add_feature(states, linewidth=.5, edgecolor="black")
     ax.coastlines('50m', linewidth=0.8)
     if idx_lst is not None:
-        assert markers is not None
-        assert type(cmap_str) == list
-        assert len(cmap_str) == len(idx_lst) == len(markers)
-        for i in range(len(idx_lst)):
-            scat = plt.scatter(lon[idx_lst[i]], lat[idx_lst[i]], c=data[idx_lst[i]], marker=markers[i], s=20,
-                               cmap=cmap_str[i], vmin=vmin, vmax=vmax)
+        if type(marker_size) != list:
+            marker_size = np.full(len(idx_lst), marker_size).tolist()
+        else:
+            assert len(marker_size) == len(idx_lst)
+        if type(markers) != list:
+            markers = np.full(len(idx_lst), markers).tolist()
+        else:
+            assert len(markers) == len(idx_lst)
+        if type(cmap_str) != list:
+            cmap_str = np.full(len(idx_lst), cmap_str).tolist()
+        else:
+            assert len(cmap_str) == len(idx_lst)
+        if is_discrete:
+            for i in range(len(idx_lst)):
+                ax.plot(lon[idx_lst[i]], lat[idx_lst[i]], marker=markers[i], ms=marker_size[i],
+                        label=category_names[i], c=colors[i], linestyle='')
+            if legend_font_size is None:
+                ax.legend()
+            else:
+                ax.legend(prop=dict(size=legend_font_size))
+        else:
+            for i in range(len(idx_lst)):
+                scat = plt.scatter(lon[idx_lst[i]], lat[idx_lst[i]], c=data[idx_lst[i]], marker=markers[i],
+                                   s=marker_size[i], cmap=cmap_str[i], vmin=vmin, vmax=vmax)
+            if need_colorbar:
+                cbar = fig.colorbar(scat, ax=ax, pad=0.01)
+                if colorbar_font_size is not None:
+                    cbar.ax.tick_params(labelsize=colorbar_font_size)
     else:
-        scat = plt.scatter(lon, lat, c=data, s=10, cmap=cmap_str, vmin=vmin, vmax=vmax)
-        fig.colorbar(scat, ax=ax, pad=0.01)
+        if is_discrete:
+            scatter = ax.scatter(lon, lat, c=data, s=marker_size)
+            # produce a legend with the unique colors from the scatter
+            legend1 = ax.legend(*scatter.legend_elements(), loc="lower left", title="Classes")
+            ax.add_artist(legend1)
+        else:
+            scat = plt.scatter(lon, lat, c=data, s=marker_size, cmap=cmap_str, vmin=vmin, vmax=vmax)
+            if need_colorbar:
+                if colorbar_size is not None:
+                    cbar_ax = fig.add_axes(colorbar_size)
+                    cbar = fig.colorbar(scat, cax=cbar_ax, orientation='vertical')
+                else:
+                    cbar = fig.colorbar(scat, ax=ax, pad=0.01)
+                if colorbar_font_size is not None:
+                    cbar.ax.tick_params(labelsize=colorbar_font_size)
     return ax
 
 

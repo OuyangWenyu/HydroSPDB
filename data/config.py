@@ -25,10 +25,11 @@ if not os.path.exists(__C.DATA_PATH):
 # data config
 __C.GAGES = edict()
 # __C.GAGES.DOWNLOAD = True
-__C.GAGES.DOWNLOAD = False
-__C.GAGES.DOWNLOAD_FROM_OWEN = True
-__C.GAGES.ARE_YOU_OWEN = True
+__C.GAGES.DOWNLOAD = True
+__C.GAGES.DOWNLOAD_FROM_OWEN = False
+__C.GAGES.ARE_YOU_OWEN = False
 __C.GAGES.DOWNLOAD_FROM_WEB = False
+__C.GAGES.DOWNLOAD_MANUALLY = True
 
 __C.GAGES.tRangeAll = ['1980-01-01', '2020-01-01']
 
@@ -44,6 +45,10 @@ __C.GAGES.attrUrl = ["https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_
                      "https://water.usgs.gov/GIS/dsdl/gagesII_9322_point_shapefile.zip",
                      "https://water.usgs.gov/GIS/dsdl/boundaries_shapefiles_by_aggeco.zip",
                      "https://www.sciencebase.gov/catalog/file/get/59692a64e4b0d1f9f05fbd39"]
+
+__C.GAGES.camelsDir = os.path.join(__C.DATA_PATH, "camels_attributes_v2.0", "camels_attributes_v2.0")
+__C.GAGES.camels_id_file = os.path.join(__C.GAGES.camelsDir, "camels_name.txt")
+__C.GAGES.camelsAttrUrl = "https://ral.ucar.edu/sites/default/files/public/product-tool/camels-catchment-attributes-and-meteorology-for-large-sample-studies-dataset-downloads/camels_attributes_v2.0.zip"
 
 # region shapefiles
 __C.GAGES.gage_region_dir = os.path.join(__C.DATA_PATH, 'boundaries_shapefiles_by_aggeco',
@@ -81,6 +86,10 @@ if __C.GAGES.DOWNLOAD:
     find_gages_data_path = False
     if __C.GAGES.DOWNLOAD_FROM_OWEN and __C.GAGES.DOWNLOAD_FROM_WEB:
         raise RuntimeError("Don't download data by two ways at the same time!")
+    elif __C.GAGES.DOWNLOAD_FROM_OWEN and __C.GAGES.DOWNLOAD_MANUALLY:
+        raise RuntimeError("Don't download data by two ways at the same time!")
+    elif __C.GAGES.DOWNLOAD_FROM_WEB and __C.GAGES.DOWNLOAD_MANUALLY:
+        raise RuntimeError("Don't download data by two ways at the same time!")
 
 if not find_gages_data_path:
     if __C.GAGES.DOWNLOAD_FROM_OWEN:
@@ -114,6 +123,8 @@ if not find_gages_data_path:
     elif __C.GAGES.DOWNLOAD_FROM_WEB:
         print("Not all dataset could be downloaded from website directly, so I didn't test this part completely."
               "Hence, please be careful!")
+        # download CAMELS attrs
+        download_one_zip(__C.GAGES.camelsAttrUrl, __C.DATA_PATH)
         # download zip files
         [download_one_zip(attr_url, __C.DATA_PATH) for attr_url in __C.GAGES.attrUrl]
         # download NID file
@@ -130,8 +141,7 @@ if not find_gages_data_path:
         data_all = pd.read_csv(__C.GAGES.gage_id_file, sep=',', dtype={0: str})
         usgs_id_lst = data_all.iloc[:, 0].values.tolist()
         gage_fld_lst = data_all.columns.values
-        for ind in range(len(usgs_id_lst)):
-            # different hucs different directories
+        for ind in range(len(usgs_id_lst)):  # different hucs different directories
             huc_02 = data_all[gage_fld_lst[3]][ind]
             dir_huc_02 = str(huc_02)
             if dir_huc_02 not in dir_list:
@@ -152,6 +162,23 @@ if not find_gages_data_path:
                 temp_file = os.path.join(dir_huc_02, str(usgs_id_lst[ind]) + '.txt')
                 download_small_file(url, temp_file)
                 print("成功写入 " + temp_file + " 径流数据！")
+    elif __C.GAGES.DOWNLOAD_MANUALLY:
+        print("Please download data manually!")
+        zip_files = ["59692a64e4b0d1f9f05fbd39", "basin_mean_forcing.zip", "basinchar_and_report_sept_2011.zip",
+                     "boundaries_shapefiles_by_aggeco.zip", "camels_attributes_v2.0.zip", "camels531.zip",
+                     "gages_streamflow.zip", "gagesII_9322_point_shapefile.zip", "mainstem_line_covers.zip", "nid.zip",
+                     "wbdhu4-a-us-september2019-shpfile.zip"]
+        download_zip_files = [os.path.join(__C.DATA_PATH, zip_file) for zip_file in zip_files]
+        for download_zip_file in download_zip_files:
+            if not os.path.isfile(download_zip_file):
+                raise RuntimeError(download_zip_file + " not found! Please download the data")
+        unzip_dirs = [os.path.join(__C.DATA_PATH, zip_file[:-4]) for zip_file in zip_files]
+        for i in range(len(unzip_dirs)):
+            if not os.path.isdir(unzip_dirs[i]):
+                print("unzip directory:" + unzip_dirs[i])
+                unzip_nested_zip(download_zip_files[i], unzip_dirs[i])
+            else:
+                print("unzip directory -- " + unzip_dirs[i] + " has existed")
     else:
         raise RuntimeError("Initial database is not found! Please download the data")
 
@@ -254,10 +281,10 @@ def cmd():
                         default=None, type=json.loads)
     parser.add_argument('--var_c', dest='var_c', help='types of attributes', default=None, nargs='+')
     parser.add_argument('--var_t', dest='var_t', help='types of forcing', default=None, nargs='+')
-    parser.add_argument('--gen_quick_data', dest='gen_quick_data', help='do I generate quick data?', default=0,
+    parser.add_argument('--gen_quick_data', dest='gen_quick_data', help='Do I need to generate quick data?', default=0,
                         type=int)
     parser.add_argument('--quick_data', dest='quick_data', help='Has quick data existed?', default=1, type=int)
-    parser.add_argument('--cache_state', dest='cache_state', help='Does save the data model for the sub experiment?',
+    parser.add_argument('--cache_state', dest='cache_state', help='Do I save the data model for the sub experiment?',
                         default=0, type=int)
 
     parser.add_argument('--pub_plan', dest='pub_plan',

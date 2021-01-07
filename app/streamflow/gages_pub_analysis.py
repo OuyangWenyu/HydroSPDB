@@ -60,7 +60,7 @@ def pub_lstm(args):
         conus_sites_id = data_model_train.t_s_dict["sites_id"]
         if pub_plan == 0:
             """do a pub test like freddy's"""
-            camels531_gageid_file = os.path.join(config_data.data_path["DB"], "camels531", "CAMELS531.txt")
+            camels531_gageid_file = os.path.join(config_data.data_path["DB"], "camels531", "camels531.txt")
             gauge_df = pd.read_csv(camels531_gageid_file, dtype={"GaugeID": str})
             gauge_list = gauge_df["GaugeID"].values
             all_sites_camels_531 = np.sort([str(gauge).zfill(8) for gauge in gauge_list])
@@ -375,15 +375,15 @@ def pub_lstm(args):
                             pred_name='flow_pred_2', obs_name='flow_obs_2')
 
 
-# python gages_pub_analysis.py --sub ecoregion/exp9 --cache_state 1 --pub_plan 1 --plus 0 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
-# python gages_pub_analysis.py --sub ecoregion/exp12 --cache_state 1 --pub_plan 1 --plus 1 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
-# python gages_pub_analysis.py --sub ecoregion/exp10 --cache_state 1 --pub_plan 2 --plus 0 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
-# python gages_pub_analysis.py --sub ecoregion/exp13 --cache_state 1 --pub_plan 2 --plus 1 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
-# python gages_pub_analysis.py --sub ecoregion/exp11 --cache_state 1 --pub_plan 3 --plus 0 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
-# python gages_pub_analysis.py --sub ecoregion/exp14 --cache_state 1 --pub_plan 3 --plus 1 --split_num 2 --train_epoch 20 --save_epoch 10 --te 20
-# python gages_pub_analysis.py --sub ecoregion/exp8 --cache_state 1 --split_num 2 --pub_plan 0 --plus -1
 # python gages_pub_analysis.py --sub ecoregion/exp4 --cache_state 1 --split_num 12 --pub_plan 0 --plus -1
 # python gages_pub_analysis.py --sub ecoregion/exp6 --cache_state 1 --split_num 12 --pub_plan 0 --plus -2
+# python gages_pub_analysis.py --sub ecoregion/exp9 --cache_state 1 --pub_plan 1 --plus 0 --split_num 2
+# python gages_pub_analysis.py --sub ecoregion/exp12 --cache_state 1 --pub_plan 1 --plus 1 --split_num 2
+# python gages_pub_analysis.py --sub ecoregion/exp10 --cache_state 1 --pub_plan 2 --plus 0 --split_num 2
+# python gages_pub_analysis.py --sub ecoregion/exp13 --cache_state 1 --pub_plan 2 --plus 1 --split_num 2
+# python gages_pub_analysis.py --sub ecoregion/exp11 --cache_state 1 --pub_plan 3 --plus 0 --split_num 2
+# python gages_pub_analysis.py --sub ecoregion/exp14 --cache_state 1 --pub_plan 3 --plus 1 --split_num 2
+# python gages_pub_analysis.py --sub ecoregion/exp8 --cache_state 1 --split_num 2 --pub_plan 0 --plus -1
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

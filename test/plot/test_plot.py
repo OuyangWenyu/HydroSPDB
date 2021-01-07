@@ -18,9 +18,10 @@ from utils.dataset_format import subset_of_dict
 from visual import plot_ts_obs_pred
 from visual.plot import plotCDF
 from visual.plot_model import plot_ind_map, plot_map, plot_gages_map_and_ts, plot_gages_map_and_box, \
-    plot_gages_map_and_scatter
+    plot_gages_map_and_scatter, plot_sites_and_attr, plot_gages_map
 from visual.plot_stat import plot_pdf_cdf, plot_ecdf, plot_ts_map, plot_ecdfs, plot_diff_boxes, plot_ecdfs_matplot
 import matplotlib.pyplot as plt
+from data.config import cfg
 
 
 def test_stat():
@@ -66,7 +67,6 @@ def test_stat():
 
 
 class MyTestCase(unittest.TestCase):
-    config_file = definitions.CONFIG_FILE
     project_dir = definitions.ROOT_DIR
     dataset = 'gages'
     dataset_exp = dataset + '/basic/exp11'
@@ -97,19 +97,11 @@ class MyTestCase(unittest.TestCase):
     def test_plot_ecdf_together(self):
         xs = []
         ys = []
-        # cases_exps = ["basic_exp18", "simulate_exp10", "inv_exp1", "siminv_exp1"]
-        # cases_exps = ["basic_exp18", "simulate_exp1"]
-        # cases_exps = ["basic_exp18", "gagests_exp18"]
-        cases_exps = ["basic_exp37", "basic_exp38"]
-        # cases_exps = ["nodam_exp3", "majordam_exp2"]
-        # cases_exps_legends = ["no_major_dam", "with_major_dam"]
-        cases_exps_legends = ["random_1234", "random_12345"]
-        # cases_exps = ["dam_exp4", "dam_exp5", "dam_exp6"]
-        # cases_exps = ["dam_exp1", "dam_exp2", "dam_exp3"]
-        # cases_exps_legends = ["dam-lstm", "dam-with-natural-flow", "dam-with-kernel"]
+        cases_exps = ["basic_exp37", "basic_exp39"]
+        cases_exps_legends = ["random_1234", "random_123"]
         test_epoch = 300
         for case_exp in cases_exps:
-            config_data_i = load_dataconfig_case_exp(case_exp)
+            config_data_i = load_dataconfig_case_exp(cfg, case_exp)
             pred_i, obs_i = load_result(config_data_i.data_path['Temp'], test_epoch)
             pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
             obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
@@ -118,30 +110,29 @@ class MyTestCase(unittest.TestCase):
             xs.append(x)
             ys.append(y)
         plot_ecdfs(xs, ys, cases_exps_legends, x_str="NSE", y_str="CDF")
-        cases_exps_addition = ["basic_exp39"]
-        xs_addition = []
-        ys_addition = []
-        for case_exp in cases_exps_addition:
-            config_data_i = load_dataconfig_case_exp(case_exp)
-            pred_i, obs_i = load_result(config_data_i.data_path['Temp'], test_epoch)
-            pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
-            obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
-            inds_i = statError(obs_i, pred_i)
-            x, y = ecdf(inds_i[self.keys[0]])
-            xs_addition.append(x)
-            ys_addition.append(y)
-        plot_ecdfs(xs_addition, ys_addition, ["new"], x_str="NSE", y_str="CDF")
-        # plt.plot([0, 1], [0, 2], sns.xkcd_rgb["medium green"], lw=3)
+        # cases_exps_addition = ["basic_exp39"]
+        # xs_addition = []
+        # ys_addition = []
+        # for case_exp in cases_exps_addition:
+        #     config_data_i = load_dataconfig_case_exp(cfg, case_exp)
+        #     pred_i, obs_i = load_result(config_data_i.data_path['Temp'], test_epoch)
+        #     pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
+        #     obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
+        #     inds_i = statError(obs_i, pred_i)
+        #     x, y = ecdf(inds_i[self.keys[0]])
+        #     xs_addition.append(x)
+        #     ys_addition.append(y)
+        # plot_ecdfs(xs_addition, ys_addition, ["new"], x_str="NSE", y_str="CDF")
         plt.show()
 
     def test_plot_ecdf_matplotlib(self):
         xs = []
         ys = []
-        cases_exps = ["basic_exp37", "basic_exp38", "basic_exp39", "basic_exp40", "basic_exp41"]
+        cases_exps = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42"]
         cases_exps_legends = ["random_1234", "random_123", "random_12345", "random_111", "random_1111"]
         test_epoch = 300
         for case_exp in cases_exps:
-            config_data_i = load_dataconfig_case_exp(case_exp)
+            config_data_i = load_dataconfig_case_exp(cfg, case_exp)
             pred_i, obs_i = load_result(config_data_i.data_path['Temp'], test_epoch)
             pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
             obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
@@ -157,9 +148,11 @@ class MyTestCase(unittest.TestCase):
     def test_plot_box(self):
         """测试可视化代码"""
         # plot box，使用seaborn库
-        keys = ["Bias", "RMSE", "NSE"]
+        keys = ["Bias", "NSE", "FLV", "FHV"]
         inds_test = subset_of_dict(self.inds, keys)
-        plot_diff_boxes(inds_test)
+        plot_diff_boxes(inds_test, title_str="Metrics of streamflow prediction")
+        plt.savefig(os.path.join(self.dir_out, 'boxes.png'), dpi=500, bbox_inches="tight")
+        plt.show()
 
     def test_plot_ts(self):
         """测试可视化代码"""
@@ -194,8 +187,16 @@ class MyTestCase(unittest.TestCase):
         keys = ["NSE"]
         inds_test = subset_of_dict(self.inds, keys)
         sites_df = pd.DataFrame({"sites": sites, keys[0]: inds_test[keys[0]]})
-        # plot_map(gauge_dict, sites_df, id_col="id", lon_col="lon", lat_col="lat")
-        plot_map(gauge_dict, sites_df, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
+
+        nse_range = [0, 1]
+        idx_lstl_nse = sites_df[
+            (sites_df[keys[0]] >= nse_range[0]) & (sites_df[keys[0]] <= nse_range[1])].index.tolist()
+        colorbar_size = [0.91, 0.323, 0.02, 0.346]
+        # colorbar_size = None
+        plot_gages_map(data_model, sites_df, keys[0], idx_lstl_nse, colorbar_size=colorbar_size, cbar_font_size=14)
+        plt.savefig(os.path.join(self.dir_out, 'map_NSE.png'), dpi=500, bbox_inches="tight")
+        plt.show()
+        # plot_map(gauge_dict, sites_df, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
     def test_plot_map_cartopy(self):
         data_model = GagesModel.load_datamodel(self.dir_temp,
@@ -225,7 +226,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_plot_map_cartopy_multi_vars(self):
         conus_exps = ["basic_exp37"]
-        config_data = load_dataconfig_case_exp(conus_exps[0])
+        config_data = load_dataconfig_case_exp(cfg, conus_exps[0])
 
         dor_1 = - 0.02
         source_data_dor1 = GagesSource.choose_some_basins(config_data,
@@ -267,7 +268,7 @@ class MyTestCase(unittest.TestCase):
         attrs = data_model.data_source.read_attr(conus_sites, attr_lst, is_return_dict=False)
 
         test_epoch = 300
-        inds_df, pred, obs = load_ensemble_result(conus_exps, test_epoch, return_value=True)
+        inds_df, pred, obs = load_ensemble_result(cfg, conus_exps, test_epoch, return_value=True)
         show_ind_key = "NSE"
         nse_range = [0, 1]
         idx_lst_nse = inds_df[
@@ -294,8 +295,8 @@ class MyTestCase(unittest.TestCase):
         idx_lst = [np.arange(len(type_1_index_lst)),
                    np.arange(len(type_1_index_lst), len(type_1_index_lst) + len(type_2_index_lst))]
         plot_gages_map_and_scatter(data_df, [show_ind_key, "lat", "lon", "elevation"], idx_lst,
-                                   cmap_strs=["Reds", "Blues"],
-                                   labels=["zero-dor", "small-dor"], scatter_label=[attr_lst[1], show_ind_key])
+                                   cmap_strs=["Reds", "Blues"], labels=["zero-dor", "small-dor"],
+                                   scatter_label=[attr_lst[1], show_ind_key])
         # matplotlib.rcParams.update({'font.size': 12})
         plt.tight_layout()
         plt.show()
@@ -368,6 +369,47 @@ class MyTestCase(unittest.TestCase):
         # save figure without padding
         # plt.savefig('testmapbox.png', dpi=500, bbox_inches="tight")
         plt.show()
+
+    def test_plot_sites_and_attrs(self):
+        """plot points of all 3557 sites and camels sites with different colors;
+            plot polygons of all 3557 basins and camels basins with different colors"""
+        data_model = GagesModel.load_datamodel(self.dir_temp,
+                                               data_source_file_name='test_data_source.txt',
+                                               stat_file_name='test_Statistics.json', flow_file_name='test_flow.npy',
+                                               forcing_file_name='test_forcing.npy', attr_file_name='test_attr.npy',
+                                               f_dict_file_name='test_dictFactorize.json',
+                                               var_dict_file_name='test_dictAttribute.json',
+                                               t_s_dict_file_name='test_dictTimeSpace.json')
+        camels_gageid_file = os.path.join(self.dir_db, "camels_attributes_v2.0", "camels_attributes_v2.0",
+                                          "camels_name.txt")
+        gauge_df = pd.read_csv(camels_gageid_file, dtype={"gauge_id": str}, sep=';')
+        gauge_list = gauge_df["gauge_id"].values
+        chosen_sites = np.intersect1d(gauge_list, data_model.t_s_dict["sites_id"])
+        remain_sites = [site_tmp for site_tmp in data_model.t_s_dict["sites_id"] if site_tmp not in chosen_sites]
+
+        all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
+        all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
+        all_sites_id = data_model.data_source.gage_dict["STAID"]
+
+        is_camels = np.array([1 if data_model.t_s_dict["sites_id"][i] in chosen_sites else 0 for i in
+                              range(len(data_model.t_s_dict["sites_id"]))])
+        plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, is_camels, is_discrete=True,
+                            markers=["x", "o"], marker_sizes=[4, 2], colors=["b", "r"], legend_font_size=13)
+        plt.savefig(os.path.join(self.dir_out, 'map_camels_or_not.png'), dpi=500, bbox_inches="tight")
+
+        attrs_lst = ["SLOPE_PCT", "FORESTNLCD06", "PERMAVE", "GEOL_REEDBUSH_DOM_PCT", "STOR_NOR_2009",
+                     "FRESHW_WITHDRAWAL"]
+        data_attrs = data_model.data_source.read_attr_origin(all_sites_id.tolist(), attrs_lst)
+        for i in range(len(attrs_lst)):
+            data_attr = data_attrs[i]
+            if attrs_lst[i] == "STOR_NOR_2009" or attrs_lst[i] == "FRESHW_WITHDRAWAL":
+                plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
+                                    pertile_range=[0, 95], markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet",
+                                    cbar_font_size=13)
+            else:
+                plot_sites_and_attr(all_sites_id, all_lon, all_lat, chosen_sites, remain_sites, data_attr,
+                                    markers=["x", "o"], marker_sizes=[20, 10], cmap_str="jet", cbar_font_size=13)
+            plt.savefig(os.path.join(self.dir_out, attrs_lst[i] + '.png'), dpi=500, bbox_inches="tight")
 
     def test_plot_kuai_cdf(self):
         t_s_dict = unserialize_json(self.t_s_dict_file)

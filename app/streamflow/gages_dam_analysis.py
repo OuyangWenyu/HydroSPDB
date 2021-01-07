@@ -52,12 +52,12 @@ def dam_lstm(args):
         save_result(gages_model_test.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
 
-# python gages_dam_analysis.py --sub dam/exp20 --ctx 0 --attr_screen {\"DOR\":-0.02} --te 20 --train_mode 1  --train_epoch 20 --save_epoch 10
-# python gages_dam_analysis.py --cfg dam/config_exp21.ini --ctx 2 --dor -0.02 --rs 123 --te 300 --train_mode True
-# python gages_dam_analysis.py --cfg dam/config_exp22.ini --ctx 1 --dor -0.02 --rs 12345 --te 300 --train_mode True
-# python gages_dam_analysis.py --cfg dam/config_exp23.ini --ctx 1 --dor -0.02 --rs 111 --te 300 --train_mode True
-# python gages_dam_analysis.py --cfg dam/config_exp24.ini --ctx 2 --dor -0.02 --rs 1111 --te 300 --train_mode True
-# python gages_dam_analysis.py --cfg dam/config_exp25.ini --ctx 0 --dor -0.02 --rs 11111 --te 300 --train_mode True
+# python gages_dam_analysis.py --sub dam/exp20 --ctx 0 --attr_screen {\"DOR\":-0.02} --train_mode 1
+# python gages_dam_analysis.py --sub dam/exp21 --ctx 0 --attr_screen {\"DOR\":-0.02}  --rs 123 --train_mode 1
+# python gages_dam_analysis.py --sub dam/exp22 --ctx 0 --attr_screen {\"DOR\":-0.02}  --rs 12345 --train_mode 1
+# python gages_dam_analysis.py --sub dam/exp23 --ctx 0 --attr_screen {\"DOR\":-0.02}  --rs 111 --train_mode 1
+# python gages_dam_analysis.py --sub dam/exp24 --ctx 0 --attr_screen {\"DOR\":-0.02}  --rs 1111 --train_mode 1
+# python gages_dam_analysis.py --sub dam/exp25 --ctx 0 --attr_screen {\"DOR\":-0.02}  --rs 11111 --train_mode 1
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

@@ -43,12 +43,12 @@ def nodam_lstm(args):
         save_result(gages_model_test.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
 
-# python gages_nodam_analysis.py --sub nodam/exp1 --ctx 0 --attr_screen {\"dam_num\":0} --te 20 --train_mode 1  --train_epoch 20 --save_epoch 10
-# python gages_nodam_analysis.py --cfg nodam/config_exp2.ini --ctx 1 --dam_num 0 --rs 123 --te 300 --train_mode True
-# python gages_nodam_analysis.py --cfg nodam/config_exp3.ini --ctx 2 --dam_num 0 --rs 12345 --te 300 --train_mode True
-# python gages_nodam_analysis.py --cfg nodam/config_exp4.ini --ctx 2 --dam_num 0 --rs 111 --te 300 --train_mode True
-# python gages_nodam_analysis.py --cfg nodam/config_exp5.ini --ctx 1 --dam_num 0 --rs 1111 --te 300 --train_mode True
-# python gages_nodam_analysis.py --cfg nodam/config_exp6.ini --ctx 1 --dam_num 0 --rs 11111 --te 300 --train_mode True
+# python gages_nodam_analysis.py --sub nodam/exp1 --ctx 0 --attr_screen {\"dam_num\":0} --train_mode 1
+# python gages_nodam_analysis.py --sub nodam/exp2 --ctx 0 --attr_screen {\"dam_num\":0} --rs 123 --train_mode 1
+# python gages_nodam_analysis.py --sub nodam/exp3 --ctx 0 --attr_screen {\"dam_num\":0} --rs 12345 --train_mode 1
+# python gages_nodam_analysis.py --sub nodam/exp4 --ctx 0 --attr_screen {\"dam_num\":0} --rs 111 --train_mode 1
+# python gages_nodam_analysis.py --sub nodam/exp5 --ctx 0 --attr_screen {\"dam_num\":0} --rs 1111 --train_mode 1
+# python gages_nodam_analysis.py --sub nodam/exp6 --ctx 0 --attr_screen {\"dam_num\":0} --rs 11111 --train_mode 1
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

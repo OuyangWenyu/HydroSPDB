@@ -10,6 +10,7 @@ import pandas as pd
 from pandas.core.dtypes.common import is_string_dtype, is_numeric_dtype
 
 from utils.hydro_math import is_any_elem_in_a_lst
+from utils.hydro_util import hydro_logger
 
 
 class GagesSource(DataSource):
@@ -256,7 +257,7 @@ class GagesSource(DataSource):
         df_id_region = data_all.iloc[:, 0].values
         assert (all(x < y for x, y in zip(df_id_region, df_id_region[1:])))
         if len(shapefiles) == 10:  # there are 10 regions in GAGES-II dataset in all
-            print("all regions included, CONUS\n")
+            hydro_logger.debug("all regions included, CONUS\n")
             if screen_basin_area_huc4:
                 assert (all(x < y for x, y in zip(gages_huc4_id, gages_huc4_id[1:])))
                 c, ind1, ind2 = np.intersect1d(df_id_region, gages_huc4_id, return_indices=True)
@@ -659,6 +660,7 @@ class GagesSource(DataSource):
             return out
 
     def read_attr_origin(self, gages_ids, attr_lst):
+        """:return np.array -- the first dim is types of attrs, and the second one is sites"""
         dir_gage_attr = self.all_configs.get("gage_files_dir")
         data_temp_chosen_lst = list()
         # 读取所有属性，直接按类型判断要读取的文件名
@@ -673,6 +675,8 @@ class GagesSource(DataSource):
         key_lst.remove('x_region_names')
         var_lst = list()
         out_lst = []
+        for i in range(len(attr_lst)):
+            out_lst.append([])
         # 因为选择的站点可能是站点的一部分，所以需要求交集，ind2是所选站点在conterm_文件中所有站点里的index，把这些值放到out_temp中
         range1 = gages_ids
         gage_id_file = self.all_configs.get("gage_id_file")
@@ -706,11 +710,9 @@ class GagesSource(DataSource):
             do_exist, idx_lst = is_any_elem_in_a_lst(attr_lst, var_lst_temp, return_index=True)
             if do_exist:
                 for idx in idx_lst:
-                    idx_in_var = var_lst_temp.index(attr_lst[idx]) + 1  # +1 because var_lst_temp starts from 1
-                    out_temp = data_temp.iloc[ind2, idx_in_var].values
-                    out_lst.append(out_temp)
+                    idx_in_var = var_lst_temp.index(attr_lst[idx]) + 1  # +1 because the first col of data_temp is ID
+                    out_lst[idx] = data_temp.iloc[ind2, idx_in_var].values
             else:
                 continue
-
         out = np.array(out_lst)
         return out

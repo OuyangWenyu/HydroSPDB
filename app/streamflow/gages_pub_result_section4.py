@@ -11,6 +11,7 @@ from data.data_input import GagesModel, _basin_norm, save_result, load_result
 from data.gages_input_dataset import load_ensemble_result, load_dataconfig_case_exp, load_pub_ensemble_result
 from explore.stat import statError
 from hydroDL.master.master import master_test_with_pretrained_model
+from utils.hydro_util import hydro_logger
 
 sys.path.append("../..")
 import os
@@ -21,13 +22,13 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # camels_exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp35", "basic_exp36"]
-# camels_exp_lst = ["ecoregion_exp8"]
-# camels_exp_lst = ["ecoregion_exp4"]
-camels_exp_lst = ["ecoregion_exp6"]
-# camels_pub_on_diff_dor_exp_lst = ["basic_exp12", "basic_exp14", "basic_exp15"]
-# camels_pub_on_diff_dor_exp_lst = ["basic_exp21", "basic_exp22", "basic_exp23"]
-# camels_pub_on_diff_dor_exp_lst = ["basic_exp26", "basic_exp27", "basic_exp28"]
-camels_pub_on_diff_dor_exp_lst = ["basic_exp18", "basic_exp29", "basic_exp30"]
+camels_exp_lst = ["ecoregion_exp8"]
+# camels_exp_lst = ["ecoregion_exp4"]  # camels_split_num = 11
+# camels_exp_lst = ["ecoregion_exp6"]  # camels_split_num = 11 and basins were not chosen from ecoregions
+# camels_pub_on_diff_dor_exp_lst = ["basic_exp12", "basic_exp14", "basic_exp15"] # for basic_exp31~36
+camels_pub_on_diff_dor_exp_lst = ["basic_exp21", "basic_exp22", "basic_exp23"]  # for ecoregion_exp8
+# camels_pub_on_diff_dor_exp_lst = ["basic_exp26", "basic_exp27", "basic_exp28"] # for ecoregion_exp4
+# camels_pub_on_diff_dor_exp_lst = ["basic_exp18", "basic_exp29", "basic_exp30"] # for ecoregion_exp6
 
 # exp_lst = [["ecoregion_exp1", "ecoregion_exp6"], ["ecoregion_exp2", "ecoregion_exp5"],
 #            ["ecoregion_exp3", "ecoregion_exp7"], camels_pub_on_diff_dor_exp_lst]
@@ -40,15 +41,32 @@ test_data_name_lst = [["Train-z", "PUB-z", "PUB-s"], ["Train-z", "PUB-z", "PUB-l
                       ["Train-c", "PUB-c", "PUB-z", "PUB-s", "PUB-l"]]  # ["Train-c", "PUB-c", "PUB-n"]
 
 test_epoch = 300
-# test_epoch = 20
+FIGURE_DPI = 600
 split_num = 2
-camels_pub_split_num = 12
+# camels_pub_split_num = 12
+camels_pub_split_num = 2
 
 # test
 doLst = list()
 # doLst.append('train')
-doLst.append('test')
-# doLst.append('post')
+# doLst.append('test')
+doLst.append('post')
+
+
+def create_median_labels(ax, has_fliers):
+    lines = ax.get_lines()
+    # depending on fliers, toggle between 5 and 6 lines per box
+    lines_per_box = 5 + int(has_fliers)
+    # iterate directly over all median lines, with an interval of lines_per_box
+    # this enables labeling of grouped data without relying on tick positions
+    for median_line in lines[4:len(lines):lines_per_box]:
+        # get center of median line
+        mean_x = sum(median_line._x) / len(median_line._x)
+        mean_y = sum(median_line._y) / len(median_line._y)
+        # print text to center coordinates
+        text = ax.text(mean_x, mean_y + 0.03, f'{mean_y:.2f}', ha='center', va='center', fontweight='bold', size=8,
+                       color='black')
+
 
 if 'test' in doLst:
     zerodor_config_data = load_dataconfig_case_exp(cfg, camels_pub_on_diff_dor_exp_lst[0])
@@ -128,7 +146,7 @@ if 'test' in doLst:
                                                             data_attr_update=True,
                                                             train_stat_dict=data_model_i.stat_dict,
                                                             screen_basin_area_huc4=False)
-            with torch.cuda.device(1):
+            with torch.cuda.device(0):
                 pretrained_model_file = os.path.join(data_model_i.data_source.data_config.data_path["Out"],
                                                      "model_Ep" + str(test_epoch) + ".pt")
                 pretrained_model_name = camels_exp_lst[0] + "_pretrained_model" + str(i)
@@ -179,11 +197,11 @@ gs = gridspec.GridSpec(2, 2)
 titles = ["(a)", "(b)", "(c)", "(d)"]
 
 colors = ["Greens", "Blues", "Reds", "Greys"]
-sns.set(font_scale=1.2)
+sns.set(font_scale=1)
 
 for k in range(len(exp_lst)):
     if k == len(exp_lst) - 1:
-        print("camels pub")
+        hydro_logger.info("camels pub")
         # ax_k = plt.subplot(gs[k * 3: k * 3 + 2])
         ax_k = plt.subplot(gs[1, 1])
         ax_k.set_title(titles[k])
@@ -196,7 +214,7 @@ for k in range(len(exp_lst)):
         #                               show_ind_key: inds_df_camels[show_ind_key]})
         # frames_camels_pub.append(df_camels_pub)
         # pub in camels
-        config_data = load_dataconfig_case_exp(exp_lst[k][0])
+        config_data = load_dataconfig_case_exp(cfg, exp_lst[k][0])
         preds = []
         obss = []
         preds2 = []
@@ -226,14 +244,14 @@ for k in range(len(exp_lst)):
                                               obs_name='flow_obs_base')
             pred_base = pred_base.reshape(pred_base.shape[0], pred_base.shape[1])
             obs_base = obs_base.reshape(obs_base.shape[0], obs_base.shape[1])
-            print("the size of", str(k), str(0), str(i), "Train-c", str(pred_base.shape[0]))
+            hydro_logger.info("the size of %s %s %s Train-c %s", k, 0, i, pred_base.shape[0])
             predsbase.append(pred_base)
             obssbase.append(obs_base)
 
             pred_i, obs_i = load_result(data_model.data_source.data_config.data_path['Temp'], test_epoch)
             pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
             obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
-            print("the size of", str(k), str(0), str(i), "PUB-c", str(pred_i.shape[0]))
+            hydro_logger.info("the size of %s %s %s PUB-c %s", k, 0, i, pred_i.shape[0])
             preds.append(pred_i)
             obss.append(obs_i)
 
@@ -272,9 +290,10 @@ for k in range(len(exp_lst)):
         ax_k.set_ylim([-1, 1])
         ax_k.set_yticks(np.arange(-1, 1, 0.2))
         medians = result_camels_pub.groupby([train_set, test_set], sort=False)[show_ind_key].median().values
-        print(medians)
+        hydro_logger.info(medians)
         sns_box = sns.boxplot(ax=ax_k, x=train_set, y=show_ind_key, hue=test_set, data=result_camels_pub,
                               showfliers=False, palette=colors[k])
+        create_median_labels(sns_box.axes, has_fliers=False)
         # plt.subplots_adjust(hspace=0.8)
         # sns.boxplot(ax=ax_k, x=test_set, y=show_ind_key, data=result_camels_pub, showfliers=False, palette=colors[k])
         continue
@@ -322,14 +341,14 @@ for k in range(len(exp_lst)):
                                               obs_name='flow_obs_base')
             pred_base = pred_base.reshape(pred_base.shape[0], pred_base.shape[1])
             obs_base = obs_base.reshape(obs_base.shape[0], obs_base.shape[1])
-            print("the size of", str(k), str(j), str(i), "Train-base", str(pred_base.shape[0]))
+            hydro_logger.info("the size of %s %s %s Train-base %s", k, j, i, pred_base.shape[0])
             predsbase.append(pred_base)
             obssbase.append(obs_base)
 
             pred_i, obs_i = load_result(data_model.data_source.data_config.data_path['Temp'], test_epoch)
             pred_i = pred_i.reshape(pred_i.shape[0], pred_i.shape[1])
             obs_i = obs_i.reshape(obs_i.shape[0], obs_i.shape[1])
-            print("the size of", str(k), str(j), str(i), "PUB-1", str(pred_i.shape[0]))
+            hydro_logger.info("the size of %s %s %s PUB-1 %s", k, j, i, pred_i.shape[0])
             preds.append(pred_i)
             obss.append(obs_i)
 
@@ -338,7 +357,7 @@ for k in range(len(exp_lst)):
                                         obs_name='flow_obs_2')
             pred_2 = pred_2.reshape(pred_2.shape[0], pred_2.shape[1])
             obs_2 = obs_2.reshape(obs_2.shape[0], obs_2.shape[1])
-            print("the size of", str(k), str(j), str(i), "PUB-2", str(pred_2.shape[0]))
+            hydro_logger.info("the size of %s %s %s PUB-2 %s", k, j, i, pred_2.shape[0])
             preds2.append(pred_2)
             obss2.append(obs_2)
 
@@ -396,14 +415,10 @@ for k in range(len(exp_lst)):
     ax_k.set_ylim([-1, 1])
     ax_k.set_yticks(np.arange(-1, 1, 0.2))
     medians = result.groupby([train_set, test_set], sort=False)[show_ind_key].median().values
-    print(medians)
-    # median_labels = [str(np.round(s, 3)) for s in medians]
-    # pos = range(len(medians))
-    # for tick, label in zip(pos, ax_k.get_xticklabels()):
-    #     ax_k.text(pos[tick], medians[tick] + 0.02, median_labels[tick],
-    #               horizontalalignment='center', size='x-small', weight='semibold')
+    hydro_logger.info(medians)
+    create_median_labels(sns_box.axes, has_fliers=False)
 
 sns.despine()
 plt.tight_layout()
 show_config_data = load_dataconfig_case_exp(cfg, exp_lst[0][0])
-plt.savefig(os.path.join(show_config_data.data_path["Out"], '4exps_pub.png'), dpi=300, bbox_inches="tight")
+plt.savefig(os.path.join(show_config_data.data_path["Out"], '4exps_pub.png'), dpi=FIGURE_DPI, bbox_inches="tight")
