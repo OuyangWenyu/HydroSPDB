@@ -14,7 +14,7 @@ from data.data_config import update_config_item
 from data.data_input import GagesModel, _trans_norm, GagesModelWoBasinNorm, load_result
 from explore import trans_norm, cal_stat
 from explore.hydro_cluster import cluster_attr_train
-from explore.stat import statError
+from explore.stat import statError, trans_norm4gridmet
 from hydroDL import master_train
 from hydroDL.model import model_run
 from utils import hydro_time
@@ -1150,3 +1150,29 @@ class GagesDamDataModel(object):
         # run_avg = data_attr[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
         # nor_storage = data_attr[:, 1] * 1000  # m^3
         # dors = nor_storage / run_avg
+
+
+class GagesEtDataModel(object):
+    """use ET data as input"""
+
+    def __init__(self, data_model, gridmet_data_model, is_use_cropet=False):
+        self.data_model = data_model
+        self.gridmet_data_model = gridmet_data_model
+        self.is_use_cropet = is_use_cropet
+
+    def load_data(self):
+        model_dict = self.data_model.data_source.data_config.model_dict
+        x_daymet, y, c = self.data_model.load_data(model_dict)
+        x = self.gridmet_data_model.load_data()
+        if self.is_use_cropet:
+            # add cet data to x
+            cet = self.gridmet_data_model.cet
+            var_lst = ['ETc']
+            gages_et_stat_dict = {}
+            cet_data = cet.reshape(cet.shape[0], cet.shape[1], 1)
+            gages_et_stat_dict[var_lst[0]] = cal_stat(cet_data)
+            cet_data_x = trans_norm4gridmet(cet_data, var_lst, gages_et_stat_dict, to_norm=True)
+            xet = concat_two_3darray(x, cet_data_x)
+            return xet, c, y
+        else:
+            return x, c, y

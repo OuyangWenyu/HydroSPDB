@@ -38,9 +38,11 @@ def master_test_1by1(data_model):
         model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
                                    fillObs=True)
     elif opt_model['name'] == 'AnnModel':
-        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                hiddenSize=opt_model['hiddenSize'])
     elif opt_model['name'] == 'AnnCloseModel':
-        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                hiddenSize=opt_model['hiddenSize'],
                                                 fillObs=True)
     model.load_state_dict(torch.load(model_file))
     testloader = create_datasets(data_model, train_mode=False)
@@ -80,9 +82,11 @@ def master_train_1by1(data_model, valid_size=0.2):
         model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
                                    fillObs=True)
     elif opt_model['name'] == 'AnnModel':
-        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                hiddenSize=opt_model['hiddenSize'])
     elif opt_model['name'] == 'AnnCloseModel':
-        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+        model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                hiddenSize=opt_model['hiddenSize'],
                                                 fillObs=True)
 
     # train model
@@ -153,9 +157,11 @@ def master_train(data_model, valid_size=0, pre_trained_model_epoch=1, random_see
             model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
                                        fillObs=True)
         elif opt_model['name'] == 'AnnModel':
-            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                    hiddenSize=opt_model['hiddenSize'])
         elif opt_model['name'] == 'AnnCloseModel':
-            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                    hiddenSize=opt_model['hiddenSize'],
                                                     fillObs=True)
 
     # train model
@@ -204,9 +210,11 @@ def master_test(data_model, epoch=-1, save_file_suffix=None):
             model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
                                        fillObs=True)
         elif opt_model['name'] == 'AnnModel':
-            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'])
+            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                    hiddenSize=opt_model['hiddenSize'])
         elif opt_model['name'] == 'AnnCloseModel':
-            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                    hiddenSize=opt_model['hiddenSize'],
                                                     fillObs=True)
         model.load_state_dict(torch.load(model_file))
         model.eval()
@@ -889,3 +897,40 @@ def test_lstm_forecast(data_input):
         obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
     return pred, obs
+
+
+def master_train_gridmet(et_data_model, random_seed=1234, drop_out=0.5):
+    set_random_seed(random_seed)
+    model_dict = et_data_model.data_model.data_source.data_config.model_dict
+    opt_model = model_dict['model']
+    opt_loss = model_dict['loss']
+    opt_train = model_dict['train']
+
+    # data
+    x, y, c = et_data_model.load_data()
+    nx = x.shape[-1] + c.shape[-1]
+    ny = y.shape[-1]
+    opt_model['nx'] = nx
+    opt_model['ny'] = ny
+    # loss
+    if opt_loss['name'] == 'RmseLoss':
+        loss_fun = crit.RmseLoss()
+        opt_model['ny'] = ny
+    else:
+        print("Please specify the loss function!!!")
+
+    # model
+    if opt_train['saveEpoch'] > opt_train['nEpoch']:
+        opt_train['saveEpoch'] = opt_train['nEpoch']
+    out = model_dict['dir']['Out']
+    if not os.path.isdir(out):
+        os.makedirs(out)
+    if opt_model['name'] == 'CudnnLstmModel':
+        model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'],
+                                   dr=drop_out)
+
+    # train model
+    model = model_run.model_train(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
+                                  mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
+                                  save_folder=out)
+    return model

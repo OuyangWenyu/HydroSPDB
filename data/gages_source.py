@@ -326,6 +326,18 @@ class GagesSource(DataSource):
             num_nan_lst = []
             for i in range(len(columns_flow)):
                 out_temp = np.full([len(t_lst)], np.nan)
+
+                df_flow.loc[df_flow[columns_flow[i]] == "Ice", columns_flow[i]] = np.nan
+                df_flow.loc[df_flow[columns_flow[i]] == "Ssn", columns_flow[i]] = np.nan
+                df_flow.loc[df_flow[columns_flow[i]] == "Tst", columns_flow[i]] = np.nan
+                df_flow.loc[df_flow[columns_flow[i]] == "Eqp", columns_flow[i]] = np.nan
+                df_flow.loc[df_flow[columns_flow[i]] == "Rat", columns_flow[i]] = np.nan
+                df_flow.loc[df_flow[columns_flow[i]] == "Dis", columns_flow[i]] = np.nan
+                df_flow.loc[df_flow[columns_flow[i]] == "Bkw", columns_flow[i]] = np.nan
+                df_flow.loc[df_flow[columns_flow[i]] == "***", columns_flow[i]] = np.nan
+                df_flow.loc[df_flow[columns_flow[i]] == "Mnt", columns_flow[i]] = np.nan
+                df_flow.loc[df_flow[columns_flow[i]] == "ZFL", columns_flow[i]] = np.nan
+
                 df_flow_temp = df_flow[columns_flow[i]].copy()
                 out_temp[ind2_temp] = df_flow_temp[ind1_temp]
                 num_nan = np.isnan(out_temp).sum()

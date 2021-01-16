@@ -156,3 +156,37 @@ def ecdf(data):
     n = x.size
     y = np.arange(1, n + 1) / n
     return (x, y)
+
+
+def trans_norm4gridmet(x, var_lst, stat_dict, *, to_norm):
+    """normalization; when to_norm=False, anti-normalization
+    :parameter
+        xï¼šad or 3d
+            2d: 1st dim is gauge  2nd dim is var type
+            3d: 1st dim is gauge 2nd dim is time 3rd dim is var type
+    """
+    if type(var_lst) is str:
+        var_lst = [var_lst]
+    out = np.zeros(x.shape)
+    for k in range(len(var_lst)):
+        var = var_lst[k]
+        stat = stat_dict[var]
+        if to_norm is True:
+            if len(x.shape) == 3:
+                if var == 'pr' or var == 'usgsFlow':
+                    x[:, :, k] = np.log10(np.sqrt(x[:, :, k]) + 0.1)
+                out[:, :, k] = (x[:, :, k] - stat[2]) / stat[3]
+            elif len(x.shape) == 2:
+                if var == 'pr' or var == 'usgsFlow':
+                    x[:, k] = np.log10(np.sqrt(x[:, k]) + 0.1)
+                out[:, k] = (x[:, k] - stat[2]) / stat[3]
+        else:
+            if len(x.shape) == 3:
+                out[:, :, k] = x[:, :, k] * stat[3] + stat[2]
+                if var == 'pr' or var == 'usgsFlow':
+                    out[:, :, k] = (np.power(10, out[:, :, k]) - 0.1) ** 2
+            elif len(x.shape) == 2:
+                out[:, k] = x[:, k] * stat[3] + stat[2]
+                if var == 'pr' or var == 'usgsFlow':
+                    out[:, k] = (np.power(10, out[:, k]) - 0.1) ** 2
+    return out
