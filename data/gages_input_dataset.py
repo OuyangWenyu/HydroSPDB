@@ -1173,6 +1173,6 @@ class GagesEtDataModel(object):
             gages_et_stat_dict[var_lst[0]] = cal_stat(cet_data)
             cet_data_x = trans_norm4gridmet(cet_data, var_lst, gages_et_stat_dict, to_norm=True)
             xet = concat_two_3darray(x, cet_data_x)
-            return xet, c, y
+            return xet, y, c
         else:
-            return x, c, y
+            return x, y, c

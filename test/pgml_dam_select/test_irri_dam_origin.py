@@ -17,7 +17,7 @@ from data.config import cfg
 from visual.plot_model import plot_we_need
 
 
-class MyTestCase(unittest.TestCase):
+class TestOriginGagesIrri(unittest.TestCase):
     """data pre-process and post-process"""
 
     def setUp(self) -> None:
@@ -42,7 +42,7 @@ class MyTestCase(unittest.TestCase):
         config4gridmet = copy.deepcopy(cfg)
 
         config4gridmet.SUBSET = "gridmet"
-        config4gridmet.SUB_EXP = "exp1"
+        config4gridmet.SUB_EXP = "exp2"
         config4gridmet.TEMP_PATH = os.path.join(config4gridmet.ROOT_DIR, 'temp', config4gridmet.DATASET,
                                                 config4gridmet.SUBSET, config4gridmet.SUB_EXP)
         if not os.path.exists(config4gridmet.TEMP_PATH):
@@ -95,7 +95,7 @@ class MyTestCase(unittest.TestCase):
         gridmet_data_model_train = GridmetModel(gridmet_source, self.t_range_train)
 
         with torch.cuda.device(0):
-            data_et_model = GagesEtDataModel(data_model_train, gridmet_data_model_train, True)
+            data_et_model = GagesEtDataModel(data_model_train, gridmet_data_model_train)
             master_train_gridmet(data_et_model)
 
     def test_dam_test(self):

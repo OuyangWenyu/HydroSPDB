@@ -934,3 +934,78 @@ def master_train_gridmet(et_data_model, random_seed=1234, drop_out=0.5):
                                   mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
                                   save_folder=out)
     return model
+
+
+def master_test_gridmet(et_data_model, epoch=-1, save_file_suffix=None):
+    """:parameter
+        data_model：测试使用的数据
+        model_dict：测试时的模型配置
+    """
+    model_dict = et_data_model.data_model.data_source.data_config.model_dict
+    opt_data = model_dict['data']
+    opt_model = model_dict['model']
+    # 测试和训练使用的batch_size, rho是一样的
+    batch_size, rho = model_dict['train']['miniBatch']
+
+    x, obs, c = et_data_model.load_data(model_dict)
+
+    # generate file names and run model
+    out = model_dict['dir']['Out']
+    t_range = et_data_model.data_model.t_s_dict["t_final_range"]
+    if epoch < 0:
+        epoch = model_dict['train']["nEpoch"]
+    model_file = os.path.join(out, 'model_Ep' + str(epoch) + '.pt')
+    file_path = name_pred(model_dict, out, t_range, epoch, suffix=save_file_suffix)
+    print('output files:', file_path)
+    if not os.path.isfile(model_file):
+        model_file = os.path.join(out, 'checkpoint.pt')
+        opt_model['nx'] = x.shape[-1] + c.shape[-1]
+        opt_model['ny'] = obs.shape[-1]
+        if opt_model['name'] == 'CudnnLstmModel':
+            model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+        elif opt_model['name'] == 'LstmCloseModel':
+            model = rnn.LstmCloseModel(nx=opt_model['nx'], ny=opt_model['ny'], hiddenSize=opt_model['hiddenSize'],
+                                       fillObs=True)
+        elif opt_model['name'] == 'AnnModel':
+            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                    hiddenSize=opt_model['hiddenSize'])
+        elif opt_model['name'] == 'AnnCloseModel':
+            model = hydroDL.model.ann.AnnCloseModel(nx=opt_model['nx'], ny=opt_model['ny'],
+                                                    hiddenSize=opt_model['hiddenSize'],
+                                                    fillObs=True)
+        model.load_state_dict(torch.load(model_file))
+        model.eval()
+        model_run.model_test_valid(model, x, c, file_path=file_path, batch_size=batch_size)
+    else:
+        # 如果没有测试结果，那么就重新运行测试代码
+        re_test = False
+        if not os.path.isfile(file_path):
+            re_test = True
+        if re_test:
+            print('Runing new results')
+            model = torch.load(model_file)
+            model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
+        else:
+            print('Loaded previous results')
+
+    # load previous result并反归一化为标准量纲
+    data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
+    is_sigma_x = False
+    if model_dict['loss']['name'] == 'SigmaLoss':
+        # TODO：sigmaloss下的情况都没做
+        is_sigma_x = True
+        pred = data_pred[:, :, ::2]
+        sigma_x = data_pred[:, :, 1::2]
+    else:
+        # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
+        pred = np.expand_dims(data_pred, axis=2)
+    if opt_data['doNorm'][1] is True:
+        stat_dict = et_data_model.data_model.stat_dict
+        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
+        pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
+        obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
+
+    if is_sigma_x is True:
+        return pred, obs, sigma_x
+    else:
+        return pred, obs
