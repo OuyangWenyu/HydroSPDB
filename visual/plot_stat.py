@@ -296,10 +296,10 @@ def plot_ecdfs_matplot(xs, ys, legends=None, colors=None, dash_lines=None, x_str
                 line_i.set_dashes([2, 2, 10, 2])
     else:
         for i, color in enumerate(colors):
-            if np.nanmax(np.array(xs[i])) == np.inf or np.nanmin(np.array(xs[i])) == -np.inf:
-                assert (all(xi <= yi for xi, yi in zip(xs[i], xs[i][1:])))
-            else:
-                assert (all(xi < yi for xi, yi in zip(xs[i], xs[i][1:])))
+            # if np.nanmax(np.array(xs[i])) == np.inf or np.nanmin(np.array(xs[i])) == -np.inf:
+            #     assert (all(xi <= yi for xi, yi in zip(xs[i], xs[i][1:])))
+            # else:
+            assert (all(xi <= yi for xi, yi in zip(xs[i], xs[i][1:])))
             line_i, = ax.plot(xs[i], ys[i], color=color, label=legends[i])
             if dash_lines[i]:
                 line_i.set_dashes([2, 2, 10, 2])

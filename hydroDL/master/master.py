@@ -947,7 +947,7 @@ def master_test_gridmet(et_data_model, epoch=-1, save_file_suffix=None):
     # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
 
-    x, obs, c = et_data_model.load_data(model_dict)
+    x, obs, c = et_data_model.load_data()
 
     # generate file names and run model
     out = model_dict['dir']['Out']

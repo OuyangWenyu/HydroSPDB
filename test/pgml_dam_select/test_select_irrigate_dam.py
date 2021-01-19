@@ -8,7 +8,7 @@ import torch
 from data import GagesConfig
 from data.data_input import GagesModel, save_datamodel, _basin_norm, save_result
 from data.gages_input_dataset import GagesEtDataModel, GagesModels, generate_gages_models
-from data.gridmet_input import GridmetConfig, GridmetSource, GridmetModel
+from data.gridmet_input import GridmetConfig, GridmetSource, GridmetModel, save_gridmet_datamodel
 from hydroDL.master.master import master_train_gridmet, master_test_gridmet
 
 import definitions
@@ -79,6 +79,28 @@ class MyTestCase(unittest.TestCase):
                        f_dict_file_name='test_dictFactorize.json', var_dict_file_name='test_dictAttribute.json',
                        t_s_dict_file_name='test_dictTimeSpace.json')
 
+    def test_gridmet_data_model(self):
+        CROP_ET_ZIP_DIR = os.path.join(definitions.ROOT_DIR, "example", "data", "gridmet")
+        gridmet_config = GridmetConfig(CROP_ET_ZIP_DIR, et_dir_name="irrigation328",
+                                       et_shp_file_name="some_from_irrigation")
+        gridmet_source = GridmetSource(gridmet_config, self.irri_basins_id)
+        gridmet_data_model_train = GridmetModel(gridmet_source, self.t_range_train)
+        dir_temp = self.config_data.data_path["Temp"]
+        save_gridmet_datamodel(dir_temp, gridmet_data_model_train, gridmet_source_file_name='gridmet_source.txt',
+                               gridmet_stat_cet_file_name='gridmet_stat_cet.json',
+                               gridmet_stat_forcing_file_name='gridmet_stat_forcing.json',
+                               gridmet_forcing_file_name='gridmet_forcing', gridmet_cet_file_name='gridmet_cet',
+                               gridmet_time_range_file_name='gridmet_time_range.txt')
+        gridmet_data_model_test = GridmetModel(gridmet_source, self.t_range_test, is_test=True,
+                                               stat_train=gridmet_data_model_train.stat_forcing_dict,
+                                               stat_cet_train=gridmet_data_model_train.stat_cet_dict)
+        save_gridmet_datamodel(dir_temp, gridmet_data_model_test, gridmet_source_file_name='test_gridmet_source.txt',
+                               gridmet_stat_cet_file_name='test_gridmet_stat_cet.json',
+                               gridmet_stat_forcing_file_name='test_gridmet_stat_forcing.json',
+                               gridmet_forcing_file_name='test_gridmet_forcing',
+                               gridmet_cet_file_name='test_gridmet_cet',
+                               gridmet_time_range_file_name='test_gridmet_time_range.txt')
+
     def test_dam_train(self):
         data_dir = self.config_data.data_path["Temp"]
         data_model_train = GagesModel.load_datamodel(data_dir,
@@ -89,10 +111,13 @@ class MyTestCase(unittest.TestCase):
                                                      var_dict_file_name='dictAttribute.json',
                                                      t_s_dict_file_name='dictTimeSpace.json')
 
-        CROP_ET_ZIP_DIR = os.path.join(definitions.ROOT_DIR, "example", "data", "gridmet")
-        gridmet_config = GridmetConfig(CROP_ET_ZIP_DIR)
-        gridmet_source = GridmetSource(gridmet_config, self.irri_basins_id)
-        gridmet_data_model_train = GridmetModel(gridmet_source, self.t_range_train)
+        gridmet_data_model_train = GridmetModel.load_gridmet_datamodel(data_dir,
+                                                                       gridmet_source_file_name='gridmet_source.txt',
+                                                                       gridmet_stat_cet_file_name='gridmet_stat_cet.json',
+                                                                       gridmet_stat_forcing_file_name='gridmet_stat_forcing.json',
+                                                                       gridmet_forcing_file_name='gridmet_forcing.npy',
+                                                                       gridmet_cet_file_name='gridmet_cet.npy',
+                                                                       gridmet_time_range_file_name='gridmet_time_range.txt')
 
         with torch.cuda.device(0):
             data_et_model = GagesEtDataModel(data_model_train, gridmet_data_model_train, True)
@@ -100,7 +125,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_dam_test(self):
         with torch.cuda.device(0):
-            data_dir = self.config_data.config_file.CACHE.DATA_DIR
+            data_dir = self.config_data.data_path["Temp"]
             gages_model_test = GagesModel.load_datamodel(data_dir,
                                                          data_source_file_name='test_data_source.txt',
                                                          stat_file_name='test_Statistics.json',
@@ -110,12 +135,13 @@ class MyTestCase(unittest.TestCase):
                                                          f_dict_file_name='test_dictFactorize.json',
                                                          var_dict_file_name='test_dictAttribute.json',
                                                          t_s_dict_file_name='test_dictTimeSpace.json')
-            CROP_ET_ZIP_DIR = os.path.join(definitions.ROOT_DIR, "example", "data", "gridmet")
-            gridmet_config = GridmetConfig(CROP_ET_ZIP_DIR)
-            gridmet_source = GridmetSource(gridmet_config, self.irri_basins_id)
-            gridmet_data_model_train = GridmetModel(gridmet_source, self.t_range_train)
-            gridmet_data_model_test = GridmetModel(gridmet_source, self.t_range_test, is_test=True,
-                                                   stat_train=gridmet_data_model_train.stat_forcing_dict)
+            gridmet_data_model_test = GridmetModel.load_gridmet_datamodel(data_dir,
+                                                                          gridmet_source_file_name='test_gridmet_source.txt',
+                                                                          gridmet_stat_cet_file_name='test_gridmet_stat_cet.json',
+                                                                          gridmet_stat_forcing_file_name='test_gridmet_stat_forcing.json',
+                                                                          gridmet_forcing_file_name='test_gridmet_forcing.npy',
+                                                                          gridmet_cet_file_name='test_gridmet_cet.npy',
+                                                                          gridmet_time_range_file_name='test_gridmet_time_range.txt')
             data_et_model = GagesEtDataModel(gages_model_test, gridmet_data_model_test, True)
             pred, obs = master_test_gridmet(data_et_model, epoch=cfg.TEST_EPOCH)
             basin_area = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"], ['DRAIN_SQKM'],

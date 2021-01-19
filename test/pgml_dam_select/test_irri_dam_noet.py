@@ -90,7 +90,10 @@ class TestOriginGagesIrri(unittest.TestCase):
                                                      t_s_dict_file_name='dictTimeSpace.json')
 
         CROP_ET_ZIP_DIR = os.path.join(definitions.ROOT_DIR, "example", "data", "gridmet")
-        gridmet_config = GridmetConfig(CROP_ET_ZIP_DIR)
+
+        gridmet_config = GridmetConfig(CROP_ET_ZIP_DIR, et_dir_name="irrigation328",
+                                       et_shp_file_name="some_from_irrigation",
+                                       gridmet_forcing_var_lst=["pr", "rmin", "srad", "tmmn", "tmmx", "vs"])
         gridmet_source = GridmetSource(gridmet_config, self.irri_basins_id)
         gridmet_data_model_train = GridmetModel(gridmet_source, self.t_range_train)
 
@@ -100,7 +103,7 @@ class TestOriginGagesIrri(unittest.TestCase):
 
     def test_dam_test(self):
         with torch.cuda.device(0):
-            data_dir = self.config_data.config_file.CACHE.DATA_DIR
+            data_dir = self.config_data.data_path["Temp"]
             gages_model_test = GagesModel.load_datamodel(data_dir,
                                                          data_source_file_name='test_data_source.txt',
                                                          stat_file_name='test_Statistics.json',
@@ -111,12 +114,15 @@ class TestOriginGagesIrri(unittest.TestCase):
                                                          var_dict_file_name='test_dictAttribute.json',
                                                          t_s_dict_file_name='test_dictTimeSpace.json')
             CROP_ET_ZIP_DIR = os.path.join(definitions.ROOT_DIR, "example", "data", "gridmet")
-            gridmet_config = GridmetConfig(CROP_ET_ZIP_DIR)
+            gridmet_config = GridmetConfig(CROP_ET_ZIP_DIR, et_dir_name="irrigation328",
+                                           et_shp_file_name="some_from_irrigation",
+                                           gridmet_forcing_var_lst=["pr", "rmin", "srad", "tmmn", "tmmx", "vs"])
             gridmet_source = GridmetSource(gridmet_config, self.irri_basins_id)
             gridmet_data_model_train = GridmetModel(gridmet_source, self.t_range_train)
             gridmet_data_model_test = GridmetModel(gridmet_source, self.t_range_test, is_test=True,
-                                                   stat_train=gridmet_data_model_train.stat_forcing_dict)
-            data_et_model = GagesEtDataModel(gages_model_test, gridmet_data_model_test, True)
+                                                   stat_train=gridmet_data_model_train.stat_forcing_dict,
+                                                   stat_cet_train=gridmet_data_model_train.stat_cet_dict)
+            data_et_model = GagesEtDataModel(gages_model_test, gridmet_data_model_test)
             pred, obs = master_test_gridmet(data_et_model, epoch=cfg.TEST_EPOCH)
             basin_area = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                                 is_return_dict=False)
