@@ -14,7 +14,7 @@ class AnnModel(torch.nn.Module):
 
     def forward(self, x):
         h = F.relu(self.i2h(x))
-        h2 = self.h2h(h)
+        h2 = F.relu(self.h2h(h))
         y = self.h2o(h2)
         return y
 

@@ -6,6 +6,7 @@ from hydroDL.model import crit, pgml_run, pgnn
 
 
 def master_train_reservoir_water_balance(model_input, pre_trained_model_epoch=1):
+    # TODO: not done
     model_dict = model_input.data_model2.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_train = model_dict['train']

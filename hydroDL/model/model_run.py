@@ -356,7 +356,7 @@ def model_train(model,
         t0 = time.time()
         for iIter in range(0, n_iter_ep):
             # training iterations
-            if type(model) in [rnn.CudnnLstmModel, rnn.CudnnLstmModelPretrain]:
+            if type(model) in [rnn.CudnnLstmModel, rnn.CudnnLstmModelPretrain, rnn.CudnnLstmModel_FT_comb]:
                 i_grid, i_t = random_index(ngrid, nt, [batch_size, rho])
                 x_train = select_subset(x, i_grid, i_t, rho, c=c)
                 y_train = select_subset(y, i_grid, i_t, rho)
@@ -462,7 +462,7 @@ def model_test(model, x, c, *, file_path, batch_size=None):
                 z_test = torch.from_numpy(np.swapaxes(z_temp, 1, 0)).float()
                 if torch.cuda.is_available():
                     z_test = z_test.cuda()
-            if type(model) in [rnn.CudnnLstmModel, rnn.CudnnLstmModelPretrain]:
+            if type(model) in [rnn.CudnnLstmModel, rnn.CudnnLstmModelPretrain, rnn.CudnnLstmModel_FT_comb]:
                 y_p = model(x_test)
             if type(model) in [rnn.LstmCloseModel, hydroDL.model.ann.AnnCloseModel]:
                 y_p = model(x_test, z_test)
@@ -477,7 +477,7 @@ def model_test(model, x, c, *, file_path, batch_size=None):
             torch.cuda.empty_cache()
 
         f.close()
-    # TODO: y_out is not all output
+    # y_out is not all output, so now we just write result into a sheet file, not using this as the final result
     y_out = torch.from_numpy(y_out)
     return y_out
 

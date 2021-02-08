@@ -673,3 +673,21 @@ class CudnnLstmModelStorageSeq2OnePretrain(torch.nn.Module):
     def forward(self, qnc, qxc, do_drop_mc=False, dropout_false=False):
         out_lstm, param = self.lstm_storage(qnc, qxc)
         return out_lstm, param
+
+
+class CudnnLstmModel_FT_comb(torch.nn.Module):
+    def __init__(self, *, nx, ny, hidden_size, dr=0.5, filename):
+        super(CudnnLstmModel_FT_comb, self).__init__()
+        self.nx = nx
+        self.ny = ny
+        self.hiddenSize = hidden_size
+        self.ct = 0
+        self.nLayer = 1
+        self.linearIn = torch.nn.Linear(nx, hidden_size)
+        self.lstm = torch.load(filename, map_location="cuda:0")
+        self.gpu = 1
+
+    def forward(self, x, do_drop_mc=False, dropout_false=False):
+        x = F.relu(self.linearIn(x))
+        outLSTM = self.lstm(x, do_drop_mc=do_drop_mc, dropout_false=dropout_false)
+        return outLSTM
