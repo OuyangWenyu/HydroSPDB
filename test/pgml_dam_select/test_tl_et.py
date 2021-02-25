@@ -42,7 +42,7 @@ class MyTestCase(unittest.TestCase):
         config4gridmet = copy.deepcopy(cfg)
 
         config4gridmet.SUBSET = "gridmet"
-        config4gridmet.SUB_EXP = "exp7"
+        config4gridmet.SUB_EXP = "exp8"
         config4gridmet.TEMP_PATH = os.path.join(config4gridmet.ROOT_DIR, 'temp', config4gridmet.DATASET,
                                                 config4gridmet.SUBSET, config4gridmet.SUB_EXP)
         if not os.path.exists(config4gridmet.TEMP_PATH):
@@ -140,12 +140,10 @@ class MyTestCase(unittest.TestCase):
                                                                        gridmet_cet_file_name='gridmet_cet.npy',
                                                                        gridmet_time_range_file_name='gridmet_time_range.txt')
         with torch.cuda.device(0):
-            data_et_model = GagesEtDataModel(data_model_train, gridmet_data_model_train, True)
+            data_et_model = GagesEtDataModel(data_model_train, gridmet_data_model_train)
             master_tl_train_gridmet(data_et_model, self.pretrianed_file_name, self.trained_x_size)
 
     def test_dam_tl_test(self):
-        # test_epoch = cfg.TEST_EPOCH
-        test_epoch = 280
         with torch.cuda.device(0):
             data_dir = self.config_data.data_path["Temp"]
             gages_model_test = GagesModel.load_datamodel(data_dir,
@@ -164,9 +162,9 @@ class MyTestCase(unittest.TestCase):
                                                                           gridmet_forcing_file_name='test_gridmet_forcing.npy',
                                                                           gridmet_cet_file_name='test_gridmet_cet.npy',
                                                                           gridmet_time_range_file_name='test_gridmet_time_range.txt')
-            data_et_model = GagesEtDataModel(gages_model_test, gridmet_data_model_test, True)
+            data_et_model = GagesEtDataModel(gages_model_test, gridmet_data_model_test)
             pred, obs = master_tl_test_gridmet(data_et_model, self.pretrianed_file_name, self.trained_x_size,
-                                               epoch=test_epoch)
+                                               epoch=cfg.TEST_EPOCH)
             basin_area = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                                 is_return_dict=False)
             mean_prep = gages_model_test.data_source.read_attr(gages_model_test.t_s_dict["sites_id"], ['PPTAVG_BASIN'],
@@ -174,7 +172,7 @@ class MyTestCase(unittest.TestCase):
             mean_prep = mean_prep / 365 * 10
             pred = _basin_norm(pred, basin_area, mean_prep, to_norm=False)
             obs = _basin_norm(obs, basin_area, mean_prep, to_norm=False)
-            save_result(gages_model_test.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
+            save_result(gages_model_test.data_source.data_config.data_path['Temp'], cfg.TEST_EPOCH, pred, obs)
             plot_we_need(gages_model_test, obs, pred, id_col="STAID", lon_col="LNG_GAGE", lat_col="LAT_GAGE")
 
 

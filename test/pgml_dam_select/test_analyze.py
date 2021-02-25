@@ -31,7 +31,7 @@ class MyTestCase(unittest.TestCase):
         self.t_range_train = ["2008-01-01", "2013-01-01"]
         self.t_range_test = ["2013-01-01", "2018-01-01"]
 
-        exps_lst = ["exp1", "exp2", "exp3", "exp4", "exp5", "exp6"]
+        exps_lst = ["exp1", "exp2", "exp3", "exp4", "exp5", "exp6", "exp7", "exp8"]
         cfgs = []
         data_configs = []
         for exp in exps_lst:
@@ -61,6 +61,8 @@ class MyTestCase(unittest.TestCase):
         self.exp_lst4 = ["gridmet_exp4"]
         self.exp_lst5 = ["gridmet_exp5"]
         self.exp_lst6 = ["gridmet_exp6"]
+        self.exp_lst7 = ["gridmet_exp7"]
+        self.exp_lst8 = ["gridmet_exp8"]
 
     def test_compare_projects(self):
         cfgs = self.cfgs
@@ -138,6 +140,43 @@ class MyTestCase(unittest.TestCase):
                            colors=["#1f77b4", "#ff7f0e", "#2ca02c"],
                            dash_lines=[False, False, False], x_str="NSE", y_str="CDF")
         plt.savefig(os.path.join(config_datas[0].data_path["Out"], '328in3557_cet_et_no-et.png'), dpi=600,
+                    bbox_inches="tight")
+
+    def test_tl_projects(self):
+        cfgs = self.cfgs
+        config_datas = self.data_configs
+
+        keys_nse = "NSE"
+
+        inds_df1 = load_ensemble_result(cfgs[5], self.exp_lst6, test_epoch=300)
+        inds_df2 = load_ensemble_result(cfgs[6], self.exp_lst7, test_epoch=300)
+        inds_df3 = load_ensemble_result(cfgs[7], self.exp_lst8, test_epoch=300)
+        inds_df4 = load_ensemble_result(cfgs[2], self.exp_lst3, test_epoch=300)
+        xs1 = []
+        ys1 = []
+        cases_exps_legends_together_1 = ["no-et", "tl-cet", "tl-et", "no-et-only328"]
+
+        idx_lst_328in3557 = [i for i in range(len(self.basins_id)) if self.basins_id[i] in self.irri_basins_id]
+        x1, y1 = ecdf(np.nan_to_num(inds_df1[keys_nse].iloc[idx_lst_328in3557]))
+        xs1.append(x1)
+        ys1.append(y1)
+
+        x2, y2 = ecdf(np.nan_to_num(inds_df2[keys_nse]))
+        xs1.append(x2)
+        ys1.append(y2)
+
+        x3, y3 = ecdf(np.nan_to_num(inds_df3[keys_nse]))
+        xs1.append(x3)
+        ys1.append(y3)
+
+        x4, y4 = ecdf(np.nan_to_num(inds_df4[keys_nse]))
+        xs1.append(x4)
+        ys1.append(y4)
+
+        plot_ecdfs_matplot(xs1, ys1, cases_exps_legends_together_1,
+                           colors=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"],
+                           dash_lines=[False, False, False, False], x_str="NSE", y_str="CDF")
+        plt.savefig(os.path.join(config_datas[5].data_path["Out"], '328_tl_cet_et_no-et.png'), dpi=600,
                     bbox_inches="tight")
 
 

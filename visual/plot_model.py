@@ -73,15 +73,22 @@ def plot_we_need(data_model_test, obs, pred, show_me_num=5, point_file=None, **k
     t_range = np.array(t_s_dict["t_final_range"])
     ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
     ts_fig.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], "ts_fig.png"))
-    # plot nse ecdf
-    sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
-    plot_ecdf(sites_df_nse, keys[2])
-    # plot map
-    if point_file is None:
-        gauge_dict = data_model_test.data_source.gage_dict
-        plot_map(gauge_dict, sites_df_nse, **kwargs)
-    else:
-        plot_ind_map(point_file, sites_df_nse, percentile=25)
+    # plot NSE map
+    inds_df_plot_map = pd.DataFrame(inds_test)
+    idx_lst = np.arange(len(data_model_test.t_s_dict["sites_id"])).tolist()
+    nse_range = [0, 1]
+    idx_lstl_nse = inds_df_plot_map[
+        (inds_df_plot_map[keys[2]] >= nse_range[0]) & (inds_df_plot_map[keys[2]] <= nse_range[1])].index.tolist()
+    plot_gages_map(data_model_test, inds_df_plot_map, keys[2], idx_lstl_nse, cbar_font_size=14)
+
+    plt.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], 'map_NSE.png'), dpi=500,
+                bbox_inches="tight")
+    # plt.figure()
+    # if point_file is None:
+    #     gauge_dict = data_model_test.data_source.gage_dict
+    #     plot_map(gauge_dict, sites_df_nse, **kwargs)
+    # else:
+    #     plot_ind_map(point_file, sites_df_nse, percentile=25)
 
 
 def plot_box_inds(indicators):
