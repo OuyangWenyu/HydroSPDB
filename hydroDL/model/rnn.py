@@ -257,7 +257,7 @@ class CudnnLstm(torch.nn.Module):
         ret = super(CudnnLstm, self)._apply(fn)
         return ret
 
-    def __setstate__(self, d):  # 读取模型的时候会调用该函数
+    def __setstate__(self, d):  # this func will be called when loading the model
         super(CudnnLstm, self).__setstate__(d)
         self.__dict__.setdefault('_data_ptrs', [])
         if 'all_weights' in d:

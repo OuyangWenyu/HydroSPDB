@@ -16,7 +16,6 @@ from utils import hydro_util
 
 
 def run_train(master_dict, *, screen='test', cuda_id):
-    """后台运行"""
     if type(master_dict) is str:
         m_file = master_dict
         master_dict = utils.hydro_util.unserialize_json_ordered(m_file)

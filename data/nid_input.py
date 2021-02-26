@@ -33,7 +33,7 @@ class NidConfig(object):
 class NidSource(object):
 
     def __init__(self, config_data):
-        """read configuration of data source. 读取配置，准备数据，关于数据读取部分，可以放在外部需要的时候再执行"""
+        """read configuration of data source"""
         self.data_config = config_data
 
     def read_nid(self):

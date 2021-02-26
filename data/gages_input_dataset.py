@@ -215,26 +215,22 @@ class GagesModels(object):
     """the data model for GAGES-II dataset"""
 
     def __init__(self, config_data, screen_basin_area_huc4=True, **kwargs):
-        # 准备训练数据
         t_train = config_data.model_dict["data"]["tRangeTrain"]
         t_test = config_data.model_dict["data"]["tRangeTest"]
         t_train_test = [t_train[0], t_test[1]]
         source_data = GagesSource.choose_some_basins(config_data, t_train_test,
                                                      screen_basin_area_huc4=screen_basin_area_huc4, **kwargs)
-        # 构建输入数据类对象
         data_model = GagesModel(source_data)
         self.data_model_train, self.data_model_test = GagesModel.data_models_of_train_test(data_model, t_train, t_test)
 
 
 class GagesModelsWoBasinNorm(object):
     def __init__(self, config_data, screen_basin_area_huc4=True, **kwargs):
-        # 准备训练数据
         t_train = config_data.model_dict["data"]["tRangeTrain"]
         t_test = config_data.model_dict["data"]["tRangeTest"]
         t_train_test = [t_train[0], t_test[1]]
         source_data = GagesSource.choose_some_basins(config_data, t_train_test,
                                                      screen_basin_area_huc4=screen_basin_area_huc4, **kwargs)
-        # 构建输入数据类对象
         data_model = GagesModelWoBasinNorm(source_data)
         self.data_model_train, self.data_model_test = GagesModelWoBasinNorm.data_models_of_train_test(data_model,
                                                                                                       t_train, t_test)
@@ -456,7 +452,6 @@ class GagesSimDataModel(object):
         return np_natural_flow
 
     def get_data_inflow(self, rm_nan=True):
-        """径流数据读取及归一化处理，会处理成三维，最后一维长度为1，表示径流变量"""
         data = self.natural_flow
         if rm_nan is True:
             data[np.where(np.isnan(data))] = 0

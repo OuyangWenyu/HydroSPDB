@@ -24,8 +24,7 @@ class CamelsConfig(DataConfig):
         return new_data_config
 
     def init_data_param(self):
-        """read camels or gages dataset configuration
-        根据配置文件读取有关输入数据的各项参数"""
+        """read camels or gages dataset configuration"""
         config_file = self.config_file
         cfg = ConfigParser()
         cfg.read(config_file)
@@ -61,19 +60,19 @@ class CamelsConfig(DataConfig):
         dir_temp = self.data_path.get("Temp")
 
         data_params = self.init_data_param()
-        # 站点的shp file
+        # shp file of sites
         camels_shp_file = os.path.join(dir_db, "basin_set_full_res", "HCDN_nhru_final_671.shp")
-        # 径流数据配置
+        # config of flow data
         flow_dir = os.path.join(dir_db, data_params.get("streamflowDir"))
         flow_screen_gage_id = data_params.get("gageIdScreen")
-        # 所选forcing
+        # forcing
         forcing_chosen = data_params.get("varT")
         forcing_dir = os.path.join(dir_db, data_params.get("forcingDir"))
         forcing_type = data_params.get("forcingType")
-        # 有了forcing type之后，确定到真正的forcing数据文件夹
+        # the dir of forcing data
         forcing_dir = os.path.join(forcing_dir, forcing_type)
         forcing_url = data_params.get("forcingUrl")
-        # 所选属性
+        # chosen attr
         attr_url = data_params.get("attrUrl")
         attr_chosen = data_params.get("varC")
         attr_dir = os.path.join(dir_db, data_params.get("attrDir"))

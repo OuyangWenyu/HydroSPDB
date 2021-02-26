@@ -2,9 +2,7 @@
 target：utilizing camels/gages dataset to train LSTM model and test
 pipeline:
     data pre-processing——statistical analysis——model training and testing——visualization of outputs——tune parameters
-
-目的：利用GAGES-II数据训练LSTM，并进行流域径流模拟。
-基本流程： 标准机器学习pipeline，数据前处理——统计分析——模型训练及测试——可视化结果——参数调优"""
+"""
 import torch
 import sys
 

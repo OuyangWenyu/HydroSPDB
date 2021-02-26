@@ -24,7 +24,7 @@ def update_config_item(opt, **kwargs):
 
 
 def init_path(config_file):
-    """根据配置文件读取数据源路径"""
+    """read path of data dir from config file"""
     path_data = collections.OrderedDict(
         DB=config_file.DATA_PATH,
         Out=config_file.OUT_PATH,
@@ -33,13 +33,13 @@ def init_path(config_file):
 
 
 def wrap_master(opt_dir, opt_data, opt_model, opt_loss, opt_train):
-    """model的相关参数整合"""
+    """model params"""
     m_dict = OrderedDict(dir=opt_dir, data=opt_data, model=opt_model, loss=opt_loss, train=opt_train)
     return m_dict
 
 
 def name_pred(m_dict, out, t_range, epoch, subset=None, suffix=None):
-    """训练过程输出"""
+    """output file"""
     loss_name = m_dict['loss']['name']
     file_name = '_'.join([str(t_range[0]), str(t_range[1]), 'ep' + str(epoch)])
     if loss_name == 'SigmaLoss':

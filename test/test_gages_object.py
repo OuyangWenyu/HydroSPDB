@@ -1,4 +1,6 @@
 """模块测试"""
+import copy
+
 import definitions
 import unittest
 from data import *
@@ -7,10 +9,11 @@ import os
 from data.data_input import save_datamodel
 from data.gages_input_dataset import GagesModels
 from utils import *
+from data.config import cfg
 
 
 class TestDataClassCase(unittest.TestCase):
-    config_file = definitions.CONFIG_FILE
+    config_file = copy.deepcopy(cfg)
     project_dir = definitions.ROOT_DIR
     dataset = "gages"
     dir_db = os.path.join(project_dir, 'example/data', dataset)
@@ -24,12 +27,9 @@ class TestDataClassCase(unittest.TestCase):
         print('setUp...')
 
     def test_data_source(self):
-        # 读取模型配置文件，并写入json
         serialize_json(self.config_data.model_dict, self.model_dict_file)
-        # 准备训练数据
         source_data = GagesSource(self.config_data, self.config_data.model_dict["data"]["tRangeTrain"],
                                   screen_basin_area_huc4=False)
-        # 序列化保存对象
         dir_temp = source_data.all_configs["temp_dir"]
         if not os.path.isdir(dir_temp):
             os.mkdir(dir_temp)

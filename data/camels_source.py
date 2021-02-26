@@ -13,13 +13,12 @@ class CamelsSource(DataSource):
         super().__init__(config_data, t_range)
 
     def read_site_info(self, **kwargs):
-        """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
-        从中选出field_lst中属性名称对应的值，存入dic中。
+        """basic info of gages-ii basins
                     # using shapefile of all basins to check if their basin area satisfy the criteria
                     # read shpfile from data directory and calculate the area
         param **kwargs: none
         Return：
-            各个站点的attibutes in basinid.txt
+            attibutes in basinid.txt
 
         """
         gage_file = self.all_configs["gauge_id_file"]
@@ -121,8 +120,8 @@ class CamelsSource(DataSource):
             t_lst = hydro_time.t_range_days(time_range)
         ts, ind1, ind2 = np.intersect1d(all_t_list, t_lst, return_indices=True)
 
-        streamflow_temp = streamflow[sites_index]  # 先取出想要的行数据
-        usgs_values = streamflow_temp[:, ind1]  # 再取出要求的列数据
+        streamflow_temp = streamflow[sites_index]  # raw data
+        usgs_values = streamflow_temp[:, ind1]  # column data
 
         # get discharge data of chosen sites, and change to ndarray
         usgs_out = usgs_values[np.where(sites_chosen > 0)]

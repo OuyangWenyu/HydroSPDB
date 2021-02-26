@@ -1,4 +1,5 @@
 import collections
+import copy
 import os
 import unittest
 import definitions
@@ -6,12 +7,13 @@ from data import *
 
 import geopandas as gpd
 
-from data.download_data import download_google_drive
+from data.download_data import download_google_drive, download_small_zip
 from utils import spatial_join
+from data.config import cfg
 
 
 class TestDataFuncCase(unittest.TestCase):
-    config_file = definitions.CONFIG_FILE
+    config_file = copy.deepcopy(cfg)
     project_dir = definitions.ROOT_DIR
     dataset = 'gages'
     # dataset = 'camels'
@@ -43,46 +45,6 @@ class TestDataFuncCase(unittest.TestCase):
     def test_init_path(self):
         test_data = collections.OrderedDict(DB=self.dir_db, Out=self.dir_out, Temp=self.dir_temp)
         self.assertEqual(self.config_data.data_path, test_data)
-
-    def test_init_data_param(self):
-        opt_data = self.config_data.init_data_param()
-        test_data = collections.OrderedDict(varT=['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp'],
-                                            forcingDir='gagesII_forcing',
-                                            forcingType='daymet',
-                                            forcingUrl=None,
-                                            varC=['ELEV_MEAN_M_BASIN', 'SLOPE_PCT', 'DRAIN_SQKM', 'FORESTNLCD06',
-                                                  'BARRENNLCD06', 'DECIDNLCD06', 'EVERGRNLCD06', 'MIXEDFORNLCD06',
-                                                  'SHRUBNLCD06',
-                                                  'GRASSNLCD06', 'WOODYWETNLCD06', 'EMERGWETNLCD06', 'ROCKDEPAVE',
-                                                  'AWCAVE', 'PERMAVE', 'RFACT', 'GEOL_REEDBUSH_DOM',
-                                                  'GEOL_REEDBUSH_DOM_PCT', 'GEOL_REEDBUSH_SITE',
-                                                  'STREAMS_KM_SQ_KM', 'STRAHLER_MAX', 'MAINSTEM_SINUOUSITY',
-                                                  'REACHCODE', 'ARTIFPATH_PCT',
-                                                  'ARTIFPATH_MAINSTEM_PCT', 'HIRES_LENTIC_PCT', 'BFI_AVE', 'PERDUN',
-                                                  'PERHOR', 'TOPWET', 'CONTACT'
-                                                  ] + self.hydroDams,
-                                            attrDir='basinchar_and_report_sept_2011',
-                                            attrUrl=["https://water.usgs.gov/GIS/dsdl/gagesII_9322_point_shapefile.zip",
-                                                     "https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_2011.zip",
-                                                     "https://water.usgs.gov/GIS/dsdl/boundaries_shapefiles_by_aggeco.zip",
-                                                     "https://water.usgs.gov/GIS/dsdl/mainstem_line_covers.zip"],
-                                            streamflowDir='gages_streamflow',
-                                            streamflowUrl='https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb'
-                                                          '&site_no={}&referred_module=sw&period=&begin_date={}-{}-{'
-                                                          '}&end_date={}-{}-{}',
-                                            gageIdScreen=self.gages_screen_ids,
-                                            streamflowScreenParam=self.screen_params,
-                                            regions=self.regions,
-                                            tRangeAll=['1980-01-01', '2015-01-01'])
-        self.assertEqual(test_data, opt_data)
-
-    def test_download_kaggle_file(self):
-        dir_db_ = self.dir_db
-        kaggle_json = definitions.KAGGLE_FILE
-        name_of_dataset = "owenyy/wbdhu4-a-us-september2019-shpfile"
-        path_download = os.path.join(dir_db_, "huc4")
-        file_download = os.path.join(path_download, "HUC4.shp")
-        download_kaggle_file(kaggle_json, name_of_dataset, path_download, file_download)
 
     def test_read_gages_config(self):
         gages_data = self.config_data.read_data_config()

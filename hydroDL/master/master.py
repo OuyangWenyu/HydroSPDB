@@ -1,4 +1,4 @@
-"""调用训练，测试，读取模型等函数的函数"""
+"""train and test main funcs"""
 import os
 import numpy as np
 import pandas as pd
@@ -14,10 +14,6 @@ from hydroDL.model import *
 
 
 def master_test_1by1(data_model):
-    """:parameter
-        data_model：测试使用的数据
-        model_dict：测试时的模型配置
-    """
     model_dict = data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
     # generate file names and run model
@@ -47,7 +43,7 @@ def master_test_1by1(data_model):
     pred = reduce(lambda x, y: np.vstack((x, y)), pred_list)
     obs = reduce(lambda x, y: np.vstack((x, y)), obs_list)
     stat_dict = data_model.stat_dict
-    # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
+    # denormalization to recover the data for test
     pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
     obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
     return pred, obs
@@ -173,14 +169,10 @@ def master_train(data_model, valid_size=0, pre_trained_model_epoch=1, random_see
 
 
 def master_test(data_model, epoch=-1, save_file_suffix=None):
-    """:parameter
-        data_model：测试使用的数据
-        model_dict：测试时的模型配置
-    """
     model_dict = data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
     opt_model = model_dict['model']
-    # 测试和训练使用的batch_size, rho是一样的
+    # batch_size, rho are same with those in the training period
     batch_size, rho = model_dict['train']['miniBatch']
 
     x, obs, c = data_model.load_data(model_dict)
@@ -211,7 +203,7 @@ def master_test(data_model, epoch=-1, save_file_suffix=None):
         model.eval()
         model_run.model_test_valid(model, x, c, file_path=file_path, batch_size=batch_size)
     else:
-        # 如果没有测试结果，那么就重新运行测试代码
+        # no test results, so run the test code
         re_test = False
         if not os.path.isfile(file_path):
             re_test = True
@@ -222,20 +214,19 @@ def master_test(data_model, epoch=-1, save_file_suffix=None):
         else:
             print('Loaded previous results')
 
-    # load previous result并反归一化为标准量纲
+    # load previous result and denormalization
     data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
     is_sigma_x = False
     if model_dict['loss']['name'] == 'SigmaLoss':
-        # TODO：sigmaloss下的情况都没做
+        # not used
         is_sigma_x = True
         pred = data_pred[:, :, ::2]
         sigma_x = data_pred[:, :, 1::2]
     else:
-        # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
+        # expend to 3d format so that we can use stat.trans_norm for denormalization
         pred = np.expand_dims(data_pred, axis=2)
     if opt_data['doNorm'][1] is True:
         stat_dict = data_model.stat_dict
-        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
@@ -250,7 +241,6 @@ def master_test_with_pretrained_model(data_model, pretrained_model_file, pretrai
     model_dict = data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
     opt_model = model_dict['model']
-    # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
     x, obs, c = data_model.load_data(model_dict)
 
@@ -268,13 +258,10 @@ def master_test_with_pretrained_model(data_model, pretrained_model_file, pretrai
         model_run.model_test(model, x, c, file_path=file_path, batch_size=batch_size)
     else:
         print('Loaded previous results')
-    # load previous result并反归一化为标准量纲
     data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
-    # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
     pred = np.expand_dims(data_pred, axis=2)
     if opt_data['doNorm'][1] is True:
         stat_dict = data_model.stat_dict
-        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
@@ -368,10 +355,9 @@ def master_train_easy_lstm(data_model):
 
 
 def master_test_easy_lstm(data_model, load_epoch=-1):
-    """data_model：测试使用的数据 ;load_epoch：the loaded model's epoch"""
+    """data_model：for test ;load_epoch：the loaded model's epoch"""
     model_dict = data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
-    # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
 
     x, obs, c = data_model.load_data(model_dict)
@@ -388,11 +374,9 @@ def master_test_easy_lstm(data_model, load_epoch=-1):
     model_run.model_test_easy_lstm(model, x, c, file_path=file_path, batch_size=batch_size)
 
     data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
-    # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
     pred = np.expand_dims(data_pred, axis=2)
     if opt_data['doNorm'][1] is True:
         stat_dict = data_model.stat_dict
-        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
     return pred, obs
@@ -442,7 +426,6 @@ def master_train_better_lstm(dataset):
 
 def master_test_better_lstm(dataset, load_epoch=-1):
     model_dict = dataset.data_model.data_source.data_config.model_dict
-    # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
 
     # data
@@ -458,9 +441,7 @@ def master_test_better_lstm(dataset, load_epoch=-1):
     pred_list, obs_list = model_run.test_dataloader(model, testloader)
     pred = reduce(lambda x, y: np.vstack((x, y)), pred_list)
     obs = reduce(lambda x, y: np.vstack((x, y)), obs_list)
-    # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
     stat_dict = dataset.data_model.stat_dict
-    # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
     pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
     obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
@@ -499,14 +480,9 @@ def master_train_natural_flow(model_input, pre_trained_model_epoch=1):
 
 
 def master_test_natural_flow(model_input, epoch=-1):
-    """:parameter
-        data_model：测试使用的数据
-        model_dict：测试时的模型配置
-    """
     data_model = model_input.data_model2
     model_dict = data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
-    # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
 
     x, obs, c = model_input.load_data(model_dict)
@@ -518,7 +494,6 @@ def master_test_natural_flow(model_input, epoch=-1):
         epoch = model_dict['train']["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, epoch)
     print('output files:', file_path)
-    # 如果没有测试结果，那么就重新运行测试代码
     re_test = False
     if not os.path.isfile(file_path):
         re_test = True
@@ -529,14 +504,11 @@ def master_test_natural_flow(model_input, epoch=-1):
     else:
         print('Loaded previous results')
 
-    # load previous result并反归一化为标准量纲
     data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
 
-    # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
     pred = np.expand_dims(data_pred, axis=2)
     if opt_data['doNorm'][1] is True:
         stat_dict = data_model.stat_dict
-        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
@@ -598,7 +570,6 @@ def test_lstm_storage(data_input, epoch=-1):
     opt_data = model_dict['data']
     opt_model = model_dict['model']
     opt_train = model_dict['train']
-    # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = opt_train['miniBatch']
 
     seq_length_storage = opt_model["storageLength"]
@@ -619,7 +590,6 @@ def test_lstm_storage(data_input, epoch=-1):
     pred = np.expand_dims(data_stack, axis=2)
     if opt_data['doNorm'][1] is True:
         stat_dict = data_input.data_model_storage.stat_dict
-        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         y = _trans_norm(y, 'usgsFlow', stat_dict, to_norm=False)
 
@@ -665,7 +635,6 @@ def test_lstm_inv(data_model, epoch=-1):
     opt_data = model_dict['data']
     opt_model = model_dict['model']
     opt_train = model_dict['train']
-    # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
 
     # data
@@ -689,7 +658,6 @@ def test_lstm_inv(data_model, epoch=-1):
     pred = np.expand_dims(data_stack, axis=2)
     if opt_data['doNorm'][1] is True:
         stat_dict = data_model.stat_dict
-        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         qt = _trans_norm(qt, 'usgsFlow', stat_dict, to_norm=False)
 
@@ -736,7 +704,6 @@ def test_lstm_siminv(data_input, epoch=-1):
     opt_data = model_dict['data']
     opt_model = model_dict['model']
     opt_train = model_dict['train']
-    # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
 
     # data
@@ -760,7 +727,6 @@ def test_lstm_siminv(data_input, epoch=-1):
     pred = np.expand_dims(data_stack, axis=2)
     if opt_data['doNorm'][1] is True:
         stat_dict = data_input.lstm_model.stat_dict
-        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         qt = _trans_norm(qt, 'usgsFlow', stat_dict, to_norm=False)
 
@@ -797,7 +763,6 @@ def test_lstm_da(data_input, epoch=-1):
     opt_data = model_dict['data']
     opt_model = model_dict['model']
     opt_train = model_dict['train']
-    # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
 
     # data
@@ -812,14 +777,11 @@ def test_lstm_da(data_input, epoch=-1):
     model = model_run.model_load(out, epoch)
 
     model_run.model_test(model, qx, c, file_path=file_path, batch_size=batch_size)
-    # load previous result并反归一化为标准量纲
     data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
 
-    # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
     pred = np.expand_dims(data_pred, axis=2)
     if opt_data['doNorm'][1] is True:
         stat_dict = data_input.data_model.stat_dict
-        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = _trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         obs = _trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 
@@ -854,7 +816,6 @@ def test_lstm_forecast(data_input):
     data_model = data_input.model_data
     model_dict = data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
-    # 测试和训练使用的batch_size, rho是一样的
     batch_size, rho = model_dict['train']['miniBatch']
 
     x, obs, c = data_input.load_data(model_dict)
@@ -865,7 +826,6 @@ def test_lstm_forecast(data_input):
     epoch = model_dict['train']["nEpoch"]
     file_path = name_pred(model_dict, out, t_range, epoch)
     print('output files:', file_path)
-    # 如果没有测试结果，那么就重新运行测试代码
     re_test = False
     if not os.path.isfile(file_path):
         re_test = True
@@ -876,14 +836,11 @@ def test_lstm_forecast(data_input):
     else:
         print('Loaded previous results')
 
-    # load previous result并反归一化为标准量纲
     data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
 
-    # 扩充到三维才能很好地在后面调用stat.trans_norm函数反归一化
     pred = np.expand_dims(data_pred, axis=2)
     if opt_data['doNorm'][1] is True:
         stat_dict = data_model.stat_dict
-        # 如果之前归一化了，这里为了展示原量纲数据，需要反归一化回来
         pred = stat.trans_norm(pred, 'usgsFlow', stat_dict, to_norm=False)
         obs = stat.trans_norm(obs, 'usgsFlow', stat_dict, to_norm=False)
 

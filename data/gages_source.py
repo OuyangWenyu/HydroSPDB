@@ -222,17 +222,6 @@ class GagesSource(DataSource):
         self.all_configs["flow_screen_gage_id"] = small_gages_chosen_id.tolist()
 
     def read_site_info(self, screen_basin_area_huc4=True):
-        """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
-        从中选出field_lst中属性名称对应的值，存入dic中。
-                    # using shapefile of all basins to check if their basin area satisfy the criteria
-                    # read shpfile from data directory and calculate the area
-
-        Parameter:
-            screen_basin_area_huc4: 是否取出流域面积大于等于所处HUC流域的面积的流域
-        Return：
-            各个站点的attibutes in basinid.txt
-        """
-        # 数据从第二行开始，因此跳过第一行。
         gage_id_file = self.all_configs.get("gage_id_file")
         points_file = self.all_configs.get("gage_point_file")
         huc4_shp_file = self.all_configs.get("huc4_shp_file")
@@ -285,25 +274,13 @@ class GagesSource(DataSource):
         return out, gage_fld_lst
 
     def read_usge_gage(self, huc, usgs_id, t_lst):
-        """读取各个径流站的径流数据"""
+        """read data for one gage"""
+        print(usgs_id)
         dir_gage_flow = self.all_configs.get("flow_dir")
-        # 首先找到要读取的那个txt
         usgs_file = os.path.join(dir_gage_flow, str(huc), usgs_id + '.txt')
-        # 下载的数据文件，注释结束的行不一样
-        row_comment_end = 27  # 从0计数的行数
-        with open(usgs_file, 'r') as f:
-            ind_temp = 0
-            for line in f:
-                if line[0] is not '#':
-                    row_comment_end = ind_temp
-                    break
-                ind_temp += 1
-
-        # 下载的时候，没有指定统计类型，因此下下来的数据表有的还包括径流在一个时段内的最值，这里仅适用均值
-        skip_rows_index = list(range(0, row_comment_end))
-        skip_rows_index.append(row_comment_end + 1)
-        df_flow = pd.read_csv(usgs_file, skiprows=skip_rows_index, sep='\t', dtype={'site_no': str})
-        # 原数据的列名并不好用，这里修改
+        # ignore the comment lines and the first non-value row
+        df_flow = pd.read_csv(usgs_file, comment='#', sep='\t', dtype={'site_no': str}).iloc[1:, :]
+        # change the original column names
         columns_names = df_flow.columns.tolist()
         columns_flow = []
         columns_flow_cd = []
@@ -327,7 +304,7 @@ class GagesSource(DataSource):
             for i in range(len(columns_flow)):
                 out_temp = np.full([len(t_lst)], np.nan)
                 df_flow_temp = df_flow[columns_flow[i]].copy()
-                out_temp[ind2_temp] = df_flow_temp[ind1_temp]
+                out_temp[ind2_temp] = df_flow_temp.iloc[ind1_temp]
                 num_nan = np.isnan(out_temp).sum()
                 num_nan_lst.append(num_nan)
             num_nan_np = np.array(num_nan_lst)
@@ -364,18 +341,13 @@ class GagesSource(DataSource):
         data_temp.loc[data_temp['flow'] == "***", 'flow'] = np.nan
         data_temp.loc[data_temp['flow'] == "Mnt", 'flow'] = np.nan
         data_temp.loc[data_temp['flow'] == "ZFL", 'flow'] = np.nan
-        print(usgs_id)
         # set negative value -- nan
         obs = data_temp['flow'].astype('float').values
-        # 看看warning是哪个站点：01606500 and other 3-5 ones. For 01606500, 时间索引为2828的站点为nan，不过不影响计算。
-        if usgs_id == '01606500':
-            print(obs)
-            print(np.argwhere(np.isnan(obs)))
         obs[obs < 0] = np.nan
-        # 首先判断时间范围是否一致，读取的径流数据的时间序列和要读取的径流数据时间序列交集，获取径流数据，剩余没有数据的要读取的径流数据时间序列是nan
+        # time range intersection. set points without data nan values
         nt = len(t_lst)
         out = np.full([nt], np.nan)
-        # df中的date是字符串，转换为datetime，方可与tLst求交集
+        # date in df is str，so transform them to datetime
         df_date = data_temp['datetime']
         date = pd.to_datetime(df_date).values.astype('datetime64[D]')
         c, ind1, ind2 = np.intersect1d(date, t_lst, return_indices=True)
@@ -385,13 +357,12 @@ class GagesSource(DataSource):
     @my_logger
     @my_timer
     def read_usgs(self):
-        """读取USGS的daily average 径流数据 according to id and time,
-            首先判断哪些径流站点的数据已经读取并存入本地，如果没有，就从网上下载并读入txt文件。
+        """read USGS daily average streamflow data according to id and time
         Parameter:
-            gage_dict：站点 information
+            gage_dict：site information
             t_range: must be time range for downloaded data
         Return：
-            y: ndarray--各个站点的径流数据, 1d-axis: gages, 2d-axis: day
+            y: ndarray--streamflow data, 1d-axis: gages, 2d-axis: day
         """
         gage_dict = self.gage_dict
         gage_fld_lst = self.gage_fld_lst
@@ -446,9 +417,9 @@ class GagesSource(DataSource):
             # calculate the day length
             t_lst = hydro_time.t_range_days(time_range)
         ts, ind1, ind2 = np.intersect1d(all_t_list, t_lst, return_indices=True)
-        # 取某几行的某几列数据稍微麻烦一点点
-        streamflow_temp = streamflow[sites_index]  # 先取出想要的行数据
-        usgs_values = streamflow_temp[:, ind1]  # 再取出要求的列数据
+
+        streamflow_temp = streamflow[sites_index]  # row data
+        usgs_values = streamflow_temp[:, ind1]  # column data
 
         for i in range(sites_index.size):
             # loop for every site
@@ -489,7 +460,7 @@ class GagesSource(DataSource):
 
     @my_timer
     def read_forcing(self, usgs_id_lst, t_range_lst):
-        """读取gagesII_forcing文件夹下的驱动数据(data processed from GEE)
+        """read data from gagesII_forcing dir (data processed from GEE)
         :return
         x: ndarray -- 1d-axis:gages, 2d-axis: day, 3d-axis: forcing vst
         """
@@ -505,7 +476,6 @@ class GagesSource(DataSource):
             # different files for different years
             t_start_year = hydro_time.get_year(t_range_lst[0])
             t_end_year = hydro_time.get_year(t_range_lst[-1])
-            # arange是左闭右开的，所以+1
             t_lst_years = np.arange(t_start_year, t_end_year + 1).astype(str)
             data_temps = pd.DataFrame()
             region_names = [region_temp.split("_")[-1] for region_temp in regions]
@@ -514,7 +484,7 @@ class GagesSource(DataSource):
             for year in t_lst_years:
                 # to match the file of the given year
                 for f_name in os.listdir(data_folder):
-                    # 首先判断是不是在给定的region内的
+                    # whether in the region
                     for region_name in region_names:
                         if fnmatch.fnmatch(f_name, dataset + '_' + region_name + '_mean_' + year + '.csv'):
                             data_file = os.path.join(data_folder, f_name)
@@ -535,7 +505,6 @@ class GagesSource(DataSource):
             for k in range(len(usgs_id_lst)):
                 data_k = data_chosen[data_chosen['gage_id'] == usgs_id_lst[k]]
                 out = np.full([t_range_lst.size, len(var_lst)], np.nan)
-                # df中的date是字符串，转换为datetime，方可与tLst求交集
                 df_date = data_k.iloc[:, 1]
                 date = df_date.values.astype('datetime64[D]')
                 c, ind1, ind2 = np.intersect1d(t_range_lst, date, return_indices=True)
@@ -583,29 +552,29 @@ class GagesSource(DataSource):
         return out
 
     def read_attr_all(self, gages_ids):
-        """读取GAGES-II下的属性数据，目前是将用到的几个属性所属的那个属性大类下的所有属性的统计值都计算一下
+        """read data from GAGES-II
         parameters:
-            gages_ids:可以指定几个gages站点
+            gages_ids:gages sites' ids
         :return
             out：ndarray
         """
         dir_gage_attr = self.all_configs.get("gage_files_dir")
         dir_out = self.all_configs.get("out_dir")
         f_dict = dict()  # factorize dict
-        # 每个key-value对是一个文件（str）下的所有属性（list）
+        # each key-value pair for atts in a file (list）
         var_dict = dict()
-        # 所有属性放在一起
+        # all attrs
         var_lst = list()
         out_lst = list()
-        # 读取所有属性，直接按类型判断要读取的文件名
+        # read all attrs
         var_des = pd.read_csv(os.path.join(dir_gage_attr, 'variable_descriptions.txt'), sep=',')
         var_des_map_values = var_des['VARIABLE_TYPE'].tolist()
         for i in range(len(var_des)):
             var_des_map_values[i] = var_des_map_values[i].lower()
-        # 按照读取的时候的顺序对type排序
+        # sort by type
         key_lst = list(set(var_des_map_values))
         key_lst.sort(key=var_des_map_values.index)
-        # x_region_names属性暂不需要读入
+        # remove x_region_names
         key_lst.remove('x_region_names')
 
         for key in key_lst:
@@ -613,28 +582,28 @@ class GagesSource(DataSource):
             if key == 'flow_record':
                 key = 'flowrec'
             data_file = os.path.join(dir_gage_attr, 'conterm_' + key + '.txt')
-            # 各属性值的“参考来源”是不需读入的
+            # remove some unused atttrs in bas_classif
             if key == 'bas_classif':
                 data_temp = pd.read_csv(data_file, sep=',', dtype={'STAID': str}, usecols=range(0, 4))
             else:
                 data_temp = pd.read_csv(data_file, sep=',', dtype={'STAID': str})
             if key == 'flowrec':
-                # 最后一列为空，舍弃
+                # remove final column which is nan
                 data_temp = data_temp.iloc[:, range(0, data_temp.shape[1] - 1)]
-            # 该文件下的所有属性
+            # all attrs in files
             var_lst_temp = list(data_temp.columns[1:])
             var_dict[key] = var_lst_temp
             var_lst.extend(var_lst_temp)
             k = 0
             n_gage = len(gages_ids)
-            out_temp = np.full([n_gage, len(var_lst_temp)], np.nan)  # 所有站点是一维，当前data_file下所有属性是第二维
-            # 因为选择的站点可能是站点的一部分，所以需要求交集，ind2是所选站点在conterm_文件中所有站点里的index，把这些值放到out_temp中
+            out_temp = np.full([n_gage, len(var_lst_temp)], np.nan)  # 1d:sites，2d: attrs in current data_file
+            # sites intersection，ind2 is the index of sites in conterm_ files，set them in out_temp
             range1 = gages_ids
             range2 = data_temp.iloc[:, 0].astype(str).tolist()
             assert (all(x < y for x, y in zip(range2, range2[1:])))
             c, ind1, ind2 = np.intersect1d(range1, range2, return_indices=True)
             for field in var_lst_temp:
-                if is_string_dtype(data_temp[field]):  # 字符串值就当做是类别变量，赋值给变量类型value，以及类型说明ref
+                if is_string_dtype(data_temp[field]):  # str vars -> categorical vars
                     value, ref = pd.factorize(data_temp.loc[ind2, field], sort=True)
                     out_temp[:, k] = value
                     f_dict[field] = ref.tolist()
@@ -646,7 +615,7 @@ class GagesSource(DataSource):
         return out, var_lst, var_dict, f_dict
 
     def read_attr(self, usgs_id_lst, var_lst, is_return_dict=True):
-        """指定读取某些站点的某些属性"""
+        """read some attrs of some sites"""
         # assert type(usgs_id_lst) == list
         assert (all(x < y for x, y in zip(usgs_id_lst, usgs_id_lst[1:])))
         attr_all, var_lst_all, var_dict, f_dict = self.read_attr_all(usgs_id_lst)
@@ -663,21 +632,17 @@ class GagesSource(DataSource):
         """:return np.array -- the first dim is types of attrs, and the second one is sites"""
         dir_gage_attr = self.all_configs.get("gage_files_dir")
         data_temp_chosen_lst = list()
-        # 读取所有属性，直接按类型判断要读取的文件名
         var_des = pd.read_csv(os.path.join(dir_gage_attr, 'variable_descriptions.txt'), sep=',')
         var_des_map_values = var_des['VARIABLE_TYPE'].tolist()
         for i in range(len(var_des)):
             var_des_map_values[i] = var_des_map_values[i].lower()
-        # 按照读取的时候的顺序对type排序
         key_lst = list(set(var_des_map_values))
         key_lst.sort(key=var_des_map_values.index)
-        # x_region_names属性暂不需要读入
         key_lst.remove('x_region_names')
         var_lst = list()
         out_lst = []
         for i in range(len(attr_lst)):
             out_lst.append([])
-        # 因为选择的站点可能是站点的一部分，所以需要求交集，ind2是所选站点在conterm_文件中所有站点里的index，把这些值放到out_temp中
         range1 = gages_ids
         gage_id_file = self.all_configs.get("gage_id_file")
         data_all = pd.read_csv(gage_id_file, sep=',', dtype={0: str})
@@ -690,7 +655,6 @@ class GagesSource(DataSource):
             if key == 'flow_record':
                 key = 'flowrec'
             data_file = os.path.join(dir_gage_attr, 'conterm_' + key + '.txt')
-            # 各属性值的“参考来源”是不需读入的
             if key == 'bas_classif':
                 data_temp = pd.read_csv(data_file, sep=',',
                                         dtype={'STAID': str, "WR_REPORT_REMARKS": str, "ADR_CITATION": str,
@@ -703,9 +667,7 @@ class GagesSource(DataSource):
             else:
                 data_temp = pd.read_csv(data_file, sep=',', dtype={'STAID': str})
             if key == 'flowrec':
-                # 最后一列为空，舍弃
                 data_temp = data_temp.iloc[:, range(0, data_temp.shape[1] - 1)]
-            # 该文件下的所有属性
             var_lst_temp = list(data_temp.columns[1:])
             do_exist, idx_lst = is_any_elem_in_a_lst(attr_lst, var_lst_temp, return_index=True)
             if do_exist:

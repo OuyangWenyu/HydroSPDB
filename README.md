@@ -66,8 +66,7 @@ Directories:
     - camels531.zip 
     - camels_attributes_v2.0.zip 
     - gages_streamflow.zip 
-    - gagesII_9322_point_shapefile.zip 
-    - mainstem_line_covers.zip
+    - gagesII_9322_point_shapefile.zip
     - nid.zip 
     - wbdhu4-a-us-september2019-shpfile.zip
 - Download the data manually if you don't have an access to my google drive or you don't know how to use PyDrive. 

@@ -125,11 +125,11 @@ def cal_stat_basin_norm(x, basinarea, meanprep):
 
 
 def trans_norm(x, var_lst, stat_dict, *, to_norm):
-    """归一化计算方法，包括反向的计算过程，测试的时候需要还原数据
+    """normalization，including denormalization code
     :parameter
-        x：可以是二维，也可以是三维数据，都能处理。
-            二维：第一维代表站点，第二维代表变量类型
-            三维：第一维代表站点，第二维代表时间，第三维度代表变量类型
+        x：2d or 3d data
+            2d：1st-sites，2nd-var type
+            3d：1st-sites，2nd-time, 3rd-var type
     """
     if type(var_lst) is str:
         var_lst = [var_lst]

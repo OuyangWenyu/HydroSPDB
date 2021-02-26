@@ -1,4 +1,4 @@
-"""一个处理数据的模板方法"""
+"""datamodel template"""
 import copy
 import os
 import shutil
@@ -161,10 +161,10 @@ class DataModel(object):
         return stat_dict
 
     def get_data_obs(self, rm_nan=True, to_norm=True):
-        """径流数据读取及归一化处理，会处理成三维，最后一维长度为1，表示径流变量"""
+        """normalization for streamflow"""
         stat_dict = self.stat_dict
         data = self.data_flow
-        # 为了调用trans_norm函数进行归一化，这里先把径流变为三维数据
+        # to invoke trans_norm func，we need transform data to 3d format
         data = np.expand_dims(data, axis=2)
         data = trans_norm(data, 'usgsFlow', stat_dict, to_norm=to_norm)
         if rm_nan is True:
@@ -172,7 +172,7 @@ class DataModel(object):
         return data
 
     def get_data_ts(self, rm_nan=True, to_norm=True):
-        """时间序列数据，主要是驱动数据读取 and choose data in the given time interval 及归一化处理"""
+        """forcing data. choose data in the given time interval and normalization"""
         stat_dict = self.stat_dict
         var_lst = self.data_source.all_configs.get("forcing_chosen")
         data = self.data_forcing
@@ -182,7 +182,7 @@ class DataModel(object):
         return data
 
     def get_data_const(self, rm_nan=True, to_norm=True):
-        """属性数据读取及归一化处理"""
+        """attr data and normalization"""
         stat_dict = self.stat_dict
         var_lst = self.data_source.all_configs.get("attr_chosen")
         data = self.data_attr
@@ -192,15 +192,14 @@ class DataModel(object):
         return data
 
     def load_data(self, model_dict):
-        """读取数据为模型输入的形式，完成归一化运算
+        """read data as input for the model
         :parameter
-            model_dict: 载入数据需要模型相关参数
+            model_dict: model params
         :return  np.array
             x: 3-d  gages_num*time_num*var_num
             y: 3-d  gages_num*time_num*1
             c: 2-d  gages_num*var_num
         """
-        # 如果读取到统计数据的json文件，则不需要再次计算。
         opt_data = model_dict["data"]
         rm_nan_x = opt_data['rmNan'][0]
         rm_nan_y = opt_data['rmNan'][1]
@@ -270,7 +269,7 @@ class DataModel(object):
         var_dict_file = os.path.join(dir_temp, kwargs['var_dict_file_name'])
         t_s_dict_file = os.path.join(dir_temp, kwargs['t_s_dict_file_name'])
         source_data = unserialize_pickle(data_source_file)
-        # 存储data_model，因为data_model里的数据如果直接序列化会比较慢，所以各部分分别序列化，dict的直接序列化为json文件，数据的HDF5
+        # save data_model because of the low speed of serialization of data_model: dict -> json，data -> npy
         stat_dict = unserialize_json(stat_file)
         data_flow = unserialize_numpy(flow_npy_file)
         data_forcing = unserialize_numpy(forcing_npy_file)
@@ -643,7 +642,7 @@ class CamelsModel(DataModel):
         super().__init__(data_source, *args)
 
     def cal_stat_all(self):
-        """calculate statistics of streamflow, forcing and attributes. 计算统计值，便于后面归一化处理。"""
+        """calculate statistics of streamflow, forcing and attributes."""
         # streamflow
         flow = self.data_flow
         stat_dict = dict()

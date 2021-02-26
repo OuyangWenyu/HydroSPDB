@@ -136,8 +136,7 @@ if not find_gages_data_path:
         if not os.path.isdir(dir_gage_flow):
             os.makedirs(dir_gage_flow)
         dir_list = os.listdir(dir_gage_flow)
-        # 区域一共有18个，为了便于后续处理，把属于不同region的站点的文件放到不同的文件夹下面
-        # 判断usgs_id_lst中没有对应径流文件的要从网上下载
+        # if no streamflow data for the usgs_id_lst, then download them from the USGS website
         data_all = pd.read_csv(__C.GAGES.gage_id_file, sep=',', dtype={0: str})
         usgs_id_lst = data_all.iloc[:, 0].values.tolist()
         gage_fld_lst = data_all.columns.values
@@ -152,21 +151,21 @@ if not find_gages_data_path:
             file_list = os.listdir(dir_huc_02)
             file_usgs_id = str(usgs_id_lst[ind]) + ".txt"
             if file_usgs_id not in file_list:
-                # 通过直接读取网页的方式获取数据，然后存入txt文件
+                # download data and save as txt file
                 start_time_str = datetime.strptime(t_download_range[0], '%Y-%m-%d')
                 end_time_str = datetime.strptime(t_download_range[1], '%Y-%m-%d') - timedelta(days=1)
                 url = streamflow_url.format(usgs_id_lst[ind], start_time_str.year, start_time_str.month,
                                             start_time_str.day, end_time_str.year, end_time_str.month, end_time_str.day)
 
-                # 存放的位置是对应HUC02区域的文件夹下
+                # save in its HUC02 dir
                 temp_file = os.path.join(dir_huc_02, str(usgs_id_lst[ind]) + '.txt')
                 download_small_file(url, temp_file)
-                print("成功写入 " + temp_file + " 径流数据！")
+                print("successfully download " + temp_file + " streamflow data！")
     elif __C.GAGES.DOWNLOAD_MANUALLY:
         print("Please download data manually!")
         zip_files = ["59692a64e4b0d1f9f05fbd39", "basin_mean_forcing.zip", "basinchar_and_report_sept_2011.zip",
                      "boundaries_shapefiles_by_aggeco.zip", "camels_attributes_v2.0.zip", "camels531.zip",
-                     "gages_streamflow.zip", "gagesII_9322_point_shapefile.zip", "mainstem_line_covers.zip", "nid.zip",
+                     "gages_streamflow.zip", "gagesII_9322_point_shapefile.zip", "nid.zip",
                      "wbdhu4-a-us-september2019-shpfile.zip"]
         download_zip_files = [os.path.join(__C.DATA_PATH, zip_file) for zip_file in zip_files]
         for download_zip_file in download_zip_files:

@@ -13,11 +13,11 @@ class CamelsModels(object):
     """the data model for CAMELS dataset"""
 
     def __init__(self, config_data):
-        # 准备训练数据
+        # prepare training data
         t_train = config_data.model_dict["data"]["tRangeTrain"]
         t_test = config_data.model_dict["data"]["tRangeTest"]
         t_train_test = [t_train[0], t_test[1]]
         source_data = CamelsSource(config_data, t_train_test)
-        # 构建输入数据类对象
+        # create datamodel as input for the model
         data_model = CamelsModel(source_data)
         self.data_model_train, self.data_model_test = CamelsModel.data_models_of_train_test(data_model, t_train, t_test)

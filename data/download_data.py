@@ -20,9 +20,7 @@ def zip_file_name_from_url(data_url, data_dir):
 def is_there_file(zipfile_path, unzip_dir):
     """if a file has existed"""
     if os.path.isfile(zipfile_path):
-        # 如果存在zip文件就不用下载了，直接解压即可
         if os.path.isdir(unzip_dir):
-            # 如果已经解压了就啥也不用做了
             return True
         unzip_nested_zip(zipfile_path, unzip_dir)
         return True
@@ -43,7 +41,7 @@ def download_one_zip(data_url, data_dir):
 
 
 def download_small_zip(data_url, data_dir):
-    """下载文件较小的zip文件并解压"""
+    """download zip file and unzip"""
     zipfile_path, unzip_dir = zip_file_name_from_url(data_url, data_dir)
     if not is_there_file(zipfile_path, unzip_dir):
         if not os.path.isdir(unzip_dir):
@@ -53,7 +51,7 @@ def download_small_zip(data_url, data_dir):
 
 
 def download_small_file(data_url, temp_file):
-    """根据url下载数据到temp_file中"""
+    """download data from url to the temp_file"""
     r = requests.get(data_url)
     with open(temp_file, 'w') as f:
         f.write(r.text)

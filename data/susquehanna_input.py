@@ -19,15 +19,6 @@ class SusquehannaSource(DataSource):
         print("attribute data Ready! ...")
 
     def read_site_info(self, **kwargs):
-        """根据配置读取所需的gages-ii站点信息及流域基本location等信息。
-        从中选出field_lst中属性名称对应的值，存入dic中。
-                    # using shapefile of all basins to check if their basin area satisfy the criteria
-                    # read shpfile from data directory and calculate the area
-        param **kwargs: none
-        Return：
-            各个站点的attibutes in basinid.txt
-
-        """
         if "HUC10" == self.all_configs["huc"]:
             gage_file = self.all_configs["huc10_shpfile"]
         else:
@@ -129,7 +120,7 @@ class SusquehannaModel(DataModel):
             self.stat_dict = stat_dict
 
     def cal_stat_all(self):
-        """calculate statistics of streamflow, forcing and attributes. 计算统计值，便于后面归一化处理。"""
+        """calculate statistics of streamflow, forcing and attributes."""
         stat_dict = dict()
 
         # forcing
@@ -190,8 +181,7 @@ class SusquehannaConfig(DataConfig):
         return new_data_config
 
     def init_data_param(self):
-        """read camels or gages dataset configuration
-        根据配置文件读取有关输入数据的各项参数"""
+        """read camels or gages dataset configuration"""
         config_file = self.config_file
         cfg = ConfigParser()
         cfg.read(config_file)
@@ -229,10 +219,8 @@ class SusquehannaConfig(DataConfig):
         forcing_chosen = data_params.get("varT")
         forcing_dir = os.path.join(dir_db, data_params.get("forcingDir"))
         forcing_type = data_params.get("forcingType")
-        # 有了forcing type之后，确定到真正的forcing数据文件夹
         forcing_dir = os.path.join(forcing_dir, forcing_type)
         forcing_url = data_params.get("forcingUrl")
-        # 所选属性
         attr_url = data_params.get("attrUrl")
         attr_chosen = data_params.get("varC")
         attr_dir = os.path.join(dir_db, data_params.get("attrDir"))

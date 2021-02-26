@@ -1,4 +1,4 @@
-"""模型调用的核心代码"""
+"""call the models"""
 import numpy as np
 import torch
 import time
@@ -298,7 +298,7 @@ def model_test_valid(model, x, c, *, file_path, batch_size=None):
 
             y_p = model(x_test)
             y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
-            # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
+            # save output，now only for streamflow: y_out[:, :, 0]
             pd.DataFrame(y_out[:, :, 0]).to_csv(f, header=False, index=False)
 
             model.zero_grad()
@@ -469,14 +469,13 @@ def model_test(model, x, c, *, file_path, batch_size=None):
                 y_p = model(x_test, z_test)
             y_out = y_p.detach().cpu().numpy().swapaxes(0, 1)
 
-            # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
             pd.DataFrame(y_out[:, :, 0]).to_csv(f, header=False, index=False)
 
             model.zero_grad()
             torch.cuda.empty_cache()
 
         f.close()
-    # TODO: y_out is not all output
+    # y_out is not all output, so we use "pd.DataFrame(y_out[:, :, 0]).to_csv" to save result of each batch which will be used later
     y_out = torch.from_numpy(y_out)
     return y_out
 
@@ -628,7 +627,6 @@ def model_test_storage(model, qx, c, natflow, seq_len, batch_size):
         y_out_list.append(y_out)
         param_list.append(param_out)
 
-    # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
     model.zero_grad()
     torch.cuda.empty_cache()
     return y_out_list, param_list
@@ -744,7 +742,6 @@ def model_test_inv(model, xqch, xct, batch_size):
         y_out_list.append(y_out_i)
         param_list.append(param_out_i)
 
-    # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
     model.zero_grad()
     torch.cuda.empty_cache()
 
@@ -781,7 +778,6 @@ def model_test_inv_kernel(model, xqch, xct, batch_size):
         y_out_list.append(y_out)
         param_list.append(param_out)
 
-    # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
     model.zero_grad()
     torch.cuda.empty_cache()
     return y_out_list, param_list
@@ -879,7 +875,6 @@ def model_test_easy_lstm(model, x, c, *, file_path, batch_size=None):
             y_p = model(x_test)
             y_out = y_p.detach().cpu().numpy()
             y_out_list.append(y_out)
-            # save output，目前只有一个变量径流，没有多个文件，所以直接取数据即可，因为DataFrame只能作用到二维变量，所以必须用y_out[:, :, 0]
             pd.DataFrame(y_out[:, :, 0]).to_csv(f, header=False, index=False)
 
             model.zero_grad()

@@ -82,7 +82,6 @@ def swarmplot_with_cbar(cmap_str, cbar_label, ylim, *args, **kwargs):
 
 def plot_boxs(data, x_name, y_name, uniform_color=None, swarm_plot=False, hue=None, colormap=False, xlim=None,
               ylim=None):
-    """绘制箱型图"""
     sns.set(style="ticks", palette="pastel")
     # Draw a nested boxplot to show bills by day and time
     if uniform_color is not None:
@@ -178,7 +177,6 @@ def plot_diff_boxes(data, row_and_col=None, y_col=None, x_col=None, hspace=0.3, 
 
 
 def plot_ts(data, row_name, col_name, x_name, y_name):
-    """绘制时间序列对比图"""
     sns.set(style="whitegrid")
     g = sns.FacetGrid(data, row=row_name, col=col_name, margin_titles=True)
     g.map(plt.plot, x_name, y_name, color="steelblue")
