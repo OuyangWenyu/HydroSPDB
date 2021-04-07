@@ -41,8 +41,8 @@ class RmseLoss(torch.nn.Module):
         ny = target.shape[2]
         loss = 0
         for k in range(ny):
-            p0 = output[:, :, 0]
-            t0 = target[:, :, 0]
+            p0 = output[:, :, k]
+            t0 = target[:, :, k]
             mask = t0 == t0
             p = p0[mask]
             t = t0[mask]
@@ -108,8 +108,8 @@ class WarmupRmseLoss(torch.nn.Module):
         ny = target.shape[2]
         loss = 0
         for k in range(ny):
-            p0 = output[warmup_len:, :, 0]
-            t0 = target[warmup_len:, :, 0]
+            p0 = output[warmup_len:, :, k]
+            t0 = target[warmup_len:, :, k]
             mask = t0 == t0
             p = p0[mask]
             t = t0[mask]

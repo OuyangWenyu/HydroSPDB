@@ -102,10 +102,12 @@ show_ind_key = 'NSE'
 idx_lst_nse_range = inds_df[
     (inds_df[show_ind_key] >= nse_range[0]) & (inds_df[show_ind_key] < nse_range[1])].index.tolist()
 nse_values = inds_df["NSE"].values[idx_lst_nse_range]
+
 for i in range(len(attr_lst_shown)):
     df = pd.DataFrame({attr_lst_shown_names[i]: attrs_value[i, idx_lst_nse_range], show_ind_key: nse_values})
+    plt.figure()
     # g = sns.jointplot(x=attr_lst_shown_names[i], y=show_ind_key, data=df, kind="reg")
-    sns.set(color_codes=True)
+    sns.set(font="serif", font_scale=1.5, color_codes=True)
     g = sns.regplot(x=attr_lst_shown_names[i], y=show_ind_key, data=df, scatter_kws={'s': 10})
     show_max = attrs_value[i, idx_lst_nse_range].max()
     show_min = attrs_value[i, idx_lst_nse_range].min()
@@ -118,10 +120,11 @@ for i in range(len(attr_lst_shown)):
     plt.savefig(
         os.path.join(config_data.data_path["Out"], 'NSE-min-' + str(nse_range[0]) + '~' + attr_lst_shown[i] + '.png'),
         dpi=FIGURE_DPI, bbox_inches="tight")
-    plt.show()
 
 show_ind_key = 'NSE'
 y_var_lst = [show_ind_key]
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
 plot_scatter_multi_attrs(data_model, inds_df, idx_lst_nse_range, attr_lst_shown, y_var_lst)
 plt.show()
 
@@ -133,13 +136,14 @@ t_train_test = [t_train[0], t_test[1]]
 source_data0 = GagesSource.choose_some_basins(config_data, t_train_test, screen_basin_area_huc4=False, dam_num=0)
 sites_id_nodam = source_data0.all_configs['flow_screen_gage_id']
 
-dor1 = -0.02
+dor_cutoff = 0.1
+dor1 = -dor_cutoff
 source_data1 = GagesSource.choose_some_basins(config_data, t_train_test, screen_basin_area_huc4=False, DOR=dor1)
 sites_id_zerosmalldor = source_data1.all_configs['flow_screen_gage_id']
 sites_id_zerodor = np.intersect1d(sites_id_zerosmalldor, sites_id_nodam)
 sites_id_smalldor = [site_tmp for site_tmp in sites_id_zerosmalldor if site_tmp not in sites_id_nodam]
 
-dor2 = 0.02
+dor2 = dor_cutoff
 source_data2 = GagesSource.choose_some_basins(config_data, t_train_test, screen_basin_area_huc4=False, DOR=dor2)
 sites_id_largedor = source_data2.all_configs['flow_screen_gage_id']
 

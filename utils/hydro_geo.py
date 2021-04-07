@@ -277,3 +277,26 @@ def basin_avg_netcdf(netcdf_file, shp_file, mask_file):
         avgs.append(avg)
 
     return avgs
+
+
+def ind_of_dispersion(coord, points):
+    """the ratio of variance and mean value of Euclidean distances between event points and a selected point"""
+    points = np.asarray(points)
+    xd = points[:, 0] - coord[0]
+    yd = points[:, 1] - coord[1]
+    mean_d = np.sqrt(xd * xd + yd * yd).mean()
+    var_d = np.sqrt(xd * xd + yd * yd).var()
+    ind = var_d / mean_d
+    return ind
+
+
+def coefficient_of_variation(coord, points):
+    """the ratio of the standard deviation to the mean (average) value of Euclidean distances between event points
+    and a selected point """
+    points = np.asarray(points)
+    xd = points[:, 0] - coord[0]
+    yd = points[:, 1] - coord[1]
+    mean_d = np.sqrt(xd * xd + yd * yd).mean()
+    var_d = np.sqrt(xd * xd + yd * yd).var()
+    coefficient = np.sqrt(var_d) / mean_d * 100
+    return coefficient

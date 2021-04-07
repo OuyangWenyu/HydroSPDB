@@ -23,7 +23,7 @@ def dam_lstm(args):
     config_data = GagesConfig(cfg)
     if dam_plan == 2:
         dam_num = 0
-        dor = 0.02
+        dor = cfg.GAGES.attrScreenParams.DOR
         source_data_dor1 = GagesSource.choose_some_basins(config_data,
                                                           config_data.model_dict["data"]["tRangeTrain"],
                                                           screen_basin_area_huc4=False,
@@ -75,18 +75,29 @@ def dam_lstm(args):
         save_result(gages_model_test.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
 
-# python gages_w-wo-dam_analysis.py --sub nodam/exp7 --cache_state 1 --dam_plan 2
-# python gages_w-wo-dam_analysis.py --sub nodam/exp8 --ctx 0 --dam_plan 2 --rs 123
-# python gages_w-wo-dam_analysis.py --sub nodam/exp9 --ctx 0 --dam_plan 2 --rs 12345
-# python gages_w-wo-dam_analysis.py --sub nodam/exp10 --ctx 0 --dam_plan 2 --rs 111
-# python gages_w-wo-dam_analysis.py --sub nodam/exp11 --ctx 0 --dam_plan 2 --rs 1111
-# python gages_w-wo-dam_analysis.py --sub nodam/exp12 --ctx 0 --dam_plan 2 --rs 11111
+# python gages_w-wo-dam_analysis.py --sub nodam/exp7 --cache_state 1 --dam_plan 2 --attr_screen {\"DOR\":0.02}
+# python gages_w-wo-dam_analysis.py --sub nodam/exp8 --ctx 0 --dam_plan 2 --rs 123 --attr_screen {\"DOR\":0.02}
+# python gages_w-wo-dam_analysis.py --sub nodam/exp9 --ctx 0 --dam_plan 2 --rs 12345 --attr_screen {\"DOR\":0.02}
+# python gages_w-wo-dam_analysis.py --sub nodam/exp10 --ctx 0 --dam_plan 2 --rs 111 --attr_screen {\"DOR\":0.02}
+# python gages_w-wo-dam_analysis.py --sub nodam/exp11 --ctx 0 --dam_plan 2 --rs 1111 --attr_screen {\"DOR\":0.02}
+# python gages_w-wo-dam_analysis.py --sub nodam/exp12 --ctx 0 --dam_plan 2 --rs 11111 --attr_screen {\"DOR\":0.02}
 # python gages_w-wo-dam_analysis.py --sub dam/exp27 --cache_state 1 --dam_plan 3 --rs 123
 # python gages_w-wo-dam_analysis.py --sub dam/exp26 --ctx 0 --dam_plan 3 --rs 1234
 # python gages_w-wo-dam_analysis.py --sub dam/exp28 --ctx 0 --dam_plan 3 --rs 12345
 # python gages_w-wo-dam_analysis.py --sub dam/exp29 --ctx 0 --dam_plan 3 --rs 111
 # python gages_w-wo-dam_analysis.py --sub dam/exp30 --ctx 0 --dam_plan 3 --rs 1111
 # python gages_w-wo-dam_analysis.py --sub dam/exp31 --ctx 0 --dam_plan 3 --rs 11111
+
+# python gages_w-wo-dam_analysis.py --sub nodam/exp13 --cache_state 1 --dam_plan 2 --attr_screen {\"DOR\":0.003}
+# python gages_w-wo-dam_analysis.py --sub nodam/exp14 --cache_state 1 --dam_plan 2 --attr_screen {\"DOR\":0.08}
+# python gages_w-wo-dam_analysis.py --sub nodam/exp15 --cache_state 1 --dam_plan 2 --attr_screen {\"DOR\":1}
+
+# python gages_w-wo-dam_analysis.py --sub nodam/exp16 --cache_state 1 --dam_plan 2 --attr_screen {\"DOR\":0.1}
+# python gages_w-wo-dam_analysis.py --sub nodam/exp17 --dam_plan 2 --attr_screen {\"DOR\":0.1}  --rs 123
+# python gages_w-wo-dam_analysis.py --sub nodam/exp18 --dam_plan 2 --attr_screen {\"DOR\":0.1}  --rs 12345
+# python gages_w-wo-dam_analysis.py --sub nodam/exp19 --dam_plan 2 --attr_screen {\"DOR\":0.1}  --rs 111
+# python gages_w-wo-dam_analysis.py --sub nodam/exp20 --dam_plan 2 --attr_screen {\"DOR\":0.1}  --rs 1111
+# python gages_w-wo-dam_analysis.py --sub nodam/exp21 --dam_plan 2 --attr_screen {\"DOR\":0.1}  --rs 11111
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

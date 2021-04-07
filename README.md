@@ -1,5 +1,7 @@
 # Streamflow Prediction in Dammed Basins (SPDB) with Deep Learning models
 
+This is the code for [this paper](https://arxiv.org/abs/2101.04423).
+
 ## Code
 
 Notice: ONLY tested in an "Ubuntu" machine with NVIDIA GPUs
@@ -59,21 +61,23 @@ Directories:
 
 ## Usage
 
-- Please make sure that you have all input data. The data list is shown below. If you miss any one, please connect with me: hust2014owen@gmail.com
-    - basin_mean_forcing.zip 
-    - basinchar_and_report_sept_2011.zip 
-    - boundaries_shapefiles_by_aggeco.zip 
-    - camels531.zip 
-    - camels_attributes_v2.0.zip 
-    - gages_streamflow.zip 
+- Please make sure that you have all input data. The data list is shown below.
+    - basin_mean_forcing.zip
+    - basinchar_and_report_sept_2011.zip
+    - boundaries_shapefiles_by_aggeco.zip
+    - camels531.zip
+    - camels_attributes_v2.0.zip
+    - gages_streamflow.zip
     - gagesII_9322_point_shapefile.zip
-    - nid.zip 
-    - wbdhu4-a-us-september2019-shpfile.zip
-- Download the data manually if you don't have an access to my google drive or you don't know how to use PyDrive. 
-Then you have to make a directory:
+    - nid.zip
+    - 59692a64e4b0d1f9f05f : this is the GAGES-II time series dataset, yet not used in [this paper](https://arxiv.org/abs/2101.04423).
+- Download the data manually. (We'll publish them later)
+
+Then make a directory:
+
 ```Shell
-# /mnt/sdc/wvo5024/hydro-anthropogenic-lstm/ is my root directory. you should change it to yours
-cd /mnt/sdc/wvo5024/hydro-anthropogenic-lstm/example
+# /mnt/sdc/wvo5024/HydroSPDB/ is my root directory. Please change it to yours.
+cd /mnt/sdc/wvo5024/HydroSPDB/example
 mkdir data
 cd data
 mkdir gages
@@ -90,11 +94,16 @@ screen -r xxx (use the id of the process to enter the process. you can use "scre
 python gages_conus_analysis.py --sub basic/exp37 --cache_state 1
 ```
 
-All "xxx_xxx_analysis.py" scripts are run for training and testing, while all "xxx_xxx_result_sectionx.py" files are used for showing the results. 
-To run the testing file, please make sure you have run the corresponding training scripts 
-and saved some cache for input data and trained model. If there is no cache for input, it will take much time to test models.
-You can use the following code to generate some quickly-accessed binary data:
+All "xxx_xxx_analysis.py" scripts are run for training and evaluating, while all "xxx_xxx_result_sectionx.py" files are used for showing the results.
+Please make sure you have run the corresponding training scripts and saved some cache for input data and trained model before running test scripts.
+If there is no cache for input, it will take much time to test models.
+
+Use the following code to generate some quickly-accessed binary data:
 
 ```Shell
-python gages_conus_analysis.py --gen_quick_data 1 --quick_data 0 --train_mode 0
+python gages_conus_analysis.py --gen_quick_data 1 --train_mode 0
 ```
+
+- The LSTM model we used is the "hydroDL.model.rnn.CudnnLstmModel"
+- The calling sequence of functions is: "hydroDL.master.master.master_train" -> "hydroDL.model.model_run.model_train" -> "hydroDL.model.rnn.CudnnLstmModel"
+- Other models in "hydroDL" directory have been tried, yet have NOT been used in [this paper](https://arxiv.org/abs/2101.04423).

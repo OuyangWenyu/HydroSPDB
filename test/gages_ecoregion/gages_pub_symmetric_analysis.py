@@ -1,3 +1,8 @@
+"""
+Similar to gages_pub_analysis.py, but keep the numbers of a pair of symmetric experiments same.
+For example, the number of basins in Train-z -> PUB-s  / Train-s -> PUB-z  are nearly same,
+so that we can try to eliminate the impact of number of basins.
+"""
 import os
 import torch
 import sys
@@ -81,12 +86,8 @@ def pub_lstm(args):
             sites_id_dor1 = source_data_dor1.all_configs['flow_screen_gage_id']
             sites_id_withdams = source_data_withdams.all_configs['flow_screen_gage_id']
 
-            if pub_plan == 1:
-                sites_id_train = source_data_withoutdams.all_configs['flow_screen_gage_id']
-                sites_id_test = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
-            else:
-                sites_id_train = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
-                sites_id_test = source_data_withoutdams.all_configs['flow_screen_gage_id']
+            sites_id_train = source_data_withoutdams.all_configs['flow_screen_gage_id']
+            sites_id_test = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
 
         elif pub_plan == 2 or pub_plan == 5:
             source_data_dor1 = GagesSource.choose_some_basins(config_data,
@@ -99,12 +100,8 @@ def pub_lstm(args):
                                                                      screen_basin_area_huc4=False,
                                                                      dam_num=0)
 
-            if pub_plan == 2:
-                sites_id_train = source_data_withoutdams.all_configs['flow_screen_gage_id']
-                sites_id_test = source_data_dor1.all_configs['flow_screen_gage_id']
-            else:
-                sites_id_train = source_data_dor1.all_configs['flow_screen_gage_id']
-                sites_id_test = source_data_withoutdams.all_configs['flow_screen_gage_id']
+            sites_id_train = source_data_withoutdams.all_configs['flow_screen_gage_id']
+            sites_id_test = source_data_dor1.all_configs['flow_screen_gage_id']
 
         elif pub_plan == 3 or pub_plan == 6:
             dor_1 = - dor
@@ -126,20 +123,50 @@ def pub_lstm(args):
                                                               screen_basin_area_huc4=False,
                                                               DOR=dor_2)
 
-            if pub_plan == 3:
-                sites_id_train = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
-                sites_id_test = source_data_dor2.all_configs['flow_screen_gage_id']
-            else:
-                sites_id_train = source_data_dor2.all_configs['flow_screen_gage_id']
-                sites_id_test = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
+            sites_id_train = np.intersect1d(np.array(sites_id_dor1), np.array(sites_id_withdams)).tolist()
+            sites_id_test = source_data_dor2.all_configs['flow_screen_gage_id']
 
         else:
             print("wrong plan")
             sites_id_train = None
             sites_id_test = None
 
-        train_sites_in_conus = np.intersect1d(conus_sites_id, sites_id_train)
-        test_sites_in_conus = np.intersect1d(conus_sites_id, sites_id_test)
+        # former has a less number than latter
+        former_sites_in_conus = np.intersect1d(conus_sites_id, sites_id_train)
+        latter_sites_in_conus = np.intersect1d(conus_sites_id, sites_id_test)
+        assert len(former_sites_in_conus) <= len(latter_sites_in_conus)
+
+        former_sites_ecoregions = []
+        latter_sites_ecoregions = []
+        for eco_name in eco_names:
+            eco_source_data = GagesSource.choose_some_basins(config_data,
+                                                             config_data.model_dict["data"]["tRangeTrain"],
+                                                             screen_basin_area_huc4=False, ecoregion=eco_name)
+            eco_sites_id = eco_source_data.all_configs['flow_screen_gage_id']
+            former_sites_id_inter = np.intersect1d(former_sites_in_conus, eco_sites_id)
+            latter_sites_id_inter = np.intersect1d(latter_sites_in_conus, eco_sites_id)
+            if len(former_sites_id_inter) > len(latter_sites_id_inter):
+                a_chosen_idx = np.random.choice(former_sites_id_inter.size, latter_sites_id_inter.size, replace=False)
+                former_chosen = former_sites_id_inter[a_chosen_idx]
+                former_sites_ecoregions.append(former_chosen)
+                latter_sites_ecoregions.append(latter_sites_id_inter)
+            else:
+                a_chosen_idx = np.random.choice(latter_sites_id_inter.size, former_sites_id_inter.size, replace=False)
+                latter_chosen = latter_sites_id_inter[a_chosen_idx]
+                former_sites_ecoregions.append(former_sites_id_inter)
+                latter_sites_ecoregions.append(latter_chosen)
+        sites_ids_former = np.sort(reduce(lambda x, y: np.hstack((x, y)), former_sites_ecoregions))
+        sites_ids_latter = np.sort(reduce(lambda x, y: np.hstack((x, y)), latter_sites_ecoregions))
+        if pub_plan in [0, 1, 2, 3]:
+            train_sites_in_conus = sites_ids_former
+            test_sites_in_conus = sites_ids_latter
+        elif pub_plan in [4, 5, 6]:
+            train_sites_in_conus = sites_ids_latter
+            test_sites_in_conus = sites_ids_former
+        else:
+            print("wrong plan")
+            train_sites_in_conus = None
+            test_sites_in_conus = None
 
         if plus == 0:
             all_index_lst_train_1 = []
@@ -229,7 +256,7 @@ def pub_lstm(args):
                 sites_id_inter_1 = np.intersect1d(train_sites_in_conus, eco_sites_id)
                 sites_id_inter_2 = np.intersect1d(test_sites_in_conus, eco_sites_id)
 
-                if sites_id_inter_1.size < sites_id_inter_2.size:
+                if sites_id_inter_1.size <= sites_id_inter_2.size:
                     if sites_id_inter_1.size < split_num:
                         continue
                     for train, test in kf.split(sites_id_inter_1):
@@ -384,25 +411,15 @@ def pub_lstm(args):
                             pred_name='flow_pred_2', obs_name='flow_obs_2')
 
 
-# python gages_pub_analysis.py --sub ecoregion/exp4 --cache_state 1 --split_num 12 --pub_plan 0 --plus -1 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp6 --cache_state 1 --split_num 12 --pub_plan 0 --plus -2 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp9 --cache_state 1 --pub_plan 1 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp1 --cache_state 1 --pub_plan 4 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp12 --cache_state 1 --pub_plan 1 --plus 1 --split_num 2 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp10 --cache_state 1 --pub_plan 2 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp2 --cache_state 1 --pub_plan 5 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp13 --cache_state 1 --pub_plan 2 --plus 1 --split_num 2 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp11 --cache_state 1 --pub_plan 3 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp3 --cache_state 1 --pub_plan 6 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp14 --cache_state 1 --pub_plan 3 --plus 1 --split_num 2 --attr_screen {\"DOR\":0.02}
-# python gages_pub_analysis.py --sub ecoregion/exp8 --cache_state 1 --split_num 2 --pub_plan 0 --plus -1 --attr_screen {\"DOR\":0.02}
-
-# python gages_pub_analysis.py --sub ecoregion/exp24 --cache_state 1 --pub_plan 1 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.1}
-# python gages_pub_analysis.py --sub ecoregion/exp25 --cache_state 1 --pub_plan 1 --plus 1 --split_num 2 --attr_screen {\"DOR\":0.1}
-# python gages_pub_analysis.py --sub ecoregion/exp26 --cache_state 1 --pub_plan 2 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.1}
-# python gages_pub_analysis.py --sub ecoregion/exp27 --cache_state 1 --pub_plan 2 --plus 1 --split_num 2 --attr_screen {\"DOR\":0.1}
-# python gages_pub_analysis.py --sub ecoregion/exp28 --cache_state 1 --pub_plan 3 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.1}
-# python gages_pub_analysis.py --sub ecoregion/exp29 --cache_state 1 --pub_plan 3 --plus 1 --split_num 2 --attr_screen {\"DOR\":0.1}
+# python gages_pub_symmetric_analysis.py --sub ecoregion/exp15 --cache_state 1 --pub_plan 1 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
+# python gages_pub_symmetric_analysis.py --sub ecoregion/exp16 --cache_state 1 --pub_plan 4 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
+# python gages_pub_symmetric_analysis.py --sub ecoregion/exp17 --cache_state 1 --pub_plan 1 --plus 1 --split_num 2 --attr_screen {\"DOR\":0.02}
+# python gages_pub_symmetric_analysis.py --sub ecoregion/exp18 --cache_state 1 --pub_plan 2 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
+# python gages_pub_symmetric_analysis.py --sub ecoregion/exp19 --cache_state 1 --pub_plan 5 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
+# python gages_pub_symmetric_analysis.py --sub ecoregion/exp20 --cache_state 1 --pub_plan 2 --plus 1 --split_num 2 --attr_screen {\"DOR\":0.02}
+# python gages_pub_symmetric_analysis.py --sub ecoregion/exp21 --cache_state 1 --pub_plan 3 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
+# python gages_pub_symmetric_analysis.py --sub ecoregion/exp22 --cache_state 1 --pub_plan 6 --plus 0 --split_num 2 --attr_screen {\"DOR\":0.02}
+# python gages_pub_symmetric_analysis.py --sub ecoregion/exp23 --cache_state 1 --pub_plan 3 --plus 1 --split_num 2 --attr_screen {\"DOR\":0.02}
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

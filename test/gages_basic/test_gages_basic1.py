@@ -1,3 +1,4 @@
+import copy
 import os
 import unittest
 
@@ -5,35 +6,30 @@ import torch
 import pandas as pd
 
 from data import *
+from data.config import cfg, cmd, update_cfg
 from data.data_input import save_datamodel, GagesModel, _basin_norm, save_result
 from data.gages_input_dataset import GagesModels
 from explore.stat import statError
 from hydroDL.master import *
-import definitions
 from utils import unserialize_numpy
 from visual.plot_model import plot_we_need
 
 
 class MyTestCaseGages(unittest.TestCase):
-    def setUp(self) -> None:
-        config_dir = definitions.CONFIG_DIR
-        # self.config_file = os.path.join(config_dir, "basic/config_exp1.ini")
-        # self.subdir = r"basic/exp1"
-        # self.random_seed = 1234
-        # self.config_file = os.path.join(config_dir, "basic/config_exp5.ini")
-        # self.subdir = r"basic/exp5"
-        # self.random_seed = 1234
-        # self.config_file = os.path.join(config_dir, "basic/config_exp26.ini")
-        # self.subdir = r"basic/exp26"
-        # self.random_seed = 123
+    # python gages_conus_analysis.py --sub basic/exp5 --quick_data 0 --cache_state 1 --train_period 2000-01-01 2010-01-01 --test_period 2010-01-01 2020-01-01 --gage_id_file /mnt/data/owen411/code/hydro-anthropogenic-lstm/example/output/gages/basic/exp37/3557basins_ID_NSE_DOR.csv --flow_screen "{\"missing_data_ratio\":1,\"zero_value_ratio\":1}"
+    # python gages_conus_analysis.py --sub basic/exp6 --quick_data 0 --cache_state 1 --train_period 1980-01-01 1990-01-01 --test_period 1990-01-01 2000-01-01 --gage_id_file /mnt/data/owen411/code/hydro-anthropogenic-lstm/example/output/gages/basic/exp37/3557basins_ID_NSE_DOR.csv --flow_screen "{\"missing_data_ratio\":1,\"zero_value_ratio\":1}"
+    # python gages_conus_analysis.py --sub basic/exp7 --quick_data 0 --cache_state 1 --train_period 1990-01-01 2000-01-01 --test_period 1980-01-01 1990-01-01 --gage_id_file /mnt/data/owen411/code/hydro-anthropogenic-lstm/example/output/gages/basic/exp37/3557basins_ID_NSE_DOR.csv --flow_screen "{\"missing_data_ratio\":1,\"zero_value_ratio\":1}"
+    # python gages_conus_analysis.py --sub basic/exp8 --quick_data 0 --cache_state 1 --train_period 2000-01-01 2010-01-01 --test_period 1990-01-01 2000-01-01 --gage_id_file /mnt/data/owen411/code/hydro-anthropogenic-lstm/example/output/gages/basic/exp37/3557basins_ID_NSE_DOR.csv --flow_screen "{\"missing_data_ratio\":1,\"zero_value_ratio\":1}"
+    # python gages_conus_analysis.py --sub basic/exp9 --quick_data 0 --cache_state 1 --train_period 2010-01-01 2020-01-01 --test_period 2000-01-01 2010-01-01 --gage_id_file /mnt/data/owen411/code/hydro-anthropogenic-lstm/example/output/gages/basic/exp37/3557basins_ID_NSE_DOR.csv --flow_screen "{\"missing_data_ratio\":1,\"zero_value_ratio\":1}"
 
-        self.config_file = os.path.join(config_dir, "basic/config_exp16.ini")
-        self.subdir = r"basic/exp16"
-        self.random_seed = 1234
-        # self.config_file = os.path.join(config_dir, "basic/config_exp20.ini")
-        # self.subdir = r"basic/exp20"
-        # self.random_seed = 1234
-        self.config_data = GagesConfig.set_subdir(self.config_file, self.subdir)
+    def setUp(self) -> None:
+        config_file = copy.deepcopy(cfg)
+        args = cmd(sub="basic/exp7", train_period=["1990-01-01", "2000-01-01"],
+                   test_period=["1980-01-01", "1990-01-01"], quick_data=0, cache_state=1,
+                   flow_screen={'missing_data_ratio': 1, 'zero_value_ratio': 1},
+                   gage_id_file="/mnt/data/owen411/code/hydro-anthropogenic-lstm/example/output/gages/basic/exp37/3557basins_ID_NSE_DOR.csv")
+        update_cfg(config_file, args)
+        self.config_data = GagesConfig(config_file)
         self.test_epoch = 300
 
     def test_gages_data_model(self):
@@ -51,7 +47,6 @@ class MyTestCaseGages(unittest.TestCase):
 
     def test_gages_data_model_quickdata(self):
         quick_data_dir = os.path.join(self.config_data.data_path["DB"], "quickdata")
-        # data_dir = os.path.join(quick_data_dir, "conus-all_85-05_nan-0.1_00-1.0")
         data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
         data_model_train = GagesModel.load_datamodel(data_dir,
                                                      data_source_file_name='data_source.txt',
@@ -94,10 +89,8 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='dictFactorize.json',
                                                var_dict_file_name='dictAttribute.json',
                                                t_s_dict_file_name='dictTimeSpace.json')
-        with torch.cuda.device(2):
-            # pre_trained_model_epoch = 230
-            master_train(data_model, random_seed=self.random_seed)
-            # master_train(data_model, pre_trained_model_epoch=pre_trained_model_epoch,  random_seed=self.random_seed)
+        with torch.cuda.device(0):
+            master_train(data_model)
 
     def test_test_gages(self):
         data_model = GagesModel.load_datamodel(self.config_data.data_path["Temp"],
@@ -107,7 +100,7 @@ class MyTestCaseGages(unittest.TestCase):
                                                f_dict_file_name='test_dictFactorize.json',
                                                var_dict_file_name='test_dictAttribute.json',
                                                t_s_dict_file_name='test_dictTimeSpace.json')
-        with torch.cuda.device(2):
+        with torch.cuda.device(0):
             pred, obs = master_test(data_model, epoch=self.test_epoch)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['DRAIN_SQKM'],
                                                           is_return_dict=False)

@@ -103,7 +103,8 @@ def train_valid_dataloader(net, trainloader, validloader, criterion, n_epoch, ou
     return net, avg_train_losses, avg_valid_losses
 
 
-def test_dataloader(net, testloader, seq_first=False):
+def test_dataloader(net, testloader, batch_first=False):
+    # batch_first means the model not the input, the inputs are always batch_first here.
     test_obs = []
     test_preds = []
     if torch.cuda.is_available():
@@ -111,19 +112,24 @@ def test_dataloader(net, testloader, seq_first=False):
     with torch.no_grad():
         for data in testloader:
             xs, ys = data
-            if seq_first:
+            if not batch_first:
                 xs = xs.transpose(0, 1)
                 ys = ys.transpose(0, 1)
             if torch.cuda.is_available():
                 xs = xs.cuda()
                 ys = ys.cuda()
             output = net(xs)
-            test_obs.append(ys.cpu().numpy())
-            test_preds.append(output.cpu().numpy())
+            if not batch_first:
+                test_obs.append(np.swapaxes(ys.cpu().numpy(), 1, 0))
+                test_preds.append(np.swapaxes(output.cpu().numpy(), 1, 0))
+            else:
+                test_obs.append(ys.cpu().numpy())
+                test_preds.append(output.cpu().numpy())
     return test_preds, test_obs
 
 
-def train_dataloader(net, trainloader, criterion, n_epoch, out_folder, save_model_folder, save_epoch):
+def train_dataloader(net, trainloader, criterion, n_epoch, out_folder, save_model_folder, save_epoch,
+                     batch_first=False):
     """train a model using data from dataloader"""
     print("Start Training...")
     if torch.cuda.is_available():
@@ -144,6 +150,9 @@ def train_dataloader(net, trainloader, criterion, n_epoch, out_folder, save_mode
                 batch_xs = batch_xs.cuda()
                 batch_ys = batch_ys.cuda()
             # forward + backward + optimize
+            if not batch_first:
+                batch_xs = batch_xs.transpose(0, 1)
+                batch_ys = batch_ys.transpose(0, 1)
             outputs = net(batch_xs)
             loss = criterion(outputs, batch_ys)
             loss.backward()
@@ -783,18 +792,18 @@ def model_test_inv_kernel(model, xqch, xct, batch_size):
     return y_out_list, param_list
 
 
-def model_train_easy_lstm(model,
-                          x,
-                          y,
-                          c,
-                          loss_fun,
-                          *,
-                          n_epoch=500,
-                          mini_batch=[100, 30],
-                          save_epoch=100,
-                          save_folder=None,
-                          mode='seq2seq',
-                          gpu_num=1):
+def model_train_batch1st_lstm(model,
+                              x,
+                              y,
+                              c,
+                              loss_fun,
+                              *,
+                              n_epoch=500,
+                              mini_batch=[100, 30],
+                              save_epoch=100,
+                              save_folder=None,
+                              mode='seq2seq',
+                              gpu_num=1):
     batch_size, rho = mini_batch
     ngrid, nt, nx = x.shape
     if c is not None:
@@ -842,7 +851,7 @@ def model_train_easy_lstm(model,
     return model
 
 
-def model_test_easy_lstm(model, x, c, *, file_path, batch_size=None):
+def model_test_batch1st_lstm(model, x, c, *, file_path, batch_size=None):
     ngrid, nt, nx = x.shape
     if c is not None:
         nc = c.shape[-1]

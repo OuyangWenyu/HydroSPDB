@@ -85,7 +85,7 @@ def synergy_ecoregion(args):
             save_result(gages_model_test.data_source.data_config.data_path['Temp'], test_epoch, pred, obs)
 
 
-# python ecoregions.py --sub ecoregion/exp1 --train_epoch 2 --save_epoch 1 --te 2
+# python ecoregions.py --sub ecoregion/exp5 --train_epoch 2 --save_epoch 1 --te 2
 if __name__ == '__main__':
     print("Begin\n")
     args = cmd()

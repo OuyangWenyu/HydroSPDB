@@ -174,10 +174,7 @@ def load_datamodel_case_exp(case_exp):
     return data_model_i
 
 
-def generate_gages_models(config_data, data_dir, screen_basin_area_huc4=False, **kwargs):
-    source_data = GagesSource.choose_some_basins(config_data, config_data.model_dict["data"]["tRangeTrain"],
-                                                 screen_basin_area_huc4=screen_basin_area_huc4, **kwargs)
-    sites_id = source_data.all_configs['flow_screen_gage_id']
+def generate_gages_models(config_data, data_dir, sites_id=None, t_range=None, screen_basin_area_huc4=False):
     data_model_train = GagesModel.load_datamodel(data_dir,
                                                  data_source_file_name='data_source.txt',
                                                  stat_file_name='Statistics.json', flow_file_name='flow.npy',
@@ -194,19 +191,21 @@ def generate_gages_models(config_data, data_dir, screen_basin_area_huc4=False, *
                                                 f_dict_file_name='test_dictFactorize.json',
                                                 var_dict_file_name='test_dictAttribute.json',
                                                 t_s_dict_file_name='test_dictTimeSpace.json')
-    if sites_id is None:
+    if sites_id is None and t_range is None:
         gages_model_train = GagesModel.update_data_model(config_data, data_model_train,
-                                                         screen_basin_area_huc4=False)
+                                                         screen_basin_area_huc4=screen_basin_area_huc4)
         gages_model_test = GagesModel.update_data_model(config_data, data_model_test,
                                                         train_stat_dict=gages_model_train.stat_dict,
-                                                        screen_basin_area_huc4=False)
+                                                        screen_basin_area_huc4=screen_basin_area_huc4)
     else:
+        assert len(t_range) == 2
         gages_model_train = GagesModel.update_data_model(config_data, data_model_train,
-                                                         sites_id_update=sites_id,
-                                                         screen_basin_area_huc4=False)
+                                                         sites_id_update=sites_id, t_range_update=t_range[0],
+                                                         screen_basin_area_huc4=screen_basin_area_huc4)
         gages_model_test = GagesModel.update_data_model(config_data, data_model_test, sites_id_update=sites_id,
                                                         train_stat_dict=gages_model_train.stat_dict,
-                                                        screen_basin_area_huc4=False)
+                                                        t_range_update=t_range[1],
+                                                        screen_basin_area_huc4=screen_basin_area_huc4)
 
     return gages_model_train, gages_model_test
 
@@ -217,11 +216,29 @@ class GagesModels(object):
     def __init__(self, config_data, screen_basin_area_huc4=True, **kwargs):
         t_train = config_data.model_dict["data"]["tRangeTrain"]
         t_test = config_data.model_dict["data"]["tRangeTest"]
-        t_train_test = [t_train[0], t_test[1]]
-        source_data = GagesSource.choose_some_basins(config_data, t_train_test,
-                                                     screen_basin_area_huc4=screen_basin_area_huc4, **kwargs)
-        data_model = GagesModel(source_data)
-        self.data_model_train, self.data_model_test = GagesModel.data_models_of_train_test(data_model, t_train, t_test)
+        if t_train[1] != t_test[0]:
+            source_data1 = GagesSource.choose_some_basins(config_data, t_train,
+                                                          screen_basin_area_huc4=screen_basin_area_huc4, **kwargs)
+            self.data_model_train = GagesModel(source_data1)
+            source_data2 = GagesSource.choose_some_basins(config_data, t_test,
+                                                          screen_basin_area_huc4=screen_basin_area_huc4, **kwargs)
+            self.data_model_test = GagesModel(source_data2)
+            if source_data1.gage_dict["STAID"].tolist() != source_data2.gage_dict["STAID"].tolist():
+                gage_id = np.intersect1d(source_data1.gage_dict["STAID"], source_data2.gage_dict["STAID"])
+                self.data_model_train = GagesModel.update_data_model(config_data, self.data_model_train,
+                                                                     sites_id_update=gage_id,
+                                                                     screen_basin_area_huc4=False)
+                self.data_model_test = GagesModel.update_data_model(config_data, self.data_model_test,
+                                                                    sites_id_update=gage_id,
+                                                                    train_stat_dict=self.data_model_train.stat_dict,
+                                                                    screen_basin_area_huc4=False)
+        else:
+            t_train_test = [t_train[0], t_test[1]]
+            source_data = GagesSource.choose_some_basins(config_data, t_train_test,
+                                                         screen_basin_area_huc4=screen_basin_area_huc4, **kwargs)
+            data_model = GagesModel(source_data)
+            self.data_model_train, self.data_model_test = GagesModel.data_models_of_train_test(data_model, t_train,
+                                                                                               t_test)
 
 
 class GagesModelsWoBasinNorm(object):
@@ -1032,16 +1049,16 @@ def choose_which_purpose(gages_dam_datamodel, purpose=None):
 
 
 class GagesDamDataModel(object):
-    def __init__(self, gages_input, nid_input, care_1purpose=False, *args):
+    def __init__(self, gages_input, nid_input, *args):
         self.gages_input = gages_input
         self.nid_input = nid_input
         if len(args) == 0:
-            self.gage_main_dam_purpose = self.spatial_join_dam(care_1purpose)
+            self.gage_main_dam_purpose = self.spatial_join_dam()
         else:
             self.gage_main_dam_purpose = args[0]
         # self.update_attr()
 
-    def spatial_join_dam(self, care_1purpose):
+    def spatial_join_dam(self):
         # ALL_PURPOSES = ['C', 'D', 'F', 'G', 'H', 'I', 'N', 'O', 'P', 'R', 'S', 'T', 'X']
         gage_region_dir = self.gages_input.data_source.all_configs.get("gage_region_dir")
         region_shapefiles = self.gages_input.data_source.all_configs.get("regions")
@@ -1062,7 +1079,7 @@ class GagesDamDataModel(object):
             spatial_dam = gpd.sjoin(points, polys, how="inner", op="within")
             gages_id_dam = spatial_dam['GAGE_ID'].values
             u1 = np.unique(gages_id_dam)
-            u1 = self.no_clear_diff_between_nid_gages(u1, spatial_dam)
+            u1 = self.no_clear_diff_between_nid_gages(u1)
             main_purposes = []
             for u1_i in u1:
                 purposes = []
@@ -1088,6 +1105,7 @@ class GagesDamDataModel(object):
         return dam_dict_sorted
 
     def update_attr(self):
+        """will be used for importing dam_purpose attr as the input of models, not finished yet!"""
         dam_dict = self.gage_main_dam_purpose
         attr_lst = self.gages_input.data_source.all_configs.get("attr_chosen")
         data_attr = self.gages_input.data_attr
@@ -1113,8 +1131,8 @@ class GagesDamDataModel(object):
         var_dict['dam_purpose'] = var_dam
         f_dict[var_dam] = uniques.tolist()
 
-    def no_clear_diff_between_nid_gages(self, u1, spatial_dam):
-        """if there is clear diff for some basins in dam number and (dor value not considered now) between NID dataset and GAGES-II dataset,
+    def no_clear_diff_between_nid_gages(self, u1):
+        """if there is clear diff for some basins in dam number between NID dataset and GAGES-II dataset,
         these basins will be excluded in the analysis"""
         print("excluede some basins")
         # there are some basins from shapefile which are not in CONUS, that will cause some bug, so do an intersection before search the attibutes. Also decrease the number needed to be calculated
@@ -1143,3 +1161,51 @@ class GagesDamDataModel(object):
         # run_avg = data_attr[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
         # nor_storage = data_attr[:, 1] * 1000  # m^3
         # dors = nor_storage / run_avg
+
+    def coords_of_dams(self):
+        gage_region_dir = self.gages_input.data_source.all_configs.get("gage_region_dir")
+        region_shapefiles = self.gages_input.data_source.all_configs.get("regions")
+        # read sites from shapefile of region, get id from it.
+        shapefiles = [os.path.join(gage_region_dir, region_shapefile + '.shp') for region_shapefile in
+                      region_shapefiles]
+        dam_points_dict = {}
+        dam_storages_dict = {}
+        for shapefile in shapefiles:
+            polys = gpd.read_file(shapefile)
+            points = self.nid_input.nid_data
+            hydro_logger.debug(points.crs)
+            hydro_logger.debug(polys.crs)
+            if not (points.crs == polys.crs):
+                points = points.to_crs(polys.crs)
+            hydro_logger.debug(points.head())
+            hydro_logger.debug(polys.head())
+            # Make a spatial join
+            spatial_dam = gpd.sjoin(points, polys, how="inner", op="within")
+            gages_id_dam = spatial_dam['GAGE_ID'].values
+            u1 = np.unique(gages_id_dam)
+            u1 = self.no_clear_diff_between_nid_gages(u1)
+            dam_points = []
+            storages = []
+            for u1_i in u1:
+                dam_point = []
+                storage = []
+                for index_i in range(gages_id_dam.shape[0]):
+                    if gages_id_dam[index_i] == u1_i:
+                        dam_point_lat = spatial_dam["LATITUDE"].iloc[index_i]
+                        dam_point_lon = spatial_dam["LONGITUDE"].iloc[index_i]
+                        dam_point.append((dam_point_lat, dam_point_lon))
+                        storage.append(spatial_dam["NORMAL_STO"].iloc[index_i])
+                dam_points.append(dam_point)
+                storages.append(storage)
+            d1 = dict(zip(u1.tolist(), dam_points))
+            dam_points_dict = {**dam_points_dict, **d1}
+            d2 = dict(zip(u1.tolist(), storages))
+            dam_storages_dict = {**dam_storages_dict, **d2}
+        # sorted by keys(gages_id)
+        dam_points_dict_sorted = {}
+        for key in sorted(dam_points_dict.keys()):
+            dam_points_dict_sorted[key] = dam_points_dict[key]
+        dam_storages_dict_sorted = {}
+        for key in sorted(dam_storages_dict.keys()):
+            dam_storages_dict_sorted[key] = dam_storages_dict[key]
+        return dam_points_dict_sorted, dam_storages_dict_sorted

@@ -165,8 +165,7 @@ if not find_gages_data_path:
         print("Please download data manually!")
         zip_files = ["59692a64e4b0d1f9f05fbd39", "basin_mean_forcing.zip", "basinchar_and_report_sept_2011.zip",
                      "boundaries_shapefiles_by_aggeco.zip", "camels_attributes_v2.0.zip", "camels531.zip",
-                     "gages_streamflow.zip", "gagesII_9322_point_shapefile.zip", "nid.zip",
-                     "wbdhu4-a-us-september2019-shpfile.zip"]
+                     "gages_streamflow.zip", "gagesII_9322_point_shapefile.zip", "nid.zip"]
         download_zip_files = [os.path.join(__C.DATA_PATH, zip_file) for zip_file in zip_files]
         for download_zip_file in download_zip_files:
             if not os.path.isfile(download_zip_file):
@@ -232,7 +231,7 @@ __C.MODEL.doNorm = [True, True]
 __C.MODEL.rmNan = [True, False]
 __C.MODEL.daObs = 0
 __C.MODEL.miniBatch = [100, 365]
-__C.MODEL.nEpoch = 340
+__C.MODEL.nEpoch = 310
 __C.MODEL.saveEpoch = 20
 __C.MODEL.name = "CudnnLstmModel"
 __C.MODEL.hiddenSize = 256
@@ -253,50 +252,59 @@ __C.CACHE.STATE = False
 __C.CACHE.HAS = False
 
 
-def cmd():
+def cmd(sub=None, gage_id_file=None, gage_id=None, train_period=None, test_period=None, flow_screen=None,
+        quick_data=None, cache_state=None, pub_plan=None, plus=None, split_num=None, dam_plan=None, attr_screen=None,
+        mini_batch=None, train_mode=None, train_epoch=None, save_epoch=None, te=None, model_name=None):
     """input args from cmd"""
     parser = argparse.ArgumentParser(description='Train the CONUS model')
-    parser.add_argument('--sub', dest='sub', help='subset and sub experiment', default=None, type=str)
+    parser.add_argument('--sub', dest='sub', help='subset and sub experiment', default=sub, type=str)
     parser.add_argument('--ctx', dest='ctx',
                         help='Running Context -- gpu num. E.g `--ctx 0` means run code in the context of gpu 0',
                         type=int, default=None)
     parser.add_argument('--rs', dest='rs', help='random seed', default=None, type=int)
-    parser.add_argument('--te', dest='te', help='test epoch', default=None, type=int)
+    parser.add_argument('--te', dest='te', help='test epoch', default=te, type=int)
     # There is something wrong with "bool", so I used 1 as True, 0 as False
-    parser.add_argument('--train_mode', dest='train_mode', help='train or test', default=None, type=int)
-    parser.add_argument('--train_epoch', dest='train_epoch', help='epoches of training period', default=None, type=int)
-    parser.add_argument('--save_epoch', dest='save_epoch', help='save for every save_epoch epoches', default=None,
+    parser.add_argument('--train_mode', dest='train_mode', help='train or test', default=train_mode, type=int)
+    parser.add_argument('--train_epoch', dest='train_epoch', help='epoches of training period', default=train_epoch,
+                        type=int)
+    parser.add_argument('--save_epoch', dest='save_epoch', help='save for every save_epoch epoches', default=save_epoch,
                         type=int)
     parser.add_argument('--regions', dest='regions',
                         help='There are 10 regions in GAGES-II. One is reference region, others are non-ref regions',
                         default=None, nargs='+')
-    parser.add_argument('--gage_id', dest='gage_id', help='just select some sites',
-                        default=None, nargs='+')
+    parser.add_argument('--train_period', dest='train_period', help='The training period', default=train_period,
+                        nargs='+')
+    parser.add_argument('--test_period', dest='test_period', help='The test period', default=test_period, nargs='+')
+    parser.add_argument('--mini_batch', dest='mini_batch', help='batch_size and rho', default=mini_batch, nargs='+')
+    parser.add_argument('--model_name', dest='model_name',
+                        help='The name of DL model. now the zoo include: '
+                             'LinearEasyLstm,StackedEasyLstm,PytorchLstm,EasyLstm,CudnnLstmModel',
+                        default=model_name, type=str)
+    parser.add_argument('--gage_id', dest='gage_id', help='just select some sites', default=gage_id, nargs='+')
+    parser.add_argument('--gage_id_file', dest='gage_id_file', help='select some sites from a file',
+                        default=gage_id_file, type=str)
     parser.add_argument('--flow_screen', dest='flow_screen',
-                        help='screen some sites according to their streamflow record',
-                        default=None, type=json.loads)
+                        help='screen some sites according to their streamflow record', default=flow_screen,
+                        type=json.loads)
     parser.add_argument('--attr_screen', dest='attr_screen',
-                        help='screen some sites according to their attributes',
-                        default=None, type=json.loads)
+                        help='screen some sites according to their attributes', default=attr_screen, type=json.loads)
     parser.add_argument('--var_c', dest='var_c', help='types of attributes', default=None, nargs='+')
     parser.add_argument('--var_t', dest='var_t', help='types of forcing', default=None, nargs='+')
     parser.add_argument('--gen_quick_data', dest='gen_quick_data', help='Do I need to generate quick data?', default=0,
                         type=int)
-    parser.add_argument('--quick_data', dest='quick_data', help='Has quick data existed?', default=1, type=int)
+    parser.add_argument('--quick_data', dest='quick_data', help='Has quick data existed?', default=quick_data, type=int)
     parser.add_argument('--cache_state', dest='cache_state', help='Do I save the data model for the sub experiment?',
-                        default=0, type=int)
-
+                        default=cache_state, type=int)
     parser.add_argument('--pub_plan', dest='pub_plan',
                         help='4 plans:0-camels->non-camels 1-no dam->small dor;2:no dam->large dor;3:small_dor->large_dor',
-                        default=None, type=int)
+                        default=pub_plan, type=int)
     parser.add_argument('--plus', dest='plus', help='Do training dataset contain data from both A and B?',
-                        default=None, type=int)
+                        default=plus, type=int)
     parser.add_argument('--split_num', dest='split_num', help='the split number when doing PUB test',
-                        default=None, type=int)
-
+                        default=split_num, type=int)
     parser.add_argument('--dam_plan', dest='dam_plan',
                         help='combination of dam cases: 1--no dam+small dam;2--no dam+large dam;3--small dam+large dam',
-                        default=None, type=int)
+                        default=dam_plan, type=int)
     args = parser.parse_args()
     return args
 
@@ -328,8 +336,22 @@ def update_cfg(cfg_file, new_args):
             cfg_file.TRAIN_MODE = False
     if new_args.regions is not None:
         cfg_file.GAGES.regions = new_args.regions
-    if new_args.gage_id is not None:
-        cfg_file.GAGES.gageIdScreen = new_args.gage_id
+    if new_args.train_period is not None:
+        cfg_file.MODEL.tRangeTrain = new_args.train_period
+    if new_args.test_period is not None:
+        cfg_file.MODEL.tRangeTest = new_args.test_period
+    if new_args.mini_batch is not None:
+        batch_size = int(new_args.mini_batch[0])
+        rho = int(new_args.mini_batch[1])
+        cfg_file.MODEL.miniBatch = [batch_size, rho]
+    if new_args.model_name is not None:
+        cfg_file.MODEL.name = new_args.model_name
+    if new_args.gage_id is not None or new_args.gage_id_file is not None:
+        if new_args.gage_id_file is not None:
+            gage_id_lst = pd.read_csv(new_args.gage_id_file, dtype={0: str}).iloc[:, 0].values
+            cfg_file.GAGES.gageIdScreen = gage_id_lst.tolist()
+        else:
+            cfg_file.GAGES.gageIdScreen = new_args.gage_id
     if new_args.flow_screen is not None:
         cfg_file.GAGES.streamflowScreenParams = new_args.flow_screen
     if new_args.attr_screen is not None:

@@ -14,8 +14,7 @@ from data.data_config import update_config_item
 from explore import *
 from utils import serialize_pickle, serialize_json, serialize_numpy, unserialize_pickle, unserialize_json, \
     unserialize_numpy, hydro_time
-from utils.hydro_math import copy_attr_array_in2d, concat_two_3darray, random_index, select_subset, \
-    select_subset_batch_first
+from utils.hydro_math import copy_attr_array_in2d, concat_two_3darray
 
 
 def save_result(save_dir, epoch, pred, obs, pred_name='flow_pred', obs_name='flow_obs'):
@@ -352,44 +351,6 @@ class GagesModel(DataModel):
         stat_dict = data_model1.cal_stat_all()
         data_model1.stat_dict = stat_dict
         return data_model1
-
-    @classmethod
-    def update_gages_model(cls, data_model_origin, config_data, t_range_update=None, train_stat_dict=None, **kwargs):
-        """update data model according to config_data
-        :parameters
-            kwargs: gages_source parameters
-        """
-        if t_range_update is None:
-            t_range_update = data_model_origin.t_s_dict["t_final_range"]
-        new_source_data = GagesSource.choose_some_basins(config_data, t_range_update, **kwargs)
-        sites_id_origin_copy = data_model_origin.t_s_dict["sites_id"].copy()
-        sites_id_new_source_data = new_source_data.gage_dict["STAID"]
-        chosen_idx_new_source_data = [i for i in range(len(sites_id_origin_copy)) if
-                                      sites_id_origin_copy[i] in sites_id_new_source_data]
-
-        start_index = int((np.datetime64(t_range_update[0]) - np.datetime64(
-            data_model_origin.t_s_dict["t_final_range"][0])) / np.timedelta64(1, 'D'))
-        t_lst_temp = hydro_time.t_range_days(t_range_update)
-        end_index = start_index + t_lst_temp.size
-        assert start_index >= 0
-
-        data_flow_new_source_data = data_model_origin.data_flow[chosen_idx_new_source_data, start_index:end_index]
-        sites_id_screen_new_source_data = new_source_data.all_configs['flow_screen_gage_id']
-        if sites_id_screen_new_source_data is not None:
-            sites_id_intersect = np.intersect1d(sites_id_new_source_data, sites_id_screen_new_source_data)
-        else:
-            sites_id_intersect = sites_id_new_source_data
-        data_flow_screen, sites_id_update, t_range_list_screen = new_source_data.usgs_screen_streamflow(
-            data_flow_new_source_data, usgs_ids=sites_id_intersect)
-        data_attr_update = True
-
-        screen_basin_area_huc4 = False
-        for screen_basin_area_huc4_key in kwargs:
-            if screen_basin_area_huc4_key == "screen_basin_area_huc4":
-                screen_basin_area_huc4 = kwargs[screen_basin_area_huc4_key]
-                break
-        return cls.update_data_model(config_data, data_model_origin, sites_id_update, t_range_update,
-                                     data_attr_update, train_stat_dict, screen_basin_area_huc4=screen_basin_area_huc4)
 
     @classmethod
     def update_data_model(cls, config_data, data_model_origin, sites_id_update=None, t_range_update=None,

@@ -1,3 +1,4 @@
+import itertools
 import sys
 
 from matplotlib import gridspec
@@ -5,7 +6,7 @@ import matplotlib.pyplot as plt
 from data import GagesSource
 from data.data_input import GagesModel
 from data.gages_input_dataset import load_ensemble_result, load_dataconfig_case_exp
-from explore.stat import ecdf
+from explore.stat import ecdf, wilcoxon_t_test_for_lst
 from visual.plot_model import plot_gages_map_and_scatter
 from visual.plot_stat import plot_ecdfs
 import numpy as np
@@ -17,21 +18,23 @@ import os
 from data.config import cfg, update_cfg, cmd
 from utils.hydro_util import hydro_logger
 
+# conus_exps = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
+# pair1_exps = ["dam_exp1", "dam_exp2", "dam_exp3", "dam_exp7", "dam_exp8", "dam_exp9"]
+# pair2_exps = ["nodam_exp7", "nodam_exp8", "nodam_exp9", "nodam_exp10", "nodam_exp11", "nodam_exp12"]
+# pair3_exps = ["dam_exp27", "dam_exp26", "dam_exp28", "dam_exp29", "dam_exp30", "dam_exp31"]
+# nodam_exp_lst = ["nodam_exp1", "nodam_exp2", "nodam_exp3", "nodam_exp4", "nodam_exp5", "nodam_exp6"]
+# smalldam_exp_lst = ["dam_exp20", "dam_exp21", "dam_exp22", "dam_exp23", "dam_exp24", "dam_exp25"]
+# largedam_exp_lst = ["dam_exp4", "dam_exp5", "dam_exp6", "dam_exp13", "dam_exp16", "dam_exp19"]
+
 conus_exps = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_exp42", "basic_exp43"]
-pair1_exps = ["dam_exp1", "dam_exp2", "dam_exp3", "dam_exp7", "dam_exp8", "dam_exp9"]
-pair2_exps = ["nodam_exp7", "nodam_exp8", "nodam_exp9", "nodam_exp10", "nodam_exp11", "nodam_exp12"]
+pair1_exps = ["dam_exp37", "dam_exp40", "dam_exp43", "dam_exp46", "dam_exp49", "dam_exp52"]
+pair2_exps = ["nodam_exp16", "nodam_exp17", "nodam_exp18", "nodam_exp19", "nodam_exp20", "nodam_exp21"]
 pair3_exps = ["dam_exp27", "dam_exp26", "dam_exp28", "dam_exp29", "dam_exp30", "dam_exp31"]
 nodam_exp_lst = ["nodam_exp1", "nodam_exp2", "nodam_exp3", "nodam_exp4", "nodam_exp5", "nodam_exp6"]
-smalldam_exp_lst = ["dam_exp20", "dam_exp21", "dam_exp22", "dam_exp23", "dam_exp24", "dam_exp25"]
-largedam_exp_lst = ["dam_exp4", "dam_exp5", "dam_exp6", "dam_exp13", "dam_exp16", "dam_exp19"]
+smalldam_exp_lst = ["dam_exp39", "dam_exp42", "dam_exp45", "dam_exp48", "dam_exp51", "dam_exp54"]
+largedam_exp_lst = ["dam_exp38", "dam_exp41", "dam_exp44", "dam_exp47", "dam_exp50", "dam_exp53"]
 
-# conus_exps = ["basic_exp37"]
-# pair1_exps = ["dam_exp1"]
-# pair2_exps = ["nodam_exp7"]
-# pair3_exps = ["dam_exp27"]
-# nodam_exp_lst = ["nodam_exp1"]
-# smalldam_exp_lst = ["dam_exp20"]
-# largedam_exp_lst = ["dam_exp4"]
+dor_cutoff = 0.1
 test_epoch = 300
 FIGURE_DPI = 600
 # nodam_config_data = load_dataconfig_case_exp(nodam_exp_lst[0])
@@ -53,8 +56,8 @@ conus_data_model = GagesModel.load_datamodel(conus_config_data.data_path["Temp"]
                                              t_s_dict_file_name='test_dictTimeSpace.json')
 conus_sites = conus_data_model.t_s_dict["sites_id"]
 
-dor_1 = - 0.02
-dor_2 = 0.02
+dor_1 = - dor_cutoff
+dor_2 = dor_cutoff
 source_data_dor1 = GagesSource.choose_some_basins(conus_config_data,
                                                   conus_config_data.model_dict["data"]["tRangeTrain"],
                                                   screen_basin_area_huc4=False,
@@ -117,6 +120,11 @@ pair3_data_model = GagesModel.load_datamodel(pair3_config_data.data_path["Temp"]
                                              t_s_dict_file_name='test_dictTimeSpace.json')
 pair3_sites = pair3_data_model.t_s_dict["sites_id"]
 
+assert (all(x < y for x, y in zip(pair1_sites, pair1_sites[1:])))
+assert (all(x < y for x, y in zip(pair2_sites, pair2_sites[1:])))
+assert (all(x < y for x, y in zip(pair3_sites, pair3_sites[1:])))
+assert (all(x < y for x, y in zip(conus_sites, conus_sites[1:])))
+
 idx_lst_nodam_in_pair1 = [i for i in range(len(pair1_sites)) if pair1_sites[i] in sites_id_nodam]
 idx_lst_nodam_in_pair2 = [i for i in range(len(pair2_sites)) if pair2_sites[i] in sites_id_nodam]
 idx_lst_nodam_in_pair3 = [i for i in range(len(pair3_sites)) if pair3_sites[i] in sites_id_nodam]
@@ -132,11 +140,12 @@ idx_lst_largedam_in_pair2 = [i for i in range(len(pair2_sites)) if pair2_sites[i
 idx_lst_largedam_in_pair3 = [i for i in range(len(pair3_sites)) if pair3_sites[i] in sites_id_largedam]
 idx_lst_largedam_in_conus = [i for i in range(len(conus_sites)) if conus_sites[i] in sites_id_largedam]
 
-compare_item = 3
+compare_item = 2
 # 0: plot the map for comparing NSE of small-dor and zero-dor
 # 1: ecdf plots of different cases
 # 2: box plots pf different cases
 # 3: show the median NSE values of different cases
+# 4: see if the differences between different cases are significant
 if compare_item == 0:
     inds_df, pred, obs = load_ensemble_result(cfg, conus_exps, test_epoch, return_value=True)
 
@@ -173,12 +182,74 @@ if compare_item == 0:
     data_df = pd.concat(frame)
     idx_lst = [np.arange(len(type_1_index_lst)),
                np.arange(len(type_1_index_lst), len(type_1_index_lst) + len(type_2_index_lst))]
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
     plot_gages_map_and_scatter(data_df, [show_ind_key, "lat", "lon", "slope"], idx_lst, cmap_strs=["Reds", "Blues"],
                                labels=["zero-dor", "small-dor"], scatter_label=[attr_lst[0], show_ind_key], wspace=2,
                                hspace=1.5, legend_y=.8, sub_fig_ratio=[6, 4, 1])
     plt.tight_layout()
     plt.savefig(os.path.join(conus_config_data.data_path["Out"], 'zero-small-dor_western_map_comp.png'), dpi=FIGURE_DPI,
                 bbox_inches="tight")
+elif compare_item == 4:
+    hydro_logger.info("Are the differences significant?")
+    inds_df_pair1 = load_ensemble_result(cfg, pair1_exps, test_epoch)
+    inds_df_pair2 = load_ensemble_result(cfg, pair2_exps, test_epoch)
+    inds_df_pair3 = load_ensemble_result(cfg, pair3_exps, test_epoch)
+    inds_df_conus = load_ensemble_result(cfg, conus_exps, test_epoch)
+
+    keys_nse = "NSE"
+
+    attr_nodam = "zero_dor"
+    cases_exps_legends_nodam = ["LSTM-Z", "LSTM-ZS", "LSTM-ZL", "LSTM-CONUS"]
+    inds_df_nodam = load_ensemble_result(cfg, nodam_exp_lst, test_epoch)
+
+    np_nodam_alone_nse = inds_df_nodam[keys_nse]
+    np_nodam_in_pair1_nse = inds_df_pair1[keys_nse].iloc[idx_lst_nodam_in_pair1]
+    np_nodam_in_pair2_nse = inds_df_pair2[keys_nse].iloc[idx_lst_nodam_in_pair2]
+    np_nodam_in_conus_nse = inds_df_conus[keys_nse].iloc[idx_lst_nodam_in_conus]
+    nodam_nse_lst = [np_nodam_alone_nse, np_nodam_in_pair1_nse, np_nodam_in_pair2_nse, np_nodam_in_conus_nse]
+    hydro_logger.info("Calculate Wilcoxon signed-rank between every two of %s for %s:", cases_exps_legends_nodam,
+                      attr_nodam)
+    w_nodam, p_nodam = wilcoxon_t_test_for_lst(nodam_nse_lst)
+    cases_nodam_pairs = list(itertools.combinations(cases_exps_legends_nodam, 2))
+    p_nodam_scinote = ['%.2g' % a_p for a_p in p_nodam]
+    hydro_logger.info("The p-value of each pair in zero-dor cases: %s", list(zip(cases_nodam_pairs, p_nodam_scinote)))
+
+    attr_smalldam = "small_dor"
+    cases_exps_legends_smalldam = ["LSTM-S", "LSTM-ZS", "LSTM-SL", "LSTM-CONUS"]
+    inds_df_smalldam = load_ensemble_result(cfg, smalldam_exp_lst, test_epoch)
+
+    np_smalldam_alone_nse = inds_df_smalldam[keys_nse]
+    np_smalldam_in_pair1_nse = inds_df_pair1[keys_nse].iloc[idx_lst_smalldam_in_pair1]
+    np_smalldam_in_pair3_nse = inds_df_pair3[keys_nse].iloc[idx_lst_smalldam_in_pair3]
+    np_smalldam_in_conus_nse = inds_df_conus[keys_nse].iloc[idx_lst_smalldam_in_conus]
+    smalldam_nse_lst = [np_smalldam_alone_nse, np_smalldam_in_pair1_nse, np_smalldam_in_pair3_nse,
+                        np_smalldam_in_conus_nse]
+    hydro_logger.info("Calculate Wilcoxon signed-rank between every two of %s for %s:", cases_exps_legends_smalldam,
+                      attr_smalldam)
+    w_smalldam, p_smalldam = wilcoxon_t_test_for_lst(smalldam_nse_lst)
+    cases_smalldam_pairs = list(itertools.combinations(cases_exps_legends_smalldam, 2))
+    p_smalldam_scinote = ['%.2g' % a_p for a_p in p_smalldam]
+    hydro_logger.info("The p-value of each pair in small-dor cases: %s",
+                      list(zip(cases_smalldam_pairs, p_smalldam_scinote)))
+
+    attr_largedam = "large_dor"
+    cases_exps_legends_largedam = ["LSTM-L", "LSTM-ZL", "LSTM-SL", "LSTM-CONUS"]
+    inds_df_largedam = load_ensemble_result(cfg, largedam_exp_lst, test_epoch)
+    np_largedam_alone_nse = inds_df_largedam[keys_nse]
+    np_largedam_in_pair2_nse = inds_df_pair2[keys_nse].iloc[idx_lst_largedam_in_pair2]
+    np_largedam_in_pair3_nse = inds_df_pair3[keys_nse].iloc[idx_lst_largedam_in_pair3]
+    np_largedam_in_conus_nse = inds_df_conus[keys_nse].iloc[idx_lst_largedam_in_conus]
+    largedam_nse_lst = [np_largedam_alone_nse, np_largedam_in_pair2_nse, np_largedam_in_pair3_nse,
+                        np_largedam_in_conus_nse]
+    hydro_logger.info("Calculate Wilcoxon signed-rank between every two of %s for %s:", cases_exps_legends_largedam,
+                      attr_largedam)
+    w_largedam, p_largedam = wilcoxon_t_test_for_lst(largedam_nse_lst)
+    cases_largedam_pairs = list(itertools.combinations(cases_exps_legends_largedam, 2))
+    p_largedam_scinote = ['%.2g' % a_p for a_p in p_largedam]
+    hydro_logger.info("The p-value of each pair in large-dor cases: %s",
+                      list(zip(cases_largedam_pairs, p_largedam_scinote)))
+
 elif compare_item == 3:
     all_lst_names = ["no dam lst", "small dam lst", "large dam lst", "no and small dam lst", "no and large dam lst",
                      "small and large dam lst"]
@@ -205,6 +276,7 @@ elif compare_item == 3:
         idx_tmp = idx_tmp + 1
 elif compare_item == 2:
     print("multi box")
+    set_y_lim = [-0.2, 1]
     inds_df_pair1 = load_ensemble_result(cfg, pair1_exps, test_epoch)
     inds_df_pair2 = load_ensemble_result(cfg, pair2_exps, test_epoch)
     inds_df_pair3 = load_ensemble_result(cfg, pair3_exps, test_epoch)
@@ -217,7 +289,7 @@ elif compare_item == 2:
     median_loc = 0.015
     decimal_places = 2
     sns.despine()
-    sns.set(font_scale=1.5)
+    sns.set(font="serif", font_scale=1.5)
 
     attr_nodam = "zero_dor"
     cases_exps_legends_nodam = ["LSTM-Z", "LSTM-ZS", "LSTM-ZL", "LSTM-CONUS"]
@@ -248,7 +320,7 @@ elif compare_item == 2:
     ax1 = plt.subplot(gs[0])
     # ax1.set_title("(a)")
     ax1.set_xticklabels(ax1.get_xticklabels(), rotation=30)
-    ax1.set_ylim([0, 1])
+    ax1.set_ylim(set_y_lim)
     sns.boxplot(ax=ax1, x=attr_nodam, y=keys_nse, data=result_nodam, showfliers=False, palette=color_chosen[0])
     medians_nodam = result_nodam.groupby([attr_nodam], sort=False)[keys_nse].median().values
     median_labels_nodam = [str(np.round(s, decimal_places)) for s in medians_nodam]
@@ -287,7 +359,7 @@ elif compare_item == 2:
     ax2 = plt.subplot(gs[1])
     # ax2.set_title("(b)")
     ax2.set_xticklabels(ax2.get_xticklabels(), rotation=30)
-    ax2.set_ylim([0, 1])
+    ax2.set_ylim(set_y_lim)
     ax2.set(ylabel=None)
     sns.boxplot(ax=ax2, x=attr_smalldam, y=keys_nse, data=result_smalldam, showfliers=False, palette=color_chosen[1])
     medians_smalldam = result_smalldam.groupby([attr_smalldam], sort=False)[keys_nse].median().values
@@ -327,7 +399,7 @@ elif compare_item == 2:
     ax3 = plt.subplot(gs[2])
     # ax3.set_title("(c)")
     ax3.set_xticklabels(ax3.get_xticklabels(), rotation=30)
-    ax3.set_ylim([0, 1])
+    ax3.set_ylim(set_y_lim)
     ax3.set(ylabel=None)
     sns.boxplot(ax=ax3, x=attr_largedam, y=keys_nse, data=result_largedam, showfliers=False, palette=color_chosen[2])
     medians_largedam = result_largedam.groupby([attr_largedam], sort=False)[keys_nse].median().values
@@ -346,7 +418,9 @@ elif compare_item == 1:  # ecdf
     inds_df_pair2 = load_ensemble_result(cfg, pair2_exps, test_epoch)
     inds_df_pair3 = load_ensemble_result(cfg, pair3_exps, test_epoch)
     inds_df_conus = load_ensemble_result(cfg, conus_exps, test_epoch)
-
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
+    sns.set(font="serif", font_scale=1.5)
     fig = plt.figure(figsize=(12, 4))
     gs = gridspec.GridSpec(1, 3)
     keys_nse = "NSE"

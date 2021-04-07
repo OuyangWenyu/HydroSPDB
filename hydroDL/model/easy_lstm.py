@@ -47,7 +47,7 @@ class VariationalDropout(nn.Module):
 class LSTM(nn.LSTM):
     def __init__(self, *args, dropouti: float = 0.,
                  dropoutw: float = 0., dropouto: float = 0.,
-                 batch_first=True, unit_forget_bias=True, **kwargs):
+                 batch_first=False, unit_forget_bias=True, **kwargs):
         super().__init__(*args, **kwargs, batch_first=batch_first)
         self.unit_forget_bias = unit_forget_bias
         self.dropoutw = dropoutw
@@ -86,14 +86,14 @@ class LSTM(nn.LSTM):
 
 
 class PytorchLstm(nn.Module):
-    def __init__(self, *, nx, ny, hidden_size, dropouti=0, dropouto=0.5):
+    def __init__(self, *, nx, ny, hidden_size, dropouti=0, dropouto=0.5, batch_first=False):
         super(PytorchLstm, self).__init__()
         self.nx = nx
         self.ny = ny
         self.hidden_size = hidden_size
         self.dropout_rate = dropouto
-        self.lstm = nn.LSTM(input_size=self.nx, hidden_size=self.hidden_size, num_layers=1, bias=True, batch_first=True,
-                            dropout=dropouto)
+        self.lstm = nn.LSTM(input_size=self.nx, hidden_size=self.hidden_size, num_layers=1, bias=True,
+                            batch_first=batch_first, dropout=dropouto)
         self.linearOut = torch.nn.Linear(self.hidden_size, self.ny)
 
     def forward(self, x):
@@ -103,12 +103,12 @@ class PytorchLstm(nn.Module):
 
 
 class EasyLstm(torch.nn.Module):
-    def __init__(self, *, nx, ny, hidden_size, dropouti=0, dropouto=0.5):
+    def __init__(self, *, nx, ny, hidden_size, dropouti=0, dropouto=0.5, batch_first=False):
         super(EasyLstm, self).__init__()
         self.nx = nx
         self.ny = ny
         self.hidden_size = hidden_size
-        self.lstm = LSTM(nx, hidden_size, dropouti=dropouti, dropouto=dropouto)
+        self.lstm = LSTM(nx, hidden_size, dropouti=dropouti, dropouto=dropouto, batch_first=batch_first)
         self.linearOut = torch.nn.Linear(hidden_size, ny)
 
     def forward(self, x):
@@ -118,14 +118,16 @@ class EasyLstm(torch.nn.Module):
 
 
 class StackedEasyLstm(torch.nn.Module):
-    def __init__(self, *, nx, ny, hidden_size, dropouti=0.5, dropouto=0.5):
+    def __init__(self, *, nx, ny, hidden_size, dropouti=0.5, dropouto=0.5, batch_first=False):
         super(StackedEasyLstm, self).__init__()
         self.nx = nx
         self.ny = ny
         self.hidden_size = hidden_size
-        self.lstm1 = LSTM(nx, hidden_size, dropouto=dropouto)
-        self.lstm2 = LSTM(hidden_size, int(hidden_size / 2), dropouti=dropouti, dropouto=dropouto)
-        self.lstm3 = LSTM(int(hidden_size / 2), int(hidden_size / 4), dropouti=dropouti, dropouto=dropouto)
+        self.lstm1 = LSTM(nx, hidden_size, dropouto=dropouto, batch_first=batch_first)
+        self.lstm2 = LSTM(hidden_size, int(hidden_size / 2), dropouti=dropouti, dropouto=dropouto,
+                          batch_first=batch_first)
+        self.lstm3 = LSTM(int(hidden_size / 2), int(hidden_size / 4), dropouti=dropouti, dropouto=dropouto,
+                          batch_first=batch_first)
         self.linearOut = torch.nn.Linear(int(hidden_size / 4), ny)
 
     def forward(self, x):
@@ -137,7 +139,7 @@ class StackedEasyLstm(torch.nn.Module):
 
 
 class LinearEasyLstm(torch.nn.Module):
-    def __init__(self, *, nx, ny, hidden_size, dropouti=0.5, dropouto=0.5):
+    def __init__(self, *, nx, ny, hidden_size, dropouti=0.5, dropouto=0.5, batch_first=False):
         super(LinearEasyLstm, self).__init__()
         self.nx = nx
         self.ny = ny
@@ -145,7 +147,7 @@ class LinearEasyLstm(torch.nn.Module):
         self.ct = 0
         self.nLayer = 1
         self.linearIn = torch.nn.Linear(nx, hidden_size)
-        self.lstm = LSTM(hidden_size, hidden_size, dropouti=dropouti, dropouto=dropouto)
+        self.lstm = LSTM(hidden_size, hidden_size, dropouti=dropouti, dropouto=dropouto, batch_first=batch_first)
         self.linearOut = torch.nn.Linear(hidden_size, ny)
         self.gpu = 1
 

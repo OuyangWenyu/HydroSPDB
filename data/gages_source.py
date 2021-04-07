@@ -275,7 +275,7 @@ class GagesSource(DataSource):
 
     def read_usge_gage(self, huc, usgs_id, t_lst):
         """read data for one gage"""
-        print(usgs_id)
+        hydro_logger.info("reading %s streamflow data", usgs_id)
         dir_gage_flow = self.all_configs.get("flow_dir")
         usgs_file = os.path.join(dir_gage_flow, str(huc), usgs_id + '.txt')
         # ignore the comment lines and the first non-value row
@@ -294,9 +294,8 @@ class GagesSource(DataSource):
         for column_name in columns_names:
             if '_00060_00003_cd' in column_name:
                 columns_flow_cd.append(column_name)
-
         if len(columns_flow) > 1:
-            print("there are some columns for flow, choose one\n")
+            hydro_logger.debug("there are some columns for flow, choose one\n")
             df_date_temp = df_flow['datetime']
             date_temp = pd.to_datetime(df_date_temp).values.astype('datetime64[D]')
             c_temp, ind1_temp, ind2_temp = np.intersect1d(date_temp, t_lst, return_indices=True)
@@ -304,6 +303,10 @@ class GagesSource(DataSource):
             for i in range(len(columns_flow)):
                 out_temp = np.full([len(t_lst)], np.nan)
                 df_flow_temp = df_flow[columns_flow[i]].copy()
+                df_flow_temp.loc[df_flow_temp == "Rat"] = np.nan
+                df_flow_temp.loc[df_flow_temp == "Dis"] = np.nan
+                df_flow_temp.loc[df_flow_temp == "Ice"] = np.nan
+                df_flow_temp.loc[df_flow_temp == "Ssn"] = np.nan
                 out_temp[ind2_temp] = df_flow_temp.iloc[ind1_temp]
                 num_nan = np.isnan(out_temp).sum()
                 num_nan_lst.append(num_nan)
@@ -372,10 +375,12 @@ class GagesSource(DataSource):
         usgs_id_lst = gage_dict[gage_fld_lst[0]]
         huc_02s = gage_dict[gage_fld_lst[3]]
         y = np.empty([len(usgs_id_lst), nt])
+        print("reading streamflow data")
         for k in range(len(usgs_id_lst)):
             huc_02 = huc_02s[k]
             data_obs = self.read_usge_gage(huc_02, usgs_id_lst[k], t_lst)
             y[k, :] = data_obs
+        print("read streamflow successfully")
         return y
 
     def usgs_screen_streamflow(self, streamflow, usgs_ids=None, time_range=None):
@@ -531,7 +536,7 @@ class GagesSource(DataSource):
 
         data_folder = self.all_configs["forcing_dir"]
         # original daymet file not for leap year, there is no data in 12.31 in leap year, so files which have been interpolated for nan value have name "_leap"
-        data_file = os.path.join(data_folder, huc, '%s_lump_%s_forcing_leap.txt' % (usgs_id, dataset))
+        data_file = os.path.join(data_folder, huc, "%s_lump_%s_forcing_leap.txt" % (usgs_id, dataset))
         print("reading", usgs_id, "forcing data")
         data_temp = pd.read_csv(data_file, sep=r'\s+', header=None, skiprows=1)
 

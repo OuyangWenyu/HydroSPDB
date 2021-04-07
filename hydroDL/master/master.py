@@ -39,7 +39,7 @@ def master_test_1by1(data_model):
                                   fillObs=True)
     model.load_state_dict(torch.load(model_file))
     testloader = create_datasets(data_model, train_mode=False)
-    pred_list, obs_list = model_run.test_dataloader(model, testloader, seq_first=True)
+    pred_list, obs_list = model_run.test_dataloader(model, testloader)
     pred = reduce(lambda x, y: np.vstack((x, y)), pred_list)
     obs = reduce(lambda x, y: np.vstack((x, y)), obs_list)
     stat_dict = data_model.stat_dict
@@ -305,7 +305,7 @@ def master_train_warmup(data_model, warmup_len=120, pre_trained_model_epoch=1, r
     return model
 
 
-def master_train_easy_lstm(data_model):
+def master_train_batch1st_lstm(data_model):
     """training main function for stacked lstm"""
     model_dict = data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
@@ -332,29 +332,31 @@ def master_train_easy_lstm(data_model):
         loss_fun = crit.NSELoss()
         opt_model['ny'] = ny
     else:
-        print("Please specify the loss function!!!")
+        raise Exception("Please specify the loss function!!!")
 
     # model
     if opt_model['name'] == 'LinearEasyLstm':
-        model = easy_lstm.LinearEasyLstm(nx=opt_model['nx'], ny=opt_model['ny'],
-                                         hidden_size=opt_model['hiddenSize'])
+        model = easy_lstm.LinearEasyLstm(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'],
+                                         batch_first=True)
     elif opt_model['name'] == 'StackedEasyLstm':
-        model = easy_lstm.StackedEasyLstm(nx=opt_model['nx'], ny=opt_model['ny'],
-                                          hidden_size=opt_model['hiddenSize'])
+        model = easy_lstm.StackedEasyLstm(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'],
+                                          batch_first=True)
     elif opt_model['name'] == 'PytorchLstm':
-        model = easy_lstm.PytorchLstm(nx=opt_model['nx'], ny=opt_model['ny'],
-                                      hidden_size=opt_model['hiddenSize'])
+        model = easy_lstm.PytorchLstm(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'],
+                                      batch_first=True)
+    elif opt_model['name'] == 'EasyLstm':
+        model = easy_lstm.EasyLstm(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'],
+                                   batch_first=True)
     else:
-        model = easy_lstm.EasyLstm(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
-
+        raise Exception('No model!!!!!!')
     # train model
     output_dir = model_dict['dir']['Out']
-    model_run.model_train_easy_lstm(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
-                                    mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
-                                    save_folder=output_dir)
+    model_run.model_train_batch1st_lstm(model, x, y, c, loss_fun, n_epoch=opt_train['nEpoch'],
+                                        mini_batch=opt_train['miniBatch'], save_epoch=opt_train['saveEpoch'],
+                                        save_folder=output_dir)
 
 
-def master_test_easy_lstm(data_model, load_epoch=-1):
+def master_test_batch1st_lstm(data_model, load_epoch=-1):
     """data_model：for test ;load_epoch：the loaded model's epoch"""
     model_dict = data_model.data_source.data_config.model_dict
     opt_data = model_dict['data']
@@ -371,7 +373,7 @@ def master_test_easy_lstm(data_model, load_epoch=-1):
     print('output files:', file_path)
 
     model = model_run.model_load(out, load_epoch)
-    model_run.model_test_easy_lstm(model, x, c, file_path=file_path, batch_size=batch_size)
+    model_run.model_test_batch1st_lstm(model, x, c, file_path=file_path, batch_size=batch_size)
 
     data_pred = pd.read_csv(file_path, dtype=np.float, header=None).values
     pred = np.expand_dims(data_pred, axis=2)
@@ -382,7 +384,7 @@ def master_test_easy_lstm(data_model, load_epoch=-1):
     return pred, obs
 
 
-def master_train_better_lstm(dataset):
+def master_train_easier_lstm(dataset, random_seed=1234):
     model_dict = dataset.data_model.data_source.data_config.model_dict
     opt_model = model_dict['model']
     opt_loss = model_dict['loss']
@@ -404,14 +406,13 @@ def master_train_better_lstm(dataset):
 
     # model
     if opt_model['name'] == 'LinearEasyLstm':
-        model = easy_lstm.LinearEasyLstm(nx=opt_model['nx'], ny=opt_model['ny'],
-                                         hidden_size=opt_model['hiddenSize'])
+        model = easy_lstm.LinearEasyLstm(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
     elif opt_model['name'] == 'StackedEasyLstm':
-        model = easy_lstm.StackedEasyLstm(nx=opt_model['nx'], ny=opt_model['ny'],
-                                          hidden_size=opt_model['hiddenSize'])
+        model = easy_lstm.StackedEasyLstm(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
     elif opt_model['name'] == 'PytorchLstm':
-        model = easy_lstm.PytorchLstm(nx=opt_model['nx'], ny=opt_model['ny'],
-                                      hidden_size=opt_model['hiddenSize'])
+        model = easy_lstm.PytorchLstm(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
+    elif opt_model['name'] == 'CudnnLstmModel':
+        model = rnn.CudnnLstmModel(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
     else:
         model = easy_lstm.EasyLstm(nx=opt_model['nx'], ny=opt_model['ny'], hidden_size=opt_model['hiddenSize'])
 
@@ -424,7 +425,7 @@ def master_train_better_lstm(dataset):
                                opt_train['saveEpoch'])
 
 
-def master_test_better_lstm(dataset, load_epoch=-1):
+def master_test_easier_lstm(dataset, load_epoch=-1):
     model_dict = dataset.data_model.data_source.data_config.model_dict
     batch_size, rho = model_dict['train']['miniBatch']
 

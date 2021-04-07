@@ -7,7 +7,7 @@ import definitions
 from data import CamelsConfig
 from data.data_input import save_datamodel, CamelsModel, _basin_norm
 from data.camels_input_dataset import CamelsModels
-from hydroDL.master.master import master_train_easy_lstm, master_test_easy_lstm
+from hydroDL.master.master import master_train_batch1st_lstm, master_test_batch1st_lstm
 from visual.plot_model import plot_we_need
 
 
@@ -53,7 +53,7 @@ class MyTestCase(unittest.TestCase):
                                                 var_dict_file_name='dictAttribute.json',
                                                 t_s_dict_file_name='dictTimeSpace.json')
         with torch.cuda.device(1):
-            master_train_easy_lstm(data_model)
+            master_train_batch1st_lstm(data_model)
 
     def test_test_camels(self):
         data_model = CamelsModel.load_datamodel(self.config_data.data_path["Temp"],
@@ -65,7 +65,7 @@ class MyTestCase(unittest.TestCase):
                                                 t_s_dict_file_name='test_dictTimeSpace.json')
         with torch.cuda.device(1):
             # pred, obs = master_test(data_model)
-            pred, obs = master_test_easy_lstm(data_model, load_epoch=260)
+            pred, obs = master_test_batch1st_lstm(data_model, load_epoch=260)
             basin_area = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['area_gages2'],
                                                           is_return_dict=False)
             mean_prep = data_model.data_source.read_attr(data_model.t_s_dict["sites_id"], ['p_mean'],

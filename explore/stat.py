@@ -1,5 +1,8 @@
+import itertools
+
 import numpy as np
 import scipy.stats
+from scipy.stats import wilcoxon
 
 from utils.hydro_util import hydro_logger
 
@@ -156,3 +159,26 @@ def ecdf(data):
     n = x.size
     y = np.arange(1, n + 1) / n
     return (x, y)
+
+
+def wilcoxon_t_test(xs, xo):
+    """Wilcoxon t test"""
+    diff = xs - xo  # same result when using xo-xs
+    w, p = wilcoxon(diff)
+    return w, p
+
+
+def wilcoxon_t_test_for_lst(x_lst, rnd_num=None):
+    """Wilcoxon t test for every two array in a 2-d array"""
+    arr_lst = np.asarray(x_lst)
+    w, p = [], []
+    arr_lst_pair = list(itertools.combinations(arr_lst, 2))
+    for arr_pair in arr_lst_pair:
+        wi, pi = wilcoxon_t_test(arr_pair[0], arr_pair[1])
+        if rnd_num is not None:
+            w.append(round(wi, rnd_num))
+            p.append(round(pi, rnd_num))
+        else:
+            w.append(wi)
+            p.append(pi)
+    return w, p

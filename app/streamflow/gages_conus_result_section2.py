@@ -28,7 +28,7 @@ exp_lst = ["basic_exp37", "basic_exp39", "basic_exp40", "basic_exp41", "basic_ex
 exp_attr_lst = ["basic_exp2", "basic_exp3", "basic_exp13", "basic_exp19", "basic_exp20", "basic_exp25"]
 gpu_lst = [0, 0, 0, 0, 0, 0]
 gpu_attr_lst = [0, 0, 0, 0, 0, 0]
-
+dor_cutoff = 0.1
 # exp_lst = ["basic_exp37"]
 # exp_attr_lst = ["basic_exp2"]
 # gpu_lst = [0]
@@ -117,7 +117,8 @@ if 'post' in doLst:
                                               screen_basin_area_huc4=False)
 
     inds_df, pred_mean, obs_mean = load_ensemble_result(cfg, exp_lst, test_epoch, return_value=True)
-
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
     ########################### plot diversion dor ecdf  ###########################
     diversion_yes = True
     diversion_no = False
@@ -132,8 +133,8 @@ if 'post' in doLst:
     sites_id_nodivert = source_data_nodivert.all_configs['flow_screen_gage_id']
     sites_id_diversion = source_data_diversion.all_configs['flow_screen_gage_id']
 
-    dor_1 = - 0.02
-    dor_2 = 0.02
+    dor_1 = - dor_cutoff
+    dor_2 = dor_cutoff
     source_data_dor1 = GagesSource.choose_some_basins(config_data,
                                                       config_data.model_dict["data"]["tRangeTrain"],
                                                       screen_basin_area_huc4=False,
@@ -209,14 +210,14 @@ if 'post' in doLst:
     plot_gages_map(data_model, inds_df, show_ind_NSE, idx_lstl_nse, cbar_font_size=14)
 
     plt.savefig(os.path.join(config_data.data_path["Out"], 'map_NSE.png'), dpi=FIGURE_DPI, bbox_inches="tight")
-    plt.figure()
+    # plt.figure()
 
     # plot box，使用seaborn库
     keys = ["Bias", "NSE", "FHV", "FLV"]
     inds_test = subset_of_dict(inds_df, keys)
     plot_diff_boxes(inds_test)
     plt.savefig(os.path.join(config_data.data_path["Out"], 'boxes.png'), dpi=FIGURE_DPI, bbox_inches="tight")
-    plt.figure()
+    # plt.figure()
 
     ############################ plot map box   ###########################
     # plot NSE
@@ -228,7 +229,7 @@ if 'post' in doLst:
     plot_gages_map_and_box(data_model, inds_df, show_ind_NSE, idx_lstl_nse, titles=["NSE map", "NSE boxplot"],
                            wh_ratio=[1, 5], adjust_xy=(0, 0.04))
     plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_NSE.png'), dpi=FIGURE_DPI, bbox_inches="tight")
-    plt.figure()
+    # plt.figure()
 
     # plot %BiasFLV (the percentage of bias of FDC Low-segment Volume)
     show_ind_FLV = 'FLV'
@@ -236,7 +237,7 @@ if 'post' in doLst:
     plot_gages_map_and_box(data_model, inds_df, show_ind_FLV, pertile_range=percentile_range_FLV,
                            titles=["FLV map", "FLV boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
     plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_FLV.png'), dpi=FIGURE_DPI, bbox_inches="tight")
-    plt.figure()
+    # plt.figure()
 
     # plot %BiasFHV (the percentage of bias of FDC High-segment Volume)
     show_ind_FHV = 'FHV'
@@ -244,7 +245,7 @@ if 'post' in doLst:
     plot_gages_map_and_box(data_model, inds_df, show_ind_FHV, pertile_range=percentile_range_FHV,
                            titles=["FHV map", "FHV boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
     plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_FHV.png'), dpi=FIGURE_DPI, bbox_inches="tight")
-    plt.figure()
+    # plt.figure()
 
     # plot Bias
     show_ind_bias = 'Bias'
@@ -252,7 +253,7 @@ if 'post' in doLst:
     plot_gages_map_and_box(data_model, inds_df, show_ind_bias, pertile_range=percent_range_bias,
                            titles=["Bias map", "Bias boxplot"], wh_ratio=[1, 5], adjust_xy=(0, 0.04))
     plt.savefig(os.path.join(config_data.data_path["Out"], 'map_box_bias.png'), dpi=FIGURE_DPI, bbox_inches="tight")
-    plt.figure()
+    # plt.figure()
 
     ###################### plot map and box between LSTM with and without anthropogenic attrs####################
     comp_version = 1
@@ -283,7 +284,7 @@ if 'post' in doLst:
                                      adjust_xy=(0, 0.04))
         plt.savefig(os.path.join(config_data.data_path["Out"], 'w-wo-attr_delta_map_box.png'), dpi=FIGURE_DPI,
                     bbox_inches="tight")
-    plt.figure()
+
 
     ############################ plot three factors  ###########################
     attr_lst = ["RUNAVE7100", "STOR_NOR_2009"]
@@ -292,10 +293,10 @@ if 'post' in doLst:
     run_avg = attrs_runavg_stor[:, 0] * (10 ** (-3)) * (10 ** 6)  # m^3 per year
     nor_storage = attrs_runavg_stor[:, 1] * 1000  # m^3
     dors_value = nor_storage / run_avg
-    dors = np.full(len(usgs_id), "dor<0.02")
+    dors = np.full(len(usgs_id), "dor<" + str(dor_cutoff))
     for i in range(len(usgs_id)):
-        if dors_value[i] >= 0.02:
-            dors[i] = "dor≥0.02"
+        if dors_value[i] >= dor_cutoff:
+            dors[i] = "dor≥" + str(dor_cutoff)
 
     diversions = np.full(len(usgs_id), "no ")
     diversion_strs = ["diversion", "divert"]
@@ -321,7 +322,7 @@ if 'post' in doLst:
         nid_input = NidModel(cfg)
         nid_dir = os.path.join(cfg.NID.NID_DIR, "test")
         save_nidinput(nid_input, nid_dir, nid_source_file_name='nid_source.txt', nid_data_file_name='nid_data.shp')
-        data_input = GagesDamDataModel(df, nid_input, care_1purpose=True)
+        data_input = GagesDamDataModel(df, nid_input)
         serialize_json(data_input.gage_main_dam_purpose, os.path.join(nid_dir, "dam_main_purpose_dict.json"))
     gage_main_dam_purpose = unserialize_json(nid_gene_file)
     gage_main_dam_purpose_lst = list(gage_main_dam_purpose.values())
@@ -373,18 +374,19 @@ if 'post' in doLst:
         df_i = pd.DataFrame(df_dict_i)
         frames.append(df_i)
     result = pd.concat(frames)
-    plot_boxs(result, x_name, y_name, ylim=[-1.0, 1.0])
+    plt.figure()
+    plot_boxs(result, x_name, y_name, ylim=[-0.4, 1.0], rotation=0)
     plt.savefig(os.path.join(config_data.data_path["Out"], 'purpose_distribution.png'), dpi=FIGURE_DPI,
                 bbox_inches="tight")
     # g = sns.catplot(x=x_name, y=y_name, hue=hue_name, col=col_name,
     #                 data=result, kind="swarm",
     #                 height=4, aspect=.7)
-    sns.set(font_scale=1.5)
     fig, ax = plt.subplots()
     fig.set_size_inches(11.7, 8.27)
+    sns.set(font="serif", font_scale=1.5, color_codes=True)
     g = sns.catplot(ax=ax, x=x_name, y=y_name,
                     hue=hue_name, col=col_name,
-                    data=result, palette="Set1",
+                    data=result, palette="Set1", hue_order=["dor≥" + str(dor_cutoff), "dor<" + str(dor_cutoff)],
                     kind="box", dodge=True, showfliers=False)
     # g.set(ylim=(-1, 1))
     plt.savefig(os.path.join(config_data.data_path["Out"], '3factors_distribution.png'), dpi=FIGURE_DPI,
@@ -396,3 +398,40 @@ if 'post' in doLst:
 
     output_excel_df.to_csv(os.path.join(data_model.data_source.all_configs["out_dir"], '3557basins_ID_NSE_DOR.csv'),
                            quoting=csv.QUOTE_NONNUMERIC, index=None)
+
+    ########################### plot new-version diversion dor ecdf  ###########################
+    colors = ["#1f77b4", "#d62728"]
+    linestyles = ['-', "--"]
+    markers = ["", "."]
+
+    fig = plt.figure(figsize=(8, 6))
+    axes = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+    # for i, marker in enumerate(markers):
+    for i, linestyle in enumerate(linestyles):
+        for j, color in enumerate(colors):
+            plt.plot(xs[i * 2 + j], ys[i * 2 + j], color=color, ls=linestyle,  # marker=marker,
+                     label=cases_exps_legends_together[i * 2 + j])
+    line_i, = axes.plot(x_conus, y_conus, color="grey", label=cases_exps_legends_together[4])
+    line_i.set_dashes([2, 2, 10, 2])
+
+    x_str = "NSE"
+    y_str = "CDF"
+    x_lim = (0, 1)
+    y_lim = (0, 1)
+    x_interval = 0.1
+    y_interval = 0.1
+    plt.xlabel(x_str, fontsize=18)
+    plt.ylabel(y_str, fontsize=18)
+    axes.set_xlim(x_lim[0], x_lim[1])
+    axes.set_ylim(y_lim[0], y_lim[1])
+    # set x y number font size
+    plt.xticks(np.arange(x_lim[0], x_lim[1] + x_lim[1] / 100, x_interval), fontsize=16)
+    plt.yticks(np.arange(y_lim[0], y_lim[1] + y_lim[1] / 100, y_interval), fontsize=16)
+    # Hide the right and top spines
+    axes.spines['right'].set_visible(False)
+    axes.spines['top'].set_visible(False)
+    axes.legend()
+    plt.legend(prop={'size': 16})
+    plt.grid()
+    plt.savefig(os.path.join(config_data.data_path["Out"], 'new_dor_divert_comp_matplotlib.png'), dpi=FIGURE_DPI,
+                bbox_inches="tight")

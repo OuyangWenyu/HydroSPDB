@@ -81,13 +81,13 @@ def swarmplot_with_cbar(cmap_str, cbar_label, ylim, *args, **kwargs):
 
 
 def plot_boxs(data, x_name, y_name, uniform_color=None, swarm_plot=False, hue=None, colormap=False, xlim=None,
-              ylim=None):
-    sns.set(style="ticks", palette="pastel")
+              ylim=None, order=None, font="serif", rotation=45):
+    sns.set(style="ticks", palette="pastel", font=font, font_scale=1.5)
     # Draw a nested boxplot to show bills by day and time
     if uniform_color is not None:
-        sns_box = sns.boxplot(x=x_name, y=y_name, data=data, color=uniform_color, showfliers=False)
+        sns_box = sns.boxplot(x=x_name, y=y_name, data=data, color=uniform_color, showfliers=False, order=order)
     else:
-        sns_box = sns.boxplot(x=x_name, y=y_name, data=data, showfliers=False)
+        sns_box = sns.boxplot(x=x_name, y=y_name, data=data, showfliers=False, order=order)
     if swarm_plot:
         if hue is not None:
             if colormap:
@@ -101,7 +101,7 @@ def plot_boxs(data, x_name, y_name, uniform_color=None, swarm_plot=False, hue=No
                     colors.update({cval: cmap(norm(cval))})
 
                 # plot the swarmplot with the colors dictionary as palette, s=2 means size is 2
-                sns_box = sns.swarmplot(x=x_name, y=y_name, hue=hue, s=2, data=data, palette=colors)
+                sns_box = sns.swarmplot(x=x_name, y=y_name, hue=hue, s=2, data=data, palette=colors, order=order)
                 # remove the legend, because we want to set a colorbar instead
                 plt.gca().legend_.remove()
                 # create colorbar
@@ -115,17 +115,17 @@ def plot_boxs(data, x_name, y_name, uniform_color=None, swarm_plot=False, hue=No
                 cb1.set_label('Some Units')
             else:
                 palette = sns.light_palette("seagreen", reverse=False, n_colors=10)
-                sns_box = sns.swarmplot(x=x_name, y=y_name, hue=hue, s=2, data=data, palette=palette)
+                sns_box = sns.swarmplot(x=x_name, y=y_name, hue=hue, s=2, data=data, palette=palette, order=order)
         else:
-            sns_box = sns.swarmplot(x=x_name, y=y_name, data=data, color=".2")
-        if xlim is not None:
-            plt.xlim(xlim[0], xlim[1])
-        if ylim is not None:
-            plt.ylim(ylim[0], ylim[1])
+            sns_box = sns.swarmplot(x=x_name, y=y_name, data=data, color=".2", order=order)
 
+    if xlim is not None:
+        plt.xlim(xlim[0], xlim[1])
+    if ylim is not None:
+        plt.ylim(ylim[0], ylim[1])
     sns.despine()
     locs, labels = plt.xticks()
-    plt.setp(labels, rotation=45)
+    plt.setp(labels, rotation=rotation)
     # plt.show()
     return sns_box.get_figure()
 
@@ -487,3 +487,18 @@ def plot_ts_map(dataMap, dataTs, lat, lon, t, sites_id, pertile_range=None):
 
     fig.canvas.mpl_connect('button_press_event', onclick)
     plt.show()
+
+
+def create_median_labels(ax, has_fliers, size=12):
+    lines = ax.get_lines()
+    # depending on fliers, toggle between 5 and 6 lines per box
+    lines_per_box = 5 + int(has_fliers)
+    # iterate directly over all median lines, with an interval of lines_per_box
+    # this enables labeling of grouped data without relying on tick positions
+    for median_line in lines[4:len(lines):lines_per_box]:
+        # get center of median line
+        mean_x = sum(median_line._x) / len(median_line._x)
+        mean_y = sum(median_line._y) / len(median_line._y)
+        # print text to center coordinates
+        text = ax.text(mean_x, mean_y + 0.03, f'{mean_y:.2f}', ha='center', va='center', fontweight='bold', size=size,
+                       color='black')

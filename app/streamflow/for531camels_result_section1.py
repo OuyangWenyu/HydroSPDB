@@ -93,7 +93,8 @@ idx_lst_camels = [i for i in range(len(all_sites)) if all_sites[i] in data_model
 
 inds_df = load_ensemble_result(cfg, conus_exps, test_epoch)
 keys_nse = "NSE"
-
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
 ######################################### plot 523 sites ecdf ################################################
 keys_ecdf = ["Bias", "Corr", "NSE", "KGE", "FHV", "FLV"]
 x_intervals = [50, 0.1, 0.1, 0.1, 50, 50]
@@ -130,7 +131,7 @@ for key_tmp in keys_ecdf:
     # colors = ["#d62728", "#1f77b4", "black"]
     plot_ecdfs_matplot(xs, ys, cases_exps_legends, colors=colors, dash_lines=[False, False, True], x_str=key_tmp,
                        y_str="CDF", x_interval=x_intervals[idx_tmp], x_lim=x_lims[idx_tmp],
-                       show_legend=show_legends[idx_tmp], legend_font_size=14)
+                       show_legend=show_legends[idx_tmp], legend_font_size=13)
     plt.savefig(os.path.join(config_data.data_path["Out"], 'camels_synergy_' + key_tmp + '.png'), dpi=FIGURE_DPI,
                 bbox_inches="tight")
     plt.show()

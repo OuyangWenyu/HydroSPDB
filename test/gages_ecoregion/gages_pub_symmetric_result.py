@@ -21,23 +21,16 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# camels_exp_lst = ["basic_exp31", "basic_exp32", "basic_exp33", "basic_exp34", "basic_exp35", "basic_exp36"]
 camels_exp_lst = ["ecoregion_exp8"]
-# camels_exp_lst = ["ecoregion_exp4"]  # camels_split_num = 11
-# camels_exp_lst = ["ecoregion_exp6"]  # camels_split_num = 11 and basins were not chosen from ecoregions
-# camels_pub_on_diff_dor_exp_lst = ["basic_exp12", "basic_exp14", "basic_exp15"] # for basic_exp31~36
-# camels_pub_on_diff_dor_exp_lst = ["basic_exp21", "basic_exp22", "basic_exp23"]  # for ecoregion_exp8 dor=0.02
-# camels_pub_on_diff_dor_exp_lst = ["basic_exp26", "basic_exp27", "basic_exp28"] # for ecoregion_exp4
-# camels_pub_on_diff_dor_exp_lst = ["basic_exp18", "basic_exp29", "basic_exp30"] # for ecoregion_exp6
-camels_pub_on_diff_dor_exp_lst = ["basic_exp21", "basic_exp16", "basic_exp17"]  # for ecoregion_exp8 dor=0.1
+camels_pub_on_diff_dor_exp_lst = ["basic_exp21", "basic_exp22", "basic_exp23"]  # for ecoregion_exp8
 
-# exp_lst = [["ecoregion_exp9", "ecoregion_exp12"], ["ecoregion_exp10", "ecoregion_exp13"],
-#            ["ecoregion_exp11", "ecoregion_exp14"], camels_exp_lst + camels_pub_on_diff_dor_exp_lst]
-exp_lst = [["ecoregion_exp24", "ecoregion_exp25"], ["ecoregion_exp26", "ecoregion_exp27"],
-           ["ecoregion_exp28", "ecoregion_exp29"], camels_exp_lst + camels_pub_on_diff_dor_exp_lst]
-train_data_name_lst = [["Train-z", "Train-zs"], ["Train-z", "Train-zl"], ["Train-s", "Train-sl"],
-                       ["Train-c"]]  # ["Train-c", "Train-cn"]
-test_data_name_lst = [["Train-z", "PUB-z", "PUB-s"], ["Train-z", "PUB-z", "PUB-l"], ["Train-s", "PUB-s", "PUB-l"],
+exp_lst = [["ecoregion_exp15", "ecoregion_exp16", "ecoregion_exp17"],
+           ["ecoregion_exp18", "ecoregion_exp19", "ecoregion_exp20"],
+           ["ecoregion_exp21", "ecoregion_exp22", "ecoregion_exp23"], camels_exp_lst + camels_pub_on_diff_dor_exp_lst]
+train_data_name_lst = [["Train-z", "Train-s", "Train-zs"], ["Train-z", "Train-l", "Train-zl"],
+                       ["Train-s", "Train-l", "Train-sl"], ["Train-c"]]  # ["Train-c", "Train-cn"]
+test_data_name_lst = [["Train-z", "Train-s", "PUB-z", "PUB-s"], ["Train-z", "Train-l", "PUB-z", "PUB-l"],
+                      ["Train-s", "Train-l", "PUB-s", "PUB-l"],
                       ["Train-c", "PUB-c", "PUB-z", "PUB-s", "PUB-l"]]  # ["Train-c", "PUB-c", "PUB-n"]
 
 test_epoch = 300
@@ -45,7 +38,7 @@ FIGURE_DPI = 600
 split_num = 2
 # camels_pub_split_num = 12
 camels_pub_split_num = 2
-dor_cutoff = 0.1
+
 # test
 doLst = list()
 # doLst.append('train')
@@ -53,7 +46,6 @@ doLst = list()
 doLst.append('post')
 
 if 'test' in doLst:
-    # test camels pub
     zerodor_config_data = load_dataconfig_case_exp(cfg, camels_pub_on_diff_dor_exp_lst[0])
     quick_data_dir = os.path.join(zerodor_config_data.data_path["DB"], "quickdata")
     data_dir = os.path.join(quick_data_dir, "conus-all_90-10_nan-0.0_00-1.0")
@@ -92,7 +84,7 @@ if 'test' in doLst:
     source_data_dor1 = GagesSource.choose_some_basins(smalldor_config_data,
                                                       smalldor_config_data.model_dict["data"]["tRangeTrain"],
                                                       screen_basin_area_huc4=False,
-                                                      DOR=-dor_cutoff)
+                                                      DOR=-0.02)
     # basins with dams
     source_data_withdams = GagesSource.choose_some_basins(smalldor_config_data,
                                                           smalldor_config_data.model_dict["data"]["tRangeTrain"],
@@ -108,7 +100,7 @@ if 'test' in doLst:
     source_data_large_dor = GagesSource.choose_some_basins(largedor_config_data,
                                                            largedor_config_data.model_dict["data"]["tRangeTrain"],
                                                            screen_basin_area_huc4=False,
-                                                           DOR=dor_cutoff)
+                                                           DOR=0.02)
     sites_id_largedor = source_data_large_dor.all_configs['flow_screen_gage_id']
     sites_large_dor_not_in_camels = [sites_id_largedor[i] for i in range(len(sites_id_largedor)) if
                                      sites_id_largedor[i] not in all_sites_camels_531]
@@ -175,17 +167,14 @@ train_set = "training"
 test_set = "testing"
 show_ind_key = "NSE"
 
-plt.rcParams['font.family'] = 'serif'
-plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
 # fig = plt.figure(figsize=(12, 4))
 # gs = gridspec.GridSpec(1, 11)
-# fig = plt.figure(figsize=(8, 9))
-fig = plt.figure(figsize=(12, 13.5))
+fig = plt.figure(figsize=(8, 9))
 gs = gridspec.GridSpec(2, 2)
 titles = ["(a)", "(b)", "(c)", "(d)"]
 
 colors = ["Greens", "Blues", "Reds", "Greys"]
-sns.set(font="serif", font_scale=1.5)
+sns.set(font_scale=1)
 
 for k in range(len(exp_lst)):
     if k == len(exp_lst) - 1:
@@ -364,37 +353,27 @@ for k in range(len(exp_lst)):
         inds2 = statError(obss2_np, preds2_np)
         inds_df_a2 = pd.DataFrame(inds2)
 
-        if j == 0:
+        if j == 0 or j == 1:
             df_abase = pd.DataFrame({train_set: np.full([inds_df_abase.shape[0]], train_data_name_lst[k][j]),
-                                     test_set: np.full([inds_df_abase.shape[0]], test_data_name_lst[k][0]),
-                                     # train_data_name_lst[k][j] + "-" + test_data_name_lst[k][1]),
+                                     test_set: np.full([inds_df_abase.shape[0]], test_data_name_lst[k][j]),
                                      show_ind_key: inds_df_abase[show_ind_key]})
-        df_a = pd.DataFrame({train_set: np.full([inds_df_a.shape[0]], train_data_name_lst[k][j]),
-                             test_set: np.full([inds_df_a.shape[0]], test_data_name_lst[k][1]),
-                             # train_data_name_lst[k][j] + "-" + test_data_name_lst[k][0])
-                             show_ind_key: inds_df_a[show_ind_key]})
-        df_a2 = pd.DataFrame({train_set: np.full([inds_df_a2.shape[0]], train_data_name_lst[k][j]),
-                              test_set: np.full([inds_df_a2.shape[0]], test_data_name_lst[k][2]),
-                              # train_data_name_lst[k][j] + "-" + test_data_name_lst[k][1]),
-                              show_ind_key: inds_df_a2[show_ind_key]})
-        if j == 0:
             frames.append(df_abase)
+        if j == 1:
+            df_a = pd.DataFrame({train_set: np.full([inds_df_a.shape[0]], train_data_name_lst[k][j]),
+                                 test_set: np.full([inds_df_a.shape[0]], test_data_name_lst[k][3]),
+                                 show_ind_key: inds_df_a[show_ind_key]})
+            df_a2 = pd.DataFrame({train_set: np.full([inds_df_a2.shape[0]], train_data_name_lst[k][j]),
+                                  test_set: np.full([inds_df_a2.shape[0]], test_data_name_lst[k][2]),
+                                  show_ind_key: inds_df_a2[show_ind_key]})
+        else:
+            df_a = pd.DataFrame({train_set: np.full([inds_df_a.shape[0]], train_data_name_lst[k][j]),
+                                 test_set: np.full([inds_df_a.shape[0]], test_data_name_lst[k][2]),
+                                 show_ind_key: inds_df_a[show_ind_key]})
+            df_a2 = pd.DataFrame({train_set: np.full([inds_df_a2.shape[0]], train_data_name_lst[k][j]),
+                                  test_set: np.full([inds_df_a2.shape[0]], test_data_name_lst[k][3]),
+                                  show_ind_key: inds_df_a2[show_ind_key]})
         frames.append(df_a)
         frames.append(df_a2)
-        # keys_nse = "NSE"
-        # xs = []
-        # ys = []
-        # cases_exps_legends_together = ["PUB_test_in_basins_1", "PUB_test_in_basins_2"]
-        #
-        # x1, y1 = ecdf(inds_df_a[keys_nse])
-        # xs.append(x1)
-        # ys.append(y1)
-        #
-        # x2, y2 = ecdf(inds_df_a2[keys_nse])
-        # xs.append(x2)
-        # ys.append(y2)
-        #
-        # plot_ecdfs(xs, ys, cases_exps_legends_together)
 
     result = pd.concat(frames)
     sns_box = sns.boxplot(ax=ax_k, x=train_set, y=show_ind_key, hue=test_set, data=result, showfliers=False,
@@ -409,4 +388,5 @@ for k in range(len(exp_lst)):
 sns.despine()
 plt.tight_layout()
 show_config_data = load_dataconfig_case_exp(cfg, exp_lst[0][0])
-plt.savefig(os.path.join(show_config_data.data_path["Out"], '4exps_pub.png'), dpi=FIGURE_DPI, bbox_inches="tight")
+plt.savefig(os.path.join(show_config_data.data_path["Out"], '4exps_symmetric_pub.png'), dpi=FIGURE_DPI,
+            bbox_inches="tight")
