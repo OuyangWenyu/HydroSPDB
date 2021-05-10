@@ -1,376 +1,267 @@
 import argparse
 import json
 import os
-from easydict import EasyDict as edict
 import pandas as pd
+
 import definitions
-from data.download_data import download_google_drive, download_one_zip, download_small_file, download_excel
-from datetime import datetime, timedelta
-
-from utils import unzip_nested_zip
-
-__C = edict()
-cfg = __C  # type: edict()
-
-# ----------------------- First part: mainly for data source  ------------------------
-# This part should NOT be modified, unless you are clear about what you are doing
-__C.DATASET = "gages"
-# Project directory
-__C.ROOT_DIR = os.path.join(definitions.ROOT_DIR, "example")
-
-__C.DATA_PATH = os.path.join(__C.ROOT_DIR, 'data', __C.DATASET)
-if not os.path.exists(__C.DATA_PATH):
-    os.makedirs(__C.DATA_PATH)
-
-# data config
-__C.GAGES = edict()
-# __C.GAGES.DOWNLOAD = True
-__C.GAGES.DOWNLOAD = True
-__C.GAGES.DOWNLOAD_FROM_OWEN = False
-__C.GAGES.ARE_YOU_OWEN = False
-__C.GAGES.DOWNLOAD_FROM_WEB = False
-__C.GAGES.DOWNLOAD_MANUALLY = True
-
-__C.GAGES.tRangeAll = ['1980-01-01', '2020-01-01']
-
-__C.GAGES.forcingDir = os.path.join(__C.DATA_PATH, "basin_mean_forcing", "basin_mean_forcing")
-__C.GAGES.forcingType = "daymet"
-__C.GAGES.forcingDir = os.path.join(__C.GAGES.forcingDir, __C.GAGES.forcingType)
-
-__C.GAGES.streamflowDir = os.path.join(__C.DATA_PATH, "gages_streamflow", "gages_streamflow")
-__C.GAGES.streamflowUrl = "https://waterdata.usgs.gov/nwis/dv?cb_00060=on&format=rdb&site_no={}&referred_module=sw&period=&begin_date={}-{}-{}&end_date={}-{}-{}"
-
-__C.GAGES.attrDir = os.path.join(__C.DATA_PATH, "basinchar_and_report_sept_2011")
-__C.GAGES.attrUrl = ["https://water.usgs.gov/GIS/dsdl/basinchar_and_report_sept_2011.zip",
-                     "https://water.usgs.gov/GIS/dsdl/gagesII_9322_point_shapefile.zip",
-                     "https://water.usgs.gov/GIS/dsdl/boundaries_shapefiles_by_aggeco.zip",
-                     "https://www.sciencebase.gov/catalog/file/get/59692a64e4b0d1f9f05fbd39"]
-
-__C.GAGES.camelsDir = os.path.join(__C.DATA_PATH, "camels_attributes_v2.0", "camels_attributes_v2.0")
-__C.GAGES.camels_id_file = os.path.join(__C.GAGES.camelsDir, "camels_name.txt")
-__C.GAGES.camelsAttrUrl = "https://ral.ucar.edu/sites/default/files/public/product-tool/camels-catchment-attributes-and-meteorology-for-large-sample-studies-dataset-downloads/camels_attributes_v2.0.zip"
-
-# region shapefiles
-__C.GAGES.gage_region_dir = os.path.join(__C.DATA_PATH, 'boundaries_shapefiles_by_aggeco',
-                                         'boundaries-shapefiles-by-aggeco')
-# point shapefile
-__C.GAGES.gagesii_points_dir = os.path.join(__C.DATA_PATH, "gagesII_9322_point_shapefile")
-__C.GAGES.gagesii_points_file = os.path.join(__C.GAGES.gagesii_points_dir, "gagesII_9322_sept30_2011.shp")
-# HUC shapefile
-__C.GAGES.huc4_shp_dir = os.path.join(__C.DATA_PATH, "wbdhu4-a-us-september2019-shpfile")
-__C.GAGES.huc4_shp_file = os.path.join(__C.GAGES.huc4_shp_dir, "HUC4.shp")
-
-# all USGS sites
-__C.GAGES.gage_files_dir = os.path.join(__C.GAGES.attrDir, 'spreadsheets-in-csv-format')
-__C.GAGES.gage_id_file = os.path.join(__C.GAGES.gage_files_dir, 'conterm_basinid.txt')
-
-# GAGES-II time series dataset dir
-__C.GAGES.gagests_dir = os.path.join(__C.DATA_PATH, "59692a64e4b0d1f9f05f")
-__C.GAGES.population_file = os.path.join(__C.GAGES.gagests_dir, "Dataset8_Population-Housing",
-                                         "Dataset8_Population-Housing", "PopulationHousing.txt")
-__C.GAGES.wateruse_file = os.path.join(__C.GAGES.gagests_dir, "Dataset10_WaterUse", "Dataset10_WaterUse",
-                                       "WaterUse_1985-2010.txt")
-
-# NID database
-__C.NID = edict()
-__C.NID.NID_DIR = os.path.join(__C.DATA_PATH, "nid")
-__C.NID.NID_FILE = os.path.join(__C.NID.NID_DIR, "NID2018_U.xlsx")
-__C.NID.NID_URL = 'https://nid.sec.usace.army.mil/ords/NID_R.DOWNLOADFILE?InFileName={nidFile}'.format(
-    nidFile="NID2018_U.xlsx")
-# EPSG:4269 --  https://epsg.io/4269
-__C.NID.NID_EPSG = 4269
-
-# Search for the initial data
-find_gages_data_path = True
-if __C.GAGES.DOWNLOAD:
-    find_gages_data_path = False
-    if __C.GAGES.DOWNLOAD_FROM_OWEN and __C.GAGES.DOWNLOAD_FROM_WEB:
-        raise RuntimeError("Don't download data by two ways at the same time!")
-    elif __C.GAGES.DOWNLOAD_FROM_OWEN and __C.GAGES.DOWNLOAD_MANUALLY:
-        raise RuntimeError("Don't download data by two ways at the same time!")
-    elif __C.GAGES.DOWNLOAD_FROM_WEB and __C.GAGES.DOWNLOAD_MANUALLY:
-        raise RuntimeError("Don't download data by two ways at the same time!")
-
-if not find_gages_data_path:
-    if __C.GAGES.DOWNLOAD_FROM_OWEN:
-        if __C.GAGES.ARE_YOU_OWEN:
-            print("Downloading dataset from google drive ... "
-                  "if there is any interruption when downloading, just rerun this script code again, it will continue."
-                  "All files in google drive are zip files")
-            # Firstly, move the creds file to the following directory manually
-            client_secrets_file = os.path.join(definitions.ROOT_DIR, "data", "mycreds.txt")
-            if not os.path.isfile(client_secrets_file):
-                raise RuntimeError("Please put the credential file to the root directory. "
-                                   "To generate it, please see: https://github.com/OuyangWenyu/aqualord/blob/master/CloudStor/googledrive.ipynb")
-            google_drive_dir_name = "hydro-dl-reservoir-data"
-            # google_drive_dir_name = "test"
-            download_dir_name = __C.DATA_PATH
-            download_google_drive(client_secrets_file, google_drive_dir_name, download_dir_name)
-            # after downloading from google drive, unzip all files:
-            print("unzip all files")
-            entries = os.listdir(__C.DATA_PATH)
-            for entry in entries:
-                if os.path.isdir(entry):
-                    continue
-                zipfile_path = os.path.join(download_dir_name, entry)
-                filename = entry[0:-4]
-                unzip_dir = os.path.join(download_dir_name, filename)
-                unzip_nested_zip(zipfile_path, unzip_dir)
-        else:
-            raise RuntimeError("If you have the data, please put them in the correct directories."
-                               "Or else, Please connect with hust2014owen@gmail.com."
-                               "Then set  __C.GAGES.DOWNLOAD = False")
-    elif __C.GAGES.DOWNLOAD_FROM_WEB:
-        print("Not all dataset could be downloaded from website directly, so I didn't test this part completely."
-              "Hence, please be careful!")
-        # download CAMELS attrs
-        download_one_zip(__C.GAGES.camelsAttrUrl, __C.DATA_PATH)
-        # download zip files
-        [download_one_zip(attr_url, __C.DATA_PATH) for attr_url in __C.GAGES.attrUrl]
-        # download NID file
-        download_excel(__C.NID.NID_URL, __C.NID.NID_FILE)
-        # download streamflow data from USGS website
-        dir_gage_flow = __C.GAGES.streamflowDir
-        streamflow_url = __C.GAGES.streamflowUrl
-        t_download_range = __C.GAGES.tRangeAll
-        if not os.path.isdir(dir_gage_flow):
-            os.makedirs(dir_gage_flow)
-        dir_list = os.listdir(dir_gage_flow)
-        # 区域一共有18个，为了便于后续处理，把属于不同region的站点的文件放到不同的文件夹下面
-        # 判断usgs_id_lst中没有对应径流文件的要从网上下载
-        data_all = pd.read_csv(__C.GAGES.gage_id_file, sep=',', dtype={0: str})
-        usgs_id_lst = data_all.iloc[:, 0].values.tolist()
-        gage_fld_lst = data_all.columns.values
-        for ind in range(len(usgs_id_lst)):  # different hucs different directories
-            huc_02 = data_all[gage_fld_lst[3]][ind]
-            dir_huc_02 = str(huc_02)
-            if dir_huc_02 not in dir_list:
-                dir_huc_02 = os.path.join(dir_gage_flow, str(huc_02))
-                os.mkdir(dir_huc_02)
-                dir_list = os.listdir(dir_gage_flow)
-            dir_huc_02 = os.path.join(dir_gage_flow, str(huc_02))
-            file_list = os.listdir(dir_huc_02)
-            file_usgs_id = str(usgs_id_lst[ind]) + ".txt"
-            if file_usgs_id not in file_list:
-                # 通过直接读取网页的方式获取数据，然后存入txt文件
-                start_time_str = datetime.strptime(t_download_range[0], '%Y-%m-%d')
-                end_time_str = datetime.strptime(t_download_range[1], '%Y-%m-%d') - timedelta(days=1)
-                url = streamflow_url.format(usgs_id_lst[ind], start_time_str.year, start_time_str.month,
-                                            start_time_str.day, end_time_str.year, end_time_str.month, end_time_str.day)
-
-                # 存放的位置是对应HUC02区域的文件夹下
-                temp_file = os.path.join(dir_huc_02, str(usgs_id_lst[ind]) + '.txt')
-                download_small_file(url, temp_file)
-                print("成功写入 " + temp_file + " 径流数据！")
-    elif __C.GAGES.DOWNLOAD_MANUALLY:
-        print("Please download data manually!")
-        zip_files = ["59692a64e4b0d1f9f05fbd39", "basin_mean_forcing.zip", "basinchar_and_report_sept_2011.zip",
-                     "boundaries_shapefiles_by_aggeco.zip", "camels_attributes_v2.0.zip", "camels531.zip",
-                     "gages_streamflow.zip", "gagesII_9322_point_shapefile.zip", "mainstem_line_covers.zip", "nid.zip",
-                     "wbdhu4-a-us-september2019-shpfile.zip"]
-        download_zip_files = [os.path.join(__C.DATA_PATH, zip_file) for zip_file in zip_files]
-        for download_zip_file in download_zip_files:
-            if not os.path.isfile(download_zip_file):
-                raise RuntimeError(download_zip_file + " not found! Please download the data")
-        unzip_dirs = [os.path.join(__C.DATA_PATH, zip_file[:-4]) for zip_file in zip_files]
-        for i in range(len(unzip_dirs)):
-            if not os.path.isdir(unzip_dirs[i]):
-                print("unzip directory:" + unzip_dirs[i])
-                unzip_nested_zip(download_zip_files[i], unzip_dirs[i])
-            else:
-                print("unzip directory -- " + unzip_dirs[i] + " has existed")
-    else:
-        raise RuntimeError("Initial database is not found! Please download the data")
-
-# ----------------------- Second part: some changeable configs------------------------
-# data config
-__C.GAGES.regions = ['bas_ref_all', 'bas_nonref_CntlPlains', 'bas_nonref_EastHghlnds', 'bas_nonref_MxWdShld',
-                     'bas_nonref_NorthEast', 'bas_nonref_SECstPlain', 'bas_nonref_SEPlains', 'bas_nonref_WestMnts',
-                     'bas_nonref_WestPlains', 'bas_nonref_WestXeric']
-
-__C.GAGES.gageIdScreen = None
-__C.GAGES.streamflowScreenParams = {'missing_data_ratio': 0, 'zero_value_ratio': 1}
-__C.GAGES.attrScreenParams = None  # {'DOR': -0.02, 'dam_num': 0}
-
-attrBasin = ['DRAIN_SQKM', 'ELEV_MEAN_M_BASIN', 'SLOPE_PCT']
-attrLandcover = ['DEVNLCD06', 'FORESTNLCD06', 'PLANTNLCD06', 'WATERNLCD06', 'SNOWICENLCD06', 'BARRENNLCD06',
-                 'SHRUBNLCD06', 'GRASSNLCD06', 'WOODYWETNLCD06', 'EMERGWETNLCD06']
-attrSoil = ['AWCAVE', 'PERMAVE', 'RFACT', 'ROCKDEPAVE']
-attrGeol = ['GEOL_REEDBUSH_DOM', 'GEOL_REEDBUSH_DOM_PCT']
-attrHydro = ['STREAMS_KM_SQ_KM']
-attrHydroModDams = ['NDAMS_2009', 'STOR_NOR_2009', 'RAW_DIS_NEAREST_MAJ_DAM']
-attrHydroModOther = ['CANALS_PCT', 'RAW_DIS_NEAREST_CANAL', 'FRESHW_WITHDRAWAL', 'POWER_SUM_MW']
-attrPopInfrastr = ['PDEN_2000_BLOCK', 'ROADS_KM_SQ_KM', 'IMPNLCD06']
-__C.GAGES.varC = attrBasin + attrLandcover + attrSoil + attrGeol + attrHydro + attrHydroModDams + attrHydroModOther + attrPopInfrastr
-
-__C.GAGES.varT = ['dayl', 'prcp', 'srad', 'swe', 'tmax', 'tmin', 'vp']
-
-# sub experiment
-__C.SUBSET = "basic"
-__C.SUB_EXP = "exp11"
-__C.TEMP_PATH = os.path.join(__C.ROOT_DIR, 'temp', __C.DATASET, __C.SUBSET, __C.SUB_EXP)
-if not os.path.exists(__C.TEMP_PATH):
-    os.makedirs(__C.TEMP_PATH)
-__C.OUT_PATH = os.path.join(__C.ROOT_DIR, 'output', __C.DATASET, __C.SUBSET, __C.SUB_EXP)
-if not os.path.exists(__C.OUT_PATH):
-    os.makedirs(__C.OUT_PATH)
-
-# computer config
-__C.RANDOM_SEED = 1234
-__C.CTX = 0
-__C.TEST_EPOCH = 300
-__C.TRAIN_MODE = True
-__C.PUB_PLAN = None
-__C.PLUS = None
-__C.SPLIT_NUM = None
-__C.DAM_PLAN = None
-
-# model config
-__C.MODEL = edict()
-__C.MODEL.tRangeTrain = ['1990-01-01', '2000-01-01']
-__C.MODEL.tRangeTest = ['2000-01-01', '2010-01-01']
-__C.MODEL.doNorm = [True, True]
-__C.MODEL.rmNan = [True, False]
-__C.MODEL.daObs = 0
-__C.MODEL.miniBatch = [100, 365]
-__C.MODEL.nEpoch = 340
-__C.MODEL.saveEpoch = 20
-__C.MODEL.name = "CudnnLstmModel"
-__C.MODEL.hiddenSize = 256
-__C.MODEL.doReLU = True
-__C.MODEL.loss = "RmseLoss"
-__C.MODEL.prior = "gauss"
-
-# cache data
-__C.CACHE = edict()
-# generate quick data?
-__C.CACHE.GEN_QUICK_DATA = False
-# QUICKDATA means already cache a binary version for the data source
-__C.CACHE.QUICK_DATA = False
-__C.CACHE.QUICK_DATA_DIR = os.path.join(__C.DATA_PATH, "quickdata")
-__C.CACHE.DATA_DIR = os.path.join(__C.CACHE.QUICK_DATA_DIR, "conus-all_90-10_nan-0.0_00-1.0")
-# 1 means, the data model of sub exp will be cached
-__C.CACHE.STATE = False
-__C.CACHE.HAS = False
 
 
-def cmd():
-    """input args from cmd"""
-    parser = argparse.ArgumentParser(description='Train the CONUS model')
-    parser.add_argument('--sub', dest='sub', help='subset and sub experiment', default=None, type=str)
+def default_config_file(data_source_path, dataset_name):
+    """The default config file for all models/datasets/training parameters in this repo"""
+    config_default = {
+        "model_params": {
+            # now only PyTorch is supported
+            "model_type": "PyTorch",
+            # supported models can be seen in hydroDL/model_dict_function.py
+            "model_name": "LSTM",
+            # the details of model parameters for the "model_name" model
+            "model_param": {
+                # the rho in LSTM
+                "seq_length": 30,
+                # the size of input (feature number)
+                "n_time_series": 24,
+                # the length of output time-sequence
+                "output_seq_len": 1,
+                "hidden_states": 20,
+                "num_layers": 1,
+                "bias": True,
+                "batch_size": 100,
+                "probabilistic": False
+            }
+        },
+        "dataset_params": {
+            "dataset_name": dataset_name,
+            "download": True,
+            "cache_read": True,
+            "cache_write": False,
+            "cache_path": None,
+            "data_path": data_source_path,
+            "validation_path": None,
+            "test_path": None,
+            "batch_size": 100,
+            # the rho in LSTM
+            "forecast_history": 30,
+            "forecast_length": 1,
+            # modeled objects
+            "object_ids": "ALL",
+            # modeling time range
+            "t_range_train": ["1992-01-01", "1993-01-01"],
+            "t_range_valid": None,
+            "t_range_test": ["1993-01-01", "1994-01-01"],
+            # the output
+            "target_cols": ["usgsFlow"],
+            # the time series input
+            "relevant_types": ["daymet"],
+            "relevant_cols": ["dayl", "prcp", 'srad', 'swe', 'tmax', 'tmin', 'vp'],
+            # the attribute input
+            "constant_cols": ['elev_mean', 'slope_mean', 'area_gages2', 'frac_forest', 'lai_max', 'lai_diff',
+                              'dom_land_cover_frac', 'dom_land_cover', 'root_depth_50', 'soil_depth_statsgo',
+                              'soil_porosity', 'soil_conductivity', 'max_water_content', 'geol_1st_class',
+                              'geol_2nd_class', 'geol_porostiy', 'geol_permeability'],
+            # more other cols, use dict to express!
+            "other_cols": None,
+            # data_loader for loading data to models
+            "data_loader": "StreamflowDataset",
+            # only numerical scaler: for categorical vars, they are transformed to numerical vars when reading them
+            "scaler": "StandardScaler"
+        },
+        "training_params": {
+            # if train_mode is False, don't train and evaluate
+            "train_mode": True,
+            "criterion": "RMSE",
+            "optimizer": "Adam",
+            "optim_params": {
+                "lr": 0.001,
+            },
+            "epochs": 10,
+            # save_epoch ==0 means only save once in the final epoch
+            "save_epoch": 0,
+            "batch_size": 100,
+            "random_seed": 1234
+        },
+        # For evaluation
+        "metrics": ["NSE"],
+    }
+    return config_default
+
+
+def cmd(sub=None, download=0, scaler=None, data_loader=None, rs=None, gage_id_file=None, gage_id=None,
+        train_period=None, test_period=None, opt=None, cache_read=None, cache_write=None, cache_path=None,
+        hidden_size=None, opt_param=None, batch_size=None, rho=None, train_mode=None, train_epoch=None, save_epoch=None,
+        te=None, model_name=None, weight_path=None, continue_train=None, var_c=None, var_t=None, n_feature=None,
+        loss_func=None, model_param=None, weight_path_add=None, var_t_type=None, var_o=None, gage_id_screen=None):
+    """input args from cmd
+    """
+    parser = argparse.ArgumentParser(description='Train a Time-Series Deep Learning Model for Basins')
+    parser.add_argument('--sub', dest='sub', help='subset and sub experiment', default=sub, type=str)
+    parser.add_argument('--download', dest='download', help='Do we need to download data', default=download, type=int)
+    parser.add_argument('--scaler', dest='scaler', help='Choose a Scaler function', default=scaler, type=str)
+    parser.add_argument('--data_loader', dest='data_loader', help='Choose a data loader class', default=data_loader,
+                        type=str)
     parser.add_argument('--ctx', dest='ctx',
                         help='Running Context -- gpu num. E.g `--ctx 0` means run code in the context of gpu 0',
                         type=int, default=None)
-    parser.add_argument('--rs', dest='rs', help='random seed', default=None, type=int)
-    parser.add_argument('--te', dest='te', help='test epoch', default=None, type=int)
+    parser.add_argument('--rs', dest='rs', help='random seed', default=rs, type=int)
+    parser.add_argument('--te', dest='te', help='test epoch', default=te, type=int)
     # There is something wrong with "bool", so I used 1 as True, 0 as False
-    parser.add_argument('--train_mode', dest='train_mode', help='train or test', default=None, type=int)
-    parser.add_argument('--train_epoch', dest='train_epoch', help='epoches of training period', default=None, type=int)
-    parser.add_argument('--save_epoch', dest='save_epoch', help='save for every save_epoch epoches', default=None,
+    parser.add_argument('--train_mode', dest='train_mode', help='train or test', default=train_mode, type=int)
+    parser.add_argument('--train_epoch', dest='train_epoch', help='epoches of training period', default=train_epoch,
                         type=int)
-    parser.add_argument('--regions', dest='regions',
-                        help='There are 10 regions in GAGES-II. One is reference region, others are non-ref regions',
-                        default=None, nargs='+')
-    parser.add_argument('--gage_id', dest='gage_id', help='just select some sites',
-                        default=None, nargs='+')
-    parser.add_argument('--flow_screen', dest='flow_screen',
-                        help='screen some sites according to their streamflow record',
-                        default=None, type=json.loads)
-    parser.add_argument('--attr_screen', dest='attr_screen',
-                        help='screen some sites according to their attributes',
-                        default=None, type=json.loads)
-    parser.add_argument('--var_c', dest='var_c', help='types of attributes', default=None, nargs='+')
-    parser.add_argument('--var_t', dest='var_t', help='types of forcing', default=None, nargs='+')
-    parser.add_argument('--gen_quick_data', dest='gen_quick_data', help='Do I need to generate quick data?', default=0,
+    parser.add_argument('--save_epoch', dest='save_epoch', help='save for every save_epoch epoches', default=save_epoch,
                         type=int)
-    parser.add_argument('--quick_data', dest='quick_data', help='Has quick data existed?', default=1, type=int)
-    parser.add_argument('--cache_state', dest='cache_state', help='Do I save the data model for the sub experiment?',
-                        default=0, type=int)
-
-    parser.add_argument('--pub_plan', dest='pub_plan',
-                        help='4 plans:0-camels->non-camels 1-no dam->small dor;2:no dam->large dor;3:small_dor->large_dor',
-                        default=None, type=int)
-    parser.add_argument('--plus', dest='plus', help='Do training dataset contain data from both A and B?',
-                        default=None, type=int)
-    parser.add_argument('--split_num', dest='split_num', help='the split number when doing PUB test',
-                        default=None, type=int)
-
-    parser.add_argument('--dam_plan', dest='dam_plan',
-                        help='combination of dam cases: 1--no dam+small dam;2--no dam+large dam;3--small dam+large dam',
-                        default=None, type=int)
+    parser.add_argument('--loss_func', dest='loss_func', help='choose loss function', default=loss_func, type=str)
+    parser.add_argument('--train_period', dest='train_period', help='The training period', default=train_period,
+                        nargs='+')
+    parser.add_argument('--test_period', dest='test_period', help='The test period', default=test_period, nargs='+')
+    parser.add_argument('--batch_size', dest='batch_size', help='batch_size', default=batch_size, type=int)
+    parser.add_argument('--rho', dest='rho', help='length of time sequence when training', default=rho, type=int)
+    parser.add_argument('--model_name', dest='model_name', help='The name of DL model. now in the zoo',
+                        default=model_name, type=str)
+    parser.add_argument('--weight_path', dest='weight_path', help='The weights of trained model', default=weight_path,
+                        type=str)
+    parser.add_argument('--weight_path_add', dest='weight_path_add',
+                        help='More info about the weights of trained model', default=weight_path_add, type=json.loads)
+    parser.add_argument('--continue_train', dest='continue_train',
+                        help='Continue to train the model from weight_path when continue_train>0',
+                        default=continue_train, type=int)
+    parser.add_argument('--gage_id', dest='gage_id', help='just select some sites', default=gage_id, nargs='+')
+    parser.add_argument('--gage_id_screen', dest='gage_id_screen', help='the criterion to chose some gages',
+                        default=gage_id_screen, type=json.loads)
+    parser.add_argument('--gage_id_file', dest='gage_id_file', help='select some sites from a file',
+                        default=gage_id_file, type=str)
+    parser.add_argument('--opt', dest='opt', help='choose an optimizer', default=opt, type=str)
+    parser.add_argument('--opt_param', dest='opt_param', help='the optimizer parameters', default=opt_param,
+                        type=json.loads)
+    parser.add_argument('--var_c', dest='var_c', help='types of attributes', default=var_c, nargs='+')
+    parser.add_argument('--var_t', dest='var_t', help='types of forcing', default=var_t, nargs='+')
+    parser.add_argument('--var_t_type', dest='var_t_type', help='types of forcing dataset', default=var_t_type,
+                        nargs='+')
+    parser.add_argument('--var_o', dest='var_o', help='more other inputs except for var_c and var_t', default=var_o,
+                        type=json.loads)
+    parser.add_argument('--n_feature', dest='n_feature', help='the number of features', default=n_feature, type=int)
+    parser.add_argument('--cache_read', dest='cache_read', help='read binary file', default=cache_read, type=int)
+    parser.add_argument('--cache_write', dest='cache_write', help='write binary file', default=cache_write, type=int)
+    parser.add_argument('--cache_path', dest='cache_path', help='specify the directory of data cache files',
+                        default=cache_path, type=str)
+    parser.add_argument('--hidden_size', dest='hidden_size', help='the hidden_size of nn', default=hidden_size,
+                        type=int)
+    parser.add_argument('--model_param', dest='model_param', help='the model_param in model_params',
+                        default=model_param, type=json.loads)
     args = parser.parse_args()
     return args
-
-
-def update_cfg_item(cfg_file, new_args):
-    print("update an item of config file")
-    if new_args.sub is not None:
-        subset, subexp = new_args.sub.split("/")
-        cfg_file.SUBSET = subset
-        cfg_file.SUB_EXP = subexp
-        cfg_file.TEMP_PATH = os.path.join(cfg_file.ROOT_DIR, 'temp', cfg_file.DATASET, cfg_file.SUBSET,
-                                          cfg_file.SUB_EXP)
-        if not os.path.exists(cfg_file.TEMP_PATH):
-            os.makedirs(cfg_file.TEMP_PATH)
-        cfg_file.OUT_PATH = os.path.join(cfg_file.ROOT_DIR, 'output', cfg_file.DATASET, cfg_file.SUBSET,
-                                         cfg_file.SUB_EXP)
-        if not os.path.exists(cfg_file.OUT_PATH):
-            os.makedirs(cfg_file.OUT_PATH)
-    else:
-        print("no update")
 
 
 def update_cfg(cfg_file, new_args):
     print("update config file")
     if new_args.sub is not None:
-        update_cfg_item(cfg_file, new_args)
+        subset, subexp = new_args.sub.split("/")
+        if not os.path.exists(os.path.join(definitions.ROOT_DIR, "example", subset, subexp)):
+            os.makedirs(os.path.join(definitions.ROOT_DIR, "example", subset, subexp))
+        cfg_file["dataset_params"]["validation_path"] = os.path.join(definitions.ROOT_DIR, "example", subset, subexp)
+        cfg_file["dataset_params"]["test_path"] = os.path.join(definitions.ROOT_DIR, "example", subset, subexp)
+        if new_args.cache_path is not None:
+            cfg_file["dataset_params"]["cache_path"] = new_args.cache_path
+        else:
+            cfg_file["dataset_params"]["cache_path"] = os.path.join(definitions.ROOT_DIR, "example", subset, subexp)
+    if new_args.download is not None:
+        if new_args.download == 0:
+            cfg_file["dataset_params"]["download"] = False
+        else:
+            cfg_file["dataset_params"]["download"] = True
+    if new_args.scaler is not None:
+        cfg_file["dataset_params"]["scaler"] = new_args.scaler
+    if new_args.data_loader is not None:
+        cfg_file["dataset_params"]["data_loader"] = new_args.data_loader
     if new_args.ctx is not None:
         cfg_file.CTX = new_args.ctx
     if new_args.rs is not None:
-        cfg_file.RANDOM_SEED = new_args.rs
+        cfg_file["training_params"]["random_seed"] = new_args.rs
     if new_args.te is not None:
         cfg_file.TEST_EPOCH = new_args.te
     if new_args.train_mode is not None:
         if new_args.train_mode > 0:
-            cfg_file.TRAIN_MODE = True
+            cfg_file["training_params"]["train_mode"] = True
         else:
-            cfg_file.TRAIN_MODE = False
-    if new_args.regions is not None:
-        cfg_file.GAGES.regions = new_args.regions
-    if new_args.gage_id is not None:
-        cfg_file.GAGES.gageIdScreen = new_args.gage_id
-    if new_args.flow_screen is not None:
-        cfg_file.GAGES.streamflowScreenParams = new_args.flow_screen
-    if new_args.attr_screen is not None:
-        cfg_file.GAGES.attrScreenParams = new_args.attr_screen
+            cfg_file["training_params"]["train_mode"] = False
+    if new_args.loss_func is not None:
+        cfg_file["training_params"]["criterion"] = new_args.loss_func
+    if new_args.train_period is not None:
+        cfg_file["dataset_params"]["t_range_train"] = new_args.train_period
+    if new_args.test_period is not None:
+        cfg_file["dataset_params"]["t_range_test"] = new_args.test_period
+    if new_args.gage_id is not None or new_args.gage_id_file is not None:
+        if new_args.gage_id_file is not None:
+            gage_id_lst = pd.read_csv(new_args.gage_id_file, dtype={0: str}).iloc[:, 0].values
+            cfg_file["dataset_params"]["object_ids"] = gage_id_lst.tolist()
+        else:
+            cfg_file["dataset_params"]["object_ids"] = new_args.gage_id
+    if new_args.opt is not None:
+        cfg_file["training_params"]["optimizer"] = new_args.opt
+        if new_args.opt_param is not None:
+            cfg_file["training_params"]["optim_params"] = new_args.opt_param
+        else:
+            cfg_file["training_params"]["optim_params"] = {}
     if new_args.var_c is not None:
-        cfg_file.GAGES.varC = new_args.var_c
+        cfg_file["dataset_params"]["constant_cols"] = new_args.var_c
     if new_args.var_t is not None:
-        cfg_file.GAGES.varT = new_args.var_t
+        cfg_file["dataset_params"]["relevant_cols"] = new_args.var_t
+    if new_args.var_t_type is not None:
+        cfg_file["dataset_params"]["relevant_types"] = new_args.var_t_type
+    if new_args.var_o is not None:
+        cfg_file["dataset_params"]["other_cols"] = new_args.var_o
     if new_args.train_epoch is not None:
-        cfg_file.MODEL.nEpoch = new_args.train_epoch
+        cfg_file["training_params"]["epochs"] = new_args.train_epoch
     if new_args.save_epoch is not None:
-        cfg_file.MODEL.saveEpoch = new_args.save_epoch
-    if new_args.gen_quick_data is not None:
-        if new_args.gen_quick_data > 0:
-            cfg_file.CACHE.GEN_QUICK_DATA = True
+        cfg_file["training_params"]["save_epoch"] = new_args.save_epoch
+    if new_args.cache_read is not None:
+        if new_args.cache_read > 0:
+            cfg_file["dataset_params"]["cache_read"] = True
         else:
-            cfg_file.CACHE.GEN_QUICK_DATA = False
-    if new_args.quick_data is not None:
-        if new_args.quick_data > 0:
-            cfg_file.CACHE.QUICK_DATA = True
+            cfg_file["dataset_params"]["cache_read"] = False
+    if new_args.cache_write is not None:
+        if new_args.cache_write > 0:
+            cfg_file["dataset_params"]["cache_write"] = True
+            assert cfg_file["dataset_params"]["cache_read"]
         else:
-            cfg_file.CACHE.QUICK_DATA = False
-    if new_args.cache_state is not None:
-        if new_args.cache_state > 0:
-            cfg_file.CACHE.STATE = True
+            cfg_file["dataset_params"]["cache_write"] = False
+    if new_args.model_name is not None:
+        cfg_file["model_params"]["model_name"] = new_args.model_name
+    if new_args.weight_path is not None:
+        cfg_file["model_params"]["weight_path"] = new_args.weight_path
+        if new_args.continue_train is None or new_args.continue_train == 0:
+            continue_train = False
         else:
-            cfg_file.CACHE.STATE = False
-    if new_args.pub_plan is not None:
-        cfg_file.PUB_PLAN = new_args.pub_plan
-    if new_args.plus is not None:
-        cfg_file.PLUS = new_args.plus
-    if new_args.split_num is not None:
-        cfg_file.SPLIT_NUM = new_args.split_num
-    if new_args.dam_plan is not None:
-        cfg_file.DAM_PLAN = new_args.dam_plan
+            continue_train = True
+        cfg_file["model_params"]["continue_train"] = continue_train
+    if new_args.weight_path_add is not None:
+        cfg_file["model_params"]["weight_path_add"] = new_args.weight_path_add
+    if new_args.model_param is None:
+        if new_args.batch_size is not None:
+            batch_size = new_args.batch_size
+            cfg_file["model_params"]["model_param"]["batch_size"] = batch_size
+            cfg_file["dataset_params"]["batch_size"] = batch_size
+            cfg_file["training_params"]["batch_size"] = batch_size
+        if new_args.rho is not None:
+            rho = new_args.rho
+            cfg_file["model_params"]["model_param"]["seq_length"] = rho
+            cfg_file["dataset_params"]["forecast_history"] = rho
+        if new_args.n_feature is not None:
+            cfg_file["model_params"]["model_param"]["n_time_series"] = new_args.n_feature
+        if new_args.hidden_size is not None:
+            cfg_file["model_params"]["model_param"]["hidden_states"] = new_args.hidden_size
+    else:
+        cfg_file["model_params"]["model_param"] = new_args.model_param
+        if "batch_size" in new_args.model_param.keys():
+            cfg_file["dataset_params"]["batch_size"] = new_args.model_param["batch_size"]
+            cfg_file["training_params"]["batch_size"] = new_args.model_param["batch_size"]
+        elif new_args.batch_size is not None:
+            batch_size = new_args.batch_size
+            cfg_file["dataset_params"]["batch_size"] = batch_size
+            cfg_file["training_params"]["batch_size"] = batch_size
+        if "seq_length" in new_args.model_param.keys():
+            cfg_file["dataset_params"]["forecast_history"] = new_args.model_param["seq_length"]
+        elif "forecast_history" in new_args.model_param.keys():
+            cfg_file["dataset_params"]["forecast_history"] = new_args.model_param["forecast_history"]
+        elif new_args.rho is not None:
+            cfg_file["dataset_params"]["forecast_history"] = new_args.rho
+    print("the updated config:\n", json.dumps(cfg_file, indent=4, ensure_ascii=False))

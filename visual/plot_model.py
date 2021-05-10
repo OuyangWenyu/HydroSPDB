@@ -3,16 +3,11 @@ import os
 import cartopy.crs as ccrs
 import pandas as pd
 import numpy as np
-import geopandas as gpd
-from pyproj import CRS
-from shapely.geometry import Point
 import matplotlib.pyplot as plt
 import seaborn as sns
 from explore.stat import statError
-from utils import hydro_time
-from utils.dataset_format import subset_of_dict
-from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_point_map, plot_ecdf, plot_ts_map, \
-    plot_map_carto
+from utils.hydro_utils import subset_of_dict, t_range_days
+from visual.plot_stat import plot_ts, plot_boxs, plot_diff_boxes, plot_ecdf, plot_ts_map, plot_map_carto
 
 
 def plot_scatter_multi_attrs(data_model, inds_df, idx_lst_nse_range, attr_lst, y_var_lst):
@@ -50,12 +45,6 @@ def plot_region_seperately(gages_data_model, epoch, id_regions_idx, preds, obss,
         sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
         plot_ecdf(sites_df_nse, keys[2], os.path.join(gages_data_model.data_source.data_config.data_path["Out"],
                                                       regions_name[i] + "epoch" + str(epoch) + "ecdf_fig.png"))
-        # plot map
-        gauge_dict = gages_data_model.data_source.gage_dict
-        save_map_file = os.path.join(gages_data_model.data_source.data_config.data_path["Out"],
-                                     regions_name[i] + "epoch" + str(epoch) + "map_fig.png")
-        plot_map(gauge_dict, sites_df_nse, save_file=save_map_file, id_col="STAID", lon_col="LNG_GAGE",
-                 lat_col="LAT_GAGE")
 
 
 def plot_we_need(data_model_test, obs, pred, show_me_num=5, point_file=None, **kwargs):
@@ -73,22 +62,9 @@ def plot_we_need(data_model_test, obs, pred, show_me_num=5, point_file=None, **k
     t_range = np.array(t_s_dict["t_final_range"])
     ts_fig = plot_ts_obs_pred(obs, pred, sites, t_range, show_me_num)
     ts_fig.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], "ts_fig.png"))
-    # plot NSE map
-    inds_df_plot_map = pd.DataFrame(inds_test)
-    idx_lst = np.arange(len(data_model_test.t_s_dict["sites_id"])).tolist()
-    nse_range = [0, 1]
-    idx_lstl_nse = inds_df_plot_map[
-        (inds_df_plot_map[keys[2]] >= nse_range[0]) & (inds_df_plot_map[keys[2]] <= nse_range[1])].index.tolist()
-    plot_gages_map(data_model_test, inds_df_plot_map, keys[2], idx_lstl_nse, cbar_font_size=14)
-
-    plt.savefig(os.path.join(data_model_test.data_source.data_config.data_path["Out"], 'map_NSE.png'), dpi=500,
-                bbox_inches="tight")
-    # plt.figure()
-    # if point_file is None:
-    #     gauge_dict = data_model_test.data_source.gage_dict
-    #     plot_map(gauge_dict, sites_df_nse, **kwargs)
-    # else:
-    #     plot_ind_map(point_file, sites_df_nse, percentile=25)
+    # plot nse ecdf
+    sites_df_nse = pd.DataFrame({"sites": sites, keys[2]: inds_test[keys[2]]})
+    plot_ecdf(sites_df_nse, keys[2])
 
 
 def plot_box_inds(indicators):
@@ -156,46 +132,6 @@ def plot_ts_obs_pred(obs, pred, sites, t_range, num):
     return ts_fig
 
 
-def plot_ind_map(all_points_file, df_ind_value, percentile=0):
-    """plot ind values on a map"""
-    all_points = gpd.read_file(all_points_file)
-    print(all_points.head())
-    print(all_points.crs)
-    # Here transform coordination to WGS84
-    crs_wgs84 = CRS.from_epsg(4326)
-    print(crs_wgs84)
-    if not all_points.crs == crs_wgs84:
-        all_points = all_points.to_crs(crs_wgs84)
-    print(all_points.head())
-    print(all_points.crs)
-    sites = df_ind_value['sites'].values
-    index = np.array([np.where(all_points["STAID"] == i) for i in sites]).flatten()
-    newdata = gpd.GeoDataFrame(df_ind_value, crs=all_points.crs)
-
-    newdata['geometry'] = None
-    for idx in range(len(index)):
-        # copy the point object to the geometry column on this row:
-        newdata.at[idx, 'geometry'] = all_points.at[index[idx], 'geometry']
-
-    plot_point_map(newdata, percentile=percentile)
-
-
-def plot_map(gauge_dict, df_ind_value, save_file=None, proj_epsg=4269, percentile=10, **kwargs):
-    """plot ind values on a map, epsg num of NAD83 is 4269"""
-    sites = df_ind_value['sites'].values
-    index = np.array([np.where(gauge_dict[kwargs["id_col"]] == i) for i in sites]).flatten()
-    assert (all(x < y for x, y in zip(index, index[1:])))
-    # index = [i for i in range(gauge_dict[id_col_name].size) if gauge_dict[id_col_name][i] in sites]
-    newdata = gpd.GeoDataFrame(df_ind_value, crs=CRS.from_epsg(proj_epsg).to_wkt())
-    newdata['geometry'] = None
-    for idx in range(len(index)):
-        # copy the point object to the geometry column on this row:
-        point = Point(gauge_dict[kwargs["lon_col"]][index[idx]], gauge_dict[kwargs["lat_col"]][index[idx]])
-        newdata.at[idx, 'geometry'] = point
-
-    plot_point_map(newdata, percentile=percentile, save_file=save_file)
-
-
 def plot_gages_map(data_model, inds_df, show_ind_key, idx_lst=None, pertile_range=[0, 100], fig_size=(8, 8),
                    cmap_str="jet", colorbar_size=[0.91, 0.318, 0.02, 0.354], cbar_font_size=None):
     if idx_lst is None:
@@ -231,7 +167,7 @@ def plot_gages_map_and_ts(data_model, obs, pred, inds_df, show_ind_key, idx_lst,
     data_ts_obs_np = obs[idx_lst, :]
     data_ts_pred_np = pred[idx_lst, :]
     data_ts = [[data_ts_obs_np[i], data_ts_pred_np[i]] for i in range(data_ts_obs_np.shape[0])]
-    t = hydro_time.t_range_days(data_model.t_s_dict["t_final_range"]).tolist()
+    t = t_range_days(data_model.t_s_dict["t_final_range"]).tolist()
     if plot_ts:
         plot_ts_map(data_map.tolist(), data_ts, lat, lon, t, sites.tolist(), pertile_range=pertile_range)
     else:

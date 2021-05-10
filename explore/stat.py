@@ -1,9 +1,10 @@
+import itertools
+
 import numpy as np
 import scipy.stats
+from scipy.stats import wilcoxon
 
-from utils.hydro_util import hydro_logger
-
-keyLst = ['Bias', 'RMSE', 'Corr', 'NSE']
+from utils.hydro_utils import hydro_logger
 
 
 def KGE(xs, xo):
@@ -125,11 +126,11 @@ def cal_stat_basin_norm(x, basinarea, meanprep):
 
 
 def trans_norm(x, var_lst, stat_dict, *, to_norm):
-    """归一化计算方法，包括反向的计算过程，测试的时候需要还原数据
+    """normalization，including denormalization code
     :parameter
-        x：可以是二维，也可以是三维数据，都能处理。
-            二维：第一维代表站点，第二维代表变量类型
-            三维：第一维代表站点，第二维代表时间，第三维度代表变量类型
+        x：2d or 3d data
+            2d：1st-sites，2nd-var type
+            3d：1st-sites，2nd-time, 3rd-var type
     """
     if type(var_lst) is str:
         var_lst = [var_lst]
@@ -158,35 +159,44 @@ def ecdf(data):
     return (x, y)
 
 
-def trans_norm4gridmet(x, var_lst, stat_dict, *, to_norm):
-    """normalization; when to_norm=False, anti-normalization
-    :parameter
-        xï¼šad or 3d
-            2d: 1st dim is gauge  2nd dim is var type
-            3d: 1st dim is gauge 2nd dim is time 3rd dim is var type
-    """
-    if type(var_lst) is str:
-        var_lst = [var_lst]
-    out = np.zeros(x.shape)
-    for k in range(len(var_lst)):
-        var = var_lst[k]
-        stat = stat_dict[var]
-        if to_norm is True:
-            if len(x.shape) == 3:
-                if var == 'pr' or var == 'usgsFlow':
-                    x[:, :, k] = np.log10(np.sqrt(x[:, :, k]) + 0.1)
-                out[:, :, k] = (x[:, :, k] - stat[2]) / stat[3]
-            elif len(x.shape) == 2:
-                if var == 'pr' or var == 'usgsFlow':
-                    x[:, k] = np.log10(np.sqrt(x[:, k]) + 0.1)
-                out[:, k] = (x[:, k] - stat[2]) / stat[3]
+def wilcoxon_t_test(xs, xo):
+    """Wilcoxon t test"""
+    diff = xs - xo  # same result when using xo-xs
+    w, p = wilcoxon(diff)
+    return w, p
+
+
+def wilcoxon_t_test_for_lst(x_lst, rnd_num=2):
+    """Wilcoxon t test for every two array in a 2-d array"""
+    arr_lst = np.asarray(x_lst)
+    w, p = [], []
+    arr_lst_pair = list(itertools.combinations(arr_lst, 2))
+    for arr_pair in arr_lst_pair:
+        wi, pi = wilcoxon_t_test(arr_pair[0], arr_pair[1])
+        w.append(round(wi, rnd_num))
+        p.append(round(pi, rnd_num))
+    return w, p
+
+
+def cal_fdc(data: np.array, quantile_num=100):
+    # data = n_grid * n_day
+    n_grid, n_day = data.shape
+    fdc = np.full([n_grid, quantile_num], np.nan)
+    for ii in range(n_grid):
+        temp_data0 = data[ii, :]
+        temp_data = temp_data0[~np.isnan(temp_data0)]
+        # deal with no data case for some gages
+        if len(temp_data) == 0:
+            temp_data = np.full(n_day, 0)
+        # sort from large to small
+        temp_sort = np.sort(temp_data)[::-1]
+        # select quantile_num quantile points
+        n_len = len(temp_data)
+        ind = (np.arange(quantile_num) / quantile_num * n_len).astype(int)
+        fdc_flow = temp_sort[ind]
+        if len(fdc_flow) != quantile_num:
+            raise Exception('unknown assimilation variable')
         else:
-            if len(x.shape) == 3:
-                out[:, :, k] = x[:, :, k] * stat[3] + stat[2]
-                if var == 'pr' or var == 'usgsFlow':
-                    out[:, :, k] = (np.power(10, out[:, :, k]) - 0.1) ** 2
-            elif len(x.shape) == 2:
-                out[:, k] = x[:, k] * stat[3] + stat[2]
-                if var == 'pr' or var == 'usgsFlow':
-                    out[:, k] = (np.power(10, out[:, k]) - 0.1) ** 2
-    return out
+            fdc[ii, :] = fdc_flow
+
+    return fdc

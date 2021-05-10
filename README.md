@@ -1,4 +1,6 @@
-# Streamflow Prediction in Dammed Basins (SPDB) with Deep Learning models
+# HydroSPDB
+
+This is the Code for Streamflow Prediction in (Dammed) Basins (SPDB) with Deep Learning models.
 
 ## Code
 
@@ -8,43 +10,17 @@ Clone this repo to your local directory.
 
 Please use the "master" branch, but if you want to use another branch, for example, the "dev" branch, you can run the commands:
 
-```git
+```Shell
 git fetch origin dev
 git checkout -b dev origin/dev
 ```
 
-## Setup
-
-Please move to the root directory of this repo and then use the following code to generate the python environment:
-
-```Shell
-conda env create -f environment.yml
-```
- 
-The main packages are as follows:
-
-```conda
-pytorch==1.2.0 torchvision==0.4.0 cudatoolkit=10.0 pydrive geopandas netcdf4 scipy tensorboard future matplotlib statsmodels seaborn cartopy geoplot easydict pyarrow xlrd
-```
-
-After installing the environment, activate it before running the code:
-
-```Shell
-conda activate SPDB
-```
-
-## Workflow
-
-References:
-
-- [machine-learning-project-walkthrough](https://github.com/WillKoehrsen/machine-learning-project-walkthrough)
-
 Pipeline：
 
-1. config, download and process the data
-2. build and train the model
-3. test the model
-4. visualization
+- config, download and process the data
+- build and train the model
+- test the model
+- visualization
 
 Directories:
 
@@ -57,45 +33,58 @@ Directories:
 - All test scripts were written with Unittest framework, and in "test" dir
 - Visualization codes were in "visual" dir
 
+## Setup
+
+Set the python virtual environment.
+
+Make sure Conda (miniconda is recommended) has been installed, if not, please
+see [here](https://github.com/OuyangWenyu/hydrus/blob/master/1-basic-envir/2-python-envir.md).
+
+Then move to the root directory of this repo and run the following command in the terminal:
+
+```Shell
+conda env create -f environment.yml
+```
+
+Wait some minutes, and then all dependencies will be installed.
+
+## Configuration
+
+Download the source data and put them in a directory.
+
+Then, assign it to the "DATASET_DIR" in definitions.py.
+
+Next, Define the Configuration File.
+
+The template Configuration File (now only a python-dict version is supported) is in config.py.
+
+A configuration file is composed of four major required sub-parts:
+
+1. model_params
+2. dataset_params
+3. training_params
+4. metrics
+
+You can easily see all the parameters that you specify to your model.
+
+Now only some choices are supported (I will list them later).
+
 ## Usage
 
-- Please make sure that you have all input data. The data list is shown below. If you miss any one, please connect with me: hust2014owen@gmail.com
-    - basin_mean_forcing.zip 
-    - basinchar_and_report_sept_2011.zip 
-    - boundaries_shapefiles_by_aggeco.zip 
-    - camels531.zip 
-    - camels_attributes_v2.0.zip 
-    - gages_streamflow.zip 
-    - gagesII_9322_point_shapefile.zip 
-    - mainstem_line_covers.zip
-    - nid.zip 
-    - wbdhu4-a-us-september2019-shpfile.zip
-- Download the data manually if you don't have an access to my google drive or you don't know how to use PyDrive. 
-Then you have to make a directory:
-```Shell
-# /mnt/sdc/wvo5024/hydro-anthropogenic-lstm/ is my root directory. you should change it to yours
-cd /mnt/sdc/wvo5024/hydro-anthropogenic-lstm/example
-mkdir data
-cd data
-mkdir gages
-```
-and put all downloaded zip files in it.
-- Run the data/config.py, and then you are ready to run this repo
-- Now you can run the script, such as "app/streamflow/gages_conus_analysis.py", using Ubuntu "screen" tool: 
+I recommend starting with CudnnLstmModel/Vanilla LSTM with the CAMELS dataset.
 
 ```Shell
 screen -S xxx (give the process a name)
-conda activate SPDB
+conda activate hydrodl
 cd xx/app/streamflow （move to the directory）
 screen -r xxx (use the id of the process to enter the process. you can use "screen -ls" to see what the id is)
-python gages_conus_analysis.py --sub basic/exp37 --cache_state 1
+python camels671_analysis.py --sub test/exp1 --download 1 --model_name KuaiLSTM --opt Adadelta --rs 1234 --cache_write 1 --scaler DapengScaler --data_loader StreamflowDataModel --batch_size 5 --rho 20 --n_feature 24 --gage_id 01013500 01022500 01030500 01031500 01047000 01052500 01054200 01055000 01057000 01170100
 ```
 
-All "xxx_xxx_analysis.py" scripts are run for training and testing, while all "xxx_xxx_result_sectionx.py" files are used for showing the results. 
-To run the testing file, please make sure you have run the corresponding training scripts 
-and saved some cache for input data and trained model. If there is no cache for input, it will take much time to test models.
-You can use the following code to generate some quickly-accessed binary data:
+## Acknowledgement
 
-```Shell
-python gages_conus_analysis.py --gen_quick_data 1 --quick_data 0 --train_mode 0
-```
+Thanks to the following repositories:
+
+- [mhpi/hydroDL](https://github.com/mhpi/hydroDL)
+- [neuralhydrology/neuralhydrology](https://github.com/neuralhydrology/neuralhydrology)
+- [AIStream-Peelout/flow-forecast](https://github.com/AIStream-Peelout/flow-forecast)

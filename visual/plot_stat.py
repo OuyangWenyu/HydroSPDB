@@ -1,10 +1,7 @@
-"""basic plot functions for statistics, using cartopy, geoplot, matplotlib, and seaborn"""
+"""basic plot functions for statistics, using cartopy, matplotlib, and seaborn"""
 import matplotlib
 import seaborn as sns
 import matplotlib.pyplot as plt
-import geopandas as gpd
-import geoplot as gplt
-import geoplot.crs as gcrs
 import numpy as np
 import pandas as pd
 import cartopy.crs as ccrs
@@ -14,7 +11,7 @@ from matplotlib.cm import ScalarMappable
 from explore.stat import ecdf
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from utils.hydro_util import hydro_logger
+from utils.hydro_utils import hydro_logger
 
 
 def swarmplot_without_legend(x, y, hue, vmin, vmax, cmap, **kwargs):
@@ -81,14 +78,13 @@ def swarmplot_with_cbar(cmap_str, cbar_label, ylim, *args, **kwargs):
 
 
 def plot_boxs(data, x_name, y_name, uniform_color=None, swarm_plot=False, hue=None, colormap=False, xlim=None,
-              ylim=None):
-    """绘制箱型图"""
-    sns.set(style="ticks", palette="pastel")
+              ylim=None, order=None, font="serif", rotation=45):
+    sns.set(style="ticks", palette="pastel", font=font, font_scale=1.5)
     # Draw a nested boxplot to show bills by day and time
     if uniform_color is not None:
-        sns_box = sns.boxplot(x=x_name, y=y_name, data=data, color=uniform_color, showfliers=False)
+        sns_box = sns.boxplot(x=x_name, y=y_name, data=data, color=uniform_color, showfliers=False, order=order)
     else:
-        sns_box = sns.boxplot(x=x_name, y=y_name, data=data, showfliers=False)
+        sns_box = sns.boxplot(x=x_name, y=y_name, data=data, showfliers=False, order=order)
     if swarm_plot:
         if hue is not None:
             if colormap:
@@ -102,7 +98,7 @@ def plot_boxs(data, x_name, y_name, uniform_color=None, swarm_plot=False, hue=No
                     colors.update({cval: cmap(norm(cval))})
 
                 # plot the swarmplot with the colors dictionary as palette, s=2 means size is 2
-                sns_box = sns.swarmplot(x=x_name, y=y_name, hue=hue, s=2, data=data, palette=colors)
+                sns_box = sns.swarmplot(x=x_name, y=y_name, hue=hue, s=2, data=data, palette=colors, order=order)
                 # remove the legend, because we want to set a colorbar instead
                 plt.gca().legend_.remove()
                 # create colorbar
@@ -116,17 +112,17 @@ def plot_boxs(data, x_name, y_name, uniform_color=None, swarm_plot=False, hue=No
                 cb1.set_label('Some Units')
             else:
                 palette = sns.light_palette("seagreen", reverse=False, n_colors=10)
-                sns_box = sns.swarmplot(x=x_name, y=y_name, hue=hue, s=2, data=data, palette=palette)
+                sns_box = sns.swarmplot(x=x_name, y=y_name, hue=hue, s=2, data=data, palette=palette, order=order)
         else:
-            sns_box = sns.swarmplot(x=x_name, y=y_name, data=data, color=".2")
-        if xlim is not None:
-            plt.xlim(xlim[0], xlim[1])
-        if ylim is not None:
-            plt.ylim(ylim[0], ylim[1])
+            sns_box = sns.swarmplot(x=x_name, y=y_name, data=data, color=".2", order=order)
 
+    if xlim is not None:
+        plt.xlim(xlim[0], xlim[1])
+    if ylim is not None:
+        plt.ylim(ylim[0], ylim[1])
     sns.despine()
     locs, labels = plt.xticks()
-    plt.setp(labels, rotation=45)
+    plt.setp(labels, rotation=rotation)
     # plt.show()
     return sns_box.get_figure()
 
@@ -178,33 +174,12 @@ def plot_diff_boxes(data, row_and_col=None, y_col=None, x_col=None, hspace=0.3, 
 
 
 def plot_ts(data, row_name, col_name, x_name, y_name):
-    """绘制时间序列对比图"""
     sns.set(style="whitegrid")
     g = sns.FacetGrid(data, row=row_name, col=col_name, margin_titles=True)
     g.map(plt.plot, x_name, y_name, color="steelblue")
 
     plt.show()
     return g
-
-
-def plot_point_map(gpd_gdf, percentile=0, save_file=None):
-    """plot point data on a map"""
-    # Choose points in which NSE value are bigger than the 25% quartile value range
-    percentile_data = np.percentile(gpd_gdf['NSE'].values, percentile).astype(float)
-    # the result of query is a tuple with one element, but it's right for plotting
-    data_chosen = gpd_gdf.query("NSE > " + str(percentile_data))
-    contiguous_usa = gpd.read_file(gplt.datasets.get_path('contiguous_usa'))
-    proj = gcrs.AlbersEqualArea(central_longitude=-98, central_latitude=39.5)
-    polyplot_kwargs = {'facecolor': (0.9, 0.9, 0.9), 'linewidth': 0}
-    pointplot_kwargs = {'hue': 'NSE', 'legend': True, 'linewidth': 0.01}
-    # ax = gplt.polyplot(contiguous_usa.geometry, projection=proj, **polyplot_kwargs)
-    ax = gplt.webmap(contiguous_usa, projection=gcrs.WebMercator())
-    gplt.pointplot(data_chosen, ax=ax, **pointplot_kwargs)
-    ax.set_title("NSE " + "Map")
-    plt.show()
-    if save_file is not None:
-        plt.savefig(save_file)
-        # plt.savefig("NSE-usa.png", bbox_inches='tight', pad_inches=0.1)
 
 
 def plot_ecdfs(xs, ys, legends=None, style=None, case_str="case", event_str="event", x_str="x", y_str="y",
@@ -296,10 +271,10 @@ def plot_ecdfs_matplot(xs, ys, legends=None, colors=None, dash_lines=None, x_str
                 line_i.set_dashes([2, 2, 10, 2])
     else:
         for i, color in enumerate(colors):
-            # if np.nanmax(np.array(xs[i])) == np.inf or np.nanmin(np.array(xs[i])) == -np.inf:
-            #     assert (all(xi <= yi for xi, yi in zip(xs[i], xs[i][1:])))
-            # else:
-            assert (all(xi <= yi for xi, yi in zip(xs[i], xs[i][1:])))
+            if np.nanmax(np.array(xs[i])) == np.inf or np.nanmin(np.array(xs[i])) == -np.inf:
+                assert (all(xi <= yi for xi, yi in zip(xs[i], xs[i][1:])))
+            else:
+                assert (all(xi <= yi for xi, yi in zip(xs[i], xs[i][1:])))
             line_i, = ax.plot(xs[i], ys[i], color=color, label=legends[i])
             if dash_lines[i]:
                 line_i.set_dashes([2, 2, 10, 2])
@@ -489,3 +464,18 @@ def plot_ts_map(dataMap, dataTs, lat, lon, t, sites_id, pertile_range=None):
 
     fig.canvas.mpl_connect('button_press_event', onclick)
     plt.show()
+
+
+def create_median_labels(ax, has_fliers, size=12):
+    lines = ax.get_lines()
+    # depending on fliers, toggle between 5 and 6 lines per box
+    lines_per_box = 5 + int(has_fliers)
+    # iterate directly over all median lines, with an interval of lines_per_box
+    # this enables labeling of grouped data without relying on tick positions
+    for median_line in lines[4:len(lines):lines_per_box]:
+        # get center of median line
+        mean_x = sum(median_line._x) / len(median_line._x)
+        mean_y = sum(median_line._y) / len(median_line._y)
+        # print text to center coordinates
+        text = ax.text(mean_x, mean_y + 0.03, f'{mean_y:.2f}', ha='center', va='center', fontweight='bold', size=size,
+                       color='black')

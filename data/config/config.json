@@ -1,0 +1,87 @@
+{
+  "model_params": {
+    "model_type": "PyTorch",
+    "model_name": "LSTM",
+    "model_param": {
+      "seq_length": 30,
+      "n_time_series": 24,
+      "output_seq_len": 1,
+      "hidden_states": 20,
+      "num_layers": 1,
+      "bias": true,
+      "batch_size": 100,
+      "probabilistic": false
+    }
+  },
+  "dataset_params": {
+    "dataset_name": "CAMELS",
+    "download": true,
+    "cache_read": true,
+    "cache_write": false,
+    "cache_path": null,
+    "data_path": "/mnt/data/owen411/data/camels/",
+    "validation_path": null,
+    "test_path": null,
+    "batch_size": 100,
+    "forecast_history": 30,
+    "forecast_length": 1,
+    "object_ids": "ALL",
+    "t_range_train": [
+      "1992-01-01",
+      "1993-01-01"
+    ],
+    "t_range_valid": null,
+    "t_range_test": [
+      "1993-01-01",
+      "1994-01-01"
+    ],
+    "target_cols": [
+      "usgsFlow"
+    ],
+    "relevant_cols": [
+      "dayl",
+      "prcp",
+      "srad",
+      "swe",
+      "tmax",
+      "tmin",
+      "vp"
+    ],
+    "constant_cols": [
+      "elev_mean",
+      "slope_mean",
+      "area_gages2",
+      "frac_forest",
+      "lai_max",
+      "lai_diff",
+      "dom_land_cover_frac",
+      "dom_land_cover",
+      "root_depth_50",
+      "soil_depth_statsgo",
+      "soil_porosity",
+      "soil_conductivity",
+      "max_water_content",
+      "geol_1st_class",
+      "geol_2nd_class",
+      "geol_porostiy",
+      "geol_permeability"
+    ],
+    "data_loader": "StreamflowDataset",
+    "scaler": "StandardScaler"
+  },
+  "training_params": {
+    "train_mode": true,
+    "criterion": "RMSE",
+    "optimizer": "Adam",
+    "optim_params": {
+      "lr": 0.001
+    },
+    "epochs": 10,
+    "save_epoch": 0,
+    "batch_size": 100,
+    "random_seed": 1234
+  },
+  "metrics": [
+    "NSE"
+  ]
+}

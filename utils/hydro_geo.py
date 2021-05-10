@@ -1,6 +1,3 @@
-"""
-everything about geospatial corrdinates / locations / geometries ...
-"""
 import os
 import time
 
@@ -8,11 +5,10 @@ import fiona
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from netCDF4._netCDF4 import Dataset
 from pyproj import transform, CRS, Proj
 from shapely.geometry import Polygon, Point
 
-from utils import hydro_util
+from utils.hydro_utils import serialize_numpy
 
 
 def spatial_join(points_file, polygons_file):
@@ -90,7 +86,7 @@ def trans_points(from_crs, to_crs, pxs, pys):
 def trans_polygon(from_crs, to_crs, polygon_from):
     """transform coordination of every point of a polygon to one in a given coordination system"""
     polygon_to = Polygon()
-    # 多边形外边界的各点坐标list里面是tuple
+    # data type: tuples in a list
     boundary = polygon_from.boundary
     boundary_type = boundary.geom_type
     print(boundary_type)
@@ -180,11 +176,7 @@ def nearest_point_index(crs_from, crs_to, lon, lat, xs, ys):
 
 
 def create_mask(poly, xs, ys, lons, lats, crs_from, crs_to):
-    """根据只有一个Polygon的shapefile和一个netcdf文件的所有坐标，生成该shapefile对应的mask。用xy坐标或经纬度都可以，先用经纬度测试下
-       因为netcdf代表的空间太大，所以为了计算较快，直接生成索引比较合适，即取netcdf的变量中的合适点的index"""
     mask_index = []
-    # 首先想办法减少循环的范围，然后在循环内使用map实现快速循环，现在思路是这样的：
-    # 每行选出一个最接近的index组成一个INDEX集合，首先读取bound的范围，转换到x和y上判断范围
     poly_bound = poly.bounds
     poly_bound_min_lat = poly_bound[1]
     poly_bound_min_lon = poly_bound[0]
@@ -192,10 +184,8 @@ def create_mask(poly, xs, ys, lons, lats, crs_from, crs_to):
     poly_bound_max_lon = poly_bound[2]
     index_min = nearest_point_index(crs_from, crs_to, poly_bound_min_lon, poly_bound_min_lat, xs, ys)
     index_max = nearest_point_index(crs_from, crs_to, poly_bound_max_lon, poly_bound_max_lat, xs, ys)
-    # 注意y是倒序的
     range_x = [index_min[0], index_max[0]]
     range_y = [index_max[1], index_min[1]]
-    # 注意在nc文件中，lat和lon的坐标都是(y,x)，所以顺着lons和lats的坐标轴循环，第一个先循环y到range_y[1] + 1（range_x,range_y都是闭区间）
     for i in range(range_y[0], range_y[1] + 1):
         for j in range(range_x[0], range_x[1] + 1):
             if is_point_in_boundary(lons[i][j], lats[i][j], poly):
@@ -204,30 +194,20 @@ def create_mask(poly, xs, ys, lons, lats, crs_from, crs_to):
 
 
 def is_point_in_boundary(px, py, poly):
-    """给定一个点的经纬度坐标，判断是否在多多边形边界内
-    :param
-    polygon--shapely.geometry.Polygon
-    """
     point = Point(px, py)
     return point.within(poly)
 
 
 def calc_avg(mask, netcdf_data, var_type):
-    """有了mask之后，就可以直接取对应位置的数据了，mask是一个包含二维tuple的list"""
-
-    # var_data是一个三维的数组，var_data的时间变量是第1个维度，利用mask的数据搜索另外两维，一次性读取数据量太大，无法读入，因此要对时间循环，循环后直接根据索引取数据
-    # 数据的索引花的时间太久，感觉必须要在下载数据时就先按照范围把数据下载好，然后再来生成mask，或者用matlab看看读取速度会不会较快
     mask = np.array(mask)
     index = mask.T
 
     def f_avg(i):
         data_day = netcdf_data.variables[var_type][i]
         data_chosen = data_day[index[0], index[1]]
-        # 直接numpy指定位置处的数据求平均
         data_mean = np.mean(data_chosen, axis=0)
         return data_mean
 
-    # 使用map循环
     all_mean_data = list(map(f_avg, range(365)))
 
     return all_mean_data
@@ -237,7 +217,7 @@ def shps_trans_coord(input_folder, output_folder):
     """transform coords of all shapefiles in the folder--"input_folder",
        and save the results in the folder--"output_folder"
     """
-    # Define path to folder，以r开头表示相对路径
+    # Define path to folder
     shp_file_names = []
     for f_name in os.listdir(input_folder):
         if f_name.endswith('.shp'):
@@ -251,8 +231,8 @@ def shps_trans_coord(input_folder, output_folder):
 
 
 def basin_avg_netcdf(netcdf_file, shp_file, mask_file):
+    # TODO: netcdf
     data_netcdf = Dataset(netcdf_file, 'r')  # reads the netCDF file
-    # 看看netcdf的格式具体是什么样的，便于后面判断坐标之间的空间关系
     print(data_netcdf)
     # get all variable names
     print(data_netcdf.variables.keys())
@@ -261,10 +241,8 @@ def basin_avg_netcdf(netcdf_file, shp_file, mask_file):
     for d in data_netcdf.dimensions.items():
         print(d)
     x, y = data_netcdf.variables['x'], data_netcdf.variables['y']
-    # x，y是其他变量的坐标：lat(y,x), lon(y,x), prcp(time,y,x)。所以先看看x和y的数据的规律
     x = data_netcdf.variables['x'][:]
     y = data_netcdf.variables['y'][:]
-    # 判断x和y是否递增，根据下面的all函数判断可知：x是递增的，y是递减的，因为只有递增递减的，才能先根据边界把区域定好，然后再分析mask，这样会很快
     lx = list(x)
     ly = list(y)
     print(all(ix < jx for ix, jx in zip(lx, lx[1:])))
@@ -272,22 +250,18 @@ def basin_avg_netcdf(netcdf_file, shp_file, mask_file):
     lons = data_netcdf.variables['lon'][:]
     lats = data_netcdf.variables['lat'][:]
 
-    # 投影坐标系（从官网得到的daymet坐标信息）
     crs_pro_str = '+proj=lcc +lat_1=25 +lat_2=60 +lat_0=42.5 +lon_0=-100 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
-    # 地理坐标系（epsg 4326 对应的str）
     crs_geo_str = '+proj=longlat +datum=WGS84 +no_defs'
-    # 后面create_mask时候需要将经纬度坐标转换为投影坐标，所以这里是crs_geo_str作crs_from
     crs_from = CRS.from_proj4(crs_geo_str)
     crs_to = CRS.from_proj4(crs_pro_str)
 
-    # 先选择一个shpfile
     new_shps = gpd.read_file(shp_file)
     polygon = new_shps.at[0, 'geometry']
     start = time.time()
     mask = create_mask(polygon, x, y, lons, lats, crs_from, crs_to)
     end = time.time()
-    print('生成mask耗时：', '%.7f' % (end - start))
-    hydro_util.serialize_numpy(np.array(mask), mask_file)
+    print('time：', '%.7f' % (end - start))
+    serialize_numpy(np.array(mask), mask_file)
     var_types = ['tmax']
     # var_types = ['tmax', 'tmin', 'prcp', 'srad', 'vp', 'swe', 'dayl']
     avgs = []
@@ -295,8 +269,33 @@ def basin_avg_netcdf(netcdf_file, shp_file, mask_file):
         start = time.time()
         avg = calc_avg(mask, data_netcdf, var_type)
         end = time.time()
-        print('计算耗时：', '%.7f' % (end - start))
-        print('平均值：', avg)
+        print('time：', '%.7f' % (end - start))
+        print('mean value：', avg)
         avgs.append(avg)
 
     return avgs
+
+
+def ind_of_dispersion(coord, points):
+    """the ratio of variance and mean value of Euclidean distances between event points and a selected point"""
+    points = np.asarray(points)
+    xd = points[:, 0] - coord[0]
+    yd = points[:, 1] - coord[1]
+    mean_d = np.sqrt(xd * xd + yd * yd).mean()
+    var_d = np.sqrt(xd * xd + yd * yd).var()
+    ind = var_d / mean_d
+    return ind
+
+
+def coefficient_of_variation(coord, points):
+    """the ratio of the standard deviation to the mean (average) value of Euclidean distances between event points
+    and a selected point """
+    if len(points) == 0:
+        return np.nan
+    points = np.asarray(points)
+    xd = points[:, 0] - coord[0]
+    yd = points[:, 1] - coord[1]
+    mean_d = np.sqrt(xd * xd + yd * yd).mean()
+    var_d = np.sqrt(xd * xd + yd * yd).var()
+    coefficient = np.sqrt(var_d) / mean_d * 100
+    return coefficient
