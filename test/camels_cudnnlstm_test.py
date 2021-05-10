@@ -10,7 +10,7 @@ from hydroDL.trainer import train_and_evaluate
 
 class CamelsTrainEvaluateTests(unittest.TestCase):
     def setUp(self):
-        camels_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "camels")
+        camels_dir = os.path.join(definitions.DATASET_DIR, "camels")
         dataset_name = "CAMELS"
         project_name = "camels/exp1"
         # project_name = "camels/cache-671sites-19851001_19951001_19951001_20051001-17attr-6forcing"

@@ -48,10 +48,10 @@ def main(config_data, args):
 # python gages3557_analysis.py --sub gages/exp18 --gage_id_file /mnt/data/owen411/code/hydro-spdb-dl/example/3557basins_ID_NSE_DOR.csv --download 0 --model_name DapengCNNLSTM --opt Adadelta --loss_func RMSESum --rs 12345 --model_param {\"n_kernel\":[10\,5]\,\"kernel_size\":[3\,3]\,\"stride\":[2\,1]\,\"nx\":37\,\"ny\":1\,\"nobs\":50\,\"hidden_size\":256\,\"dr\":0.5\,\"cnn_dr\":0.5\,\"cat_first\":false} --cache_read 1 --cache_path /mnt/data/owen411/code/hydro-spdb-dl/example/gages/cache-3557sites-19900101_20000101_20000101_20100101-30attr-7forcing-res_dor_hist --train_period 1990-01-01 2000-01-01 --test_period 2000-01-01 2010-01-01 --scaler DapengScaler --data_loader KernelFlowDataModel --train_epoch 300 --save_epoch 50 --batch_size 100 --rho 365 --var_o {\"RES_DOR_HIST\":{\"bins\":50}} --var_c DRAIN_SQKM ELEV_MEAN_M_BASIN SLOPE_PCT DEVNLCD06 FORESTNLCD06 PLANTNLCD06 WATERNLCD06 SNOWICENLCD06 BARRENNLCD06 SHRUBNLCD06 GRASSNLCD06 WOODYWETNLCD06 EMERGWETNLCD06 AWCAVE PERMAVE RFACT ROCKDEPAVE GEOL_REEDBUSH_DOM GEOL_REEDBUSH_DOM_PCT STREAMS_KM_SQ_KM NDAMS_2009 STOR_NOR_2009 RAW_DIS_NEAREST_MAJ_DAM CANALS_PCT RAW_DIS_NEAREST_CANAL FRESHW_WITHDRAWAL POWER_SUM_MW PDEN_2000_BLOCK ROADS_KM_SQ_KM IMPNLCD06
 if __name__ == '__main__':
     print("Begin\n")
-    gages_dir = [os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages_pro"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "nid"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gridmet")]
+    gages_dir = [os.path.join(definitions.DATASET_DIR, "gages_pro"),
+                 os.path.join(definitions.DATASET_DIR, "gages"),
+                 os.path.join(definitions.DATASET_DIR, "nid"),
+                 os.path.join(definitions.DATASET_DIR, "gridmet")]
     dataset_name = "GAGES_PRO"
     config = default_config_file(gages_dir, dataset_name)
     cmd_args = cmd()

@@ -11,7 +11,7 @@ from data.pro.data_gages_pro import get_dor_values, get_diversion, get_dam_stora
 
 class TestPreprocessCode(unittest.TestCase):
     def setUp(self):
-        gages_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages")
+        gages_dir = os.path.join(definitions.DATASET_DIR, "gages")
         project_name = r"gages/exp1"
         dataset_name = "GAGES"
         config_data = default_config_file(gages_dir, dataset_name)
@@ -41,9 +41,9 @@ class TestPreprocessCode(unittest.TestCase):
         update_cfg(config_data, args)
         self.config = config_data
         self.gages = Gages(gages_dir)
-        nid_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "nid")
-        gridmet_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gridmet")
-        gages_pro_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages_pro")
+        nid_dir = os.path.join(definitions.DATASET_DIR, "nid")
+        gridmet_dir = os.path.join(definitions.DATASET_DIR, "gridmet")
+        gages_pro_dir = os.path.join(definitions.DATASET_DIR, "gages_pro")
         data_dir_lst = [gages_pro_dir, gages_dir, nid_dir, gridmet_dir]
         self.gages_pro = GagesPro(data_dir_lst)
 

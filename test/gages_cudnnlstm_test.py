@@ -9,7 +9,7 @@ from hydroDL.trainer import train_and_evaluate
 
 class GagesTrainEvaluateTests(unittest.TestCase):
     def setUp(self):
-        gages_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages")
+        gages_dir = os.path.join(definitions.DATASET_DIR, "gages")
         dataset_name = "GAGES"
         self.config_data = default_config_file(gages_dir, dataset_name)
         project_name = "gages/exp1"

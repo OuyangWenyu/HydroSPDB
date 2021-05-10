@@ -18,7 +18,7 @@ class TestDARNN(unittest.TestCase):
     def setUp(self):
         self.preprocessed_data = make_data(os.path.join(os.path.dirname(__file__), "test_init", "keag_small.csv"),
                                            ["cfs"], 72)
-        camels_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "camels")
+        camels_dir = os.path.join(definitions.DATASET_DIR, "camels")
         dataset_name = "CAMELS"
         project_name = "test/exp7"
         self.config_data = default_config_file(camels_dir, dataset_name)

@@ -28,7 +28,7 @@ dpi = 600
 gage_3557id_file = os.path.join(definitions.ROOT_DIR, "example", "3557basins_ID_NSE_DOR.csv")
 basins_id = pd.read_csv(gage_3557id_file, dtype={0: str}).iloc[:, 0].values
 
-gages_path = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages")
+gages_path = os.path.join(definitions.DATASET_DIR, "gages")
 gages = Gages(gages_path, False)
 large_dor_ids = dor_reservoirs_chosen(gages, basins_id, 0.1)
 

@@ -29,7 +29,7 @@ def main(config_data, args):
 # python camels671_analysis.py --sub camels/exp2 --download 0 --model_name KuaiLSTM --opt Adadelta --loss_func RMSESum  --hidden_size 256 --rs 1234 --cache_read 1 --cache_path /mnt/data/owen411/code/hydro-spdb-dl/example/camels/cache-671sites-19851001_19951001_19951001_20051001-17attr-6forcing --train_period 1985-10-01 1995-10-01 --test_period 1995-10-01 2005-10-01 --scaler DapengScaler --data_loader StreamflowDataModel --train_epoch 300 --save_epoch 50 --batch_size 100 --rho 365 --var_t dayl prcp srad tmax tmin vp --n_feature 23
 if __name__ == '__main__':
     print("Begin\n")
-    camels_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "camels")
+    camels_dir = os.path.join(definitions.DATASET_DIR, "camels")
     dataset_name = "CAMELS"
     config = default_config_file(camels_dir, dataset_name)
     cmd_args = cmd()

@@ -43,10 +43,10 @@ def main(config_data, args):
 # python gages_gridmet_analysis.py --sub gages_gridmet/exp8 --model_param {\"seq_length\":365\,\"n_time_series\":38\,\"input_seq_len\":37\,\"output_seq_len\":1\,\"hidden_states\":256\,\"num_layers\":1\,\"bias\":true\,\"batch_size\":100\,\"probabilistic\":false} --continue_train 1 --weight_path /mnt/data/owen411/code/hydro-spdb-dl/example/gages_gridmet/exp6/13_April_202111_54AM_model.pth --weight_path_add {\"freeze_params\":[\"linearIn.bias\"\,\"linearIn.weight\"\,\"linearOut.bias\"\,\"linearOut.weight\"\,\"lstm.b_hh\"\,\"lstm.b_ih\"\,\"lstm.w_hh\"\,\"lstm.w_ih\"]} --download 0 --model_name KaiTlLSTM --opt Adadelta --loss_func RMSESum --hidden_size 256 --rs 1234 --cache_read 1 --cache_path /mnt/data/owen411/code/hydro-spdb-dl/example/gages_gridmet/cache-328sites-20080101_20130101_20130101_20180101-30attr-8forcing --train_period 2008-01-01 2013-01-01 --test_period 2013-01-01 2018-01-01 --scaler DapengScaler --data_loader StreamflowDataModel --train_epoch 300 --save_epoch 50 --batch_size 100 --rho 365 --var_t pr rmin srad tmmn tmmx vs eto cet --var_t_type gridmet --var_c DRAIN_SQKM ELEV_MEAN_M_BASIN SLOPE_PCT DEVNLCD06 FORESTNLCD06 PLANTNLCD06 WATERNLCD06 SNOWICENLCD06 BARRENNLCD06 SHRUBNLCD06 GRASSNLCD06 WOODYWETNLCD06 EMERGWETNLCD06 AWCAVE PERMAVE RFACT ROCKDEPAVE GEOL_REEDBUSH_DOM GEOL_REEDBUSH_DOM_PCT STREAMS_KM_SQ_KM NDAMS_2009 STOR_NOR_2009 RAW_DIS_NEAREST_MAJ_DAM CANALS_PCT RAW_DIS_NEAREST_CANAL FRESHW_WITHDRAWAL POWER_SUM_MW PDEN_2000_BLOCK ROADS_KM_SQ_KM IMPNLCD06 --n_feature 38 --gage_id_file /mnt/data/owen411/code/hydro-spdb-dl/example/328irrigation_gage_id.csv
 if __name__ == '__main__':
     print("Begin\n")
-    gages_dir = [os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages_pro"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "nid"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gridmet")]
+    gages_dir = [os.path.join(definitions.DATASET_DIR, "gages_pro"),
+                 os.path.join(definitions.DATASET_DIR, "gages"),
+                 os.path.join(definitions.DATASET_DIR, "nid"),
+                 os.path.join(definitions.DATASET_DIR, "gridmet")]
     dataset_name = "GAGES_PRO"
     config = default_config_file(gages_dir, dataset_name)
     cmd_args = cmd()

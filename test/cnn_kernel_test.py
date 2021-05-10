@@ -11,10 +11,10 @@ from hydroDL.trainer import train_and_evaluate
 
 class CnnKernelTest(unittest.TestCase):
     def setUp(self):
-        gages_dir = [os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages_pro"),
-                     os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages"),
-                     os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "nid"),
-                     os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gridmet")]
+        gages_dir = [os.path.join(definitions.DATASET_DIR, "gages_pro"),
+                     os.path.join(definitions.DATASET_DIR, "gages"),
+                     os.path.join(definitions.DATASET_DIR, "nid"),
+                     os.path.join(definitions.DATASET_DIR, "gridmet")]
         dataset_name = "GAGES_PRO"
         self.config_data = default_config_file(gages_dir, dataset_name)
         project_name = "gages_add_attr/exp2"

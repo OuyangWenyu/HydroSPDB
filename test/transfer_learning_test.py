@@ -26,7 +26,7 @@ class TLTests(unittest.TestCase):
         rho = 20
         hidden_size = 256
 
-        gages_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages")
+        gages_dir = os.path.join(definitions.DATASET_DIR, "gages")
         dataset1_name = "GAGES"
         self.config1_data = default_config_file(gages_dir, dataset1_name)
         project1_name = "gages/exp1"
@@ -39,10 +39,10 @@ class TLTests(unittest.TestCase):
                          gage_id=["01013500", "01022500", "01030500", "01031500", "01047000", "01052500", "01054200",
                                   "01055000", "01057000", "01170100"], )
 
-        gages_pro_dir = [os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages_pro"),
+        gages_pro_dir = [os.path.join(definitions.DATASET_DIR, "gages_pro"),
                          gages_dir,
-                         os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "nid"),
-                         os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gridmet")]
+                         os.path.join(definitions.DATASET_DIR, "nid"),
+                         os.path.join(definitions.DATASET_DIR, "gridmet")]
         dataset2_name = "GAGES_PRO"
         self.config2_data = default_config_file(gages_pro_dir, dataset2_name)
         # these attrs are not directly in GAGES-II; they need to be produced

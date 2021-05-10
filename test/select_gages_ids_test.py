@@ -9,7 +9,7 @@ from data.pro.select_gages_ids import usgs_screen_streamflow, dor_reservoirs_cho
 
 class Test(TestCase):
     def setUp(self):
-        gages_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages")
+        gages_dir = os.path.join(definitions.DATASET_DIR, "gages")
         dataset_name = "GAGES"
         config_data = default_config_file(gages_dir, dataset_name)
         project_name = "gages/exp1"

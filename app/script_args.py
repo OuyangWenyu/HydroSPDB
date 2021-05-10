@@ -26,10 +26,10 @@ def main(config_data, args):
 # python script_args.py --sub test/exp1 --download 0 --train_mode 0 --model_name KaiTlLSTM --model_param {\"seq_length\":365\,\"n_time_series\":42\,\"input_seq_len\":37\,\"output_seq_len\":1\,\"hidden_states\":256\,\"num_layers\":1\,\"bias\":true\,\"batch_size\":100\,\"probabilistic\":false} --opt Adadelta --loss_func RMSESum --hidden_size 256 --rs 1234 --cache_write 1 --train_period 1990-01-01 2000-01-01 --test_period 2000-01-01 2010-01-01 --scaler DapengScaler --data_loader StreamflowDataModel --weight_path_add {\"freeze_params\":[\"linearIn.bias\"\,\"linearIn.weight\"\,\"linearOut.bias\"\,\"linearOut.weight\"\,\"lstm.b_hh\"\,\"lstm.b_ih\"\,\"lstm.w_hh\"\,\"lstm.w_ih\"]} --weight_path /mnt/data/owen411/code/hydro-spdb-dl/example/gages/exp2/05_April_202105_47AM_model.pth --continue_train 1 --train_epoch 300 --save_epoch 50 --var_c DRAIN_SQKM ELEV_MEAN_M_BASIN SLOPE_PCT DEVNLCD06 FORESTNLCD06 PLANTNLCD06 WATERNLCD06 SNOWICENLCD06 BARRENNLCD06 SHRUBNLCD06 GRASSNLCD06 WOODYWETNLCD06 EMERGWETNLCD06 AWCAVE PERMAVE RFACT ROCKDEPAVE GEOL_REEDBUSH_DOM GEOL_REEDBUSH_DOM_PCT STREAMS_KM_SQ_KM NDAMS_2009 STOR_NOR_2009 RAW_DIS_NEAREST_MAJ_DAM CANALS_PCT RAW_DIS_NEAREST_CANAL FRESHW_WITHDRAWAL POWER_SUM_MW PDEN_2000_BLOCK ROADS_KM_SQ_KM IMPNLCD06 DOR DAM_MAIN_PURPOSE DIVERSION DAM_GAGE_DIS_VAR DAM_STORAGE_STD --n_feature 42 --gage_id_file /mnt/data/owen411/code/hydro-spdb-dl/example/3557basins_ID_NSE_DOR.csv
 if __name__ == '__main__':
     print("Begin\n")
-    gages_dir = [os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages_pro"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "nid"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gridmet")]
+    gages_dir = [os.path.join(definitions.DATASET_DIR, "gages_pro"),
+                 os.path.join(definitions.DATASET_DIR, "gages"),
+                 os.path.join(definitions.DATASET_DIR, "nid"),
+                 os.path.join(definitions.DATASET_DIR, "gridmet")]
     dataset_name = "GAGES_PRO"
     config = default_config_file(gages_dir, dataset_name)
     cmd_args = cmd()

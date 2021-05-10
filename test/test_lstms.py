@@ -37,7 +37,7 @@ class TestLstm(unittest.TestCase):
                          hidden_size=20)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.lstm3 = lstm3.to(device)
-        camels_dir = os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "camels")
+        camels_dir = os.path.join(definitions.DATASET_DIR, "camels")
         dataset_name = "CAMELS"
         self.config_data = default_config_file(camels_dir, dataset_name)
         weight_path = None

@@ -62,10 +62,10 @@ def main(config_data, args, gage_id_screen):
 # python gages_dor_analysis.py --sub dam/exp5 --gage_id_file /mnt/data/owen411/code/hydro-spdb-dl/example/3557basins_ID_NSE_DOR.csv --gage_id_screen {\"DOR\":0.1} --download 0 --model_name KuaiLSTM --opt Adadelta --loss_func RMSESum --hidden_size 256 --rs 1234 --cache_read 1 --cache_path /mnt/data/owen411/code/hydro-spdb-dl/example/dam/cache-dorplus0.1-19900101_20000101_20000101_20100101-30attr-7forcing --train_period 1990-01-01 2000-01-01 --test_period 2000-01-01 2010-01-01 --scaler DapengScaler --data_loader StreamflowDataModel --train_epoch 300 --save_epoch 50 --batch_size 100 --rho 365 --var_c DRAIN_SQKM ELEV_MEAN_M_BASIN SLOPE_PCT DEVNLCD06 FORESTNLCD06 PLANTNLCD06 WATERNLCD06 SNOWICENLCD06 BARRENNLCD06 SHRUBNLCD06 GRASSNLCD06 WOODYWETNLCD06 EMERGWETNLCD06 AWCAVE PERMAVE RFACT ROCKDEPAVE GEOL_REEDBUSH_DOM GEOL_REEDBUSH_DOM_PCT STREAMS_KM_SQ_KM NDAMS_2009 STOR_NOR_2009 RAW_DIS_NEAREST_MAJ_DAM CANALS_PCT RAW_DIS_NEAREST_CANAL FRESHW_WITHDRAWAL POWER_SUM_MW PDEN_2000_BLOCK ROADS_KM_SQ_KM IMPNLCD06 --n_feature 37
 if __name__ == '__main__':
     print("Begin\n")
-    gages_dir = [os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages_pro"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gages"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "nid"),
-                 os.path.join("/".join(definitions.ROOT_DIR.split("/")[0:-2]), "data", "gridmet")]
+    gages_dir = [os.path.join(definitions.DATASET_DIR, "gages_pro"),
+                 os.path.join(definitions.DATASET_DIR, "gages"),
+                 os.path.join(definitions.DATASET_DIR, "nid"),
+                 os.path.join(definitions.DATASET_DIR, "gridmet")]
     dataset_name = "GAGES_PRO"
     config = default_config_file(gages_dir, dataset_name)
     cmd_args = cmd()
