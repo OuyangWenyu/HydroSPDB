@@ -200,6 +200,8 @@ class GagesPro(DatasetBase):
             else:
                 new_attr_arr = np.vstack((new_attr_arr, data_temp))
             count = +1
+        if count == 1:
+            new_attr_arr = new_attr_arr.reshape(1, new_attr_arr.size)
         return new_attr_arr.T
 
     def get_constant_cols(self) -> np.array:
@@ -337,6 +339,26 @@ def get_dam_dis_var(gages_pro: GagesPro, usgs_id: list) -> np.array:
 
     coefficient_of_var = list(map(coefficient_of_variation, gages_loc, coords))
     return np.array(coefficient_of_var)
+
+
+def get_max_dam_norm_stor(gages_pro: GagesPro, usgs_id: list) -> np.array:
+    """the max dam normal storage in a basin (unit: Acre-Feet)"""
+    dam_storages = unserialize_json_ordered(gages_pro.dataset_description["DAM_STORAGE_FILE"])
+    assert (all(x < y for x, y in zip(usgs_id, usgs_id[1:])))
+    all_dam_gages_id = list(dam_storages.keys())
+    inter_id, all_dam_gages_id_ind, usgs_id_dam_ind = np.intersect1d(all_dam_gages_id, usgs_id, return_indices=True)
+    if len(inter_id) != len(usgs_id):
+        storage = []
+        print("some undammed basins are included, set their storage to NaN")
+        for i in range(len(usgs_id)):
+            if usgs_id[i] not in inter_id:
+                storage.append(np.nan)
+            else:
+                storage.append(dam_storages[usgs_id[i]])
+    else:
+        storage = [dam_storages[i] for i in usgs_id]
+    max_in_a_basin = list(map(np.max, storage))
+    return max_in_a_basin
 
 
 def get_dam_storage_std(gages_pro: GagesPro, usgs_id: list) -> np.array:
