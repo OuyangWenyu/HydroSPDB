@@ -1,10 +1,10 @@
 """
 Author: Wenyu Ouyang
 Date: 2023-04-20 11:51:06
-LastEditTime: 2023-04-20 17:46:20
+LastEditTime: 2023-04-20 20:14:05
 LastEditors: Wenyu Ouyang
-Description: 
-FilePath: /HydroSPDB/scripts/streamflow/script_constant.py
+Description: some constants for scripts
+FilePath: /HydroSPDB/scripts/script_constant.py
 Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
 """
 

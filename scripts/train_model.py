@@ -1,10 +1,10 @@
 """
 Author: Wenyu Ouyang
 Date: 2022-04-27 10:54:32
-LastEditTime: 2023-04-20 17:38:39
+LastEditTime: 2023-04-20 20:14:20
 LastEditors: Wenyu Ouyang
 Description: Generate commands to run scripts in Linux Screen
-FilePath: /HydroSPDB/scripts/streamflow/train_model.py
+FilePath: /HydroSPDB/scripts/train_model.py
 Copyright (c) 2021-2022 Wenyu Ouyang. All rights reserved.
 """
 import argparse
@@ -15,7 +15,7 @@ import sys
 
 sys.path.append(os.path.dirname(Path(os.path.abspath(__file__)).parent))
 import definitions
-from scripts.streamflow.gages_exp_utils import run_gages_exp
+from scripts.gages_exp_utils import run_gages_exp
 
 
 def train_and_test(args):

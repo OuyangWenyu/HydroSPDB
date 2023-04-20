@@ -1,7 +1,7 @@
 """
 Author: Wenyu Ouyang
 Date: 2021-12-17 18:02:27
-LastEditTime: 2023-04-20 17:51:33
+LastEditTime: 2023-04-20 22:59:40
 LastEditors: Wenyu Ouyang
 Description: Class and functions for data cache
 FilePath: /HydroSPDB/hydrospdb/data/cache/cache_base.py
@@ -58,11 +58,11 @@ class DataSourceCache(object):
         save_dir = self.save_path
         mode = self.mode
         assert mode in ["train", "valid", "test"]
-        gages_dict_file = os.path.join(save_dir, mode + "_" + self.data_dict_file_name)
-        flow_npy_file = os.path.join(save_dir, mode + "_" + self.flow_file_name)
-        forcing_npy_file = os.path.join(save_dir, mode + "_" + self.forcing_file_name)
-        attr_npy_file = os.path.join(save_dir, mode + "_" + self.attr_file_name)
-        other_data_file = os.path.join(save_dir, mode + "_" + self.other_data_file_name)
+        gages_dict_file = os.path.join(save_dir, f"{mode}_{self.data_dict_file_name}")
+        flow_npy_file = os.path.join(save_dir, f"{mode}_{self.flow_file_name}")
+        forcing_npy_file = os.path.join(save_dir, f"{mode}_{self.forcing_file_name}")
+        attr_npy_file = os.path.join(save_dir, f"{mode}_{self.attr_file_name}")
+        other_data_file = os.path.join(save_dir, f"{mode}_{self.other_data_file_name}")
         data_dict = unserialize_json(gages_dict_file)
         data_flow = unserialize_numpy(flow_npy_file)
         data_forcing = unserialize_numpy(forcing_npy_file)

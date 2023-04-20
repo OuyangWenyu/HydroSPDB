@@ -1,10 +1,10 @@
 """
 Author: Wenyu Ouyang
 Date: 2022-01-08 17:31:35
-LastEditTime: 2023-04-20 17:57:02
+LastEditTime: 2023-04-20 22:50:40
 LastEditors: Wenyu Ouyang
 Description: Some util functions for scripts in app/streamflow
-FilePath: /HydroSPDB/scripts/streamflow/streamflow_utils.py
+FilePath: /HydroSPDB/scripts/streamflow_utils.py
 Copyright (c) 2021-2022 Wenyu Ouyang. All rights reserved.
 """
 import csv
@@ -15,12 +15,8 @@ import sys
 from pathlib import Path
 import fnmatch
 
-import cartopy
-import geopandas as gpd
 import numpy as np
 import pandas as pd
-from cartopy import crs as ccrs
-from cartopy.io import shapereader as shpreader
 from matplotlib import pyplot as plt
 from sklearn.model_selection import KFold
 from tbparse import SummaryReader
@@ -29,20 +25,16 @@ from tbparse import SummaryReader
 sys.path.append(os.path.dirname(Path(os.path.abspath(__file__)).parent.parent.parent))
 import definitions
 from hydrospdb.utils.hydro_utils import unserialize_json, random_choice_no_return
-from hydrospdb.data.data_dict import data_sources_dict
 from hydrospdb.models.trainer import (
     load_result,
     save_result,
-    stat_result,
     train_and_evaluate,
 )
-from hydrospdb.utils.hydro_stat import remove_abnormal_data, stat_error, ecdf
+from hydrospdb.utils.hydro_stat import ecdf
 from hydrospdb.data.config import default_config_file, update_cfg, cmd
 from hydrospdb.data.source.data_gages import Gages
-from hydrospdb.visual.plot_stat import plot_ecdfs_matplot, plot_ts, plot_rainfall_runoff
-from hydrospdb.utils import hydro_constant, hydro_utils
-from hydrospdb.data.source.data_camels import Camels
-from scripts.streamflow.script_constant import VAR_C_CHOSEN_FROM_GAGES_II
+from hydrospdb.visual.plot_stat import plot_ecdfs_matplot
+from scripts.script_constant import VAR_C_CHOSEN_FROM_GAGES_II, VAR_T_CHOSEN_FROM_DAYMET
 
 
 def get_json_file(cfg_dir):
@@ -297,9 +289,14 @@ def predict_in_test_period_with_model(new_exp_args, cache_cfg_dir, weight_path):
     cfg = default_config_file()
     update_cfg(cfg, new_exp_args)
     if cache_cfg_dir is not None:
+        # train_data_dict.json is a flag for cache existing
+        if not os.path.exists(os.path.join(cache_cfg_dir, "test_data_dict.json")):
+            cache_cfg_dir = None
+        else:
+            cfg["data_params"]["cache_read"] = True
+            cfg["data_params"]["cache_write"] = False
         cfg["data_params"]["cache_path"] = cache_cfg_dir
-        cfg["data_params"]["cache_read"] = True
-        cfg["data_params"]["cache_write"] = False
+
     cfg["model_params"]["continue_train"] = False
     cfg["model_params"]["weight_path"] = weight_path
     if weight_path is None:
@@ -386,21 +383,24 @@ def predict_new_gages_exp(
     gage_id_file,
     weight_path,
     continue_train,
-    random_seed,
+    train_period,
+    test_period,
     cache_path=None,
     gages_id=None,
     stat_dict_file=None,
+    var_c=VAR_C_CHOSEN_FROM_GAGES_II,
+    var_t=VAR_T_CHOSEN_FROM_DAYMET,
 ):
     project_name = "gages/" + exp
     args = cmd(
         sub=project_name,
-        source_path=os.path.join(definitions.DATASET_DIR, "gages"),
+        source_path=definitions.DATASET_DIR,
         source="GAGES",
         download=0,
         ctx=[0],
         model_name="KuaiLSTM",
         model_param={
-            "n_input_features": 37,
+            "n_input_features": len(var_c) + len(var_t),
             "n_output_features": 1,
             "n_hidden_states": 256,
         },
@@ -408,19 +408,21 @@ def predict_new_gages_exp(
         continue_train=continue_train,
         opt="Adadelta",
         loss_func="RMSESum",
-        rs=random_seed,
-        train_period=["1990-01-01", "2000-01-01"],
-        test_period=["2000-01-01", "2010-01-01"],
+        rs=1234,
+        # train_period is just used for a dummy value, not used in the prediction
+        train_period=train_period,
+        test_period=test_period,
         cache_write=1,
         cache_read=1,
         scaler="DapengScaler",
         data_loader="StreamflowDataModel",
         train_epoch=300,
         te=300,
-        save_epoch=50,
+        save_epoch=20,
         batch_size=100,
         rho=365,
-        var_c=VAR_C_CHOSEN_FROM_GAGES_II,
+        var_c=var_c,
+        var_t=var_t,
         gage_id_file=gage_id_file,
         gage_id=gages_id,
         stat_dict_file=stat_dict_file,

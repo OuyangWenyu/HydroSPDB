@@ -1,7 +1,7 @@
 <!--
  * @Author: Wenyu Ouyang
  * @Date: 2023-04-20 11:52:37
- * @LastEditTime: 2023-04-20 17:39:13
+ * @LastEditTime: 2023-04-20 23:02:54
  * @LastEditors: Wenyu Ouyang
  * @Description: README.md for HydroSPDB
  * @FilePath: /HydroSPDB/README.md
@@ -79,7 +79,7 @@ cd scripts
 python prepare_data.py
 ```
 
-### Train
+### Train and test
 
 Firstly, choose basins to train the model. A file `gage_id.csv` should be created in the `RESULT_DIR` folder. The file should contain the basin id of basins to train the model. For example, the file `gage_id.csv` for 7 basins is as follows:
 
@@ -102,21 +102,19 @@ After data is ready, run the following command to train the model.
 ```bash
 # if not in the scripts folder, cd to it
 # cd scripts
-# train MTL models, you can choose one to try
-# for cache_path, mine is /home/ouyangwenyu/code/HydroMTL/results/camels/expmtl001
+# train models
+# One can use --cache_path to avoid reading forcing, attribute and streamflow data again. cache_path is the directory to save forcing, attribute and streamflow data.
 python train_model.py --exp exp001 --train_period 2001-10-01 2011-10-01 --test_period 2011-10-01 2016-10-01 --ctx 0 --random 1234
 ```
-
-### Test
 
 One can use the trained model to test in any period.
 
 ```bash
 # if not in the scripts folder, cd to it
 # cd scripts
-# for weight_path, mine is /home/ouyangwenyu/code/HydroMTL/results/camels/expstlq001/weights/07_April_202311_52AM_model.pth
-# NOTE: We set test exp as trainexp+"0", for example, train exp is expmtl001, then, test exp is expmtl0010
-python evaluate_task.py --exp expstlq0010 --loss_weight 1 0  --test_period 2016-10-01 2021-10-01 --cache_path /your/path/to/cache_directory_for_attributes_forcings_targets/or/None --weight_path /your/path/to/trained_model_pth_file
+# NOTE: We set test exp as trainexp+"0", for example, train exp is exp001, then, test exp is exp0010
+# test_period can be any period
+python evaluate_task.py --exp exp0010 --test_period 2016-10-01 2019-10-01 --cache_path /your/path/to/cache_directory_for_attributes_forcings_targets/or/None --weight_path /your/path/to/trained_model_pth_file
 ```
 
 ### Plot

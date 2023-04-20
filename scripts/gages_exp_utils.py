@@ -1,10 +1,10 @@
 """
 Author: Wenyu Ouyang
 Date: 2023-04-20 11:51:06
-LastEditTime: 2023-04-20 18:04:28
+LastEditTime: 2023-04-20 20:13:52
 LastEditors: Wenyu Ouyang
 Description: functions for gages experiments
-FilePath: /HydroSPDB/scripts/streamflow/gages_exp_utils.py
+FilePath: /HydroSPDB/scripts/gages_exp_utils.py
 Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
 """
 import os
@@ -14,11 +14,11 @@ import sys
 
 sys.path.append(os.path.dirname(Path(os.path.abspath(__file__)).parent.parent))
 import definitions
-from scripts.streamflow.script_constant import (
+from scripts.script_constant import (
     VAR_C_CHOSEN_FROM_GAGES_II,
     VAR_T_CHOSEN_FROM_DAYMET,
 )
-from scripts.streamflow.streamflow_utils import get_lastest_weight_path
+from scripts.streamflow_utils import get_lastest_weight_path
 from hydrospdb.data.config import cmd, default_config_file, update_cfg
 from hydrospdb.models.trainer import train_and_evaluate
 from hydrospdb.data.source.data_constant import DAYMET_NAME, Q_CAMELS_US_NAME
