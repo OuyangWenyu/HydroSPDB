@@ -1,32 +1,27 @@
-name: hydrodl
+name: SPDB
 channels:
+  - pyg
+  - pytorch
   - conda-forge
   - defaults
 dependencies:
-  - python=3.8
-  - jupyterlab
+  - python=3.10
+  - numpy=1.23
+  - xarray
   - geopandas
   - cartopy
-  - scikit-learn>=0.23.0
-  - pandas
   - seaborn
-  - future
-  - h5py
-  - pyyaml
-  - plotly~=4.14.3
-  - pytz~=2021.1
-  - numpy~=1.20.1
-  - requests~=2.25.1
-  - mpld3~=0.3
-  - numba>=0.50
-  - openpyxl
+  - scikit-learn
+  - tqdm
+  - hydroerr
+  - pytorch=1.12
+  - pytorch-scatter
+  - tensorboard
+  - torchvision
+  - pytest
+  - black
+  - flake8
+  - ipykernel
   - pip
   - pip:
-    - setuptools~=56.0.0
-    - torch
-    - torchvision>=0.6.0
-    - tb-nightly
-    - shap~=0.39.0
-    - sphinx
-    - sphinx-rtd-theme
-    - sphinx-autodoc-typehints
+    - tbparse

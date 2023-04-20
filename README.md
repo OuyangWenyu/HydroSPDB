@@ -1,90 +1,130 @@
+<!--
+ * @Author: Wenyu Ouyang
+ * @Date: 2023-04-20 11:52:37
+ * @LastEditTime: 2023-04-20 17:39:13
+ * @LastEditors: Wenyu Ouyang
+ * @Description: README.md for HydroSPDB
+ * @FilePath: /HydroSPDB/README.md
+ * Copyright (c) 2023-2024 Wenyu Ouyang. All rights reserved.
+-->
 # HydroSPDB
 
 This is the Code for Streamflow Prediction in (Dammed) Basins (SPDB) with Deep Learning models.
 
-## Code
+If you use this code, please cite the following paper:
 
-Notice: ONLY tested in an "Ubuntu" machine with NVIDIA GPUs
-
-Clone this repo to your local directory.
-
-Please use the "master" branch, but if you want to use another branch, for example, the "dev" branch, you can run the commands:
-
-```Shell
-git fetch origin dev
-git checkout -b dev origin/dev
+```BibTeX
+@article{OUYANG2021126455,
+title = {Continental-scale streamflow modeling of basins with reservoirs: Towards a coherent deep-learning-based strategy},
+journal = {Journal of Hydrology},
+volume = {599},
+pages = {126455},
+year = {2021},
+issn = {0022-1694},
+doi = {https://doi.org/10.1016/j.jhydrol.2021.126455},
+url = {https://www.sciencedirect.com/science/article/pii/S0022169421005023},
+author = {Wenyu Ouyang and Kathryn Lawson and Dapeng Feng and Lei Ye and Chi Zhang and Chaopeng Shen},
+keywords = {Hydrologic modeling, Reservoir, Deep learning, LSTM, Degree of regulation},
+abstract = {A large fraction of major waterways have dams influencing streamflow, which must be accounted for in large-scale hydrologic modeling. However, daily streamflow prediction for basins with dams is challenging for various modeling approaches, especially at large scales. Here we examined which types of dammed basins could be well represented by long short-term memory (LSTM) models using readily-available information, and delineated the remaining challenges. We analyzed data from 3557 basins (83% dammed) over the contiguous United States and noted strong impacts of reservoir purposes, degree of regulation (dor), and diversion on streamflow modeling. While a model trained on a widely-used reference-basin dataset performed poorly for non-reference basins, the model trained on the whole dataset presented a median Nash-Sutcliffe efficiency coefficient (NSE) of 0.74. The zero-dor, small-dor (with storage of approximately a month of average streamflow or less), and large-dor basins were found to have distinct behaviors, so migrating models between categories yielded catastrophic results, which means we must not treat small-dor basins as reference ones. However, training with pooled data from different sets yielded optimal median NSEs of 0.72, 0.79, and 0.64 for these respective groups, noticeably stronger than existing models. These results support a coherent modeling strategy where smaller dams (storing about a month of average streamflow or less) are modeled implicitly as part of basin rainfall-runoff processes; then, large-dor reservoirs of certain types can be represented explicitly. However, dammed basins must be present in the training dataset. Future work should examine separate modeling of large reservoirs for fire protection and irrigation, hydroelectric power generation, and flood control.}
+}
 ```
 
-Pipeline：
+## How to run
 
-- config, download and process the data
-- build and train the model
-- test the model
-- visualization
+**Notice: ONLY tested in an "Ubuntu" machine with NVIDIA GPUs**
 
-Directories:
+### Clone the repository
 
-- The scripts which can run main tasks were in "app" dir
-- "data" dir was used for data pre-process
-- All data were put in the "example" directory
-- Statistics code was in "explore" dir
-- "hydroDL" had the core code
-- "refine" has not been used yet. It would be used for optimization of hyper-param
-- All test scripts were written with Unittest framework, and in "test" dir
-- Visualization codes were in "visual" dir
+Fork this repository and clone it to your local machine.
 
-## Setup
-
-Set the python virtual environment.
-
-Make sure Conda (miniconda is recommended) has been installed, if not, please
-see [here](https://github.com/OuyangWenyu/hydrus/blob/master/1-basic-envir/2-python-envir.md).
-
-Then move to the root directory of this repo and run the following command in the terminal:
-
-```Shell
-conda env create -f environment.yml
+```bash
+# xxx is your github username
+git clone git@github.com:xxxx/HydroSPDB.git
+cd HydroSPDB
 ```
 
-Wait some minutes, and then all dependencies will be installed.
+### Install dependencies
 
-## Configuration
-
-Download the source data and put them in a directory.
-
-Then, assign it to the "DATASET_DIR" in definitions.py.
-
-Next, Define the Configuration File.
-
-The template Configuration File (now only a python-dict version is supported) is in config.py.
-
-A configuration file is composed of four major required sub-parts:
-
-1. model_params
-2. dataset_params
-3. training_params
-4. metrics
-
-You can easily see all the parameters that you specify to your model.
-
-Now only some choices are supported (I will list them later).
-
-## Usage
-
-I recommend starting with CudnnLstmModel/Vanilla LSTM with the CAMELS dataset.
-
-```Shell
-screen -S xxx (give the process a name)
-conda activate hydrodl
-cd xx/app/streamflow （move to the directory）
-screen -r xxx (use the id of the process to enter the process. you can use "screen -ls" to see what the id is)
-python camels671_analysis.py --sub test/exp1 --download 1 --model_name KuaiLSTM --opt Adadelta --rs 1234 --cache_write 1 --scaler DapengScaler --data_loader StreamflowDataModel --batch_size 5 --rho 20 --n_feature 24 --gage_id 01013500 01022500 01030500 01031500 01047000 01052500 01054200 01055000 01057000 01170100
+```bash
+# if you have mamaba installed, it's faster to use mamba to create a new environment than conda
+# if you don't have mamba, please install it
+# conda install -c conda-forge mamba
+mamba env create -f environment.yml
+# after the environment is created, activate it
+conda activate SPDB
+# check if packages are installed correctly and HydroMTL is runnable
+pytest tests
 ```
 
-## Acknowledgement
+### Prepare data
 
-Thanks to the following repositories:
+Firstly, download data manually from my [google drive](https://drive.google.com/drive/folders/1MA5HKTa2e6ZCWIoTQkLMBmREpz6QjVDH?usp=share_link).
 
-- [mhpi/hydroDL](https://github.com/mhpi/hydroDL)
-- [neuralhydrology/neuralhydrology](https://github.com/neuralhydrology/neuralhydrology)
-- [AIStream-Peelout/flow-forecast](https://github.com/AIStream-Peelout/flow-forecast)
+Then, put the data in a folder and set this fold in definitions.py.
+ 
+A recommeded way to config the data path is to create a file named `definitions_private.py` in the root directory of the project, and set the data path in it.
+
+You can set the data path in `definitions_private.py` as follows:
+
+```python
+# xxx is your path
+DATASET_DIR = xxx # This is your Data source directory
+RESULT_DIR = xxx # This is your result directory
+```
+
+Run the following command to unzip all data.
+
+```bash
+cd scripts
+python prepare_data.py
+```
+
+### Train
+
+Firstly, choose basins to train the model. A file `gage_id.csv` should be created in the `RESULT_DIR` folder. The file should contain the basin id of basins to train the model. For example, the file `gage_id.csv` for 7 basins is as follows:
+
+```csv
+GAUGE_ID
+01407500
+01591000
+01669520
+02046000
+02051500
+02077200
+02143500
+```
+
+One can choose more basins. Notice the GAUGE_ID should be in order.
+
+
+After data is ready, run the following command to train the model.
+
+```bash
+# if not in the scripts folder, cd to it
+# cd scripts
+# train MTL models, you can choose one to try
+# for cache_path, mine is /home/ouyangwenyu/code/HydroMTL/results/camels/expmtl001
+python train_model.py --exp exp001 --train_period 2001-10-01 2011-10-01 --test_period 2011-10-01 2016-10-01 --ctx 0 --random 1234
+```
+
+### Test
+
+One can use the trained model to test in any period.
+
+```bash
+# if not in the scripts folder, cd to it
+# cd scripts
+# for weight_path, mine is /home/ouyangwenyu/code/HydroMTL/results/camels/expstlq001/weights/07_April_202311_52AM_model.pth
+# NOTE: We set test exp as trainexp+"0", for example, train exp is expmtl001, then, test exp is expmtl0010
+python evaluate_task.py --exp expstlq0010 --loss_weight 1 0  --test_period 2016-10-01 2021-10-01 --cache_path /your/path/to/cache_directory_for_attributes_forcings_targets/or/None --weight_path /your/path/to/trained_model_pth_file
+```
+
+### Plot
+
+To show the results visually, run the following command.
+
+```bash
+# if not in the scripts folder, cd to it
+# cd scripts
+
+```

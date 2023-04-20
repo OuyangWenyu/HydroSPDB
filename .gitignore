@@ -127,26 +127,16 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
 build
 dist
-flood_forecast.egg-info
 *.DS_STORE
 *.pyc
-test/runs
-test/output/
-example/data
 mypy
 .mypy_cache
 *.png
 *.onnx
-wandb
-MNIST
-example/camels
+
+# ignored files in this repo
 .vscode
 .idea
-/example/gages/
-/example/gages_add_attr/
-/example/gages_gridmet/
-/example/test/
-/example/dam/
+/results
