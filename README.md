@@ -1,7 +1,7 @@
 <!--
  * @Author: Wenyu Ouyang
  * @Date: 2023-04-20 11:52:37
- * @LastEditTime: 2023-04-21 09:20:04
+ * @LastEditTime: 2023-04-21 10:33:29
  * @LastEditors: Wenyu Ouyang
  * @Description: README.md for HydroSPDB
  * @FilePath: /HydroSPDB/README.md
@@ -124,5 +124,15 @@ To show the results visually, run the following command.
 ```bash
 # if not in the scripts folder, cd to it
 # cd scripts
-
+python plot_results.py
 ```
+
+## Reproduce the results in the paper
+
+This part is not fully supported in this refactor version. 
+
+Please refer to the [old version](https://github.com/OuyangWenyu/HydroSPDB/releases/tag/v1.0).
+
+But the old version is not easy to use.
+
+We will update this part later.

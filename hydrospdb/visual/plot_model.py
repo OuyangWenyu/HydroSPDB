@@ -5,10 +5,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from hydromtl.data.source.data_camels import Camels
+from hydrospdb.data.source.data_camels import Camels
 
-from hydromtl.utils.hydro_utils import t_range_days
-from hydromtl.visual.plot_stat import (
+from hydrospdb.utils.hydro_utils import t_range_days
+from hydrospdb.visual.plot_stat import (
     plot_boxs,
     plot_diff_boxes,
     plot_ts_map,
@@ -17,11 +17,11 @@ from hydromtl.visual.plot_stat import (
 
 
 def plot_scatter_multi_attrs(
-    data_model, inds_df, idx_lst_nse_range, attr_lst, y_var_lst
+    config_data, inds_df, idx_lst_nse_range, attr_lst, y_var_lst
 ):
     """scatter plot: there are many independent vars and dependent var"""
-    sites_all = data_model.t_s_dict["sites_id"]
-    attrs_ = data_model.data_source.read_attr(sites_all, attr_lst, is_return_dict=False)
+    sites_all = config_data.t_s_dict["sites_id"]
+    attrs_ = config_data.data_source.read_attr(sites_all, attr_lst, is_return_dict=False)
     x_var_values = [attrs_[idx_lst_nse_range, i] for i in range(len(attr_lst))]
     y_var_values = [inds_df[y_var].values[idx_lst_nse_range] for y_var in y_var_lst]
     xy_values = np.array(x_var_values + y_var_values).T
@@ -44,8 +44,7 @@ def plot_box_inds(indicators):
     data_t = pd.concat([indicts, data_t], axis=1)
     formatted_data = pd.melt(data_t, [indict_name])
     formatted_data = formatted_data.sort_values(by=[indict_name])
-    box_fig = plot_boxs(formatted_data, x_name=indict_name, y_name="value")
-    return box_fig
+    return plot_boxs(formatted_data, x_name=indict_name, y_name="value")
 
 
 def plot_gages_attrs_boxes(
@@ -63,13 +62,12 @@ def plot_gages_attrs_boxes(
     df1 = pd.DataFrame(attrs1_new, columns=attr_lst + diff_str_lst)
     df2 = pd.DataFrame(attrs2_new, columns=attr_lst + diff_str_lst)
     result = pd.concat([df1, df2])
-    box_fig = plot_diff_boxes(
+    return plot_diff_boxes(
         result,
         row_and_col=row_and_col,
         y_col=np.arange(len(attr_lst)).tolist(),
         x_col=len(attr_lst),
     )
-    return box_fig
 
 
 def plot_gages_map_and_ts(
@@ -134,7 +132,7 @@ def plot_gages_map_and_ts(
             pertile_range=pertile_range,
         )
     else:
-        f = plot_map_carto(
+        return plot_map_carto(
             data_map,
             lat=lat,
             lon=lon,
@@ -142,36 +140,38 @@ def plot_gages_map_and_ts(
             fig_size=(fig_size[0], fig_size[1] - 2),
             cmap_str=cmap_str,
         )
-        return f
 
 
 def plot_gages_map_and_box(
-    data_model,
+    chosen_sites_df,
     inds_df,
     show_ind_key,
     idx_lst=None,
-    pertile_range=[0, 100],
+    pertile_range=None,
     is_all_data_shown_in_box=True,
     fig_size=(12, 7),
     cmap_str="jet",
-    titles=["title1", "title2"],
-    wh_ratio=[1, 4],
+    titles=None,
+    wh_ratio=None,
     adjust_xy=(0, 0.05),
 ):
+    if pertile_range is None:
+        pertile_range = [0, 100]
+    if titles is None:
+        titles = ["title1", "title2"]
+    if wh_ratio is None:
+        wh_ratio = [1, 4]
     if idx_lst is None:
         data_map = inds_df[show_ind_key].values
-        lat = data_model.data_source.gage_dict["LAT_GAGE"]
-        lon = data_model.data_source.gage_dict["LNG_GAGE"]
+        lat = chosen_sites_df["LAT_GAGE"]
+        lon = chosen_sites_df["LNG_GAGE"]
     else:
         assert pertile_range == [0, 100]
         data_map = (inds_df.loc[idx_lst])[show_ind_key].values
-        all_lat = data_model.data_source.gage_dict["LAT_GAGE"]
-        all_lon = data_model.data_source.gage_dict["LNG_GAGE"]
-        all_sites_id = data_model.data_source.gage_dict["STAID"]
-        sites = np.array(data_model.t_s_dict["sites_id"])[idx_lst]
-        sites_index = np.array([np.where(all_sites_id == i) for i in sites]).flatten()
-        lat = all_lat[sites_index]
-        lon = all_lon[sites_index]
+        all_lat = chosen_sites_df["LAT_GAGE"].values
+        all_lon = chosen_sites_df["LNG_GAGE"].values
+        lat = all_lat[idx_lst]
+        lon = all_lon[idx_lst]
     assert len(data_map) == len(lat)
     # Figure
     fig = plt.figure(figsize=fig_size)
@@ -199,23 +199,20 @@ def plot_gages_map_and_box(
             ax=ax2,
             showfliers=False,
         )
-    else:
-        if pertile_range != [0, 100]:
-            vmin = np.nanpercentile(data_map, pertile_range[0])
-            vmax = np.nanpercentile(data_map, pertile_range[1])
-            data_shown_in_box = np.array([i for i in data_map if vmin <= i <= vmax])
-            sns.boxplot(
-                data=data_shown_in_box,
-                orient="h",
-                linewidth=3,
-                ax=ax2,
-                showfliers=False,
-            )
-        else:
-            sns.boxplot(
-                data=data_map, orient="h", linewidth=3, ax=ax2, showfliers=False
-            )
+    elif pertile_range == [0, 100]:
+        sns.boxplot(data=data_map, orient="h", linewidth=3, ax=ax2, showfliers=False)
 
+    else:
+        vmin = np.nanpercentile(data_map, pertile_range[0])
+        vmax = np.nanpercentile(data_map, pertile_range[1])
+        data_shown_in_box = np.array([i for i in data_map if vmin <= i <= vmax])
+        sns.boxplot(
+            data=data_shown_in_box,
+            orient="h",
+            linewidth=3,
+            ax=ax2,
+            showfliers=False,
+        )
     # adjust location
     pos1 = ax1.get_position()  # get the original position
     pos2 = ax2.get_position()  # get the original position
@@ -233,18 +230,28 @@ def plot_gages_map_and_scatter(
     inds_df,
     items,
     idx_lst,
-    cmap_strs=["Reds", "Blues"],
-    markers=["o", "x"],
-    labels=["zero-dor", "small-dor"],
-    scatter_label=["SLOPE_PCT", "NSE"],
+    cmap_strs=None,
+    markers=None,
+    labels=None,
+    scatter_label=None,
     hist_bins=50,
     wspace=3,
     hspace=1.2,
     legend_x=0.01,
     legend_y=0.7,
-    sub_fig_ratio=[8, 4, 1],
+    sub_fig_ratio=None,
 ):
     """inds_df: Lat,lon, slope/elavation, dor range, NSE"""
+    if cmap_strs is None:
+        cmap_strs = ["Reds", "Blues"]
+    if markers is None:
+        markers = ["o", "x"]
+    if labels is None:
+        labels = ["zero-dor", "small-dor"]
+    if scatter_label is None:
+        scatter_label = ["SLOPE_PCT", "NSE"]
+    if sub_fig_ratio is None:
+        sub_fig_ratio = [8, 4, 1]
     SMALL_SIZE = 12
     MEDIUM_SIZE = 14
     BIGGER_SIZE = 16
@@ -353,15 +360,23 @@ def plot_sites_and_attr(
     pertile_range=None,
     is_discrete=False,
     cmap_str="viridis",
-    sites_names=["CAMELS", "Non_CAMELS"],
+    sites_names=None,
     fig_size=(11, 4),
-    markers=["o", "x"],
-    marker_sizes=[1, 3],
-    colors=["r", "b"],
+    markers=None,
+    marker_sizes=None,
+    colors=None,
     cbar_font_size=None,
     legend_font_size=None,
 ):
     """plot a map for all 3557 sites and all camels ones, and show one attributes"""
+    if sites_names is None:
+        sites_names = ["CAMELS", "Non_CAMELS"]
+    if markers is None:
+        markers = ["o", "x"]
+    if marker_sizes is None:
+        marker_sizes = [1, 3]
+    if colors is None:
+        colors = ["r", "b"]
     type_1_index_lst = [
         i for i in range(len(all_sites_id)) if all_sites_id[i] in sites_lst1
     ]
