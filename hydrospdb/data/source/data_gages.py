@@ -1,7 +1,7 @@
 """
 Author: Wenyu Ouyang
 Date: 2021-12-05 11:21:58
-LastEditTime: 2023-04-20 17:52:18
+LastEditTime: 2023-04-21 11:21:03
 LastEditors: Wenyu Ouyang
 Description: Data source class for Gages
 FilePath: /HydroSPDB/hydrospdb/data/source/data_gages.py
@@ -470,6 +470,8 @@ class Gages(DataSourceBase):
         df_flow = pd.read_csv(
             usgs_file, comment="#", sep="\t", dtype={"site_no": str}
         ).iloc[1:, :]
+        # reset the index, start from 0
+        df_flow = df_flow.reset_index(drop=True)
         # change the original column names
         columns_names = df_flow.columns.tolist()
         columns_flow = []

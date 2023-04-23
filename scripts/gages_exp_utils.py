@@ -1,7 +1,7 @@
 """
 Author: Wenyu Ouyang
 Date: 2023-04-20 11:51:06
-LastEditTime: 2023-04-20 20:13:52
+LastEditTime: 2023-04-23 11:19:05
 LastEditors: Wenyu Ouyang
 Description: functions for gages experiments
 FilePath: /HydroSPDB/scripts/gages_exp_utils.py
@@ -95,7 +95,7 @@ def run_gages_exp(
     update_cfg(config_data, args)
     if cache_dir is not None:
         # train_data_dict.json is a flag for cache existing
-        if not os.path.exists(os.path.join(cache_dir, "train_data_dict.json")):
+        if not os.path.exists(os.path.join(cache_dir, "test_data_dict.json")):
             cache_dir = None
         else:
             config_data["data_params"]["cache_path"] = cache_dir

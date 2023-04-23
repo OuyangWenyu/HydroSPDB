@@ -1,7 +1,7 @@
 """
 Author: Wenyu Ouyang
 Date: 2022-04-27 10:54:32
-LastEditTime: 2023-04-20 20:14:20
+LastEditTime: 2023-04-23 11:37:16
 LastEditors: Wenyu Ouyang
 Description: Generate commands to run scripts in Linux Screen
 FilePath: /HydroSPDB/scripts/train_model.py
@@ -52,14 +52,14 @@ if __name__ == "__main__":
         dest="train_period",
         help="training period, such as ['2001-10-01', '2011-10-01']",
         nargs="+",
-        default=["2001-10-01", "2011-10-01"],
+        default=["1980-10-01", "2015-10-01"],
     )
     parser.add_argument(
         "--test_period",
         dest="test_period",
         help="testing period, such as ['2011-10-01', '2016-10-01']",
         nargs="+",
-        default=["2011-10-01", "2016-10-01"],
+        default=["2015-10-01", "2019-10-01"],
     )
     parser.add_argument(
         "--ctx", dest="ctx", help="CUDA IDs", nargs="+", type=int, default=[0]
